@@ -10,6 +10,7 @@
  */
 
 import type { Profile } from '@cubeforge/models';
+import { nextLocalStamps } from './local-clock.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -102,29 +103,48 @@ export class ProfilesRepository {
     return created ?? defaultProfile(userId);
   }
 
-  /** Full replace of the identity row (used when editing the profile). */
-  async upsert(profile: Profile): Promise<void> {
+  /**
+   * Full replace of the identity row (used when editing the profile). The
+   * sync pull passes the cloud timestamp (kept as-is); pass `{ local: true }`
+   * from local edit paths so the repo takes a monotonic clock stamp strictly
+   * newer than the row's previous stamp (M9) — a local edit must always
+   * advance the profile's updated_at or it never leaves the device.
+   */
+  async upsert(profile: Profile, opts?: { local?: boolean }): Promise<void> {
+    const stamped = opts?.local
+      ? {
+          ...profile,
+          updatedAt: await nextLocalStamps(this.db, "profiles", 1, {
+            floor: profile.updatedAt ?? 0,
+          }),
+        }
+      : profile;
     await this.db(
       `INSERT OR REPLACE INTO profiles
         (user_id, display_name, handle, bio, avatar_kind, avatar_data, main_puzzle, declared_methods, country, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        profile.userId,
-        profile.displayName,
-        profile.handle,
-        profile.bio,
-        profile.avatarKind,
-        profile.avatarData ?? null,
-        profile.mainPuzzle,
-        JSON.stringify(profile.declaredMethods),
-        profile.country ?? '',
-        profile.createdAt,
-        profile.updatedAt,
+        stamped.userId,
+        stamped.displayName,
+        stamped.handle,
+        stamped.bio,
+        stamped.avatarKind,
+        stamped.avatarData ?? null,
+        stamped.mainPuzzle,
+        JSON.stringify(stamped.declaredMethods),
+        stamped.country ?? '',
+        stamped.createdAt,
+        stamped.updatedAt,
       ],
     );
   }
 
   async delete(userId: string): Promise<void> {
     await this.db('DELETE FROM profiles WHERE user_id = ?', [userId]);
+  }
+
+  /** Delete every profile row (account-deletion wipe). */
+  async deleteAll(): Promise<void> {
+    await this.db('DELETE FROM profiles');
   }
 }

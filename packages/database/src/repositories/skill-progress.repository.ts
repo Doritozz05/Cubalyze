@@ -8,6 +8,8 @@
  * Follows the same pattern as TrainingRepository / SolvesRepository.
  */
 
+import { nextLocalStamps } from './local-clock.js';
+
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
 export interface SkillProgressRow {
@@ -33,15 +35,59 @@ export class SkillProgressRepository {
     return rows.length > 0;
   }
 
+  /**
+   * Every completed skill with its completion timestamp (oldest first) — the
+   * sync push/pull shape. `completed_at` doubles as the LWW watermark: a
+   * re-completion bumps it, an un-completion is captured by the DELETE
+   * trigger tombstone (migration 028).
+   */
+  async findAllRows(): Promise<Array<{ skillId: string; completedAt: number }>> {
+    const rows = await this.db(
+      "SELECT skill_id, completed_at FROM skill_progress ORDER BY completed_at ASC",
+    );
+    return rows.map((r) => ({
+      skillId: String((r as unknown as SkillProgressRow).skill_id),
+      completedAt: Number((r as unknown as SkillProgressRow).completed_at) || 0,
+    }));
+  }
+
   async setCompleted(skillId: string): Promise<void> {
+    // Monotonic clock stamp (M9): a toggle can never re-issue a completed_at
+    // that collides with the push watermark, and two rapid toggles stay
+    // strictly ordered.
+    const completedAt = await nextLocalStamps(this.db, "skill_progress");
     await this.db(
       "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
-      [skillId, Date.now()],
+      [skillId, completedAt],
+    );
+  }
+
+  /**
+   * Insert-or-replace preserving the CLOUD completion timestamp (pull).
+   * `??` (not `||`): a cloud row that legitimately carries completed_at = 0
+   * must stay 0, never be re-sealed with a local Date.now() (M6) — the 0
+   * value is what the next push compares against.
+   */
+  async setCompletedAt(skillId: string, completedAt: number): Promise<void> {
+    await this.db(
+      "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
+      [skillId, completedAt ?? Date.now()],
     );
   }
 
   async setIncomplete(skillId: string): Promise<void> {
     await this.db("DELETE FROM skill_progress WHERE skill_id = ?", [skillId]);
+  }
+
+  /**
+   * Versioned un-completion for remote tombstones (LWW): only removes the
+   * skill when it was not re-completed after the tombstone.
+   */
+  async setIncompleteIfNotNewer(skillId: string, deletedAt: number): Promise<void> {
+    await this.db(
+      "DELETE FROM skill_progress WHERE skill_id = ? AND completed_at <= ?",
+      [skillId, deletedAt],
+    );
   }
 
   /**

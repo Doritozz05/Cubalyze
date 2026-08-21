@@ -8,6 +8,7 @@ import {
   type Profile,
 } from "@cubeforge/database";
 import { isDev } from "@/utils/env";
+import { syncStore } from "@cubeforge/state";
 
 /** Editable profile fields (identity keys are owned by the system). */
 export type ProfileUpdates = Partial<Omit<Profile, "userId" | "createdAt">>;
@@ -15,6 +16,12 @@ export type ProfileUpdates = Partial<Omit<Profile, "userId" | "createdAt">>;
 export interface UseProfileResult {
   /** Stable anonymous local identity (persisted in app_meta). null until DB ready. */
   userId: string | null;
+  /**
+   * The CubeMark seed: the ORIGINAL anonymous id, parked in app_meta when an
+   * account claims the device (identicon_seed). Falls back to userId. The
+   * mark never changes when the identity is linked to an account (D2).
+   */
+  identiconSeed: string | null;
   /** The user's identity row. null until DB ready. */
   profile: Profile | null;
   /** True while the identity is being ensured on first launch. */
@@ -46,11 +53,17 @@ export interface UseProfileResult {
 
 interface ProfileState {
   userId: string | null;
+  identiconSeed: string | null;
   profile: Profile | null;
   loading: boolean;
 }
 
-let state: ProfileState = { userId: null, profile: null, loading: true };
+let state: ProfileState = {
+  userId: null,
+  identiconSeed: null,
+  profile: null,
+  loading: true,
+};
 const listeners = new Set<() => void>();
 
 let reposRef: {
@@ -93,9 +106,10 @@ function ensureInitialized(): Promise<void> {
       // First launch: generate (or re-read) the anonymous identity.
       const id = await reposRef.meta.getOrCreateUserId();
       const row = await reposRef.profiles.getOrCreate(id);
+      const seed = await reposRef.meta.getIdenticonSeed();
 
       userIdRef = id;
-      setState({ userId: id, profile: row, loading: false });
+      setState({ userId: id, identiconSeed: seed, profile: row, loading: false });
       if (isDev()) {
         console.log(
           "%c[useProfile]%c Identity ready: %s",
@@ -115,14 +129,42 @@ function ensureInitialized(): Promise<void> {
   return initPromise;
 }
 
-/** Re-read the profile row from the DB. */
+/**
+ * Re-read the identity + profile row from the DB. Also re-reads the current
+ * user id (the claim flow remaps profiles.user_id to the account uid and
+ * rewrites USER_ID_KEY), so after an account link the UI follows the new
+ * identity instead of showing an empty profile.
+ */
 async function refresh(): Promise<void> {
-  if (!reposRef || !userIdRef) {
+  if (!reposRef) {
     await ensureInitialized();
     return;
   }
-  const row = await reposRef.profiles.findById(userIdRef);
-  if (row) setState({ profile: row });
+  const id = await reposRef.meta.getOrCreateUserId();
+  const seed = await reposRef.meta.getIdenticonSeed();
+  const row = await reposRef.profiles.findById(id);
+  userIdRef = id;
+  setState({
+    userId: id,
+    identiconSeed: seed,
+    profile: row ?? state.profile,
+  });
+}
+
+export { refresh as refreshProfile };
+
+/**
+ * Full identity reset (used after account deletion): forget the cached
+ * identity and re-initialize from the DB. The DB is expected to already
+ * hold a fresh anonymous identity (wipeAccountLocalData).
+ */
+export function resetIdentity(): void {
+  reposRef = null;
+  userIdRef = null;
+  initPromise = null;
+  state = { userId: null, identiconSeed: null, profile: null, loading: true };
+  for (const listener of listeners) listener();
+  void ensureInitialized();
 }
 
 /**
@@ -154,9 +196,11 @@ async function updateProfile(updates: ProfileUpdates): Promise<void> {
       ...current,
       ...updates,
       userId: id,
-      updatedAt: Date.now(),
     };
-    await reposRef!.profiles.upsert(next);
+    // local: true → the repo advances updated_at via the monotonic clock
+    // (M9), so an edit always moves past the push watermark; pulled rows
+    // keep the cloud timestamp as-is.
+    await reposRef!.profiles.upsert(next, { local: true });
     setState({ profile: next });
   });
 }
@@ -166,11 +210,24 @@ export function useProfile(): UseProfileResult {
 
   useEffect(() => {
     void ensureInitialized();
+
+    // Live cross-tab refresh: when the shared data revision bumps (a local
+    // write, a completed sync cycle, or another tab's change via
+    // BroadcastChannel), re-read the identity/profile row from the shared DB.
+    let lastRevision = syncStore.getState().dataRevision;
+    return syncStore.subscribe(() => {
+      const next = syncStore.getState().dataRevision;
+      if (next !== lastRevision) {
+        lastRevision = next;
+        void refresh();
+      }
+    });
   }, []);
 
   // Module-level functions are stable — callers can safely depend on them.
   return {
     userId: snapshot.userId,
+    identiconSeed: snapshot.identiconSeed,
     profile: snapshot.profile,
     loading: snapshot.loading,
     refresh,

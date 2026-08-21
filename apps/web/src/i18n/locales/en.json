@@ -142,6 +142,10 @@
       "credits": {
         "label": "Credits",
         "description": "Data sources, libraries, and community contributions."
+      },
+      "account": {
+        "label": "Account",
+        "description": "Google sign-in and cloud sync between your devices."
       }
     },
     "general": {
@@ -776,16 +780,16 @@
     "notFoundGoHome": "Back to the timer",
     "resizeWidth": "Drag to resize width (Double-click to reset)",
     "resizeHeight": "Drag to resize or close (Double-click to reset)",
-  "more": {
-    "settingsSubtitle": "Preferences & inputs",
-    "profileSubtitle": "Your identity & progress",
-    "skillsSubtitle": "Interactive skill tree graph",
-    "reconstructionsSubtitle": "Solve database & replays",
-    "virtualSubtitle": "3D cube simulator",
-    "smartCubeSubtitle": "Connect bluetooth cube",
-    "themeSubtitle": "Switch color theme",
-    "widgetsSubtitle": "Floating widgets & panels"
-  }
+    "more": {
+      "settingsSubtitle": "Preferences & inputs",
+      "profileSubtitle": "Your identity & progress",
+      "skillsSubtitle": "Interactive skill tree graph",
+      "reconstructionsSubtitle": "Solve database & replays",
+      "virtualSubtitle": "3D cube simulator",
+      "smartCubeSubtitle": "Connect bluetooth cube",
+      "themeSubtitle": "Switch color theme",
+      "widgetsSubtitle": "Floating widgets & panels"
+    }
   },
   "onboarding": {
     "skip": "Skip",
@@ -1523,11 +1527,12 @@
         "Use M' U M' patterns to flip edges efficiently",
         "Aim for EO in < 1.5s with ≤ 7 moves"
       ]
-    }, "review": {
-  "title": "Review",
-  "emptyTitle": "Nothing to review",
-  "emptyBody": "Cases you train or miss appear here for spaced review.",
-  "reason": {
+    },
+    "review": {
+      "title": "Review",
+      "emptyTitle": "Nothing to review",
+      "emptyBody": "Cases you train or miss appear here for spaced review.",
+      "reason": {
         "overdue": "Overdue",
         "due": "Due",
         "weak": "Weak",
@@ -1713,6 +1718,13 @@
         "EG": "Extended CLL: EG-1 (adjacent swap) and EG-2 (diagonal swap) when first face is solved."
       },
       "phase": {
+        "222": {
+          "oll": "Orient top face — 7 cases to master.",
+          "pbl": "Permute Both Layers — 6 cases for 2×2.",
+          "cll": "Corners of Last Layer — 42 cases for 2×2.",
+          "eg1": "Bottom layer adjacent swap — 42 cases.",
+          "eg2": "Bottom layer diagonal swap — 42 cases."
+        },
         "333": {
           "cross": "Solve the cross efficiently. Fewer moves, faster solutions.",
           "f2l": "Basic first two layers — 41 algorithmic pairs.",
@@ -1731,16 +1743,17 @@
           "eo-petrus": "Edge Orientation after blocks.",
           "f2l-petrus": "Finish F2L after EO.",
           "ll-petrus": "COLL + EPLL for Petrus last layer."
-        },
-        "222": {
-          "oll": "Orient top face — 7 cases to master.",
-          "pbl": "Permute Both Layers — 6 cases for 2×2.",
-          "cll": "Corners of Last Layer — 42 cases for 2×2.",
-          "eg1": "Bottom layer adjacent swap — 42 cases.",
-          "eg2": "Bottom layer diagonal swap — 42 cases."
         }
       },
       "subset": {
+        "222": {
+          "OLL": "Orient the last face (7 cases for 2×2).",
+          "PBL": "Permute Both Layers — solve the cube after OLL.",
+          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
+          "EG": "Extended CLL — 128 cases total.",
+          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
+          "EG-2": "Bottom layer has diagonal swap. 42 cases."
+        },
         "333": {
           "F2L": "First Two Layers — algorithmic pairs for each slot.",
           "Basic F2L": "41 standard F2L cases (easy to advanced pairs).",
@@ -1765,14 +1778,6 @@
           "2x2x2 Block": "Building the first 2x2x2 block.",
           "2x2x3 Block": "Extending to a 2x2x3 block.",
           "EO": "Edge orientation for Petrus."
-        },
-        "222": {
-          "OLL": "Orient the last face (7 cases for 2×2).",
-          "PBL": "Permute Both Layers — solve the cube after OLL.",
-          "CLL": "Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.",
-          "EG": "Extended CLL — 128 cases total.",
-          "EG-1": "Bottom layer has adjacent swap. 42 cases.",
-          "EG-2": "Bottom layer has diagonal swap. 42 cases."
         }
       }
     }
@@ -3679,5 +3684,61 @@
     "openWidgets": "Open widgets…",
     "settings": "Settings…",
     "editDock": "Edit dock…"
+  },
+  "auth": {
+    "eyebrow": "CubeForge",
+    "title": "Sign in to CubeForge",
+    "subtitle": "Connect your Google account to sync your profile, solves and training across devices.",
+    "continueWithGoogle": "Continue with Google",
+    "privacyNote": "Only Google is used to sign in. Your data lives on your device and syncs to your account whenever you want.",
+    "backToTimer": "Back to the timer",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "errorNotConfigured": "Account sync is not configured on this build.",
+    "alreadySignedIn": "You're signed in — taking you to your profile…",
+    "account": {
+      "cardTitle": "Account",
+      "signedOut": "Your data stays on this device.",
+      "syncCta": "Connect your account to sync between devices and back up your progress.",
+      "signIn": "Sign in with Google",
+      "signedInAs": "Signed in as {{email}}",
+      "syncStatus": "Sync",
+      "syncing": "Syncing…",
+      "idle": "Up to date",
+      "errorStatus": "Sync error",
+      "never": "Never",
+      "lastSync": "Last sync: {{time}}",
+      "syncNow": "Sync now",
+      "signOut": "Sign out",
+      "deleteAccount": "Delete account",
+      "deleteConfirmTitle": "Delete your account?",
+      "deleteConfirmBody": "This permanently deletes your account, all your data in the cloud, AND all data on this device. This cannot be undone.",
+      "deleteConfirmAction": "Delete account",
+      "deleteError": "Couldn't delete the account",
+      "pendingTitle": "Link this device's data",
+      "pendingBody": "You have local data on this device that isn't linked to your account yet.",
+      "linkNow": "Link my data",
+      "claimPending": "Link pending"
+    },
+    "claim": {
+      "title": "Found data on this device",
+      "body": "This device already has data before signing in. What should we do with it?",
+      "solves": "{{count}} solve",
+      "solves_other": "{{count}} solves",
+      "sessions": "{{count}} session",
+      "sessions_other": "{{count}} sessions",
+      "attempts": "{{count}} training attempt",
+      "attempts_other": "{{count}} training attempts",
+      "tasks": "{{count}} calendar task",
+      "tasks_other": "{{count}} calendar tasks",
+      "skills": "{{count}} skill",
+      "skills_other": "{{count}} skills",
+      "merge": "Upload and combine",
+      "mergeDesc": "Push everything on this device to your account and merge with the cloud.",
+      "fresh": "Start fresh from the cloud",
+      "freshDesc": "Replace this device with your account's data. Local data is removed.",
+      "inProgress": "Linking your data…",
+      "later": "Later",
+      "error": "Couldn't link your data. Please try again."
+    }
   }
 }

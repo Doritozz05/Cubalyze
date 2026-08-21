@@ -37,7 +37,9 @@ describe('MIGRATIONS — schema migrations module', () => {
     for (const m of MIGRATIONS) {
       expect(forbidden.test(m.sql)).toBe(false);
       const upper = m.sql.toUpperCase();
-      expect(upper).toMatch(/CREATE\s+(TABLE|INDEX)|ALTER\s+TABLE|DROP\s+TABLE|INSERT\s+INTO/);
+      expect(upper).toMatch(
+        /CREATE\s+(TABLE|INDEX|TRIGGER)|ALTER\s+TABLE|DROP\s+(TABLE|TRIGGER)|INSERT\s+INTO/,
+      );
     }
   });
 

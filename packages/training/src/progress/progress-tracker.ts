@@ -157,6 +157,8 @@ export interface TrainingSessionProgressRecord {
   correctCount: number;
   accuracy: number;
   avgTimeMs: number;
+  /** Epoch ms of the last edit — the LWW/sync watermark (migration 028). */
+  updatedAt?: number;
 }
 
 export interface PhaseStatsRecord {
@@ -363,6 +365,10 @@ export class ProgressTracker {
     rotationCount?: number;
     /** Optional FSRS review grade to tag this attempt (SRS review flow). */
     reviewGrade?: SRSGrade;
+    /** Epoch ms for timestamps — defaults to Date.now(); the sync rebuild
+     * passes each attempt's own timestamp so the replay reproduces the exact
+     * schedule the live tracker computed. */
+    now?: number;
   }): Promise<AlgorithmProgressRecord | null> {
     const {
       exerciseId, methodId, phaseId, caseId, timeMs, verdict, playMode, scramble,
@@ -370,8 +376,12 @@ export class ProgressTracker {
     } = params;
     const isExecutionAttempt = metricKind === 'execution';
 
-    // Insert the raw attempt record (with efficiency metadata when available)
-    const now = Date.now();
+    // Insert the raw attempt record (with efficiency metadata when available).
+    // `now` is overridable so the sync rebuild can replay the attempt log with
+    // each attempt's OWN timestamp — replaying with Date.now() would compress
+    // the FSRS spacing between attempts to ~0ms and produce a different
+    // schedule than the one the live tracker computed.
+    const now = params.now ?? Date.now();
     await this.repo.insertAttempt({
       exerciseId,
       methodId,

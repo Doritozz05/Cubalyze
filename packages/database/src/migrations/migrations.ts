@@ -879,4 +879,178 @@ export const MIGRATIONS: Migration[] = [
              ELSE '333' END;
     `,
   },
+  {
+    id: '028_sync_infrastructure',
+    description: 'Cloud-sync infrastructure: sync_tombstones table, DELETE triggers on every syncable table (captures all delete paths), updated_at columns on training_tasks/training_sessions (LWW watermarks), and sync-dirty triggers that flag the sync engine whenever a syncable row is written',
+    sql: `
+      -- ── Tombstones ──────────────────────────────────────────────────
+      -- One row per hard-deleted syncable entity. The sync engine pushes
+      -- these to the cloud and applies remote ones locally. Echo suppression
+      -- happens at the app layer (the engine deletes the local tombstone it
+      -- just created while applying a remote one) so deletes never loop.
+      CREATE TABLE IF NOT EXISTS sync_tombstones (
+        entity TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        deleted_at INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (entity, entity_id)
+      );
+
+      -- ── LWW watermarks for tables that can be edited after creation ──
+      -- training_attempts too: the SRS review flow stamps review_grade AFTER
+      -- the attempt row exists, so the row must carry an edit timestamp or
+      -- grade changes would never leave the device.
+      ALTER TABLE training_attempts ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE training_tasks ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE training_sessions ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
+
+      -- Backfill: pre-028 rows default to 0, which the sync engine's
+      -- "strictly greater than watermark" cursor would never pick up.
+      -- Seed the watermark from each row's creation time instead.
+      UPDATE training_attempts SET updated_at = timestamp WHERE updated_at = 0;
+      UPDATE training_tasks SET updated_at = created_at WHERE updated_at = 0;
+      UPDATE training_sessions SET updated_at = started_at WHERE updated_at = 0;
+
+      -- ── DELETE triggers → tombstones ────────────────────────────────
+      -- Capture EVERY delete path (UI, cascade, dev helpers) so a deleted
+      -- solve/session/task/skill never resurfaces from the cloud on another
+      -- device. Cascade deletes of child rows (solves of a deleted session)
+      -- do NOT fire row triggers in SQLite, so the app layer tombstones the
+      -- children explicitly when it deletes a session (see deleteSession).
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves AFTER DELETE ON solves BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('solves', OLD.id, CAST(strftime('%s','now') AS INTEGER) * 1000);
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions AFTER DELETE ON sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('sessions', OLD.id, CAST(strftime('%s','now') AS INTEGER) * 1000);
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_tasks AFTER DELETE ON training_tasks BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_tasks', OLD.id, CAST(strftime('%s','now') AS INTEGER) * 1000);
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_skill_progress AFTER DELETE ON skill_progress BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('skill_progress', OLD.skill_id, CAST(strftime('%s','now') AS INTEGER) * 1000);
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_sessions AFTER DELETE ON training_sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_sessions', OLD.id, CAST(strftime('%s','now') AS INTEGER) * 1000);
+      END;
+
+      -- ── Dirty flags (catch-all change notification) ──────────────────
+      -- Any INSERT/UPDATE on a syncable table marks the sync engine dirty so
+      -- a change is never missed even if a future write path forgets to call
+      -- scheduleSync() explicitly. The engine clears the flag when a sync run
+      -- observes no concurrent writes, and re-runs if a write landed mid-run.
+      --
+      -- NOTE: DELETE is intentionally absent here — deletes are already
+      -- captured by the tombstones above (a tombstone is itself a change).
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves AFTER INSERT ON solves BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves_upd AFTER UPDATE ON solves BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions AFTER INSERT ON sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions_upd AFTER UPDATE ON sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_attempts AFTER INSERT ON training_attempts BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_attempts_upd AFTER UPDATE ON training_attempts BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_tasks AFTER INSERT ON training_tasks BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_tasks_upd AFTER UPDATE ON training_tasks BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_skill_progress AFTER INSERT ON skill_progress BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_skill_progress_upd AFTER UPDATE ON skill_progress BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_sessions AFTER INSERT ON training_sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_sessions_upd AFTER UPDATE ON training_sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_profiles AFTER INSERT ON profiles BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_profiles_upd AFTER UPDATE ON profiles BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+    `,
+  },
+  {
+    id: '029_tombstone_lww',
+    description: 'Tombstone LWW: re-create the DELETE triggers with millisecond-precision deleted_at so a tombstone can be compared exactly against row updated_at (the sync engine now applies deletes conditionally — a delete only wins when the row was not edited after it, and the cloud row is physically removed when the delete wins)',
+    sql: `
+      -- Millisecond-precision delete timestamps: strftime('%s','now')*1000
+      -- truncates to the second, which would make a delete look older than an
+      -- edit that happened in the same second (breaking LWW). julianday gives
+      -- ms since the Unix epoch.
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves AFTER DELETE ON solves BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('solves', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions AFTER DELETE ON sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_training_tasks;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_tasks AFTER DELETE ON training_tasks BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_tasks', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_skill_progress;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_skill_progress AFTER DELETE ON skill_progress BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('skill_progress', OLD.skill_id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_training_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_training_sessions AFTER DELETE ON training_sessions BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('training_sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+    `,
+  },
+  {
+    id: '030_no_demo_tombstones',
+    description: 'Demo rows never tombstone: solves/sessions DELETE triggers now skip is_demo=1 rows so clearDemoData() and demo-session deletes cannot fabricate tombstones that get pushed to the cloud (demo rows are never pushed, so their tombstones are pure noise + unbounded cloud growth)',
+    sql: `
+      -- A demo solve/session never existed in the cloud (demo rows are
+      -- excluded from every push cursor), so deleting one must not create a
+      -- tombstone: the tombstone would be pushed, inserted into
+      -- sync_tombstones forever (the target row never exists → no-op) and
+      -- count against the user's unbounded tombstone accumulation (M7).
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves
+      AFTER DELETE ON solves
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('solves', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions
+      AFTER DELETE ON sessions
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES ('sessions', OLD.id, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+      END;
+    `,
+  },
 ];

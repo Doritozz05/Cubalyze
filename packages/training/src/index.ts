@@ -72,6 +72,7 @@ export {
   MASTERY_WEIGHTS,
   normalizeAlgorithmProgress,
   normalizeExerciseProgress,
+  replayProgress,
 } from './progress';
 export type {
   ITrainingProgressRepo,
@@ -89,6 +90,8 @@ export type {
   QueueCaseMeta,
   QueueSubsetMeta,
   BuildQueueOptions,
+  ReplayResult,
+  ReplaySessionRef,
   SRSInsights,
   SRSStateCounts,
   RetentionBucket,

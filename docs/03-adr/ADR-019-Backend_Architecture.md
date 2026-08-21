@@ -3,7 +3,7 @@ status: "Accepted"
 owner: "Product Lead"
 reviewers: "TBD"
 created: "2026-07-12"
-last_updated: "2026-07-12"
+last_updated: "2026-08-21"
 version: "1.0.0"
 depends_on: "DEC-09, DEC-17"
 tags: "backend, supabase, event-sourcing, postgres"
@@ -29,9 +29,23 @@ CubeForge funcionarÃ¡ offline. Un usuario puede hacer 500 *solves* en un aviÃ
 *   CRDTs (Conflict-free Replicated Data Types): Para configuraciones simples (como cambiar el tema oscuro/claro), se puede usar un modelo LWW (Last Writer Wins) basado en `client_timestamp`.
 *   Auth: IntegraciÃ³n directa de Supabase Auth (Magic Links, OAuth de GitHub/Google).
 
-## Implementation Status (2026-08-12)
+## Implementation Status (2026-08-21)
 
-**No implementado.** No hay proyecto ni carpeta `supabase/`; `apps/api` está vacío. La sincronización en la nube sigue pendiente.
+**Implementado en V1 (ver [ADR-029](ADR-029-Cloud_Sync_V1.md)).**
+
+*   **Cuentas:** Supabase Auth (solo Google) + `profiles` en Postgres + RLS.
+*   **Sync:** `packages/sync-engine` implementado con sync por filas LWW
+    (watermarks por tabla + tombstones + triggers `dirty` en SQLite local),
+    no con event sourcing append-only. Desviación deliberada de la sección
+    "Proposed Solution" de este ADR: los agregados de training (SRS) nunca
+    se sincronizan crudos — se recalculan por replay determinista desde el
+    log de intentos (ver ADR-029, sección "Alternativa adoptada").
+*   **Flujo de reclamación:** al primer login de un dispositivo con datos
+    locales, diálogo "Subir y combinar" / "Empezar de cero"; la identidad
+    anónima (`user_id`) se conserva como semilla del CubeMark.
+*   **Pendiente de este ADR (futuro):** event sourcing puro, snapshotting,
+    y la resolución de la pregunta abierta sobre Edge Functions vs triggers
+    (hoy solo existe la Edge Function `delete-account`).
 
 ## Decision: Aplazamiento del backend (2026-08-12)
 

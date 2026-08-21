@@ -40,6 +40,9 @@ export type {
   IntervalPoint,
   DueProjection,
 } from './insights';
+// ─── Deterministic aggregate replay (sync rebuild) ────────────────────
+export { replayProgress } from './replay';
+export type { ReplayResult, ReplaySessionRef } from './replay';
 // ─── FSRS-lite scheduler ──────────────────────────────────────────────
 export {
   FSRS_DEFAULTS,

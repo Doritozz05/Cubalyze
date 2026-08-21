@@ -19,7 +19,7 @@ import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_
 // NOTE: keep in sync with packages/database/src/repositories/index.js —
 // the desktop aliases @cubeforge/database to this file, so any repository
 // added upstream must be listed here too.
-export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, ONBOARDING_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
+export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, ONBOARDING_KEY, DEVICE_ID_KEY, IDENTICON_SEED_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
 export type { Solve, Session, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
 
 // ── Types ─────────────────────────────────────────────────────────────

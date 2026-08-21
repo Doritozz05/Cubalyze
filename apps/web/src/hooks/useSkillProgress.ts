@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { initDB, SkillProgressRepository } from "@cubeforge/database";
+import { requestSync } from "@/services/sync";
+import { useDataRevision } from "@/hooks/useDataRevision";
 
 // Legacy localStorage key that this hook replaces (single source of truth = DB).
 const LEGACY_STORAGE_KEY = "cubeforge_completed_skills_v2";
@@ -119,15 +121,72 @@ export function useSkillProgress(): UseSkillProgressResult {
     };
   }, []);
 
-  // Persist every change to DB + cache — but never the presentational default.
+  // Live cross-tab refresh: when the shared data revision bumps (a local
+  // write, a completed sync cycle, or another tab's change via
+  // BroadcastChannel), re-read the DB. Only sets state when the set actually
+  // differs, so an identical reload neither re-renders nor re-triggers the
+  // persist effect (no loop).
+  const revision = useDataRevision();
+  useEffect(() => {
+    const repo = repoRef.current;
+    if (!repo || !dbLoadedRef.current) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const dbIds = await repo.findAll();
+        if (cancelled) return;
+        setCompletedIdsState((prev) => {
+          const same =
+            prev.length === dbIds.length &&
+            prev.every((x, i) => x === dbIds[i]);
+          if (same) return prev;
+          if (dbIds.length > 0) saveToLocalStorage(dbIds);
+          return dbIds;
+        });
+      } catch {
+        // DB read failed — keep the current state.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [revision]);
+
+  // Persist every change to DB + cache as a DIFF (never replaceAll): a
+  // wholesale delete+reinsert would fire the migration-028 DELETE triggers
+  // and fabricate tombstones for every skill — the sync engine would push
+  // them (noise) and re-bump every completed_at on each toggle (churn on
+  // every other device). Only skills that actually changed are written, and
+  // `requestSync` runs only when something was written (an identical reload
+  // stays silent — no loop).
   useEffect(() => {
     if (!hasRealDataRef.current) return;
     saveToLocalStorage(completedIds);
     const repo = repoRef.current;
     if (repo && dbLoadedRef.current) {
-      void repo.replaceAll(completedIds).catch(() => {
-        // DB write failed — cache still holds the data.
-      });
+      void (async () => {
+        try {
+          const existing = await repo.findAll();
+          const next = new Set(completedIds);
+          const prev = new Set(existing);
+          let wrote = false;
+          for (const id of completedIds) {
+            if (!prev.has(id)) {
+              await repo.setCompleted(id);
+              wrote = true;
+            }
+          }
+          for (const id of existing) {
+            if (!next.has(id)) {
+              await repo.setIncomplete(id);
+              wrote = true;
+            }
+          }
+          if (wrote) void requestSync();
+        } catch {
+          // DB write failed — cache still holds the data.
+        }
+      })();
     }
   }, [completedIds]);
 

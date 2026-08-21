@@ -63,7 +63,7 @@ const MAX_BIO = 280;
  */
 export function ProfileSection() {
   const { t } = useTranslation("settings");
-  const { profile, loading, updateProfile } = useProfile();
+  const { profile, identiconSeed, loading, updateProfile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
@@ -215,7 +215,7 @@ export function ProfileSection() {
             />
           ) : (
             <IdenticonAvatar
-              seed={profile.userId}
+              seed={identiconSeed ?? profile.userId}
               size={96}
               className="shrink-0 rounded-2xl ring-1 ring-line"
             />

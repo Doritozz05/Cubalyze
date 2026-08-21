@@ -80,7 +80,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333',
+      id: 's1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '333', updatedAt: 1767225600000,
     });
     expect(db).toHaveBeenCalledOnce();
     const call = db.mock.calls[0];
@@ -128,7 +128,7 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     await repo.insert({
-      id: 's2', sessionId: 'ses1', timeMs: 1500, timestamp: 1767225600000, scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [], puzzleType: '333',
+      id: 's2', sessionId: 'ses1', timeMs: 1500, timestamp: 1767225600000, scramble: "R U R' U'", penalty: 'none', method: 'CFOP', source: 'smart', moves: [], puzzleType: '333', updatedAt: 1767225600000,
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[6]).toBe('CFOP'); // method
@@ -139,8 +139,8 @@ describe('SolvesRepository', () => {
     const db = mockDb();
     repo = new SolvesRepository(db);
     const count = await repo.insertMany([
-      { id: 'b1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', source: 'manual', moves: [], puzzleType: '333' },
-      { id: 'b2', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: "U'", penalty: 'none', source: 'manual', moves: [], puzzleType: '333' },
+      { id: 'b1', sessionId: 'ses1', timeMs: 1000, timestamp: 1767225600000, scramble: 'U', penalty: 'none', source: 'manual', moves: [], puzzleType: '333', updatedAt: 1767225600000 },
+      { id: 'b2', sessionId: 'ses1', timeMs: 2000, timestamp: 1767225600000, scramble: "U'", penalty: 'none', source: 'manual', moves: [], puzzleType: '333', updatedAt: 1767225600000 },
     ]);
     expect(count).toBe(2);
     expect(db.mock.calls[0][0]).toBe('BEGIN');
@@ -165,7 +165,7 @@ describe('SolvesRepository', () => {
       return [];
     });
     repo = new SolvesRepository(db);
-    await expect(repo.insertMany([{ id: 'x1', sessionId: 'ses1', timeMs: 1, timestamp: 1, scramble: 'fail', penalty: 'none', source: 'manual', moves: [], puzzleType: '333' }])).rejects.toThrow('boom');
+    await expect(repo.insertMany([{ id: 'x1', sessionId: 'ses1', timeMs: 1, timestamp: 1, scramble: 'fail', penalty: 'none', source: 'manual', moves: [], puzzleType: '333', updatedAt: 1 }])).rejects.toThrow('boom');
     expect(db.mock.calls[0][0]).toBe('BEGIN');
     expect(db.mock.calls[db.mock.calls.length - 1][0]).toBe('ROLLBACK');
   });
@@ -213,7 +213,7 @@ describe('SessionsRepository', () => {
   it('insert and update call correct SQL', async () => {
     const db = mockDb();
     repo = new SessionsRepository(db);
-    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '333', createdAt: 1767225600000 });
+    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '333', createdAt: 1767225600000, updatedAt: 1767225600000 });
     expect(db.mock.calls[0][0]).toContain('INSERT INTO sessions');
 
     db.mockReset();

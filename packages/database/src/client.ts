@@ -1,21 +1,75 @@
 import * as Comlink from 'comlink';
 import type { DBWorker } from './worker.js';
 
-let worker: Worker | null = null;
+let worker: Worker | SharedWorker | null = null;
 let db: Comlink.Remote<typeof DBWorker> | null = null;
 let initPromise: Promise<Comlink.Remote<typeof DBWorker>> | null = null;
+/** True when `worker` is a SharedWorker (shared with other tabs). */
+let shared = false;
+
+/**
+ * Log the storage type in the main-thread console so the user can see it.
+ */
+async function logStorageType(dbClient: Comlink.Remote<typeof DBWorker>): Promise<void> {
+  const storageType = await dbClient.getStorageType();
+  if (storageType === 'opfs') {
+    console.log(
+      '%c[Database]%c Storage: OPFS (persistent) — data survives reloads.',
+      'color:#4ade80;font-weight:bold',
+      'color:inherit',
+    );
+  } else {
+    console.warn(
+      '%c[Database]%c Storage: MEMORY (volatile) — data WILL BE LOST on page reload! %cOPFS not available in this browser/context.',
+      'color:#f87171;font-weight:bold',
+      'color:inherit',
+      'color:#f87171',
+    );
+  }
+}
 
 export const initDB = async () => {
   if (initPromise) return initPromise;
-  
+
   initPromise = (async () => {
     if (typeof window === 'undefined') {
       throw new Error('Web Workers are only available in the browser');
     }
 
+    // Prefer a SharedWorker: every tab of this origin then talks to ONE
+    // SQLite instance holding a single OPFS handle. Without this, each tab
+    // spawns its own worker and sqlite-wasm's OPFS cross-tab lock makes the
+    // second tab fall back to a volatile in-memory DB — silently losing
+    // everything written there on reload and diverging its sync state.
+    if (typeof SharedWorker !== 'undefined') {
+      try {
+        const sharedWorker = new SharedWorker(
+          new URL('./worker.ts', import.meta.url),
+          { type: 'module', name: 'cubeforge-db' },
+        );
+        const proxied = Comlink.wrap<typeof DBWorker>(sharedWorker.port);
+        const success = await proxied.init();
+        if (success) {
+          worker = sharedWorker;
+          shared = true;
+          db = proxied;
+          await logStorageType(proxied);
+          return db;
+        }
+        console.warn('[Database] SharedWorker init reported failure; retrying with a dedicated worker.');
+      } catch (err) {
+        // e.g. the browser refuses SharedWorker for this origin — fall back
+        // to a dedicated worker (previous behavior).
+        console.warn('[Database] SharedWorker unavailable; using a dedicated worker:', err);
+      }
+      worker = null;
+      shared = false;
+      db = null;
+    }
+
     worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
     db = Comlink.wrap<typeof DBWorker>(worker);
-    
+
     const success = await db.init();
     if (!success) {
       db = null;
@@ -23,14 +77,7 @@ export const initDB = async () => {
       throw new Error('Database worker failed to initialize SQLite (see console for details)');
     }
 
-    // Log storage type in main-thread console so the user can see it
-    const storageType = await db.getStorageType();
-    if (storageType === 'opfs') {
-      console.log('%c[Database]%c Storage: OPFS (persistent) — data survives reloads.', 'color:#4ade80;font-weight:bold', 'color:inherit');
-    } else {
-      console.warn('%c[Database]%c Storage: MEMORY (volatile) — data WILL BE LOST on page reload! %cOPFS not available in this browser/context.', 'color:#f87171;font-weight:bold', 'color:inherit', 'color:#f87171');
-    }
-
+    await logStorageType(db);
     return db;
   })();
 
@@ -62,8 +109,11 @@ export const closeDB = async () => {
     db = null;
   }
   if (worker) {
-    worker.terminate();
+    // A SharedWorker is shared with other tabs — never terminate it, just
+    // drop this tab's port (the worker outlives the tab that opened it).
+    if (!shared) (worker as Worker).terminate();
     worker = null;
   }
+  shared = false;
   initPromise = null;
 };

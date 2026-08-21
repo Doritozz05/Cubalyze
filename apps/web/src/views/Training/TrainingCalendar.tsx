@@ -28,6 +28,8 @@ interface TrainingTask {
   daysOfWeek: number[];
   color: TaskColor;
   createdAt: string;
+  /** Sync watermark (migration 028) — optional so UI-created tasks still typecheck. */
+  updatedAt?: number;
 }
 
 type PanelMode = "list" | "add" | "edit";
