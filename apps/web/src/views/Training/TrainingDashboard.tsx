@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { format, addDays, isToday } from "date-fns";
 import { es, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-import { Target, CalendarDays, RotateCcw, Plus, Sparkles } from "lucide-react";
+import { Target, CalendarDays, RotateCcw, Plus, Sparkles, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
@@ -32,6 +32,7 @@ import { EXERCISE_IDS } from "@cubeforge/training";
 import { puzzleCategoryToType, SELECTABLE_PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   TrainingPractice,
+  MethodRailItem,
   getPhasesForMethod,
 } from "./components/DashboardSections";
 import { TrainingCalendar, getTasksForDate, COLOR_HEX } from "./TrainingCalendar";
@@ -47,12 +48,12 @@ import {
 
 /* ──────────────────────────────────────────────────────────────────────────
    Training shell.
-   No page header: the app's global header owns title + puzzle context, and
-   this screen keeps a slim in-content toolbar — text tabs with an animated
-   underline (the app's mono-uppercase micro-voice), the puzzle selector, and
-   a live due-review badge. Screens: Practice (rail workspace, landing),
-   Calendar (planning + today's reviews), Review (SRS queue or a guided empty
-   state). Sub-views take over the stage full-screen with back navigation.
+   No page header: the app's global header owns title + puzzle context.
+   Touch keeps a slim tab bar (Practice / Calendar / Review) with an animated
+   underline. Desktop is a single-page dashboard — no tabs: a methods rail on
+   the left and one scrolling content panel that shows the practice workspace,
+   today's review queue and the planning calendar on a single screen.
+   Sub-views take over the stage full-screen with back navigation.
    ─────────────────────────────────────────────────────────────────────── */
 
 type TrainingSection = "practice" | "calendar" | "review";
@@ -414,13 +415,13 @@ export function TrainingDashboard({
   // ── Training shell ──────────────────────────────────────────────────
 
   return (
-    <div className="relative flex w-full min-h-0 flex-1 flex-col">
-      {/* In-content toolbar: underline tabs + puzzle selector + due badge.
-          No page header, no boxes — this is the app's filter-row voice. */}
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-4 pt-4 sm:px-6">
+    <div className="relative flex w-full min-h-0 flex-1 flex-col max-lg:px-3 max-lg:pt-2 lg:px-6 lg:pt-3">
+      {/* Header row: puzzle selector + due badge. Section tabs stay inline
+          on touch; on desktop they live in the left nav panel below. */}
+      <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2.5 pb-3 pt-2 lg:hidden">
         <div className="flex flex-wrap items-center gap-5 sm:gap-6">
-          {/* Section nav tabs */}
-          <div className="flex items-center gap-5">
+          {/* Section nav tabs — touch only (desktop: left panel) */}
+          <div className="flex items-center gap-5 lg:hidden">
             {TRAINING_SECTIONS.map((s) => {
               const isActive = activeSection === s.id;
               return (
@@ -451,30 +452,10 @@ export function TrainingDashboard({
             })}
           </div>
 
-          <div className="h-3.5 w-px bg-line/60 hidden sm:block" />
+          <div className="h-3.5 w-px bg-line/60 hidden sm:block lg:hidden" />
 
-          {/* Puzzle selector right next to tabs */}
-          <div className="flex items-center gap-2">
-            <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">{t("puzzle")}</span>
-            <Select value={selectedPuzzle} onValueChange={(val) => handleSelectPuzzle(val as PuzzleCategory)}>
-              {/* Same trigger treatment as the Insights filters — identical
-                  compact look: no fixed width, no item icons, and the shared
-                  Select's 44px touch min-height pinned back. */}
-              <SelectTrigger
-                size="sm"
-                className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2 max-lg:min-h-7! max-lg:py-1"
-              >
-                <SelectValue placeholder={t("selectPuzzle")} />
-              </SelectTrigger>
-              <SelectContent>
-                {SELECTABLE_PUZZLE_CATEGORIES.map((p) => (
-                  <SelectItem key={p} value={p} className="text-xs">
-                    {p}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Puzzle selector — touch only (desktop: left panel header) */}
+          <PuzzleSelector value={selectedPuzzle} onChange={handleSelectPuzzle} />
         </div>
 
         {/* Due count badge on the far right (only in review section) */}
@@ -486,35 +467,144 @@ export function TrainingDashboard({
         )}
       </div>
 
-      {/* Section content */}
-      {activeSection === "practice" && (
-        <TrainingPractice
-          puzzleMethods={puzzleMethods}
-          activeMethodId={activeMethodId}
-          onSelectMethod={setActiveMethodId}
-          methodMasteries={methodMasteries}
-          phaseStatsMap={phaseStatsMap}
-          onDrill={handleDrill}
-          onRecognize={handleRecognize}
-          onPracticeMode={handlePracticeMode}
-          onStats={handleStats}
-          onFullSolve={handleFullSolve}
-        />
-      )}
+      {/* Mobile section content — tabbed, unchanged (desktop: dashboard) */}
+      <div className="flex min-h-0 flex-1 flex-col lg:hidden">
+        {activeSection === "practice" && (
+          <TrainingPractice
+            puzzleMethods={puzzleMethods}
+            activeMethodId={activeMethodId}
+            onSelectMethod={setActiveMethodId}
+            methodMasteries={methodMasteries}
+            phaseStatsMap={phaseStatsMap}
+            onDrill={handleDrill}
+            onRecognize={handleRecognize}
+            onPracticeMode={handlePracticeMode}
+            onStats={handleStats}
+            onFullSolve={handleFullSolve}
+          />
+        )}
 
-      {activeSection === "calendar" && (
-        <CalendarView dueCount={dueCount} onStartReview={handleStartReview} />
-      )}
+        {activeSection === "calendar" && (
+          <CalendarView dueCount={dueCount} onStartReview={handleStartReview} />
+        )}
 
-      {activeSection === "review" && (
-        <ReviewView
-          dbReady={dbReady}
-          dueCount={dueCount}
-          onStartReview={handleStartReview}
-          onOpenInsights={handleOpenInsights}
-          onGoPractice={() => setActiveSection("practice")}
-        />
-      )}
+        {activeSection === "review" && (
+          <ReviewView
+            dbReady={dbReady}
+            dueCount={dueCount}
+            onStartReview={handleStartReview}
+            onOpenInsights={handleOpenInsights}
+            onGoPractice={() => setActiveSection("practice")}
+          />
+        )}
+      </div>
+
+      {/* Desktop: single-page dashboard — methods rail on the left, and the
+          content panel scrolls practice + today's review + the planning
+          calendar as one page. No tabs: everything on one screen. */}
+      <div className="hidden min-h-0 flex-1 gap-5 lg:flex">
+        {/* Methods rail */}
+        <aside className="flex w-56 shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface">
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+            <PuzzleSelector value={selectedPuzzle} onChange={handleSelectPuzzle} />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <p className="px-2 pb-1.5 pt-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+              {t("method")}
+            </p>
+            {puzzleMethods.map((m) => (
+              <MethodRailItem
+                key={m.id}
+                method={m}
+                mastery={methodMasteries[m.name] ?? 0}
+                active={m.id === activeMethodId}
+                onClick={() => setActiveMethodId(m.id)}
+              />
+            ))}
+          </div>
+        </aside>
+
+        {/* Content panel — one scrollable page */}
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-canvas">
+          {/* Today strip: due-review CTA (only when something is due) */}
+          {dueCount > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-line bg-surface/50 px-6 py-2.5">
+              <span className="inline-flex min-w-0 items-center gap-2 text-[0.68rem] font-medium text-ink-2">
+                <RotateCcw className="size-3.5 shrink-0 text-caution" />
+                <span className="truncate">{t("dueForReview", { count: dueCount })}</span>
+              </span>
+              <button
+                onClick={() => handleStartReview()}
+                className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-ink px-3 text-[0.65rem] font-semibold text-surface transition-colors hover:bg-ink/90"
+              >
+                <Play className="size-3" />
+                {t("review.queue.startReview", { count: dueCount })}
+              </button>
+            </div>
+          )}
+
+          {/* Practice workspace — embedded so the panel owns the scroll */}
+          <TrainingPractice
+            embedded
+            puzzleMethods={puzzleMethods}
+            activeMethodId={activeMethodId}
+            onSelectMethod={setActiveMethodId}
+            methodMasteries={methodMasteries}
+            phaseStatsMap={phaseStatsMap}
+            onDrill={handleDrill}
+            onRecognize={handleRecognize}
+            onPracticeMode={handlePracticeMode}
+            onStats={handleStats}
+            onFullSolve={handleFullSolve}
+          />
+
+          {/* Today's review queue + planning calendar */}
+          <div className="grid items-start gap-5 px-6 pb-6 xl:grid-cols-2">
+            <ReviewQueueSection
+              onStartReview={handleStartReview}
+              onOpenInsights={handleOpenInsights}
+            />
+            <TrainingCalendar />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Puzzle selector (shared by the touch header and the desktop panel) ── */
+
+function PuzzleSelector({
+  value,
+  onChange,
+}: {
+  value: PuzzleCategory;
+  onChange: (p: PuzzleCategory) => void;
+}) {
+  const { t } = useTranslation("training");
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+        {t("puzzle")}
+      </span>
+      <Select value={value} onValueChange={(val) => onChange(val as PuzzleCategory)}>
+        {/* Same trigger treatment as the Insights filters — identical
+            compact look: no fixed width, no item icons, and the shared
+            Select's 44px touch min-height pinned back. */}
+        <SelectTrigger
+          size="sm"
+          className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2 max-lg:min-h-7! max-lg:py-1"
+        >
+          <SelectValue placeholder={t("selectPuzzle")} />
+        </SelectTrigger>
+        <SelectContent>
+          {SELECTABLE_PUZZLE_CATEGORIES.map((p) => (
+            <SelectItem key={p} value={p} className="text-xs">
+              {p}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -589,7 +679,9 @@ function CalendarView({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto pb-safe">
-      <div className="mx-auto max-w-5xl p-4 sm:p-6">
+      {/* p-1 on touch offsets the shell's px-3 gutter (same phone margin
+          as before the panel wrap); sm:p-6 keeps desktop spacing. */}
+      <div className="mx-auto max-w-5xl p-1 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
             {t("tabs.calendar")}
@@ -716,7 +808,9 @@ function ReviewView({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto pb-safe">
-      <div className="mx-auto max-w-3xl p-4 sm:p-6">
+      {/* p-1 on touch offsets the shell's px-3 gutter (same phone margin
+          as before the panel wrap); sm:p-6 keeps desktop spacing. */}
+      <div className="mx-auto max-w-3xl p-1 sm:p-6">
         {!dbReady ? (
           <div className="flex h-40 items-center justify-center">
             <Spinner size="sm" />

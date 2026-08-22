@@ -189,6 +189,7 @@ export function TrainingPractice({
   onPracticeMode,
   onStats,
   onFullSolve,
+  embedded = false,
 }: {
   puzzleMethods: AlgorithmMethod[];
   activeMethodId: string;
@@ -201,6 +202,8 @@ export function TrainingPractice({
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
+  /** True when a parent panel owns scroll + padding (desktop dashboard). */
+  embedded?: boolean;
 }) {
   const { t } = useTranslation("training");
   const method = METHODS.find((m) => m.id === activeMethodId);
@@ -304,55 +307,41 @@ export function TrainingPractice({
     return rows.sort((a, b) => a.subset.sortOrder - b.subset.sortOrder);
   }, [method, phaseSubsetIds]);
 
-  return (
-    <div className="mx-auto flex w-full max-w-7xl min-h-0 flex-1">
-      {/* Method rail (desktop) */}
-      <aside className="hidden w-52 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line p-2.5 lg:flex">
-        <p className="px-2 pb-1.5 pt-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
-          {t("method")}
-        </p>
-        {puzzleMethods.map((m) => (
-          <MethodRailItem
-            key={m.id}
-            method={m}
-            mastery={methodMasteries[m.name] ?? 0}
-            active={m.id === activeMethodId}
-            onClick={() => onSelectMethod(m.id)}
-          />
-        ))}
-      </aside>
+  // Desktop method selection lives in the shell's left panel (TrainingDashboard
+  // renders MethodRailItem there); this component only carries the workspace.
+  // `embedded` drops the scroll wrapper + padding: the desktop dashboard's
+  // content panel owns scrolling, so practice shares one page with the
+  // review queue and calendar below it.
+  const workspace = (
+    <>
+      {/* Mobile method chips */}
+      <div
+        ref={methodChipsRef}
+        onScroll={updateMethodChipsEdges}
+        className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-0.5 scrollbar-none lg:hidden"
+        style={{ maskImage: methodChipsMask, WebkitMaskImage: methodChipsMask }}
+      >
+        {puzzleMethods.map((m) => {
+          const isActive = m.id === activeMethodId;
+          return (
+            <button
+              key={m.id}
+              onClick={() => onSelectMethod(m.id)}
+              className={cn(
+                "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[0.68rem] font-medium transition-colors",
+                isActive ? "bg-ink text-surface" : "bg-surface-2 text-ink-3 hover:text-ink",
+              )}
+            >
+              {m.name}
+              <span className="nums text-[0.55rem] opacity-70">{methodMasteries[m.name] ?? 0}%</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Main workspace */}
-      <div className="min-w-0 flex-1 overflow-y-auto pb-safe">
-        <div className="flex flex-col gap-6 p-4 sm:p-6">
-          {/* Mobile method chips */}
-          <div
-            ref={methodChipsRef}
-            onScroll={updateMethodChipsEdges}
-            className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-0.5 scrollbar-none lg:hidden"
-            style={{ maskImage: methodChipsMask, WebkitMaskImage: methodChipsMask }}
-          >
-            {puzzleMethods.map((m) => {
-              const isActive = m.id === activeMethodId;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => onSelectMethod(m.id)}
-                  className={cn(
-                    "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[0.68rem] font-medium transition-colors",
-                    isActive ? "bg-ink text-surface" : "bg-surface-2 text-ink-3 hover:text-ink",
-                  )}
-                >
-                  {m.name}
-                  <span className="nums text-[0.55rem] opacity-70">{methodMasteries[m.name] ?? 0}%</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {!method ? (
-            <p className="py-10 text-center text-[0.72rem] text-ink-3">{t("selectMethodHint")}</p>
-          ) : (
+      {!method ? (
+        <p className="py-10 text-center text-[0.72rem] text-ink-3">{t("selectMethodHint")}</p>
+      ) : (
             <>
               {/* Method banner */}
               <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface p-5">
@@ -461,7 +450,20 @@ export function TrainingPractice({
               )}
             </>
           )}
-        </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="flex flex-col gap-6 p-6">{workspace}</div>;
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1">
+      {/* Main workspace */}
+      <div className="min-w-0 flex-1 overflow-y-auto pb-safe">
+        {/* p-1 on touch offsets the shell's px-3 gutter so cards keep the
+            same 16px phone margin as before; sm:p-6 keeps desktop spacing. */}
+        <div className="flex flex-col gap-6 p-1 sm:p-6">{workspace}</div>
       </div>
     </div>
   );
@@ -469,7 +471,8 @@ export function TrainingPractice({
 
 /* ── Method rail item (practice tab, desktop) ──────────────────────────── */
 
-function MethodRailItem({
+/** Exported for the Training shell's left panel (desktop method list). */
+export function MethodRailItem({
   method,
   mastery,
   active,
