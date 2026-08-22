@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { format, addDays, isToday } from "date-fns";
 import { es, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-import { Target, CalendarDays, RotateCcw, Grid2x2, Grid3x3, Box, Plus, Sparkles } from "lucide-react";
+import { Target, CalendarDays, RotateCcw, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
@@ -457,28 +457,21 @@ export function TrainingDashboard({
           <div className="flex items-center gap-2">
             <span className="text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-ink-3">{t("puzzle")}</span>
             <Select value={selectedPuzzle} onValueChange={(val) => handleSelectPuzzle(val as PuzzleCategory)}>
-              <SelectTrigger className="h-8 w-36 gap-2 rounded-lg border-line bg-surface px-2.5 text-[0.7rem] font-semibold text-ink shadow-xs">
+              {/* Same trigger treatment as the Insights filters — identical
+                  compact look: no fixed width, no item icons, and the shared
+                  Select's 44px touch min-height pinned back. */}
+              <SelectTrigger
+                size="sm"
+                className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2 max-lg:min-h-7! max-lg:py-1"
+              >
                 <SelectValue placeholder={t("selectPuzzle")} />
               </SelectTrigger>
               <SelectContent>
-                {SELECTABLE_PUZZLE_CATEGORIES.map((p) => {
-                  const is2x2 = p === "2x2";
-                  const is3x3 = p === "3x3";
-                  return (
-                    <SelectItem key={p} value={p} className="text-[0.7rem]">
-                      <div className="flex items-center gap-2 font-medium">
-                        {is2x2 ? (
-                          <Grid2x2 className="size-3.5 text-ink-2" />
-                        ) : is3x3 ? (
-                          <Grid3x3 className="size-3.5 text-ink-2" />
-                        ) : (
-                          <Box className="size-3.5 text-ink-2" />
-                        )}
-                        <span>{p}</span>
-                      </div>
-                    </SelectItem>
-                  );
-                })}
+                {SELECTABLE_PUZZLE_CATEGORIES.map((p) => (
+                  <SelectItem key={p} value={p} className="text-xs">
+                    {p}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

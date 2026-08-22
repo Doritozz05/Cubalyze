@@ -194,7 +194,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
   if (data.length === 0) return null;
 
   return (
-    <div className={cn("rounded-lg border border-line bg-surface px-5 py-4", className)}>
+    <div className={cn("rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3", className)}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function SolveProgressionChart({ solves, className }: SolveProgressionCha
       </div>
 
       {/* ── Chart ───────────────────────────────────────────────────────── */}
-      <div className="h-55 w-full sm:h-65">
+      <div className="h-48 w-full sm:h-52 lg:h-65">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}

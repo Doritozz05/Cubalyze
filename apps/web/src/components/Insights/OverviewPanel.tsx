@@ -114,9 +114,9 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
-    <div className={cn("flex flex-col gap-5 px-1 pb-4", className)}>
+    <div className={cn("flex flex-col gap-5 px-1 pb-4 max-lg:gap-4 max-lg:px-0", className)}>
       {/* ── Hero: PB ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-4">
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="size-3.5 text-ink-3" />
@@ -134,7 +134,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
           <AnimatedNumber
             value={bestSingle ?? 0}
             format={(n) => (bestSingle !== null ? formatTime(n) : "—")}
-            className="text-4xl text-ink"
+            className="text-4xl text-ink max-lg:text-3xl"
           />
           {pbDelta != null ? (
             <span className="nums text-[0.7rem] text-ink-3">
@@ -168,13 +168,13 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
       <SolveProgressionChart solves={solves} />
 
       {/* ── Trend (Ao-N rolling) ───────────────────────────────────────── */}
-      <div className="rounded-lg border border-line bg-surface px-5 py-4">
+      <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
         <SectionHeader title={t("overview.trend")} eyebrow={t("overview.trendEyebrow")} className="mb-3" />
         <TrendChart solves={solves} defaultWindow={5} />
       </div>
 
       {/* ── TPS over time ──────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-line bg-surface px-5 py-4">
+      <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
         <SectionHeader
           title={t("overview.tpsOverTime")}
           eyebrow={t("overview.tpsAnalysed", { count: solvesWithTpsCount })}
@@ -238,7 +238,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
       </div>
 
       {/* ── Time distribution histogram ────────────────────────────────── */}
-      <div className="rounded-lg border border-line bg-surface px-5 py-4">
+      <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
         <SectionHeader title={t("overview.timeDistribution")} eyebrow={t("overview.binEyebrow")} className="mb-3" />
         {histogram.length === 0 ? (
           <div className="flex h-20 items-center justify-center text-[0.7rem] text-ink-3">
@@ -287,9 +287,9 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
       </div>
 
       {/* ── Activity heatmap + phase distribution (two-column on desktop) ─ */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2 max-lg:gap-4">
         {/* Activity heatmap */}
-        <div className="rounded-lg border border-line bg-surface px-5 py-4">
+        <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
           <SectionHeader
             title={t("overview.activity")}
             eyebrow={t("overview.lastWeeks", { count: heatmapWeeks })}
@@ -299,7 +299,7 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
         </div>
 
         {/* Phase distribution donut */}
-        <div className="rounded-lg border border-line bg-surface px-5 py-4">
+        <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
           <SectionHeader
             title={t("overview.phaseSplit")}
             eyebrow={
@@ -403,7 +403,7 @@ function PenaltyMix({ solves }: { solves: Solve[] }) {
   const pctStr = (n: number) => `${Math.round(pctNum(n))}%`;
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-5 py-4">
+    <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
       <SectionHeader title={t("overview.penaltyMix")} eyebrow={t("overview.solvesCount", { count: total })} />
       
       {/* Stacked Bar */}

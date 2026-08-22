@@ -88,7 +88,9 @@ export function AlgorithmDashboard({
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="relative flex-1 min-h-0 w-full" data-onboarding-target="algorithms">
-      <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5">
+      {/* Same margins as the Insights dashboard: desktop breathing room
+          (was flush against header/rail) + compact touch gutters. */}
+      <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5 max-lg:px-3 lg:px-6 lg:pt-3">
         {/* Left panel: Method tree — desktop only (>=768px) */}
         <aside className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0">
           <div className="flex-1 overflow-y-auto py-2">
@@ -102,8 +104,11 @@ export function AlgorithmDashboard({
         {/* Right panel: Case grid + optional detail panel */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-canvas">
           {/* Touch (<768px): drill-down method navigator replaces the
-              aside. CSS-gated (lg:hidden) — desktop never renders it. */}
-          <div className="shrink-0 border-b border-line bg-surface px-2 py-2 lg:hidden">
+              aside. CSS-gated (lg:hidden) — desktop never renders it. No
+              surface strip behind it: the selector floats on the canvas
+              like the Insights filters. px-4 keeps it aligned with the
+              case grid's own p-4 padding. */}
+          <div className="shrink-0 px-4 pt-3 lg:hidden">
             <MobileMethodNavigator
               selectedSubsetId={selectedSubsetId}
               onSelectSubset={handleSelectSubset}

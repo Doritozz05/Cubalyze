@@ -31,11 +31,11 @@ export function MetricTile({
             : "text-ink";
   const useDefaultInk = !accent;
   return (
-    <div className="flex flex-col gap-1 bg-surface px-3.5 py-3">
-      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+    <div className="flex flex-col gap-1 bg-surface px-3.5 py-3 max-lg:gap-0.5 max-lg:px-3 max-lg:py-2.5">
+      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3 max-lg:text-[0.55rem]">
         {label}
       </span>
-      <span className={cn("nums text-lg", useDefaultInk ? "text-ink" : accentClass)}>
+      <span className={cn("nums text-lg", "max-lg:text-base", useDefaultInk ? "text-ink" : accentClass)}>
         {value}
       </span>
       {sub ? (

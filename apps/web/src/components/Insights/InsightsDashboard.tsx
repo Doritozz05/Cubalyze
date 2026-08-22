@@ -338,9 +338,15 @@ export function InsightsDashboard({
   }, []);
 
   return (
-    <div className="relative flex-1 min-h-0 w-full flex flex-col" data-onboarding-target="insights">
-      {/* ── Top bar: session + cube dropdowns ────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-3 px-1 pb-3">
+    <div
+      // Desktop (>=768px): the dashboard used to sit flush against the
+      // header and left rail with no padding — give it the same breathing
+      // room the timer view gets. Touch keeps its own compact margins.
+      className="relative flex-1 min-h-0 w-full flex flex-col max-lg:px-3 max-lg:pt-2 lg:px-6 lg:pt-3"
+      data-onboarding-target="insights"
+    >
+      {/* ── Top bar: session + cube dropdowns (filters apply to both pages) ─ */}
+      <div className="flex shrink-0 items-center gap-3 pb-3 max-lg:gap-2.5">
         {/* Session selector */}
         <div className="flex items-center gap-1.5">
           <span className="text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
@@ -359,7 +365,10 @@ export function InsightsDashboard({
           >
             <SelectTrigger
               size="sm"
-              className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2"
+              // Touch: the shared Select inflates triggers to 44px (min-h-11)
+              // for primary pickers — for inline dashboard filters that's
+              // huge, so pin it back to the compact desktop height here.
+              className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2 max-lg:min-h-7! max-lg:py-1"
               aria-label={t("dashboard.filterBySession")}
             >
               <SelectValue />
@@ -388,7 +397,7 @@ export function InsightsDashboard({
           >
             <SelectTrigger
               size="sm"
-              className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2"
+              className="h-7 w-auto gap-1.5 rounded-md border border-line bg-surface px-2 text-xs text-ink-2 max-lg:min-h-7! max-lg:py-1"
               aria-label={t("dashboard.filterByCube")}
             >
               <SelectValue />
@@ -417,20 +426,22 @@ export function InsightsDashboard({
         </span>
       </div>
 
-      {/* ── Touch: Solves | Stats page toggle ─────────────────────────── */}
+      {/* ── Touch: Solves | Stats full-width segmented switcher ───────── */}
+      {/* Second row on touch (after the filters): a standard iOS-style
+          segmented control spanning the content width. */}
       {isTouch && (
-        <div className="flex shrink-0 items-center gap-1 pb-3 lg:hidden">
+        <div className="mb-2.5 flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5 lg:hidden">
           <button
             type="button"
             onClick={() => setTouchSection("list")}
             className={cn(
-              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors",
               touchSection === "list"
                 ? "bg-ink text-surface shadow-sm"
-                : "border border-line bg-surface text-ink-3 hover:text-ink",
+                : "text-ink-3 hover:text-ink",
             )}
           >
-            <List className="size-3.5" />
+            <List className="size-3" />
             {t("dashboard.solves")}
           </button>
           <button
@@ -440,13 +451,13 @@ export function InsightsDashboard({
               setSelectedId(null);
             }}
             className={cn(
-              "flex h-9 max-lg:h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition-colors",
+              "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors",
               touchSection === "stats"
                 ? "bg-ink text-surface shadow-sm"
-                : "border border-line bg-surface text-ink-3 hover:text-ink",
+                : "text-ink-3 hover:text-ink",
             )}
           >
-            <BarChart3 className="size-3.5" />
+            <BarChart3 className="size-3" />
             {t("dashboard.stats")}
           </button>
         </div>

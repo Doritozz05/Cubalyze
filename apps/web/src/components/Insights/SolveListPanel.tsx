@@ -59,8 +59,9 @@ function FilterChip({ active, count, dot, onClick, children }: FilterChipProps) 
       onClick={onClick}
       className={cn(
         "flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.62rem] font-medium transition-colors",
-        // Touch (<768px): ≥32px tap targets
-        "max-lg:h-8 max-lg:px-3 max-lg:text-xs",
+        // Touch (<768px): compact chips — 28px tall, tighter than the
+        // inflated 32px+ variant so five chips fit on one phone row.
+        "max-lg:h-7 max-lg:px-2.5 max-lg:text-[0.68rem]",
         active
           ? "bg-surface-2 text-ink"
           : "bg-transparent text-ink-3/50 hover:text-ink-3",
@@ -217,7 +218,9 @@ export const SolveListPanel = memo(function SolveListPanel({
       <div className="shrink-0 border-b border-line">
         {/* Title + sort dropdown + count */}
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[0.7rem] font-medium text-ink-2">{t("common.solves")}</span>
+          {/* Title is redundant on touch (the segmented switcher already
+              labels this page) — keep it for the desktop left panel. */}
+          <span className="text-[0.7rem] font-medium text-ink-2 max-lg:hidden">{t("common.solves")}</span>
           <div className="flex items-center gap-2.5">
             {!selectionMode && (
               <button
@@ -250,7 +253,8 @@ export const SolveListPanel = memo(function SolveListPanel({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="nums text-[0.62rem] tabular-nums text-ink-3">
+            {/* Count also lives in the dashboard filter bar on touch. */}
+            <span className="nums text-[0.62rem] tabular-nums text-ink-3 max-lg:hidden">
               {filteredCount}
               <span className="text-ink-3/50"> / {totalCount}</span>
             </span>
@@ -335,13 +339,13 @@ export const SolveListPanel = memo(function SolveListPanel({
               placeholder={t("list.searchPlaceholder")}
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
-              className="h-7 pl-7 pr-2 text-[0.72rem] max-lg:h-9"
+              className="h-7 pl-7 pr-2 text-[0.72rem] max-lg:h-8"
             />
           </div>
           {isFiltered && (
             <button
               onClick={reset}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:h-9 max-lg:px-2.5"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[0.62rem] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:h-8 max-lg:px-2.5"
             >
               <X className="size-3" />
               {t("list.reset")}
@@ -468,7 +472,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                   {/* Active-row card — Linear/Raycast style hairline inset card */}
                   <ActivePill active={selectionMode ? isChecked : isSelected} />
 
-                  <div className="relative z-10 px-3 pb-1.75 pt-1.75 max-lg:py-4">
+                  <div className="relative z-10 px-3 pb-1.75 pt-1.75 max-lg:px-2.5 max-lg:py-2.5">
                     {/* Line 1: index + time + delta + source + penalty */}
                     <div className="flex items-center gap-2.5">
                       {selectionMode ? (

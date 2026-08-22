@@ -68,9 +68,12 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex w-full gap-[3px]">
+      {/* Touch: fixed-size cells centered in the card (GitHub-style)
+          instead of stretching full-width — full-width cells on a phone
+          are ~40px squares and turn the heatmap into a massive block. */}
+      <div className="flex w-full gap-[3px] max-lg:mx-auto max-lg:w-auto">
         {grid.map((week, wi) => (
-          <div key={wi} className="flex flex-1 flex-col gap-[3px]">
+          <div key={wi} className="flex flex-1 flex-col gap-[3px] max-lg:flex-none">
             {week.map((count, di) => {
               const lvl = intensity(count, max);
               return (
@@ -78,7 +81,7 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
-                        "aspect-square w-full rounded-[2px]",
+                        "aspect-square w-full rounded-[2px] max-lg:size-3.5",
                         INTENSITY_BG[lvl],
                       )}
                     />
