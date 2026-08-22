@@ -74,13 +74,13 @@ export function ProfileHero({
 }: ProfileHeroProps) {
   const { t, i18n } = useTranslation("profile");
   const isTouch = useIsTouch();
-  const avatarSize = isTouch ? 80 : 112;
+  const avatarSize = isTouch ? 80 : 100;
 
   if (loading || !profile) {
     return (
       <div
         className={cn(
-          "flex items-center gap-5 rounded-2xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
+          "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-2xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
           className,
         )}
       >
@@ -89,9 +89,9 @@ export function ProfileHero({
           style={{ width: avatarSize, height: avatarSize }}
         />
         <div className="min-w-0 flex-1 space-y-2.5">
-          <Skeleton className="h-6 w-44 max-w-full" />
-          <Skeleton className="h-4 w-64 max-w-full" />
+          <Skeleton className="h-7 w-48 max-w-full" />
           <Skeleton className="h-4 w-72 max-w-full" />
+          <Skeleton className="h-4 w-80 max-w-full" />
         </div>
       </div>
     );
@@ -119,34 +119,48 @@ export function ProfileHero({
     <div
       data-onboarding-target="profile"
       className={cn(
-        "flex items-start gap-5 rounded-2xl border border-line bg-surface p-5 sm:items-center sm:gap-6 sm:p-6",
+        "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-2xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
         className,
       )}
     >
-      {profile.avatarKind === "photo" && profile.avatarData ? (
-        <img
-          src={profile.avatarData}
-          alt={t("hero.avatarAlt")}
-          className="shrink-0 rounded-2xl object-cover ring-1 ring-line"
-          style={{ width: avatarSize, height: avatarSize }}
-        />
-      ) : (
-        <IdenticonAvatar
-          seed={seed ?? profile.userId}
-          size={avatarSize}
-          className="shrink-0 rounded-2xl ring-1 ring-line"
-        />
-      )}
+      <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start">
+        {profile.avatarKind === "photo" && profile.avatarData ? (
+          <img
+            src={profile.avatarData}
+            alt={t("hero.avatarAlt")}
+            className="shrink-0 rounded-2xl object-cover ring-1 ring-line shadow-sm"
+            style={{ width: avatarSize, height: avatarSize }}
+          />
+        ) : (
+          <IdenticonAvatar
+            seed={seed ?? profile.userId}
+            size={avatarSize}
+            className="shrink-0 rounded-2xl ring-1 ring-line shadow-sm"
+          />
+        )}
+        {/* Mobile-only top edit button for quick tap */}
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex sm:hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-3 py-1.5 text-xs font-semibold text-ink transition-all duration-150 hover:border-ink/30 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+          >
+            <Pencil className="size-3.5" />
+            {t("hero.edit")}
+          </button>
+        ) : null}
+      </div>
+
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-semibold text-ink sm:text-2xl">
+            <h2 className="text-xl font-bold tracking-tight text-ink sm:text-2xl lg:text-3xl">
               {displayName}
             </h2>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-3">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm text-ink-3">
               {chips.map((chip, i) => (
                 <span key={chip.key} className="inline-flex items-center gap-2">
-                  {i > 0 && <span aria-hidden="true">·</span>}
+                  {i > 0 && <span aria-hidden="true" className="text-ink-4">·</span>}
                   {chip.key === "country" ? (
                     <CountryFlag country={chip.value} />
                   ) : (
@@ -156,8 +170,8 @@ export function ProfileHero({
               ))}
             </div>
             {badges.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-2.5 py-1">
-                {badges.slice(0, 4).map((badge, idx) => {
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 py-0.5">
+                {badges.slice(0, 6).map((badge, idx) => {
                   const style =
                     BADGE_COLOR_STYLES[badge.color] ?? DEFAULT_BADGE_STYLE;
                   const rotation = BADGE_ROTATIONS[idx % BADGE_ROTATIONS.length];
@@ -176,16 +190,17 @@ export function ProfileHero({
                             "active:translate-y-0.5 active:pb-px active:shadow-[0_1px_0_#494a4b]",
                           )}
                         >
-                      <span
-                        className={cn(
-                          "absolute inset-0 rounded-[6px] dark:scale-[0.985]",
-                          style.bg,
-                        )}
-                        aria-hidden="true"
-                      />                        <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
-                          <span className="nums">Sub {badge.thresholdLabel}</span>
-                          <span className="opacity-75">{badge.puzzleLabel}</span>
-                        </span>
+                          <span
+                            className={cn(
+                              "absolute inset-0 rounded-[6px] dark:scale-[0.985]",
+                              style.bg,
+                            )}
+                            aria-hidden="true"
+                          />
+                          <span className="relative flex items-baseline gap-1 rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b] whitespace-nowrap">
+                            <span className="nums">Sub {badge.thresholdLabel}</span>
+                            <span className="opacity-75">{badge.puzzleLabel}</span>
+                          </span>
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -196,8 +211,8 @@ export function ProfileHero({
                       </TooltipContent>
                     </Tooltip>
                   );
-                  })}
-                {badges.length > 4 && (
+                })}
+                {badges.length > 6 && (
                   <span
                     style={{
                       transform: "rotate(2deg)",
@@ -212,7 +227,7 @@ export function ProfileHero({
                     />
                     <span className="relative flex items-center rounded-[5px] border-2 border-[#494a4b] bg-[#f1f5f8] px-2.5 py-1 text-xs font-semibold leading-none text-[#1e293b]">
                       <span className="nums">
-                        +{badges.length - 4}
+                        +{badges.length - 6}
                       </span>
                     </span>
                   </span>
@@ -220,19 +235,20 @@ export function ProfileHero({
               </div>
             )}
           </div>
+          {/* Desktop/Tablet edit button */}
           {onEdit ? (
             <button
               type="button"
               onClick={onEdit}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2/50 px-3 py-1.5 text-[0.7rem] font-medium text-ink-2 transition-all duration-150 hover:border-ink/30 hover:bg-surface-2 hover:text-ink cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+              className="hidden sm:flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2/60 px-3.5 py-1.5 text-xs font-semibold text-ink transition-all duration-150 hover:border-ink/30 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
             >
-              <Pencil className="size-3" />
+              <Pencil className="size-3.5" />
               {t("hero.edit")}
             </button>
           ) : null}
         </div>
         {profile.bio ? (
-          <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-ink-2">{profile.bio}</p>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-2">{profile.bio}</p>
         ) : null}
       </div>
     </div>

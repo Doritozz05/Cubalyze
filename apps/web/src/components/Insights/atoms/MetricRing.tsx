@@ -99,10 +99,10 @@ export function MetricRing({
           />
         </svg>
         {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="nums text-sm font-medium text-ink">{label}</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-1 text-center">
+          <span className="nums text-sm font-semibold leading-tight text-ink">{label}</span>
           {sub ? (
-            <span className="text-[0.55rem] uppercase tracking-wide text-ink-3">
+            <span className="mt-0.5 max-w-[85%] truncate text-[0.52rem] font-medium uppercase tracking-tight text-ink-3">
               {sub}
             </span>
           ) : null}

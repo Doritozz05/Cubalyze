@@ -51,18 +51,18 @@ const QUICK_ACTIONS: Array<{
 
 function PuzzleRow({ p }: { p: PuzzleStats }) {
   return (
-    <div className="grid grid-cols-[1fr_repeat(4,auto)] items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm">
-      <span className="text-xs font-semibold text-ink">{puzzleTypeLabel(p.puzzle)}</span>
-      <span className="w-16 text-right">
+    <div className="grid grid-cols-[1fr_72px_72px_72px_100px] sm:grid-cols-[1fr_80px_80px_80px_110px] items-center gap-x-3 px-4 py-2.5 text-sm">
+      <span className="truncate text-xs font-semibold text-ink">{puzzleTypeLabel(p.puzzle)}</span>
+      <span className="text-right">
         <span className="nums text-ink">{statLabel(p.stats.best)}</span>
       </span>
-      <span className="w-16 text-right">
+      <span className="text-right">
         <span className="nums text-ink-2">{statLabel(p.stats.ao5)}</span>
       </span>
-      <span className="w-16 text-right">
+      <span className="text-right">
         <span className="nums text-ink-2">{statLabel(p.stats.ao12)}</span>
       </span>
-      <span className="w-16 text-right">
+      <span className="text-right">
         <span className="nums text-ink-3">{p.count}</span>
       </span>
     </div>
@@ -137,12 +137,12 @@ function StatsTab({ stats }: { stats: ProfileStats | null }) {
   const { t } = useTranslation("profile");
   return (
     <div className="rounded-xl border border-line bg-surface">
-      <div className="grid grid-cols-[1fr_repeat(4,auto)] items-center gap-x-4 px-4 pb-1.5 pt-3 text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+      <div className="grid grid-cols-[1fr_72px_72px_72px_100px] sm:grid-cols-[1fr_80px_80px_80px_110px] items-center gap-x-3 px-4 pb-2 pt-3 text-[0.6rem] uppercase tracking-[0.14em] text-ink-3 font-semibold">
         <span>{t("stats.puzzle")}</span>
-        <span className="w-16 text-right">{t("stats.pb")}</span>
-        <span className="w-16 text-right">{t("stats.ao5")}</span>
-        <span className="w-16 text-right">{t("stats.ao12")}</span>
-        <span className="w-16 text-right">{t("stats.solves")}</span>
+        <span className="text-right">{t("stats.pb")}</span>
+        <span className="text-right">{t("stats.ao5")}</span>
+        <span className="text-right">{t("stats.ao12")}</span>
+        <span className="text-right">{t("stats.solves")}</span>
       </div>
       <div className="divide-y divide-line/60">
         {stats && stats.byPuzzle.length > 0 ? (
@@ -338,40 +338,41 @@ function AlgorithmsTab() {
                 value={Math.round(insights.avgMastery)}
                 max={100}
                 label={`${Math.round(insights.avgMastery)}%`}
-                sub={t("algorithms.avgMastery")}
-                size={84}
+                size={76}
                 strokeWidth={6}
                 color="ready"
               />
               <div className="flex-1 space-y-2">
-                <div className="flex items-center justify-between text-[0.65rem]">
-                  <span className="text-ink-2">{t("algorithms.reviewed")}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold capitalize text-ink">
+                    {t("algorithms.avgMastery")}
+                  </span>
                   <span className="nums text-ink-3">
-                    {insights.reviewed}/{insights.totalCases}
+                    {insights.reviewed}/{insights.totalCases} {t("algorithms.reviewed")}
                   </span>
                 </div>
                 <Progress
                   value={(insights.reviewed / Math.max(1, insights.totalCases)) * 100}
-                  className="h-1.5"
+                  className="h-2"
                 />
               </div>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-line bg-line">
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-ready">{mastered}</span>
-                <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                <span className="text-[0.6rem] uppercase tracking-[0.14em] text-ink-3">
                   {i18n.t("training:mastery.mastered")}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-caution">{learning}</span>
-                <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                <span className="text-[0.6rem] uppercase tracking-[0.14em] text-ink-3">
                   {i18n.t("training:mastery.learning")}
                 </span>
               </div>
               <div className="flex flex-col items-center gap-1 bg-surface px-3 py-3">
                 <span className="nums text-lg text-ink">{fresh}</span>
-                <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3">
+                <span className="text-[0.6rem] uppercase tracking-[0.14em] text-ink-3">
                   {i18n.t("training:mastery.new")}
                 </span>
               </div>
@@ -417,19 +418,23 @@ function SkillsTab() {
             value={pct}
             max={100}
             label={`${pct}%`}
-            sub={t("skills.complete")}
-            size={84}
+            size={76}
             strokeWidth={6}
             color="ready"
           />
-          <div className="flex-1 space-y-1.5">
-            <div className="flex items-baseline justify-between">
-              <span className="nums text-lg text-ink">{xp.toLocaleString()}</span>
-              <span className="text-[0.65rem] text-ink-3">
-                {t("skills.ofXp", { xp: totalXp.toLocaleString() })}
+          <div className="flex-1 space-y-2">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="font-semibold capitalize text-ink">
+                {t("skills.progress")}
               </span>
+              <div className="flex items-baseline gap-1">
+                <span className="nums text-sm font-bold text-ink">{xp.toLocaleString()}</span>
+                <span className="text-[0.65rem] text-ink-3">
+                  {t("skills.ofXp", { xp: totalXp.toLocaleString() })}
+                </span>
+              </div>
             </div>
-            <Progress value={pct} className="h-1.5" />
+            <Progress value={pct} className="h-2" />
             <p className="text-[0.65rem] text-ink-3">
               {t("skills.completedCount", { count: completed.length, total: allNodes.length })}
             </p>
@@ -494,54 +499,23 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
         {i18n.t("common:profile")}
       </h1>
 
-      {/* Desktop (lg+): 2-column layout — identity sidebar (sticky) +
-          content area with tabs. Mobile: single column (unchanged). */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,380px)_1fr] lg:gap-6">
-        {/* ── Identity sidebar (sticky on desktop) ────────────────────── */}
-        <div className="lg:sticky lg:top-6 lg:self-start lg:space-y-4">
-          <ProfileHero
-            profile={profile}
-            loading={profileLoading}
-            onEdit={onOpenSettings}
-            badges={badges}
-            seed={identiconSeed ?? profile?.userId}
-          />
+      {/* ── Top section: Full-width Hero + StatStrip ───────────────── */}
+      <div className="space-y-4">
+        <ProfileHero
+          profile={profile}
+          loading={profileLoading}
+          onEdit={onOpenSettings}
+          badges={badges}
+          seed={identiconSeed ?? profile?.userId}
+        />
 
-          <StatStrip stats={stats} loading={statsLoading} />
+        <StatStrip stats={stats} loading={statsLoading} />
+      </div>
 
-          {/* Quick actions — in the sidebar on desktop, inline on mobile */}
-          <section className="mt-4 lg:mt-0">
-            <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
-              {t("quick.title")}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-              {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
-                const label = i18n.t(`nav:${labelKey}` as never);
-                const description = t(descriptionKey);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => onNavigate?.(id)}
-                    aria-label={`${label} — ${description}`}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
-                  >
-                    <div className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
-                      <Icon className="size-4" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="block text-xs font-semibold text-ink">{label}</span>
-                      <span className="block text-[0.6rem] leading-tight text-ink-3">{description}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-
-        {/* ── Content area: tabs + account ────────────────────────────── */}
-        <div className="mt-5 lg:mt-0">
+      {/* ── Main content: Tabs (left 1fr) + Sidebar (Quick Actions & Account 320px) ── */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Primary column: Content tabs */}
+        <div className="min-w-0">
           <Tabs defaultValue="overview">
             <TabsList
               aria-label={t("tabs.aria")}
@@ -582,8 +556,40 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
               <SkillsTab />
             </TabsContent>
           </Tabs>
+        </div>
 
-          <section className="mt-6">
+        {/* Secondary column: Quick actions & Account sync */}
+        <div className="space-y-6">
+          <section>
+            <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
+              {t("quick.title")}
+            </h2>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+              {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
+                const label = i18n.t(`nav:${labelKey}` as never);
+                const description = t(descriptionKey);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => onNavigate?.(id)}
+                    aria-label={`${label} — ${description}`}
+                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+                  >
+                    <div className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
+                      <Icon className="size-4" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block text-xs font-semibold text-ink">{label}</span>
+                      <span className="block text-[0.6rem] leading-tight text-ink-3">{description}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section>
             <AccountCard />
           </section>
         </div>
@@ -591,7 +597,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
 
       <section
         aria-label={t("localNoticeAria")}
-        className="mt-4 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
+        className="mt-8 flex items-center justify-center gap-1.5 pb-4 text-[0.6rem] text-ink-3"
       >
         <CheckCircle2 className="size-3 text-ready" aria-hidden="true" />
         <span>{t("localNotice")}</span>

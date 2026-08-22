@@ -33,7 +33,7 @@ export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, class
     return (
       <div
         className={cn(
-          "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-5",
+          "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 lg:grid-cols-5",
           className,
         )}
       >
@@ -86,7 +86,7 @@ export const StatStrip = memo(function StatStrip({ stats, loading, puzzle, class
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line lg:grid-cols-5",
+        "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 lg:grid-cols-5",
         className,
       )}
     >
