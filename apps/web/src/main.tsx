@@ -3,17 +3,55 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import { toast } from 'sonner'
+import i18n from '@/i18n'
 import { registerSW } from 'virtual:pwa-register'
 import { appReady, appDataReady, markAppReady, markAppDataReady } from './boot/appReady'
 import { installLogCapture } from './boot/logCapture'
 import { AppErrorBoundary } from './boot/AppErrorBoundary'
 import { LogViewer } from './components/LogViewer/LogViewer'
 
-// PWA service worker with auto-update (registerType: 'autoUpdate' in
-// vite.config.ts). The worker never touches app data: only Cache Storage
-// (app assets) is replaced; OPFS / IndexedDB / localStorage data is never
-// touched.
-registerSW({ immediate: true })
+// PWA service worker with a user-initiated update flow (registerType:
+// 'prompt' in vite.config.ts). A freshly-deployed worker WAITS instead of
+// reloading the page — the app never restarts mid-session (no more mid-solve
+// resets). If an update is found (at load, or by the hourly check below), a
+// toast offers a reload and the user taps it when convenient; the page is
+// only ever reloaded by explicit consent. The worker never touches app data:
+// only Cache Storage (app assets) is replaced; OPFS / IndexedDB / localStorage
+// data is never touched.
+let pendingRegistration: ServiceWorkerRegistration | undefined
+
+const updateSW = registerSW({
+  immediate: true,
+  onRegisteredSW(_url, registration) {
+    pendingRegistration = registration
+  },
+  onNeedRefresh() {
+    toast(i18n.t('common:updateAvailable'), {
+      description: i18n.t('common:updateAvailableBody'),
+      action: {
+        label: i18n.t('common:reload'),
+        onClick: () => void updateSW(true),
+      },
+      duration: 30000,
+    })
+  },
+  onOfflineReady() {
+    // The app shell is cached for offline use — nothing to announce (a toast
+    // here would be noise; no user action is required).
+  },
+})
+
+// Pick up deploys that happen during long sessions: check hourly. The check
+// only downloads the new worker; applying it (and reloading) always waits for
+// the user's tap on the toast.
+if ('serviceWorker' in navigator) {
+  window.setInterval(() => {
+    pendingRegistration?.update().catch(() => {
+      /* offline or transient — the next check retries */
+    })
+  }, 60 * 60 * 1000)
+}
 
 // Capture console + window errors BEFORE the app renders, so a crash at any
 // point (even during boot) leaves a readable on-device trail. The viewer is

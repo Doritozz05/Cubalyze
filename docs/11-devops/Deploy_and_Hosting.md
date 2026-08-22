@@ -44,8 +44,15 @@ Permissions-Policy: camera=(), geolocation=(), payment=(), usb=()
 
 ## Build PWA (`apps/web/vite.config.ts`)
 
-- `vite-plugin-pwa`, `registerType: 'autoUpdate'` — un nuevo deploy de Vercel
-  actualiza la app instalada sin intervención.
+- `vite-plugin-pwa`, `registerType: 'prompt'` — un nuevo deploy se descarga en
+  segundo plano pero **nunca recarga la app sin permiso** (el flujo anterior
+  `autoUpdate` reiniciaba la página al activarse el worker, incluso a mitad de
+  un solve). `main.tsx` muestra un toast "Actualización disponible" con botón
+  *Recargar* y comprueba actualizaciones cada hora; el recargado solo ocurre
+  cuando el usuario lo pulsa.
+- Navegación **NetworkFirst** (timeout 4s): al abrir la app con conexión se
+  sirve siempre el `index.html` más reciente del deploy (sin pasar por el
+  precache viejo); sin wifi se sirve la última página cacheada.
 - Manifest: CubeForge, `display: standalone`, theme/background `#0f172a`,
   iconos 192/512.
 - Workbox: `maximumFileSizeToCacheInBytes: 4 MB` (el worker de sqlite-wasm o

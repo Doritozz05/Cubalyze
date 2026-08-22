@@ -16,7 +16,10 @@
     "darkMode": "Modo oscuro",
     "widgets": "Widgets",
     "ok": "Aceptar",
-    "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing"
+    "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing",
+    "updateAvailable": "Actualización disponible",
+    "updateAvailableBody": "Hay una nueva versión de CubeForge lista. Recarga cuando te venga bien.",
+    "reload": "Recargar"
   },
   "meta": {
     "brand": "CubeForge",

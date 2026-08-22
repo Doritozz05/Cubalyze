@@ -16,7 +16,10 @@
     "darkMode": "Dark mode",
     "widgets": "Widgets",
     "ok": "OK",
-    "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics"
+    "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics",
+    "updateAvailable": "Update available",
+    "updateAvailableBody": "A new version of CubeForge is ready. Reload when convenient.",
+    "reload": "Reload"
   },
   "meta": {
     "brand": "CubeForge",

@@ -95,27 +95,61 @@ export default defineConfig(({ mode }) => ({
       // hard refreshes and blocks the dev server from loading. Production
       // builds are unaffected (the SW only registers from the built output).
       devOptions: { enabled: false },
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       // SW registration + update handling lives in src/main.tsx (it imports
       // `registerSW` from virtual:pwa-register). Using the virtual module —
       // instead of the generated bare registerSW.js that `injectRegister:
-      // 'script'` emits — is what makes autoUpdate actually work: it wires
-      // workbox-window so the page reloads automatically once a new service
-      // worker takes over. injectRegister: false keeps the plugin from also
-      // emitting/registering a second, update-less registerSW.js. (No inline
-      // script is used, so the strict Content-Security-Policy with
-      // script-src 'self' and no 'unsafe-inline' keeps working.)
+      // 'script'` emits — wires workbox-window for the update prompt.
+      // registerType 'prompt' is deliberate: a freshly-deployed worker WAITS
+      // instead of reloading the page, so the app never restarts mid-session
+      // (the old autoUpdate flow reloaded the moment the new SW activated —
+      // even mid-solve). main.tsx shows an "update available" toast and
+      // reloads only when the user taps it. injectRegister: false keeps the
+      // plugin from also emitting/registering a second, update-less
+      // registerSW.js. (No inline script is used, so the strict
+      // Content-Security-Policy with script-src 'self' and no 'unsafe-inline'
+      // keeps working.)
       injectRegister: false,
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        // Activate the newly-installed service worker immediately and take
-        // control of all open clients. Without these the new SW sits in
-        // "waiting" forever and keeps serving the old precached index.html —
-        // which is why users only saw updates after a hard refresh (Ctrl+
-        // Shift+R). With them, the next page load after a deploy picks up the
-        // new precache automatically (and main.tsx reloads the page once).
-        skipWaiting: true,
+        // clientsClaim: when the user applies a pending update, the new
+        // worker takes control of the current tab so the reload lands on the
+        // new precache. skipWaiting is deliberately NOT set: with it, every
+        // new worker self-activates the moment it installs — exactly the
+        // "page reloaded by itself" behavior the prompt flow removes.
         clientsClaim: true,
+        // Navigation is NetworkFirst below, so the precached index.html is no
+        // longer the navigation fallback. Serving navigations from the
+        // precache is what made every load stale until the SW auto-reloaded;
+        // now each open fetches the latest shell when online and falls back
+        // to the last cached page offline.
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            // App shell: always try the network first on load, so a fresh
+            // deploy shows immediately; after 4s (or offline) serve the last
+            // cached page instead of hanging or erroring.
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 16, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          {
+            // API/JSON — network-first with a generous timeout (mirrors the
+            // plugin's default list, which generateSW otherwise drops).
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkFirst',
+            method: 'GET',
+            options: {
+              cacheName: 'apis',
+              expiration: { maxEntries: 16, maxAgeSeconds: 24 * 60 * 60 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
       },
       manifest: {
         name: 'CubeForge',

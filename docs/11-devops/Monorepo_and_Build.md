@@ -112,7 +112,10 @@ documentadas** (cada una explica el porqué):
   archivo documenta cuándo tocar cada tier.
 - `chunkSizeWarningLimit: 700` (three.js es ~600 kB y va en chunk lazy).
 - `--mode analyze` emite treemap interactivo en `dist/report.html`.
-- **PWA**: `vite-plugin-pwa` con `registerType: autoUpdate`, `injectRegister:
-  'script'` (para que la CSP estricta sin `unsafe-inline` funcione), workbox
-  `maximumFileSizeToCacheInBytes: 4MB`, manifest CubeForge (ver
+- **PWA**: `vite-plugin-pwa` con `registerType: prompt`, `injectRegister:
+  false` (para que la CSP estricta sin `unsafe-inline` funcione — el registro
+  vive en `src/main.tsx` vía `virtual:pwa-register`), workbox
+  `maximumFileSizeToCacheInBytes: 4MB`, navegación **NetworkFirst** (timeout
+  4s, sin fallback al precache para que la carga inicial sea siempre la última
+  versión con conexión), manifest CubeForge (ver
   [Deploy_and_Hosting.md](./Deploy_and_Hosting.md)).
