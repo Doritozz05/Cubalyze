@@ -372,22 +372,9 @@ export function MainLayout({
               // let the stage scroll instead of clipping the strip into the
               // bottom bar. Only the timer view — every other view owns its
               // own scroll surface.
-              activeView === "timer" && "max-lg:overflow-y-auto",
-              !hideHeader && "px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6",
-              // Short viewports (<700px tall): less air between the dock and
-              // the scramble than on tall desktops, where the stage can
-              // breathe. Overrides the lg top padding (py-8 → pt-4).
-              !hideHeader && "[@media(max-height:700px)]:lg:pt-4",
-              // Touch tablets (coarse pointer, >=768px, desktop layout): no
-              // bottom tab bar, but the system gesture bar overlays the
-              // bottom of the viewport. A taller bottom padding keeps the
-              // session bottom layout above it with visible margin. Bonus:
-              // overflow:hidden clips at the padding box, so if the stage
-              // still overflows on a short viewport, the extra padding
-              // absorbs the overflow gracefully instead of cutting content
-              // flush against the screen edge.
-              isCoarse && !hideHeader && "lg:pb-12",
-              hideHeader && "p-3 sm:p-4 gap-3 h-full min-h-0",
+              activeView === "timer" && "max-lg:overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8 gap-6 [@media(max-height:700px)]:lg:pt-4",
+              activeView === "timer" && isCoarse && !hideHeader && "lg:pb-12",
+              activeView !== "timer" && "h-full min-h-0 w-full overflow-hidden",
               // Keep the stage in normal flow while focused so the header
               // padding collapse animates smoothly instead of snapping the
               // section from static to absolute (position/auto-height are

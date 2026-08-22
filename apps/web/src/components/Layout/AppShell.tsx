@@ -295,12 +295,14 @@ export function AppShell(props: AppShellProps) {
           solves={solves}
           activeSessionId={activeSessionId}
           hideHeader={
-            activeView === "skill-tree" ||
-            activeView === "algorithms" ||
-            activeView === "reconstructions" ||
-            activeView === "insights" ||
-            activeView === "training" ||
-            activeView === "profile" ||
+            (!isTouch && (
+              activeView === "skill-tree" ||
+              activeView === "algorithms" ||
+              activeView === "reconstructions" ||
+              activeView === "insights" ||
+              activeView === "training" ||
+              activeView === "profile"
+            )) ||
             headerMode === "hidden"
           }
           onSwitchSession={onSwitchSession}
