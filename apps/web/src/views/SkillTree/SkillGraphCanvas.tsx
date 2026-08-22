@@ -262,7 +262,7 @@ export function SkillGraphCanvas({
   const rafIdRef = useRef<number | null>(null);
 
   const isTouch = useIsTouch();
-  const didInitTouchView = useRef(false);
+  const didInitView = useRef(false);
 
   // Keep refs synced with React state
   useEffect(() => {
@@ -533,14 +533,17 @@ export function SkillGraphCanvas({
     };
   }, [applyTransform]);
 
-  // Touch: start at centered zoom on root node
+  // Start centered on the root node: the full 16-branch tree is far larger
+  // than any viewport, so the default top-left pan at 100% shows only a
+  // handful of nodes in a huge empty panel. Touch zooms out a bit for a
+  // wider view; desktop keeps a readable zoom on the root.
   useEffect(() => {
-    if (!isTouch || didInitTouchView.current) return;
+    if (didInitView.current) return;
     const container = containerRef.current;
     const root = nodes.find((n) => n.prerequisites.length === 0) ?? nodes[0];
     if (!container || !root) return;
-    didInitTouchView.current = true;
-    const scale = 0.6;
+    didInitView.current = true;
+    const scale = isTouch ? 0.6 : 0.9;
     const cw = container.clientWidth;
     const ch = container.clientHeight;
     const initialPan = {

@@ -117,7 +117,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto h-full min-h-0 flex flex-col overflow-hidden gap-3">
+    <div className="w-full max-w-7xl mx-auto h-full min-h-0 flex flex-col overflow-hidden gap-3 max-lg:px-3 max-lg:pt-2 lg:px-6 lg:pt-3">
       {/* Clean Toolbar Header */}
       <div className="p-3 sm:p-4 rounded-xl bg-surface border border-line space-y-3 shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
