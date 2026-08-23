@@ -19,6 +19,7 @@
  */
 
 import i18n from "@/i18n";
+import { soundManager } from "@/audio/soundManager";
 
 export type VoiceType = "male" | "female";
 
@@ -253,63 +254,28 @@ export class AudioSystem {
 
   /**
    * Plays a crisp, minimalist victory fanfare chime upon breaking a PB.
-   * Uses native Web Audio API for real-time synthesis without latency.
+   * Synthesized through the shared SoundManager (`@/audio/soundManager`):
+   * one AudioContext for the whole app (no per-play context creation), the
+   * fanfare enters on the `ui` bus, the master bus carries the Settings →
+   * Audio volume, the arpeggio is scheduled ahead of the output latency,
+   * and the SFX bus is ducked while it plays so the chime cuts through.
    */
   public playPbFanfare(types: ("Single" | "Ao5" | "Ao12")[] = ["Single"]): void {
     if (typeof window === "undefined") return;
 
-    try {
-      const AudioContextClass =
-        window.AudioContext ||
-        // @ts-expect-error fallback for legacy webkit
-        window.webkitAudioContext;
+    // Base frequencies in Hz (E Major 7th Arpeggio / Bright victory chime)
+    // E5 = 659.25, G#5 = 830.61, B5 = 987.77, D#6 = 1244.51, E6 = 1318.51
+    const isMultiple = types.length > 1;
+    const isAo12 = types.includes("Ao12");
 
-      if (!AudioContextClass) return;
-
-      const ctx = new AudioContextClass();
-      const now = ctx.currentTime;
-
-      // Base frequencies in Hz (E Major 7th Arpeggio / Bright victory chime)
-      // E5 = 659.25, G#5 = 830.61, B5 = 987.77, D#6 = 1244.51, E6 = 1318.51
-      const isMultiple = types.length > 1;
-      const isAo12 = types.includes("Ao12");
-
-      let freqs = [659.25, 830.61, 987.77, 1318.51];
-      if (isAo12 || isMultiple) {
-        freqs = [523.25, 659.25, 783.99, 987.77, 1046.5]; // C major 7th / Sparkle
-      }
-
-      const noteDuration = 0.12;
-      const stagger = 0.08;
-
-      freqs.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = idx === freqs.length - 1 ? "sine" : "triangle";
-        osc.frequency.setValueAtTime(freq, now + idx * stagger);
-
-        // ADSR Envelope: Punchy, bright, smooth decay (scaled by master volume)
-        const startTime = now + idx * stagger;
-        const peak = 0.22 * (this.volume / 100);
-        gain.gain.setValueAtTime(0.001, startTime);
-        gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0001), startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration + 0.35);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + noteDuration + 0.4);
-      });
-
-      // Automatic AudioContext cleanup
-      setTimeout(() => {
-        ctx.close().catch(() => {});
-      }, 1500);
-    } catch (e) {
-      console.warn("[AudioSystem] Could not play PB fanfare:", e);
+    let freqs = [659.25, 830.61, 987.77, 1318.51];
+    if (isAo12 || isMultiple) {
+      freqs = [523.25, 659.25, 783.99, 987.77, 1046.5]; // C major 7th / Sparkle
     }
+
+    // The manager owns the shared context, the mixer and the master volume.
+    soundManager.setMasterVolume(this.volume);
+    soundManager.playFanfare(freqs, { bus: "ui", volume: 0.22 });
   }
 }
 

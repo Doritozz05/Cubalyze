@@ -44,10 +44,28 @@ import "@/index.css";
 // the same instance before the first render. The default import also
 // powers the toast helpers (i18n.t).
 import i18n from "@/i18n";
+import { soundManager } from "@/audio/soundManager";
 
 // Module-level registration — must happen before first render so WidgetHost
 // can resolve components from WidgetRegistry immediately.
 registerAllWidgets();
+
+// Warm the shared AudioContext at the EARLIEST possible moment so the user's
+// first cube turn never pays the ~1 s audio cold start ("el primer move no
+// es exacto"): Chromium's first AudioContext of a page blocks ~0.5 s at
+// construction and can freeze its clock ~1 s while the output device opens.
+//
+//   1. warmOnLoad() — pre-creates the context (deferred past first paint) so
+//      the device is already open when the first gesture arrives (creation
+//      needs no gesture; only playback does — measured: first resume ~30 ms).
+//   2. armForUserGesture() — whatever happens first, the FIRST trusted
+//      gesture anywhere (navigation, timer, settings) resumes the context;
+//      if a gesture beat the idle creation, it creates it right there.
+//
+// Fallback: if the browser refuses the early context, ensureContext() is
+// idempotent and the first-gesture path + clock gate take over unchanged.
+soundManager.warmOnLoad();
+soundManager.armForUserGesture();
 
 /**
  * ViewId ↔ URL path mapping (deep-linkable routes). The pathname's first
