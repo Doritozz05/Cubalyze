@@ -1,0 +1,148 @@
+/**
+ * Construcción de Hn, Ht, Sf, Sl (v4).
+ * Clave: Xt→Ht solo necesita un twist de corner-4. El v3 fallaba porque
+ * edgeCleanup requería un commutador no trivial cuando S1 YA era T.
+ * Fixes:
+ *  1) edgeCleanup devuelve "" si el estado ya es T.
+ *  2) cornerCleanup enumera TODAS las soluciones AS3 (la primera puede
+ *     desordenar aristas F2L; otra puede dejarlas intactas).
+ */
+import { readFileSync, writeFileSync } from "fs";
+import { resolve } from "path";
+import { CubeState } from "../../packages/math-core/src/index";
+
+const QA = JSON.parse(readFileSync(resolve(__dirname, "../raw/quest/quest-all.json"), "utf-8"));
+const DERIVED = JSON.parse(readFileSync(resolve(__dirname, "../generated/setups-independent.json"), "utf-8"));
+
+const INV: Record<string, string> = {
+  U: "U'", "U'": "U", U2: "U2", R: "R'", "R'": "R", R2: "R2",
+  F: "F'", "F'": "F", F2: "F2", D: "D'", "D'": "D", D2: "D2",
+  L: "L'", "L'": "L", L2: "L2", B: "B'", "B'": "B", B2: "B2",
+  M: "M'", "M'": "M", M2: "M2", E: "E'", "E'": "E", E2: "E2",
+  S: "S'", "S'": "S", S2: "S2", x: "x'", "x'": "x", x2: "x2",
+  y: "y'", "y'": "y", y2: "y2", z: "z'", "z'": "z", z2: "z2",
+  r: "r'", "r'": "r", r2: "r2", l: "l'", "l'": "l", l2: "l2",
+  f: "f'", "f'": "f", f2: "f2", b: "b'", "b'": "b", b2: "b2",
+  d: "d'", "d'": "d", d2: "d2", u: "u'", "u'": "u", u2: "u2",
+};
+function invertSeq(m: string): string {
+  return m.split(" ").filter(Boolean).reverse().map((x) => INV[x] ?? x).join(" ");
+}
+function normQuest(s: string): string {
+  return s.replace(/([RLUDFBMES]w?|[rludbfxyz])2'/g, "$12").replace(/’/g, "'");
+}
+function stateOf(moves: string): CubeState {
+  const s = new CubeState();
+  s.applySequence(normQuest(moves));
+  return s;
+}
+function f2lEq(a: CubeState, b: CubeState): boolean {
+  for (let i = 4; i <= 7; i++) if (a.cp[i] !== b.cp[i] || a.co[i] !== b.co[i]) return false;
+  for (let i = 8; i <= 11; i++) if (a.ep[i] !== b.ep[i] || a.eo[i] !== b.eo[i]) return false;
+  return true;
+}
+function cornersEq(a: CubeState, b: CubeState): boolean {
+  for (let i = 4; i <= 7; i++) if (a.cp[i] !== b.cp[i] || a.co[i] !== b.co[i]) return false;
+  return true;
+}
+function outSet(s: CubeState): string {
+  const findPos = (arr: readonly number[], p: number) => { for (let i = 0; i < arr.length; i++) if (arr[i] === p) return i; return -1; };
+  const o: string[] = [];
+  for (let c = 4; c <= 7; c++) if (findPos(s.cp, c) !== c) o.push(`C${c}`);
+  for (let e = 8; e <= 11; e++) if (findPos(s.ep, e) !== e) o.push(`E${e}`);
+  return o.sort().join("");
+}
+function outCount(s: CubeState): number {
+  const findPos = (arr: readonly number[], p: number) => { for (let i = 0; i < arr.length; i++) if (arr[i] === p) return i; return -1; };
+  let n = 0;
+  for (let c = 4; c <= 7; c++) if (findPos(s.cp, c) !== c) n++;
+  for (let e = 8; e <= 11; e++) if (findPos(s.ep, e) !== e) n++;
+  return n;
+}
+const FACES = ["U", "R", "F", "D", "L", "B"];
+const MOVES: string[] = [];
+for (const f of FACES) for (const t of ["", "'", "2"]) MOVES.push(f + t);
+function genSeqs(maxLen: number): string[] {
+  const out: string[] = [];
+  const build = (prefix: string[], lastFace: string) => {
+    if (prefix.length > 0) out.push(prefix.join(" "));
+    if (prefix.length >= maxLen) return;
+    for (const mv of MOVES) {
+      const f = mv[0];
+      if (f === lastFace) continue;
+      build([...prefix, mv], f);
+    }
+  };
+  build([], "");
+  return out;
+}
+const AS3 = genSeqs(3);
+const BU = ["U", "U'", "U2", "R", "R'", "R2", "F", "F'", "F2", "D", "D'", "D2", "L", "L'", "L2", "B", "B'", "B2"];
+
+/** Enumera TODAS las secuencias [A,B] con A∈AS3 que dejan esquinas = T. */
+function allCornerCleanups(S: CubeState, T: CubeState, cap: number): string[] {
+  const res: string[] = [];
+  for (const a of AS3) for (const b of BU) {
+    const seq = `${a} ${b} ${invertSeq(a)} ${invertSeq(b)}`;
+    const s = S.clone();
+    try { s.applySequence(seq); } catch { continue; }
+    if (cornersEq(s, T)) { res.push(seq); if (res.length >= cap) return res; }
+  }
+  return res;
+}
+/** Busca un [A,B] con A∈AS3 que deje TODO el F2L = T ("" si ya lo es). */
+function edgeCleanup(S: CubeState, T: CubeState): string | null {
+  if (f2lEq(S, T)) return "";
+  for (const a of AS3) for (const b of BU) {
+    const seq = `${a} ${b} ${invertSeq(a)} ${invertSeq(b)}`;
+    const s = S.clone();
+    try { s.applySequence(seq); } catch { continue; }
+    if (f2lEq(s, T)) return seq;
+  }
+  return null;
+}
+
+const NEEDED = ["Hn", "Ht", "Sf", "Sl"];
+const derived = DERIVED.filter((r: any) => r.status === "derived" && r.setup && !r.basic);
+const states = derived.map((m: any) => ({ patid: m.patid, setup: m.setup, state: stateOf(m.setup), out: outSet(stateOf(m.setup)) }));
+
+const out: any[] = [];
+const tGlobal = Date.now();
+for (const patid of NEEDED) {
+  const T = stateOf(normQuest(QA[patid.toLowerCase()].setup));
+  const tOut = outSet(T);
+  const cands = states.filter((s: any) => s.out === tOut);
+  console.log(`${patid} (fuera: ${tOut}): ${cands.length} derivados con mismas piezas`);
+  let built: { setup: string; via: string } | null = null;
+  for (const c of cands) {
+    const t0 = Date.now();
+    // caso base: S ya es T
+    if (f2lEq(c.state, T)) { built = { setup: c.setup, via: `${c.patid} (ya era T)` }; console.log(`  ✅ ${c.patid}: directo`); break; }
+    const ccs = allCornerCleanups(c.state, T, 20);
+    let found = false;
+    for (const cc of ccs) {
+      const s1 = c.state.clone();
+      s1.applySequence(cc);
+      const ec = edgeCleanup(s1, T);
+      if (ec !== null) {
+        built = { setup: ec === "" ? `${c.setup} ${cc}` : `${c.setup} ${cc} ${ec}`, via: `${c.patid} + [C_esq][C_ari]` };
+        console.log(`  ✅ ${c.patid}: ${cc}${ec === "" ? "" : " | " + ec} (${Date.now() - t0}ms)`);
+        found = true;
+        break;
+      }
+    }
+    if (found) break;
+    console.log(`  ✗ ${c.patid}: ${ccs.length} cleanups de esquinas, ninguno con aristas OK (${Date.now() - t0}ms)`);
+  }
+  if (!built) {
+    console.log(`  ❌ ${patid} no construido`);
+    out.push({ patid, status: "no-cleanup" });
+    continue;
+  }
+  const Sf = stateOf(built.setup);
+  out.push({ patid, status: "constructed", setup: built.setup, via: built.via, nOut: outCount(Sf), verified: f2lEq(Sf, T) });
+  console.log(`  setup: ${built.setup}`);
+  console.log(`  (total ${(Date.now() - tGlobal) / 1000}s)`);
+}
+writeFileSync(resolve(__dirname, "../generated/setups-constructed2.json"), JSON.stringify(out, null, 1));
+console.log(`\nconstruidos: ${out.filter((r) => r.status === "constructed").length}/${NEEDED.length}`);

@@ -46,7 +46,12 @@ coverage/
 out/
 .vite/
 .vercel/
-pruebas/
+# Scratch/experiment area: track only the scripts (pipeline + tooling) so
+# convention changes are visible in git; raw data, generated JSONs, logs,
+# backups and loose files stay local.
+pruebas/*
+!pruebas/scripts/
+pruebas/scripts/__pycache__/
 .freebuff/
 .junie/
 Thumbs.db
