@@ -157,13 +157,17 @@ export const F2L_SLOT_PIECES: Record<F2LSlotId, { homeC: number; homeE: number }
 
 // ─── Case pair identification (F2L) ────────────────────────────────────────
 //
-// The pair pieces corresponding to the selected F2L slot (default FR: DFR corner 4
-// + FR edge 8) are always kept colored wherever they are on the cube (whether in
-// the slot, in the U layer, or trapped in another position), while foreign pieces
-// are grayed out.
-function identifyPairForSlot(slot: F2LSlotId): { homeC: number; homeE: number } {
-  return F2L_SLOT_PIECES[slot] ?? F2L_SLOT_PIECES[0];
-}
+// The case pair (corner + edge) is a property of the CASE, never of the
+// selected slot: every F2L/Advanced F2L setup is generated in one canonical
+// orientation (the standard catalogs present the pair in the FR slot: DFR
+// corner 4 + FR edge 8), and the slot selector only rotates the CAMERA.
+// Deriving the pair from the selected slot would re-target the highlight to
+// that slot's home pieces on every rotation and gray out the actual case pair
+// — the "pair disappears when switching FR → FL/BL/BR" bug. So the pair is
+// always the canonical FR pair and stays constant across slot views; the pair
+// pieces are kept colored wherever they are (own slot, U layer, or trapped in
+// another slot) while foreign pieces are grayed.
+const F2L_CASE_PAIR = F2L_SLOT_PIECES[0];
 
 function generateCanonical3x3(caseData: AlgorithmCase, algorithm?: CasePresentationOptions['algorithm'] | null) {
   if (caseData.setupScramble) {
@@ -220,7 +224,7 @@ export function buildCaseRenderPlan(
     const rawState = CaseStateGenerator.generateFromScramble(caseData.setupScramble);
     engineFacelets = CaseStateGenerator.toFaceletString(rawState);
     if (f2l && !is2x2) {
-      pair = identifyPairForSlot(selectedSlot);
+      pair = F2L_CASE_PAIR;
     }
   }
   if (is2x2) {

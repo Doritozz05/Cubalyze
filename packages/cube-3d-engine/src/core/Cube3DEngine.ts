@@ -829,7 +829,7 @@ export class Cube3DEngine {
    *
    * @param grayColor CSS color string (default '#505050')
    * @param pair The case pair piece IDs ({@link CORNER_HOME_POSITION} / {@link EDGE_HOME_POSITION}
-   *   indices) identified from the setup — see casePresentation.identifyPairFromState.
+   *   indices) — the canonical F2L pair (see casePresentation.F2L_CASE_PAIR).
    */
   public setF2LMaskGray(
     grayColor: string = '#505050',

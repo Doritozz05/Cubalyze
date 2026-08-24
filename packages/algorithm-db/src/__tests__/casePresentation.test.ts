@@ -103,7 +103,8 @@ describe('canonical case presentation', () => {
 
     const plan = buildCaseRenderPlan(f2lCase!);
     expect(plan.isF2L).toBe(true);
-    // Basic F2L pair = FR slot pieces (DFR corner 4 + FR edge 8).
+    // Case pair is always the canonical FR pair (DFR corner 4 + FR edge 8) —
+    // NOT the selected slot's home pieces.
     expect(plan.pair).toEqual({ homeC: 4, homeE: 8 });
 
     const advCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000004');
@@ -111,8 +112,27 @@ describe('canonical case presentation', () => {
     const advPlan = buildCaseRenderPlan(advCase!);
     expect(advPlan.isF2L).toBe(true);
     expect(advPlan.isAdvancedF2L).toBe(true);
-    // F2L/Advanced F2L pair corresponds to the selected slot (default FR: corner 4 + edge 8).
     expect(advPlan.pair).toEqual({ homeC: 4, homeE: 8 });
+  });
+
+  it('keeps the case pair fixed when the slot view rotates (F2L stickering)', () => {
+    const f2lCase = cases.find((item) => item.subsetId === '00000000-0000-4000-9000-000000000003');
+    expect(f2lCase).toBeDefined();
+
+    // Rotating the slot must only rotate the model (camera), never re-target
+    // the highlighted pair to the new slot's home pieces.
+    const pairs = [0, 1, 2, 3].map((slot) =>
+      buildCaseRenderPlan(f2lCase!, { selectedF2LSlot: slot as 0 | 1 | 2 | 3 }),
+    );
+    for (const plan of pairs) {
+      expect(plan.pair).toEqual({ homeC: 4, homeE: 8 });
+    }
+    expect(pairs.map((p) => p.modelRotationY)).toEqual([
+      F2L_SLOT_MODEL_ROTATIONS[0],
+      F2L_SLOT_MODEL_ROTATIONS[1],
+      F2L_SLOT_MODEL_ROTATIONS[2],
+      F2L_SLOT_MODEL_ROTATIONS[3],
+    ]);
   });
 
   it('keeps the preferred F2L slot and camera radius in the render plan', () => {
