@@ -190,6 +190,12 @@ def build_case(set_key, set_name, c, seed_casedefs, report, f2l_birdf2l_map):
     for a in c["algorithms"]:
         n_in += 1
         moves = a["moves"]
+        # Advanced F2L is curated BirdF2L-only: the SpeedCubeDB algs fused into
+        # these cases were misattributed (e.g. Hb A5's SCDB alg U R' F R F' R'
+        # U' R does not solve that case at all), so only BirdF2L ships.
+        if set_key == "af2l" and a.get("source") != "BirdF2L":
+            n_bad += 1
+            continue
         if not all(MOVE_RE.match(m) for m in moves):
             n_bad += 1
             continue

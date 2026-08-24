@@ -21,7 +21,7 @@ import { resolve } from "path";
 import { getSeedData } from "../seed/index";
 
 interface ReportResult { set: string; caseNumber: string; moves: string; status: string }
-interface GeneratedAlg { moves: string[]; isDefault: boolean; votes?: number; notes?: string | null }
+interface GeneratedAlg { moves: string[]; isDefault: boolean; votes?: number; notes?: string | null; source?: string }
 interface GeneratedCase { caseDef: { subsetId: string; caseNumber: string; id: string }; algorithms: GeneratedAlg[] }
 interface GeneratedFile { set: string; subsetId: string; cases: GeneratedCase[] }
 
@@ -76,6 +76,13 @@ function collapseConsecutive(moves: string[]): string[] {
 const VALID_MOVE = /^([RLUDFB]w?|[rludfbMES]|[xyz])(2|'|\u2032)?$/;
 const isInvalidAlg = (moves: string[]) => !moves.every((m) => VALID_MOVE.test(m));
 
+/**
+ * Advanced F2L is curated BirdF2L-only: the SpeedCubeDB algs fused into those
+ * cases were misattributed (they do not solve the case they are attached to),
+ * so generate_seed_catalog drops them and the catalog tests skip them too.
+ */
+const shipsInSeed = (key: string, a: GeneratedAlg) => key !== "af2l" || a.source === "BirdF2L";
+
 const hasAll = Object.values(GENERATED).every(({ file }) =>
   existsSync(resolve(GEN_ROOT, file)),
 ) && existsSync(REPORT_PATH);
@@ -129,6 +136,7 @@ describe.runIf(hasAll)("SCDB seed catalog (full regeneration)", () => {
           const rk = `${set}|${c.caseDef.caseNumber}|${a.moves.join(" ")}`;
           if (failKeys.has(rk)) continue; // only verified algs are required
           if (isInvalidAlg(a.moves)) continue; // invalid tokens are dropped from the seed
+          if (!shipsInSeed(key, a)) continue; // af2l ships BirdF2L algs only
           const slot = a.notes?.match(/Slot:\s*(FR|FL|BL|BR)/)?.[1] ?? "";
           checked++;
           if (!present.has(`${slot}|${JSON.stringify(collapseConsecutive(a.moves))}`)) {

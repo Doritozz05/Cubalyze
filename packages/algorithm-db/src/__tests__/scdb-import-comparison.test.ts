@@ -17,14 +17,16 @@ import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { getSeedData } from "../seed/index";
 
-interface GeneratedAlg { moves: string[]; isDefault: boolean; votes?: number; notes?: string | null }
+interface GeneratedAlg { moves: string[]; isDefault: boolean; votes?: number; notes?: string | null; source?: string }
 interface GeneratedCase { caseDef: { caseNumber: string; subsetId: string }; algorithms: GeneratedAlg[] }
 interface GeneratedFile { source: string; set: string; subsetId: string; cases: GeneratedCase[] }
 
 const GENERATED: Record<string, string> = {
   pll: resolve(__dirname, "../../../../pruebas/generated/scdb-pll.json"),
   oll: resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json"),
-  // AdvancedF2L is seeded from the FUSED dump (fase5-fuse.ts: SCDB+BirdF2L).
+  // AdvancedF2L is seeded from the FUSED dump (fase5-fuse.ts: SCDB+BirdF2L)
+  // but ships BirdF2L algs only — the SCDB algs fused into those cases are
+  // misattributed (they do not solve the case), so the seed drops them.
   af2l: resolve(__dirname, "../../../../pruebas/generated/scdb-af2l-fused.json"),
 };
 
@@ -127,7 +129,13 @@ describe.runIf(hasAll)("SCDB Import (parser) vs seed catalog", () => {
         for (const sc of seedCases) {
           const gc = genByNumber.get(sc.caseNumber)!;
           const seedDefault = seed.algorithms.filter((a) => a.caseId === sc.id).find((a) => a.isDefault);
-          const genDefault = gc.algorithms.find((a) => a.isDefault)!;
+          // af2l ships BirdF2L algs only: the expected default is the one the
+          // generator promotes after dropping the misattributed SCDB algs.
+          const genDefault =
+            key === "af2l"
+              ? (gc.algorithms.filter((a) => a.source === "BirdF2L").find((a) => a.isDefault) ??
+                gc.algorithms.find((a) => a.source === "BirdF2L"))!
+              : gc.algorithms.find((a) => a.isDefault)!;
           const same = movesEqual(seedDefault?.moves, genDefault.moves);
           if (same) match++;
           console.log(
