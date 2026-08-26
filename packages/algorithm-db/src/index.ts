@@ -66,5 +66,9 @@ export { CaseVerifier } from './caseVerifier';
 export type { CaseVerificationResult, SubsetVerificationReport } from './caseVerifier';
 
 // Move parsing / reconstruction notation lives in @cubeforge/math-core
-// (notation/moveNotation). Case recognition was removed — reconstruction is
-// rebuilt on the stats pipeline (see docs/plan_reconstruction).
+// (notation/moveNotation).
+
+// ─── Modular Case Detection ──────────────────────────────────────────────
+// Recognition engine — detects algorithmic cases from cube states.
+// Designed for any puzzle, method, and subset (F2L, OLL, PLL, 2×2, …).
+export * from './recognition';

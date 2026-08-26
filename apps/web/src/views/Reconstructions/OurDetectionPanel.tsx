@@ -347,7 +347,20 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               ))}
             </span>
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          <span className="flex min-w-0 flex-col">
+            {p.detectedCase ? (
+              <>
+                <span className="text-[0.74rem] font-medium text-ink">
+                  {p.detectedCase.caseName}
+                </span>
+                <span className="mt-0.5 text-[0.56rem] text-ink-3">
+                  {p.detectedCase.caseNumber}
+                </span>
+              </>
+            ) : (
+              <span className="text-[0.64rem] text-ink-3/50">—</span>
+            )}
+          </span>
           <span className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (

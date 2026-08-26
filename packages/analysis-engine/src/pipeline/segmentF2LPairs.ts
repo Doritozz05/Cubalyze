@@ -33,7 +33,15 @@ import { pickSlotFrame } from './slotFrame';
  * completes exactly 3 entries after FL's first home) while keeping the
  * false-positive window tight.
  */
-const PERSISTENCE_WINDOW = 3;
+// Lookahead for the displacement heuristic: a completion whose slot dips
+// and re-appears is a REAL pair boundary when a DIFFERENT undedicated slot
+// completes inside the window (its insertion displaced the first slot).
+// 3 covered reconz-5061 (FL dips 2 entries, BL completes 3 later);
+// reconz-style solves with F-insertion passes through the just-finished
+// slot need more (cuberoot-2388: FR dips 2 entries and FL completes 7
+// entries after FR's first home). 8 covers both without spilling into the
+// next-next pair.
+const PERSISTENCE_WINDOW = 8;
 
 /**
  * Raw entry state in the SOLVER's frame (no frame rotation applied): when P2
