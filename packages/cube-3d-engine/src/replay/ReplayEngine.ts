@@ -881,9 +881,20 @@ export class ReplayEngine {
    */
   private startDelayedMove(): void {
     if (!this.delayedMove || this.orientationBusy) return;
-    // A pause/stop may have aborted the rotation chain mid-turn — do NOT start
-    // the move while the transport is not playing (it fires on resume).
-    if (this._state !== 'playing') return;
+    // A deferred move's slot has ALREADY arrived on the virtual clock (the
+    // tick advanced nextIndex when it deferred the move behind its grip
+    // rotation), so it must start as soon as the grip chain settles — even
+    // when the chain was ABORTED mid-turn by a pause/step (the renderer
+    // finishes the grip's current step, then the move applies).
+    //
+    // The old `state !== 'playing'` bail stranded the move whenever the chain
+    // was aborted: step-forward skipped it entirely (the replay "completed"
+    // with a missing move → unsolved cube while the counter said otherwise),
+    // resume-after-pause fired it AFTER the later moves the virtual clock
+    // already reached (out-of-order rotations → wrong end state), and
+    // step-backward applied its inverse over a move that never happened.
+    // stop()/seekImpl() null `delayedMove` before resetting, so a clean
+    // restart (Restart button) never replays it.
     const { index, animDuration } = this.delayedMove;
     this.delayedMove = null;
     this.startMove(index, animDuration, 0);
@@ -963,7 +974,10 @@ export class ReplayEngine {
     const prevApplied = this.lastAppliedOrientation;
     const finalOi = this.orientationTimeline[lastIdx][1];
     if (finalOi === prevApplied) return false;
-    this.lastAppliedOrientation = finalOi;
+    // NOTE: lastAppliedOrientation is NOT set eagerly here — the animated
+    // chain below records each COMPLETED step instead, so an aborted chain
+    // reflects the root's real last-reached grip (the unplayed tail then
+    // re-animates on resume instead of being silently skipped).
 
     // Collect the run of keyframes sharing the last keyframe's move index
     // (the consecutive rotations that happened before this move), preserving
@@ -983,6 +997,7 @@ export class ReplayEngine {
 
     if (animateMs <= 0) {
       // Snap (seeking): only the composed final orientation matters.
+      this.lastAppliedOrientation = finalOi;
       const prom = this.callbacks.setOrientation(finalOi, 0);
       if (prom instanceof Promise) prom.catch(() => {});
       return false;
@@ -1032,6 +1047,11 @@ export class ReplayEngine {
       for (const oi of steps) {
         const prom = this.callbacks.setOrientation!(oi, perStep);
         if (prom instanceof Promise) await prom.catch(() => {});
+        // The root is now AT this step's absolute orientation — record it so
+        // an aborted chain leaves lastAppliedOrientation at the grip actually
+        // reached (a later applyOrientationAt then re-animates only the tail
+        // that never ran, keeping the solver's perspective).
+        this.lastAppliedOrientation = oi;
         if (
           this._state === 'seeking' ||
           this._state === 'idle' ||
