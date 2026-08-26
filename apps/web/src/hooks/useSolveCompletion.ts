@@ -173,7 +173,12 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
           // Analysis is intentionally independent from the save continuation.
           // It waits for this exact insert, then patches this exact solve.
           // Nothing here depends on a global "pending solve" ref.
-          if (rawMoves.length > 0) {
+          //
+          // Deep phase analysis is 3×3-only (analysis-engine's PhaseSplitter
+          // + CFOP/Roux/ZZ/Petrus definitions on a 54-sticker CubeState).
+          // 2×2 virtual solves keep their moves for the replay but skip it —
+          // running the 3×3 pipeline would persist meaningless metrics.
+          if (rawMoves.length > 0 && capturedPuzzleType === "333") {
             queueSolveAnalysis(
               {
                 solveId,

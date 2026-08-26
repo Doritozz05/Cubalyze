@@ -552,16 +552,19 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
       orientations,
       orientationTimeline,
     ) => {
-      // 2×2 has no analysis pipeline yet (runAnalysis is 3×3-only), so its
-      // solves are saved like manual solves: source "virtual", no moves, no
-      // orientation timeline → no analysis, no replay. The DB already
-      // accepts puzzleType "222" (ADR-002) — nothing to migrate.
+      // Full move + orientation data is saved for BOTH orders (2×2 and 3×3)
+      // so the replay works identically for each: the 3D engine renders the
+      // cube by puzzleType (order 2 in ReplaySection) and the grip timeline
+      // animates whole-cube rotations like the smart cube's gyroscope. Deep
+      // phase analysis (runAnalysis) is 3×3-only — useSolveCompletion skips
+      // it for puzzleType "222", so 2×2 solves get the replay but no phase
+      // metrics. The DB already accepts puzzleType "222" (ADR-002).
       onVirtualSolveComplete?.(
         time,
         penalty,
-        order === 2 ? [] : moves,
-        order === 2 ? [] : orientations,
-        order === 2 ? undefined : orientationTimeline,
+        moves,
+        orientations,
+        orientationTimeline,
         {
           // Tag the solve so stats can filter it: manual / smart / virtual.
           source: "virtual",

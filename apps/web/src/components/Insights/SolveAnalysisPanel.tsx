@@ -105,7 +105,13 @@ export function SolveAnalysisPanel({
 
   // Re-analysis is meaningful whenever per-move data exists and the initial
   // analysis is not still pending (a pending live job would race with it).
-  const canReanalyze = (solve.moves?.length ?? 0) > 0 && !isLive;
+  // Deep analysis is 3×3-only: 2×2 solves keep moves for the replay but have
+  // no analysis pipeline, so re-running would feed 3×3 detection on a 2×2
+  // and persist meaningless metrics.
+  const canReanalyze =
+    (solve.moves?.length ?? 0) > 0 &&
+    !isLive &&
+    (solve.puzzleType ?? "333") === "333";
   const handleReanalyze = useCallback(async () => {
     if (!onReanalyze || isReanalyzing) return;
     setIsReanalyzing(true);
