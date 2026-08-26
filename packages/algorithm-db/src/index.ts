@@ -52,6 +52,7 @@ export type {
   F2LSlotId,
   CasePresentationOptions,
   CaseRenderPlan,
+  CaseStickerColors,
 } from './visualization/casePresentation';
 
 // AUF detection and canonical orientation

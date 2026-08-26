@@ -121,7 +121,7 @@ function Case3DSnapshotView({
     let isMounted = true;
     const el = wrapperRef.current;
     const fetchSnapshot = () => {
-      service.requestSnapshot(caseData, selectedSlot).then((url) => {
+      service.requestSnapshot(caseData, { selectedSlot }).then((url) => {
         if (isMounted) setSnapshotUrl(url);
       }).catch(() => {
         // The loading placeholder remains visible when WebGL is unavailable.

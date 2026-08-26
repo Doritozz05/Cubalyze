@@ -15,10 +15,30 @@ import {
 
 export type F2LSlotId = 0 | 1 | 2 | 3;
 
+export type CaseStickerColors = Partial<
+  Record<'U' | 'D' | 'F' | 'B' | 'R' | 'L', string>
+>;
+
 export interface CasePresentationOptions {
   algorithm?: Pick<Algorithm, 'moves' | 'viewPreferences' | 'customViewAngle' | 'customDiagramRotation'> | null;
   selectedF2LSlot?: F2LSlotId;
   camera?: OrbitCamera;
+  /**
+   * Optional 54-facelet string that overrides the state generated from
+   * `setupScramble` for the 3D engine. Used to render a case recolored to
+   * a solve's actual colors (e.g. the detection panel's mini case cubes):
+   * the geometry comes from the case, the sticker colors from the caller.
+   */
+  engineFacelets?: string;
+  /**
+   * Optional per-face sticker color override for the 3D render. When set,
+   * the engine paints every sticker on a given LOCAL cubie face with the
+   * supplied color and skips the F2L diagram swap (U↔D, R↔L) entirely —
+   * the override is authoritative. Used by the detection panel's mini case
+   * cubes to show the reconstruction's REAL colors (cross color on the
+   * bottom, the pair's two colors on F/R) instead of the diagram defaults.
+   */
+  stickerColors?: CaseStickerColors;
 }
 
 /**
@@ -41,6 +61,7 @@ export interface CaseRenderPlan {
   selectedF2LSlot: F2LSlotId;
   modelRotationY: number;
   camera: OrbitCamera;
+  stickerColors?: CaseStickerColors;
   diagramRotation?: number;
   /**
    * The case pair (corner + edge piece IDs) identified from the setup, for
@@ -227,6 +248,12 @@ export function buildCaseRenderPlan(
       pair = F2L_CASE_PAIR;
     }
   }
+  // An explicit facelet override wins over the generated setup state (used
+  // for recolored mini renders — geometry from the case, colors from the
+  // solve).
+  if (options.engineFacelets) {
+    engineFacelets = options.engineFacelets;
+  }
   if (is2x2) {
     const state = new Cube2x2State();
     if (caseData.setupScramble) {
@@ -254,6 +281,7 @@ export function buildCaseRenderPlan(
     selectedF2LSlot: selectedSlot,
     modelRotationY: is2x2 ? 0 : F2L_SLOT_MODEL_ROTATIONS[selectedSlot],
     camera,
+    stickerColors: options.stickerColors,
     diagramRotation: prefs.diagramRotation,
     pair,
   };
