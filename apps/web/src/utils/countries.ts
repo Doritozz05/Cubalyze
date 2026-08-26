@@ -17,6 +17,29 @@ export interface Country {
   name: string;
 }
 
+/**
+ * Countries sorted by their display name in the ACTIVE i18n language.
+ *
+ * `COUNTRIES` itself stays ordered by its EN fallback names; the dropdown
+ * must NOT use it directly, or Spanish users would see "España" buried
+ * under the S's (it sorts as "Spain"). This returns a per-language,
+ * memoized list ordered with `Intl.Collator` so accents and locale rules
+ * (Ñ after N, etc.) behave correctly.
+ */
+const sortedCache = new Map<string, Country[]>();
+
+export function countriesInLanguage(lng: string): Country[] {
+  let sorted = sortedCache.get(lng);
+  if (!sorted) {
+    const collator = new Intl.Collator(lng, { sensitivity: "base" });
+    sorted = [...COUNTRIES].sort((a, b) =>
+      collator.compare(countryName(a.code, lng), countryName(b.code, lng)),
+    );
+    sortedCache.set(lng, sorted);
+  }
+  return sorted;
+}
+
 export const COUNTRIES: Country[] = [
   { code: 'AD', name: 'Andorra' },
   { code: 'AE', name: 'United Arab Emirates' },
@@ -292,15 +315,16 @@ function regionNamesFor(lng: string): Intl.DisplayNames {
 }
 
 /**
- * Country display name for a code, localized to the active i18n language
- * (`Intl.DisplayNames`). Falls back to the bundled EN name and then to the
- * code itself when the platform can't resolve it (e.g. non-standard codes).
+ * Country display name for a code, localized to the given language (defaults
+ * to the active i18n language) via `Intl.DisplayNames`. Falls back to the
+ * bundled EN name and then to the code itself when the platform can't
+ * resolve it (e.g. non-standard codes).
  */
-export function countryName(code: string): string {
+export function countryName(code: string, lng: string = i18n.language): string {
   const fallback = COUNTRY_MAP[code]?.name ?? code;
   if (!code || !hasDisplayNames) return fallback;
   try {
-    return regionNamesFor(i18n.language).of(code) || fallback;
+    return regionNamesFor(lng).of(code) || fallback;
   } catch {
     return fallback;
   }

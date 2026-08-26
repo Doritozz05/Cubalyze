@@ -26,7 +26,7 @@ import {
   processAvatarImage,
 } from "@/utils/processAvatarImage";
 import { METHODS } from "@cubeforge/algorithm-db";
-import { COUNTRIES, countryName } from "@/utils/countries";
+import { countriesInLanguage, countryName } from "@/utils/countries";
 import {
   Select,
   SelectContent,
@@ -365,7 +365,7 @@ export function ProfileSection() {
             <SelectItem value="none">
               <span className="text-ink-3">{t("profile.notSet")}</span>
             </SelectItem>
-            {COUNTRIES.map((c) => (
+            {countriesInLanguage(i18n.language).map((c) => (
               <SelectItem key={c.code} value={c.code}>
                 <span className="flex items-center gap-2">
                   <CountryFlag country={c.code} withTooltip={false} />
