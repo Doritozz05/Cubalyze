@@ -103,12 +103,18 @@ export async function pushChanges(
   );
   const profile = await ctx.profiles.findById(uid);
   if (profile && (profile.updatedAt ?? 0) > profilesWm) {
+    const row = profileToCloudRow(profile, uid);
+    // M11 — carry the CubeMark seed with the profile so the mark stays
+    // stable across every device that links the account (the cloud profile
+    // holds the seed; a later device's pull reapplies it locally).
+    const seed = await ctx.meta.getIdenticonSeed();
+    if (seed) row.identicon_seed = seed;
     await pushSingle(
       ctx,
       totals,
       "profiles",
       pushWatermarkKey("profiles", uid),
-      [profileToCloudRow(profile, uid)],
+      [row],
       profile.updatedAt ?? 0,
     );
   }

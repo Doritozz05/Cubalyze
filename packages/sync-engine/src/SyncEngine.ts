@@ -28,6 +28,7 @@ import {
   TrainingRepository,
   USER_ID_KEY,
 } from "@cubeforge/database";
+import type { Profile } from "@cubeforge/models";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pullChanges } from "./pull";
 import { pushChanges } from "./push";
@@ -50,6 +51,33 @@ const EMPTY_TOTALS: SyncTotals = {
   appliedTombstones: 0,
   rebuilt: false,
 };
+
+/** Safe JSON parse for the cloud profile's declared_methods (string column). */
+function parseMethods(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as string[]).map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * M11 — true only when the profile carries real user content (as opposed to
+ * the empty installation default). Used to decide whether a claim's local
+ * profile may seed the cloud (first device) or must yield to an already
+ * edited cloud profile.
+ */
+function profileHasContent(profile: Profile): boolean {
+  return Boolean(
+    (profile.displayName ?? "").trim() ||
+      (profile.handle ?? "").trim() ||
+      (profile.bio ?? "").trim() ||
+      (profile.country ?? "").trim() ||
+      (profile.avatarKind === "photo" && profile.avatarData) ||
+      (profile.declaredMethods?.length ?? 0) > 0,
+  );
+}
 
 export class SyncEngine {
   private ctx: SyncContext;
@@ -164,6 +192,43 @@ export class SyncEngine {
     return false;
   }
 
+  /**
+   * M11 — read the account's cloud profile row (if any). This is consulted
+   * during a claim merge to decide whether the local profile may seed the
+   * cloud or must yield to an already-edited cloud profile. Returns null
+   * when the account has no profile row (should not happen after signup,
+   * but defensively).
+   */
+  private async readCloudProfile(uid: string): Promise<Profile | null> {
+    if (!this.uid) return null;
+    const supabase = this.ctx.supabase;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", uid);
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row) return null;
+    return {
+      userId: String(row.user_id ?? ""),
+      displayName: String(row.display_name ?? ""),
+      handle: String(row.handle ?? ""),
+      bio: String(row.bio ?? ""),
+      avatarKind: row.avatar_kind === "photo" ? "photo" : "identicon",
+      avatarData:
+        row.avatar_data == null ? undefined : String(row.avatar_data),
+      mainPuzzle: String(row.main_puzzle ?? "333"),
+      declaredMethods: Array.isArray(row.declared_methods)
+        ? (row.declared_methods as string[])
+        : typeof row.declared_methods === "string"
+          ? parseMethods(row.declared_methods)
+          : [],
+      country: String(row.country ?? ""),
+      createdAt: Number(row.created_at) || 0,
+      updatedAt: Number(row.updated_at) || 0,
+    };
+  }
+
   /** What this device holds locally (shown in the claim dialog). */
   async getCounts(): Promise<LocalDataCounts> {
     return {
@@ -235,13 +300,43 @@ export class SyncEngine {
         const profile =
           anonProfile ?? (await this.ctx.profiles.findById(uid));
         if (profile && profile.userId !== uid) {
-          await this.ctx.meta.setIdenticonSeed(profile.userId);
-          // Local remap: { local: true } stamps updated_at with the
-          // monotonic clock so the remapped profile is pushed (M9).
-          await this.ctx.profiles.upsert(
-            { ...profile, userId: uid },
-            { local: true },
-          );
+          // M11 — Cloud profile wins the merge. Before remapping and
+          // uploading the local profile, check what the cloud already holds:
+          // a brand-new account's signup trigger creates an EMPTY profile
+          // row, and every device has a local profile (also empty unless the
+          // user edited it). Uploading the local profile unconditionally —
+          // with a fresh monotonic updated_at that LWW then honours — lets
+          // the SECOND (empty) device silently clobber the profile the FIRST
+          // device edited. We only upload the local profile when the cloud
+          // row is still the empty default (first claim / identity seed); if
+          // the cloud already holds an edited profile, we park the local
+          // seed and let the claim's pull bring the cloud profile down.
+          const cloudProfile = await this.readCloudProfile(uid);
+          if (
+            !cloudProfile ||
+            !profileHasContent(profile)
+          ) {
+            // No edited cloud profile yet: the local identity seeds the
+            // account (first device / first edit). Park the CubeMark seed
+            // and remap the local profile to the account so it is pushed.
+            await this.ctx.meta.setIdenticonSeed(profile.userId);
+            if (profileHasContent(profile)) {
+              // Local remap: { local: true } stamps updated_at with the
+              // monotonic clock so the remapped profile is pushed (M9).
+              await this.ctx.profiles.upsert(
+                { ...profile, userId: uid },
+                { local: true },
+              );
+            }
+          } else {
+            // Cloud already holds an edited profile: it must win. Drop the
+            // local anonymous profile row (it would otherwise linger
+            // orphaned) and let the claim's pull fetch the cloud profile.
+            // The local CubeMark seed is still parked so THIS device keeps
+            // its original mark.
+            await this.ctx.meta.setIdenticonSeed(profile.userId);
+            await this.ctx.profiles.delete(profile.userId);
+          }
         } else if (!profile) {
           await this.ctx.profiles.getOrCreate(uid);
         }

@@ -27,6 +27,7 @@ import {
   SkillProgressRepository,
   SolvesRepository,
   TrainingRepository,
+  IDENTICON_SEED_KEY,
   USER_ID_KEY,
 } from "@cubeforge/database";
 import { SyncEngine } from "../SyncEngine";
@@ -617,6 +618,132 @@ describe("E) claim fresh keeps the cloud profile", () => {
 
     // The CubeMark seed was parked (D2: the mark stays stable).
     expect(await dev.ctx.meta.get("identicon_seed")).toBe("anon-1111");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// E2/M11) A second (EMPTY) device that links the same account must NOT clobber
+// an edited cloud profile with its installation-default profile — the cloud
+// profile wins the merge.
+// ────────────────────────────────────────────────────────────────────────────
+describe("E2) an empty device cannot overwrite an edited cloud profile (M11)", () => {
+  it("device B's empty local profile yields to device A's edited cloud profile", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    // Device A: an edited local profile (name + bio + country) under its
+    // anonymous id, which then claims the account with a merge.
+    await a.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await a.ctx.profiles.upsert({
+      userId: "anon-A",
+      displayName: "Ada Cube",
+      handle: "ada",
+      bio: "edited on device A",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "AR",
+      createdAt: 1000,
+      updatedAt: 0,
+    });
+    const engineA = new SyncEngine(a.executor, cloud.client() as never, undefined);
+    engineA.setUser(UID, { schedule: false });
+    await engineA.claim("merge");
+
+    // Cloud now holds A's edited profile.
+    const cloudProfileAfterA = cloud.profiles.get(UID);
+    expect(cloudProfileAfterA?.display_name).toBe("Ada Cube");
+    expect(cloudProfileAfterA?.bio).toBe("edited on device A");
+
+    // Device B: an EMPTY installation-default profile under its anonymous id.
+    await b.ctx.meta.set(USER_ID_KEY, "anon-B");
+    await b.ctx.profiles.getOrCreate("anon-B");
+    const engineB = new SyncEngine(b.executor, cloud.client() as never, undefined);
+    engineB.setUser(UID, { schedule: false });
+    await engineB.claim("merge");
+
+    // The empty device must NOT have clobbered A's edited profile.
+    const cloudProfileAfterB = cloud.profiles.get(UID);
+    expect(cloudProfileAfterB?.display_name).toBe("Ada Cube");
+    expect(cloudProfileAfterB?.bio).toBe("edited on device A");
+
+    // And device B now follows the cloud profile, not its empty local one.
+    const localOnB = await b.ctx.profiles.findById(UID);
+    expect(localOnB?.displayName).toBe("Ada Cube");
+    expect(localOnB?.country).toBe("AR");
+  });
+
+  it("the FIRST edited device can still seed an empty cloud profile", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await dev.ctx.profiles.upsert({
+      userId: "anon-A",
+      displayName: "First User",
+      handle: "first",
+      bio: "",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "US",
+      createdAt: 1000,
+      updatedAt: 0,
+    });
+    const engine = new SyncEngine(dev.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    await engine.claim("merge");
+
+    // Account's cloud profile was empty (signup trigger) → local seeded it.
+    expect(cloud.profiles.get(UID)?.display_name).toBe("First User");
+    expect(cloud.profiles.get(UID)?.country).toBe("US");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// E3/M11) The CubeMark identicon seed travels with the cloud profile, so a
+// second device that links the account renders the same identicon (not its
+// own anonymous seed).
+// ────────────────────────────────────────────────────────────────────────────
+describe("E3) identicon seed propagates across devices (M11)", () => {
+  it("the seed pushed by the first device is re-applied on a second device", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    // Device A: edited profile (seeds the empty cloud) + its CubeMark seed.
+    await a.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await a.ctx.profiles.upsert({
+      userId: "anon-A",
+      displayName: "Ada Cube",
+      handle: "ada",
+      bio: "",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "US",
+      createdAt: 1000,
+      updatedAt: 0,
+    });
+    const engineA = new SyncEngine(a.executor, cloud.client() as never, undefined);
+    engineA.setUser(UID, { schedule: false });
+    await engineA.claim("merge");
+
+    // The cloud profile now carries A's mark seed.
+    expect(cloud.profiles.get(UID)?.identicon_seed).toBe("anon-A");
+
+    // Device B: empty default profile + its OWN (different) local seed.
+    await b.ctx.meta.set(USER_ID_KEY, "anon-B");
+    await b.ctx.meta.set(IDENTICON_SEED_KEY, "anon-B");
+    await b.ctx.profiles.getOrCreate("anon-B");
+    const engineB = new SyncEngine(b.executor, cloud.client() as never, undefined);
+    engineB.setUser(UID, { schedule: false });
+    await engineB.claim("merge");
+
+    // B re-applies the account's seed from the cloud profile, so its
+    // identicon matches device A instead of its own anon seed.
+    expect(await b.ctx.meta.getIdenticonSeed()).toBe("anon-A");
   });
 });
 
