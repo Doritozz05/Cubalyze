@@ -264,39 +264,36 @@ class FakeCloud {
 
   /** PostgREST-shaped client. */
   client() {
-    const self = this;
     return {
-      from(table: string) {
-        return {
-          select: () => ({
-            eq: (col: string, val: string) => {
-              const map = (self as unknown as Record<string, Map<string, Record<string, unknown>>>)[
-                table
-              ] as Map<string, Record<string, unknown>> | undefined;
-              const rows = map
-                ? [...map.values()].filter((r) => String(r[col]) === String(val))
-                : [];
-              return {
-                gt: (col2: string, wm: number) => ({
-                  order: (col3: string, opts: { ascending?: boolean }) => {
-                    const filtered = rows.filter((r) => Number(r[col2]) > Number(wm));
-                    filtered.sort((a, b) =>
-                      opts?.ascending === false
-                        ? Number(b[col3]) - Number(a[col3])
-                        : Number(a[col3]) - Number(b[col3]),
-                    );
-                    return { data: filtered, error: null };
-                  },
-                }),
-                data: rows,
-                error: null,
-              };
-            },
-          }),
-        };
-      },
+      from: (table: string) => ({
+        select: () => ({
+          eq: (col: string, val: string) => {
+            const map = (this as unknown as Record<string, Map<string, Record<string, unknown>>>)[
+              table
+            ] as Map<string, Record<string, unknown>> | undefined;
+            const rows = map
+              ? [...map.values()].filter((r) => String(r[col]) === String(val))
+              : [];
+            return {
+              gt: (col2: string, wm: number) => ({
+                order: (col3: string, opts: { ascending?: boolean }) => {
+                  const filtered = rows.filter((r) => Number(r[col2]) > Number(wm));
+                  filtered.sort((a, b) =>
+                    opts?.ascending === false
+                      ? Number(b[col3]) - Number(a[col3])
+                      : Number(a[col3]) - Number(b[col3]),
+                  );
+                  return { data: filtered, error: null };
+                },
+              }),
+              data: rows,
+              error: null,
+            };
+          },
+        }),
+      }),
       rpc: (name: string, args: { payload: Record<string, Record<string, unknown>[]> }) =>
-        self.rpc(name, args),
+        this.rpc(name, args),
     };
   }
 }
