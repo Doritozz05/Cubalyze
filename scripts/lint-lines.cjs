@@ -29,6 +29,12 @@ const ALLOWLIST = [
   // gates): 1055 lines after the grip-rotation fix (3df0562). Splitting it in
   // a cleanup commit would risk replay behavior — needs a dedicated refactor.
   "packages/cube-3d-engine/src/replay/ReplayEngine.ts",
+  // Sync data-integrity regression suite (real migrations + real repos against
+  // an in-memory sqlite-wasm + FakeCloud mirror): 1023 lines after the E2/E3
+  // cloud-profile and identicon-seed cases. Splitting the shared FakeCloud
+  // harness into a helper would duplicate the mirror — flagged for a dedicated
+  // cleanup, kept together for now (same rationale as ReplayEngine above).
+  "packages/sync-engine/src/__tests__/sync.integrity.test.ts",
   "packages/gan-protocol/src/gan-cube-protocol.ts",
   // Generated algorithm-catalog DATA (pruebas/scripts/generate_seed_catalog.py,
   // "DO NOT edit by hand"): flat tables of thousands of algorithm rows. Not
