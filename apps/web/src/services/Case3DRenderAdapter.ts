@@ -15,18 +15,30 @@ export function applyCaseRenderPlan(
   plan: CaseRenderPlan,
 ): void {
   const baseStyle = getSkinStyle("default");
-  const style = plan.isF2L || plan.order === 2
+  // A stickerColor override is authoritative: it replaces the per-face skin
+  // colors (and skips the F2L diagram swap) so a render can show the
+  // reconstruction's real colors. Without it, F2L/2×2 cases use the diagram
+  // convention (cross face painted as the U color) so the pair reads "up".
+  const style = plan.stickerColors
     ? {
         ...baseStyle,
         stickerColors: {
           ...baseStyle.stickerColors,
-          U: baseStyle.stickerColors.D,
-          D: baseStyle.stickerColors.U,
-          R: baseStyle.stickerColors.L,
-          L: baseStyle.stickerColors.R,
+          ...plan.stickerColors,
         },
       }
-    : baseStyle;
+    : plan.isF2L || plan.order === 2
+      ? {
+          ...baseStyle,
+          stickerColors: {
+            ...baseStyle.stickerColors,
+            U: baseStyle.stickerColors.D,
+            D: baseStyle.stickerColors.U,
+            R: baseStyle.stickerColors.L,
+            L: baseStyle.stickerColors.R,
+          },
+        }
+      : baseStyle;
 
   engine.updateStyle(style);
   engine.sceneManager.setOrbitAngles(

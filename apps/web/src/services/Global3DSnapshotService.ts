@@ -2,7 +2,9 @@ import { Cube3DEngine } from "@cubeforge/cube-3d-engine";
 import {
   buildCaseRenderPlan,
   type AlgorithmCase,
+  type CaseStickerColors,
   type F2LSlotId,
+  type OrbitCamera,
 } from "@cubeforge/algorithm-db";
 import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 const STORAGE_PREFIX = "cubeforge_snap_3d_v8_";
@@ -28,13 +30,36 @@ function boundedSet(map: Map<string, string>, key: string, value: string, max: n
 }
 
 
+/** Options for a snapshot render. */
+export interface SnapshotRequestOptions {
+  selectedSlot?: number;
+  /** 54-facelet override: geometry comes from the case, stickers from the caller. */
+  facelets?: string;
+  /** Per-face sticker color override (authoritative — skips the F2L diagram swap). */
+  stickerColors?: CaseStickerColors;
+  camera?: OrbitCamera;
+}
+
 type RenderTask = {
   key: string;
   caseData: AlgorithmCase;
   selectedSlot: number;
+  facelets?: string;
+  stickerColors?: CaseStickerColors;
+  camera?: OrbitCamera;
   resolve: (url: string) => void;
   reject: (err: Error) => void;
 };
+
+/** FNV-1a 32-bit hash — short, stable cache-key suffix for facelet overrides. */
+function hashFacelets(facelets: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < facelets.length; i++) {
+    h ^= facelets.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return h.toString(36);
+}
 
 export class Global3DSnapshotService {
   private static instance: Global3DSnapshotService | null = null;
@@ -149,9 +174,20 @@ export class Global3DSnapshotService {
 
   public requestSnapshot(
     caseData: AlgorithmCase,
-    selectedSlot = 0,
+    options: SnapshotRequestOptions = {},
   ): Promise<string> {
-    const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}`;
+    const { selectedSlot = 0, facelets, stickerColors, camera } = options;
+    // The facelet / color overrides (a recolored case) must be part of the
+    // key or two pairs sharing the same case with different colors would
+    // collide in the cache.
+    const faceletsKey = facelets ? `_c${hashFacelets(facelets)}` : '';
+    const colorsKey = stickerColors
+      ? `_s${hashFacelets(Object.values(stickerColors).join('|'))}`
+      : '';
+    const cameraKey = camera
+      ? `_v${camera.theta.toFixed(3)}_${camera.phi.toFixed(3)}`
+      : '';
+    const cacheKey = `${caseData.id}_${caseData.setupScramble}_${selectedSlot}${faceletsKey}${colorsKey}${cameraKey}`;
     const cached = this.getCachedSnapshot(cacheKey);
     if (cached) return Promise.resolve(cached);
 
@@ -168,6 +204,9 @@ export class Global3DSnapshotService {
         key: cacheKey,
         caseData,
         selectedSlot,
+        facelets,
+        stickerColors,
+        camera,
         resolve: (url) => {
           const pendings = this.pendingRequests.get(cacheKey) || [];
           this.pendingRequests.delete(cacheKey);
@@ -222,7 +261,7 @@ export class Global3DSnapshotService {
       }
 
       try {
-        const { key, caseData, selectedSlot } = task;
+        const { key, caseData, selectedSlot, facelets, stickerColors, camera } = task;
         const is2x2 = caseData.puzzleType === '222';
         const order = is2x2 ? 2 : 3;
         const engine = this.getOrCreateEngine(order);
@@ -236,6 +275,9 @@ export class Global3DSnapshotService {
 
         const plan = buildCaseRenderPlan(caseData, {
           selectedF2LSlot: selectedSlot as F2LSlotId,
+          engineFacelets: facelets,
+          stickerColors,
+          camera,
         });
 
         // Snapshot and interactive canvas now execute the same render plan.

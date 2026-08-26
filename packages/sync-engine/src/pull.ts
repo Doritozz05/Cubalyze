@@ -175,6 +175,13 @@ async function applyRows(
     case "profiles": {
       for (const row of rows) {
         const profile = cloudRowToProfile(row);
+        // M11 — the cloud profile carries the CubeMark seed (the original
+        // anonymous id of the first edited device). Reapply it to THIS
+        // device's app_meta so every device linked to the account renders
+        // the same identicon, not its own anonymous seed.
+        const seed =
+          row.identicon_seed == null ? undefined : String(row.identicon_seed);
+        if (seed) await ctx.meta.setIdenticonSeed(seed);
         const local = await ctx.profiles.findById(profile.userId);
         if (!local || (local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
           await ctx.profiles.upsert(profile);

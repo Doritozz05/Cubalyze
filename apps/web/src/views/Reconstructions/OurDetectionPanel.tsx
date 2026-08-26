@@ -23,7 +23,7 @@
  * pair colors sit with the phase: the slot chip below the phase name, colors
  * to its right.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,14 @@ import {
   analyzeSolveText,
   type SolveReconstruction,
 } from "@cubeforge/analysis-engine";
+import {
+  CASE_RENDER_GRAY,
+  getSeedData,
+  type AlgorithmCase,
+} from "@cubeforge/algorithm-db";
 import { isRotation, tokenize } from "@cubeforge/math-core";
+import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
+import { FACE_HEX } from "@/components/Insights/atoms/faceColors";
 import type { ReconFullRecord } from "./reconData";
 
 // ─── Moves arrive in the solver's raw notation (one token per entry) ──────
@@ -72,6 +79,97 @@ function interleave(
   }
   while (ri < sorted.length) out.push(sorted[ri++].token);
   return out;
+}
+
+// ─── Mini case cube (3D snapshot, recolored to the solve's colors) ──────────
+
+/** Which of the pair's two side colors is the FRONT-facing one, per slot.
+ *  The canonical seed renders the case at FR, so the pair's front (F face
+ *  of the render) must show the color that faces the solver in the solve:
+ *  for FR/FL that is the edge's first home color (F), for BR/BL the second
+ *  (R/L). The other side color goes to the right. */
+const FRONT_SIDE_INDEX: Record<string, number> = {
+  FR: 0,
+  FL: 0,
+  BR: 1,
+  BL: 1,
+};
+
+/** Sticker-color override for the mini cube: the reconstruction's REAL
+ *  colors — cross color on the bottom (D), the pair's front-facing color
+ *  on the front (F), the other side color on the right (R) — with the top,
+ *  back and left faces neutral. The engine paints every sticker by its
+ *  LOCAL cubie face, so the pair pieces (DFR corner = D/F/R stickers, FR
+ *  edge = F/R stickers) always show exactly cross + pair colors wherever
+ *  the case places them; the F2L mask grays everything that is not the
+ *  pair. The case geometry is the canonical setup, untouched. */
+function pairStickerColors(
+  crossColor: string,
+  sideColors: [string, string],
+  slot: string,
+): Record<string, string> {
+  const frontIdx = FRONT_SIDE_INDEX[slot] ?? 0;
+  const frontColor = sideColors[frontIdx];
+  const rightColor = sideColors[1 - frontIdx];
+  return {
+    U: CASE_RENDER_GRAY,
+    D: FACE_HEX[crossColor] ?? crossColor,
+    F: FACE_HEX[frontColor] ?? frontColor,
+    R: FACE_HEX[rightColor] ?? rightColor,
+    B: CASE_RENDER_GRAY,
+    L: CASE_RENDER_GRAY,
+  };
+}
+
+/** Tiny 3D snapshot of a case (shared offscreen WebGL engine + cache). */
+function CaseMiniCube({
+  caseData,
+  slotIndex,
+  stickerColors,
+  alt,
+}: {
+  caseData: AlgorithmCase;
+  slotIndex: number;
+  stickerColors?: Record<string, string> | null;
+  alt: string;
+}) {
+  const service = Global3DSnapshotService.getInstance();
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    service
+      .requestSnapshot(caseData, {
+        selectedSlot: slotIndex,
+        stickerColors: stickerColors ?? undefined,
+      })
+      .then((u) => {
+        if (alive) setUrl(u);
+      })
+      .catch(() => {
+        // WebGL unavailable — the row keeps showing names + color chips.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [service, caseData, slotIndex, stickerColors]);
+
+  if (!url) {
+    return (
+      <span
+        className="block size-10 shrink-0 animate-pulse rounded-md border border-line bg-surface-2/40"
+        aria-hidden
+      />
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt={alt}
+      draggable={false}
+      className="pointer-events-none size-10 shrink-0 rounded-md border border-line bg-surface-2/40 object-contain"
+    />
+  );
 }
 
 // Grid layout: parent wrapper defines the shared 4-column tracks so all rows
@@ -129,6 +227,17 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       totalTimeMs: record.time > 0 ? record.time * 1000 : undefined,
     });
   }, [canDetect, record]);
+
+  // Case lookup for the mini 3D cubes: seed cases indexed by caseNumber
+  // (and name as a fallback), so a detectedCase can render its diagram.
+  const casesByNumber = useMemo(() => {
+    const m = new Map<string, AlgorithmCase>();
+    for (const c of getSeedData().cases) {
+      if (!m.has(c.caseNumber)) m.set(c.caseNumber, c);
+      if (c.name && !m.has(c.name)) m.set(c.name, c);
+    }
+    return m;
+  }, []);
 
   const failed = result === null && canDetect;
 
@@ -347,7 +456,45 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
               ))}
             </span>
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          <span className="flex min-w-0 items-center gap-2">
+            {p.detectedCase &&
+              (() => {
+                const caseData =
+                  casesByNumber.get(p.detectedCase!.caseNumber) ??
+                  casesByNumber.get(p.detectedCase!.caseName);
+                if (!caseData) return null;
+                const stickerColors =
+                  crossColor && p.colors.length === 2
+                    ? pairStickerColors(
+                        crossColor,
+                        p.colors as [string, string],
+                        p.slot,
+                      )
+                    : null;
+                return (
+                  <CaseMiniCube
+                    caseData={caseData}
+                    slotIndex={0}
+                    stickerColors={stickerColors}
+                    alt={p.detectedCase!.caseName}
+                  />
+                );
+              })()}
+            <span className="flex min-w-0 flex-col">
+              {p.detectedCase ? (
+                <>
+                  <span className="text-[0.74rem] font-medium text-ink">
+                    {p.detectedCase.caseName}
+                  </span>
+                  <span className="mt-0.5 text-[0.56rem] text-ink-3">
+                    {p.detectedCase.caseNumber}
+                  </span>
+                </>
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+            </span>
+          </span>
           <span className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (

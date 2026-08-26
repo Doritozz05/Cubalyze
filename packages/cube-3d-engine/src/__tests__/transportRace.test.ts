@@ -96,6 +96,8 @@ interface FakeWorker {
   callbacks: ReplayCallbacks;
   flushRotations: () => void;
   stop: () => void;
+  /** Order in which layer rotations were APPLIED by the worker (mechanism proof). */
+  applied: string[];
 }
 
 function makeFakeWorker(): FakeWorker {
@@ -129,13 +131,18 @@ function makeFakeWorker(): FakeWorker {
       setTimeout(() => { Promise.resolve(fn()).then(resolve, reject); }, 1);
     });
 
+  const applied: string[] = [];
+
   const callbacks: ReplayCallbacks = {
     // resetCube is the CURRENT real engine's contract: it resets the model
     // but does NOT touch the rotation engine. A stale in-flight task can
     // therefore snap AFTER the reset and corrupt it.
     resetCube: () => post(() => { model.resetCube(); model.root.quaternion.identity(); }),
     rotateLayers: (axis, layers, angle, dur, elapsed) =>
-      post(() => rot.rotateLayers(axis as 'x' | 'y' | 'z', layers as number[], angle, dur ?? 0, elapsed ?? 0)),
+      post(() => {
+        applied.push(`${axis}${(layers as number[]).join('')}:${angle}:d${dur ?? 0}`);
+        return rot.rotateLayers(axis as 'x' | 'y' | 'z', layers as number[], angle, dur ?? 0, elapsed ?? 0);
+      }),
     setOrientation: (oi, dur) =>
       post(() => new Promise<void>((resolve) => {
         const entry = OrientationTable.ENTRIES[oi];
@@ -173,6 +180,7 @@ function makeFakeWorker(): FakeWorker {
     callbacks,
     flushRotations: () => rot.flushAll?.(),
     stop: () => clearInterval(loop),
+    applied,
   };
 }
 
@@ -481,5 +489,164 @@ describe('transport race: RotationEngine.flushAll contract', () => {
     const mismatches = stateMismatches(ref, w.model);
     expect(mismatches).toEqual([]);
     expect(engine.currentMoveIndex).toBe(-1);
+  }, 20000);
+});
+
+// ─── Deferred-move race: pause / step while a mid-solve grip chain turns ─────
+//
+// REGRESSION TESTS for the user-reported "replay ends with the cube unsolved
+// after using the transport controls" bug family:
+//
+//   "Si en la replay reinicias / adelantas / atrasas, casi siempre va bien,
+//    pero a veces la replay acaba y el cubo no está resuelto — está roto.
+//    Si reinicias y le das al play, se resuelve correctamente."
+//
+// Root cause: when a move's slot carries an orientation keyframe (a mid-solve
+// whole-cube grip), the tick DEFERS the layer move until the grip chain
+// finishes (rotate → wait → move) but advances nextIndex past it immediately.
+// If the user pauses mid-chain, the chain aborts after its current step and
+// the deferred move is left pending while nextIndex is already past it:
+//
+//   • resume-play fires the deferred move AFTER the later moves the virtual
+//     clock already reached → out-of-order rotations → WRONG end state;
+//   • step-forward skips the deferred move entirely → the replay "completes"
+//     with a missing move → UNSOLVED cube;
+//   • step-backward applies the deferred move's INVERSE over a move that was
+//     never applied → double corruption.
+//
+// Restart (pause + seek 0) resets and fast-reapplies from a clean slate —
+// which is exactly why "reiniciar + play" always fixes the cube again.
+
+const TIMELINE_CHAIN_AT_MOVE_2: OrientationTimeline = (() => {
+  const z = OrientationTable.rotationEntryFor('z')!;
+  const y = OrientationTable.rotationEntryFor('y')!;
+  const x = OrientationTable.rotationEntryFor('x')!;
+  const zy = OrientationTable.compose(z, y);
+  const zyx = OrientationTable.compose(zy, x);
+  const zyxy = OrientationTable.compose(zyx, y);
+  return [
+    [2, z.id],
+    [2, zy.id],
+    [2, zyx.id],
+    [2, zyxy.id],
+  ];
+})();
+
+async function waitUntil(cond: () => boolean, timeoutMs: number, stepMs = 5): Promise<void> {
+  const start = Date.now();
+  while (!cond()) {
+    if (Date.now() - start > timeoutMs) throw new Error('waitUntil timed out');
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+}
+
+describe('deferred-move race: pause mid grip-chain (unsolved at end)', () => {
+  it('REGRESSION: pause mid-chain → play → deferred move must NOT fire after later moves → cube SOLVED', async () => {
+    const w = makeFakeWorker();
+    const engine = buildEngine(makeMoves(6), w, { speed: 2, timeline: TIMELINE_CHAIN_AT_MOVE_2 });
+    const stopRaf = driveMain();
+
+    const done = new Promise<void>((r) => (engine.onComplete = () => r()));
+    await engine.play();
+
+    // Move 2 (F) is deferred behind its 4-step grip chain (~560ms real at 2x).
+    // Wait until the virtual clock passed move 3's slot (offset 1500) while
+    // the chain is still animating (position 1500 arrives ~250ms before the
+    // chain ends), then pause to abort the chain mid-turn.
+    await waitUntil(() => engine.positionMs >= 1500 && engine.currentMoveIndex === 2, 4000);
+    engine.pause();
+    await new Promise((r) => setTimeout(r, 400)); // chain settles (aborted)
+
+    // Resume: the tick sees pos ≥ offset(3) first, so move 3 (L) is
+    // dispatched BEFORE the stranded deferred move 2 (F) fires → out of order.
+    await engine.play();
+    await done;
+    await drain(w);
+    stopRaf();
+
+    // Mechanism: move 2 = F → 'z1:-90'; move 3 = L → 'x-1:90'. Move 2 must
+    // be applied BEFORE move 3 (it was due first).
+    const applied = w.applied;
+    const idxMove2 = applied.findIndex((m) => m.startsWith('z1:-90'));
+    const idxMove3 = applied.findIndex((m) => m.startsWith('x-1:90'));
+    expect(idxMove2).toBeGreaterThan(-1);
+    expect(idxMove3).toBeGreaterThan(-1);
+    expect(idxMove2).toBeLessThan(idxMove3); // ← FAILS pre-fix (3 before 2)
+
+    // Consequence: the cube must end SOLVED.
+    const ref = await applyReference(makeMoves(6));
+    const mismatches = stateMismatches(ref, w.model);
+    expect(mismatches).toEqual([]); // ← FAILS pre-fix
+  }, 20000);
+
+  it('REGRESSION: pause mid-chain → step-forward to the end → replay completes with a missing move (unsolved)', async () => {
+    const w = makeFakeWorker();
+    const engine = buildEngine(makeMoves(6), w, { speed: 2, timeline: TIMELINE_CHAIN_AT_MOVE_2 });
+    const stopRaf = driveMain();
+
+    await engine.play();
+    // Move 2 deferred, grip chain still animating.
+    await waitUntil(() => engine.currentMoveIndex === 2, 4000);
+    engine.pause(); // aborts the chain → move 2 stranded, nextIndex already 3
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Step through the whole rest of the solve. The deferred move 2 must not
+    // be skipped — pre-fix it never fires, so the replay "completes" with
+    // moves 0,1,3,4,5 applied → UNSOLVED cube (counter says Move 6/6).
+    for (let i = 0; i < 8 && engine.state !== 'complete'; i++) {
+      await engine.stepForward();
+    }
+    await drain(w);
+    stopRaf();
+
+    expect(engine.state).toBe('complete');
+    // The cube must equal a FULL, in-order application of the 6 moves — the
+    // missing move 2 makes it diverge (the counter says "complete" anyway).
+    const ref = await applyReference(makeMoves(6));
+    const mismatches = stateMismatches(ref, w.model);
+    expect(mismatches).toEqual([]); // ← FAILS pre-fix (move 2 missing)
+  }, 20000);
+
+  it('REGRESSION: pause mid-chain → step-backward must undo a move that WAS applied, not the deferred one', async () => {
+    const w = makeFakeWorker();
+    const engine = buildEngine(makeMoves(6), w, { speed: 2, timeline: TIMELINE_CHAIN_AT_MOVE_2 });
+    const stopRaf = driveMain();
+
+    await engine.play();
+    await waitUntil(() => engine.currentMoveIndex === 2, 4000);
+    engine.pause();
+    await new Promise((r) => setTimeout(r, 400));
+
+    // Move 2 was never applied (deferred + aborted) — stepping backward must
+    // undo move 1, NOT apply move 2's inverse on top of nothing.
+    await engine.stepBackward();
+    await drain(w);
+    stopRaf();
+
+    expect(engine.currentMoveIndex).toBe(1);
+    // After the undo the cube must equal moves 0..1 applied — pre-fix the
+    // inverse of the NEVER-applied move 2 landed on top of 0,1 (corruption).
+    const ref = await applyReference(makeMoves(6).slice(0, 2));
+    const mismatches = stateMismatches(ref, w.model);
+    expect(mismatches).toEqual([]); // ← FAILS pre-fix (INV(2) applied)
+  }, 20000);
+
+  it('CONTROL: same timeline, plain play to the end → cube SOLVED (timeline itself is fine)', async () => {
+    const w = makeFakeWorker();
+    const engine = buildEngine(makeMoves(6), w, { speed: 2, timeline: TIMELINE_CHAIN_AT_MOVE_2 });
+    const stopRaf = driveMain();
+
+    const done = new Promise<void>((r) => (engine.onComplete = () => r()));
+    await engine.play();
+    await done;
+    await drain(w);
+    stopRaf();
+
+    expect(engine.state).toBe('complete');
+    // Plain playback must produce the exact in-order end state — proves the
+    // timeline/grip mechanics themselves are sound (no pause involved).
+    const ref = await applyReference(makeMoves(6));
+    const mismatches = stateMismatches(ref, w.model);
+    expect(mismatches).toEqual([]);
   }, 20000);
 });

@@ -27,9 +27,18 @@ import {
   getOrientationAtIndex,
   OrientationTable,
   f2lSlotNames,
+  applyFrameRotation,
+  bestFrameRotationSequence,
+  type CubeState,
   type FaceLetter,
   type F2LSlotInfo,
 } from '@cubeforge/math-core';
+import {
+  CaseDetector,
+  createBasicF2LDetector,
+  recolorState,
+  type DetectionResult,
+} from '@cubeforge/algorithm-db';
 import type {
   CubeFace,
   CubeMoveDirection,
@@ -80,6 +89,20 @@ export interface F2LPairResult {
   completionIndex: number;
   /** Leading U moves before the pair's insertion. */
   auf: string[];
+  /**
+   * The recognized algorithmic case for this pair (Basic F2L — 41 cases).
+   * Present only when the modular case detector is available and matched;
+   * `confidence: 'unknown'` when the pair is not in the basic catalog
+   * (e.g. advanced F2L techniques).
+   */
+  detectedCase?: {
+    /** Case number from the catalog, e.g. "F2L 1". */
+    caseNumber: string;
+    /** BirdF2L case name, e.g. "Jb". */
+    caseName: string;
+    /** 'exact' when the pair signature matched the catalog. */
+    confidence: 'exact' | 'unknown';
+  };
 }
 
 export interface SolveReconstruction {
@@ -571,6 +594,45 @@ function buildCross(
   };
 }
 
+/**
+ * Build the state at a pair's CUT index — the frame just before the pair's
+ * first move — in the same solver frame the pair scan used.
+ *
+ * Mirrors the frame measurement in segmentF2LPairs: solverFrameStates +
+ * bestFrameRotationSequence (the D/E frame DP). The pair's start index is
+ * `completionIndex - moves.length + 1` (the completion entry minus the
+ * owned moves, in ENTRY space).
+ */
+function pairCutState(
+  timeline: SolveTimeline,
+  crossFace: string,
+  scheme: Record<string, string> | null,
+  start: number,
+  end: number,
+  cut: number,
+): CubeState | null {
+  if (cut < 0) return null;
+  const spanStart = Math.max(0, start - 1);
+  const spanStates: CubeState[] = [];
+  for (let i = spanStart; i <= end; i++) {
+    const snap = timeline.solverFrameStates?.[i] ?? timeline.entries[i]?.state;
+    if (!snap) return null;
+    spanStates.push(TimelineBuilder.fromSnapshot(snap));
+  }
+  const frames = bestFrameRotationSequence(
+    spanStates,
+    0,
+    spanStates.length - 1,
+    crossFace,
+    scheme ?? IDENTITY_SCHEME,
+  );
+  const j = cut - spanStart;
+  if (j < 0 || j >= frames.length) return null;
+  const snap = timeline.solverFrameStates?.[cut] ?? timeline.entries[cut]?.state;
+  if (!snap) return null;
+  return applyFrameRotation(TimelineBuilder.fromSnapshot(snap), frames[j]);
+}
+
 function buildPairs(
   timeline: SolveTimeline,
   crossFace: string,
@@ -586,21 +648,78 @@ function buildPairs(
   // detection picks the SAME cross as the PhaseSplitter did (without it, a
   // spurious cross on an untouched layer can win the tie and the pair scan
   // sees the wrong frame — the reconz-12564 empty-pairs regression).
-  return segmentF2LPairs(timeline, {
+  const pairs = segmentF2LPairs(timeline, {
     crossFace,
     scheme,
     displayTokens,
     preferredCrossIdx,
     relaxedCross,
-  }).map(
-    (p) => ({
+  });
+
+  // ── Modular case detection (Basic F2L — 41 cases) ────────────────────
+  // The detector is created lazily per call: the catalog build reads the
+  // 41 seed setups and computes ~164 signatures, which is cheap but not
+  // free, and most reconstructions have 4 pairs. The detector itself is
+  // stateless after construction, so it could be hoisted to module scope
+  // if hot-path profiling ever demands it.
+  const f2l = timeline.detectionReport?.phases.find(
+    (p) => p.phaseName === 'F2L',
+  );
+  const cross = timeline.detectionReport?.phases.find(
+    (p) => p.phaseName === 'Cross',
+  );
+  const f2lStart = f2l?.startIndex ?? 0;
+  const f2lEnd = f2l?.endIndex ?? timeline.entries.length - 1;
+  const pairScanStart = (cross?.endIndex ?? f2lStart - 1) + 1;
+  let detector: CaseDetector | null = null;
+
+  return pairs.map((p) => {
+    const base: F2LPairResult = {
       slot: p.slot,
       colors: p.colors as [FaceLetter, FaceLetter],
       moves: p.moves,
       completionIndex: p.completionIndex,
       auf: p.auf,
-    }),
-  );
+    };
+
+    // Detection only applies to real F2L pairs (non-empty slots).
+    if (!p.slot || p.slot.startsWith('SLOT-')) return base;
+
+    if (!detector) {
+      detector = createBasicF2LDetector();
+    }
+
+    try {
+      const startIdx = p.completionIndex - p.moves.length + 1;
+      const cut = startIdx - 1;
+      const state = pairCutState(
+        timeline,
+        crossFace,
+        scheme ?? null,
+        pairScanStart,
+        f2lEnd,
+        cut,
+      );
+      if (!state) return base;
+
+      const canon = scheme
+        ? recolorState(state, scheme)
+        : state;
+
+      const result: DetectionResult = detector.detect(canon, crossFace, p.slot);
+      if (result.entry && result.confidence === 'exact') {
+        base.detectedCase = {
+          caseNumber: result.entry.caseNumber,
+          caseName: result.entry.caseName,
+          confidence: result.confidence,
+        };
+      }
+    } catch {
+      // Detection must never break the reconstruction.
+    }
+
+    return base;
+  });
 }
 
 function buildLLPhase(

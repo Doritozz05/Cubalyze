@@ -157,7 +157,10 @@ export const FACE_LAYERS: Record<string, FaceLayerData> = {
   },
   B: {
     crossEdges: [Edge.UB, Edge.DB, Edge.BR, Edge.BL],
-    f2lCorners: [Corner.UBR, Corner.ULB, Corner.DBL, Corner.DRB],
+    // NOTE: DR pairs with DRB and DL with DBL (corner must be adjacent
+    // to both the edge's faces and the cross face B). The naive listing
+    // [DBL, DRB] had DR paired with DBL, which is not a valid slot.
+    f2lCorners: [Corner.UBR, Corner.ULB, Corner.DRB, Corner.DBL],
     f2lEdges: [Edge.UR, Edge.UL, Edge.DR, Edge.DL],
     lastLayerEdges: [Edge.UF, Edge.DF, Edge.FR, Edge.FL],
     lastLayerCorners: [Corner.URF, Corner.UFL, Corner.DFR, Corner.DLF],
