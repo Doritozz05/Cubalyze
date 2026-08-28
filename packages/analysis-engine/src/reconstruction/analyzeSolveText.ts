@@ -79,13 +79,18 @@ export interface F2LPairResult {
   /** The pair's two side colors (canonical face letters). */
   colors: [FaceLetter, FaceLetter];
   /**
-   * The pair's two side colors as the solver saw them — canonical letters,
-   * scheme-applied (rotation independent), `front` facing the solver. When
-   * absent (unreadable completion state) the caller should fall back to
-   * `colors`.
+   * The pair's two side colors ALREADY ORDERED for the canonical FR mini
+   * case render — `leftColor` goes on the render's F face (LEFT of the
+   * image), `rightColor` on the render's R face. Derived from the ACTUAL
+   * sticker faces in the detection frame (see segmentF2LPairs
+   * pairDisplayColors), so they are the pair's real physical colors —
+   * scheme-applied and rotation independent, never duplicated across
+   * mirror pairs — for ANY cross or scheme. Absent when the completion
+   * state cannot be read (defensive; the caller falls back to `colors`
+   * with the same L→F→R ordering rule).
    */
-  frontColor?: FaceLetter;
-  sideColor?: FaceLetter;
+  leftColor?: FaceLetter;
+  rightColor?: FaceLetter;
   /**
    * The moves that completed this pair, in the SOLVER's raw notation
    * (wide moves as written: r', u2, …), one token per timeline entry —
@@ -786,8 +791,8 @@ function buildPairs(
     const base: F2LPairResult = {
       slot: p.slot,
       colors: p.colors as [FaceLetter, FaceLetter],
-      frontColor: p.frontColor,
-      sideColor: p.sideColor,
+      leftColor: p.leftColor,
+      rightColor: p.rightColor,
       moves: p.moves,
       completionIndex: p.completionIndex,
       auf: p.auf,

@@ -86,46 +86,58 @@ function interleave(
 
 // ─── Mini case cube (3D snapshot, recolored to the solve's colors) ──────────
 
-/** Fallback front/side ordering when the engine could not read the pair's
- *  real stickers (unreadable completion state): for FR/FL the edge's first
- *  home color (F) faces the solver, for BR/BL the second (R/L). The engine's
- *  `frontColor`/`sideColor` (scheme-applied, rotation independent) replace
- *  this whenever present. */
-const FRONT_SIDE_INDEX: Record<string, number> = {
-  FR: 0,
-  FL: 0,
-  BR: 1,
-  BL: 1,
-  UF: 0,
-  DF: 0,
-  UR: 1,
-  UL: 1,
-  DR: 1,
-  DL: 1,
-  UB: 1,
-  DB: 1,
-};
+/**
+ * Order a pair's two colors for the canonical FR mini-case render, as the
+ * pair is seen from outside the cube: the L sticker goes LEFT (FL/BL —
+ * orange-left/green-right, the mirror of FR instead of a duplicate), else
+ * the F sticker (FR — green-left/red-right), else the B sticker (BR —
+ * blue-left/red-right), else R (side-cross slots). Mirrors are always
+ * distinct — never two pairs that both look green-left.
+ *
+ * The engine's `leftColor`/`rightColor` (read from the ACTUAL sticker
+ * faces in the detection frame — scheme-applied, rotation independent)
+ * replace this whenever present; this is the defensive fallback for
+ * unreadable completion states, applied to the canonical slot letters.
+ */
+function orderPairColors(
+  a: string | undefined,
+  b: string | undefined,
+): [string | undefined, string | undefined] {
+  if (a == null || b == null) return [a, b];
+  const pair = [a, b];
+  const left = pair.includes("L")
+    ? "L"
+    : pair.includes("F")
+      ? "F"
+      : pair.includes("B")
+        ? "B"
+        : pair.includes("R")
+          ? "R"
+          : a;
+  const right = pair.find((c) => c !== left) ?? b;
+  return [left, right];
+}
 
 /** Sticker-color override for the mini cube: the reconstruction's REAL
- *  colors — cross color on the bottom (D), the pair's front-facing color
- *  on the front (F), the other side color on the right (R) — with the top,
- *  back and left faces neutral. The engine paints every sticker by its
- *  LOCAL cubie face, so the pair pieces (DFR corner = D/F/R stickers, FR
- *  edge = F/R stickers) always show exactly cross + pair colors wherever
- *  the case places them; the F2L mask grays everything that is not the
- *  pair. The case geometry is the canonical setup, untouched. `front` and
- *  `side` arrive ALREADY ordered (from the engine's scheme-applied read, or
- *  the FRONT_SIDE_INDEX fallback above) — no rotation logic here. */
+ *  colors — cross color on the bottom (D), the pair's LEFT color on the
+ *  front (F), its RIGHT color on the right (R) — with the top, back and
+ *  left faces neutral. The engine paints every sticker by its LOCAL cubie
+ *  face, so the pair pieces (DFR corner = D/F/R stickers, FR edge = F/R
+ *  stickers) always show exactly cross + pair colors wherever the case
+ *  places them; the F2L mask grays everything that is not the pair. The
+ *  case geometry is the canonical setup, untouched. `left` and `right`
+ *  arrive ALREADY ordered (from the engine's sticker read, or the
+ *  orderPairColors fallback) — no rotation logic here. */
 function pairStickerColors(
   crossColor: string,
-  frontColor: string,
-  sideColor: string,
+  leftColor: string,
+  rightColor: string,
 ): Record<string, string> {
   return {
     U: CASE_RENDER_GRAY,
     D: FACE_HEX[crossColor] ?? crossColor,
-    F: FACE_HEX[frontColor] ?? frontColor,
-    R: FACE_HEX[sideColor] ?? sideColor,
+    F: FACE_HEX[leftColor] ?? leftColor,
+    R: FACE_HEX[rightColor] ?? rightColor,
     B: CASE_RENDER_GRAY,
     L: CASE_RENDER_GRAY,
   };
@@ -558,35 +570,19 @@ export function OurDetectionPanel({
 
       {/* ── F2L pairs ── */}
       {pairs.map((p, i) => {
-        // The pair's two side colors as the solver saw them: the engine's
-        // scheme-applied read (rotation independent) when present, else the
-        // canonical slot letters with the FRONT_SIDE_INDEX fallback.
-        const frontIdx = FRONT_SIDE_INDEX[p.slot] ?? 0;
-        // The canonical mini-case is always viewed from FR (F face on the
-        // LEFT of the image, R on the RIGHT), so the pair's two stickers
-        // must be placed by which face they belong to, not by the solver
-        // slot name. The left sticker of the pair is the L color, so any
-        // pair carrying an L sticker shows it on the LEFT; otherwise the
-        // front F sticker goes left (FR pairs); otherwise R. This keeps
-        // FR (green+red) as green-left/red-right and makes its mirror FL
-        // (green+orange) orange-left/green-right — two distinct views,
-        // never two pairs that both look green-left.
-        const rawFront = p.frontColor ?? p.colors[frontIdx];
-        const rawSide = p.sideColor ?? p.colors[1 - frontIdx];
-        const pairColorsCanonical = [rawFront, rawSide];
-        const frontColor = pairColorsCanonical.includes("L")
-          ? "L"
-          : pairColorsCanonical.includes("F")
-            ? "F"
-            : pairColorsCanonical.includes("R")
-              ? "R"
-              : rawFront;
-        const sideColor =
-          pairColorsCanonical.find((c) => c !== frontColor) ?? rawSide;
-        const pairColors = [frontColor, sideColor];
+        // The pair's two colors ALREADY ordered for the canonical FR
+        // mini-case render (LEFT of the image = render F face, RIGHT =
+        // render R face): the engine's scheme-applied sticker read (real
+        // physical colors, rotation independent) when present, else the
+        // canonical slot letters ordered with the same L→F→R rule.
+        const [leftColor, rightColor] =
+          p.leftColor && p.rightColor
+            ? [p.leftColor, p.rightColor]
+            : orderPairColors(p.colors[0], p.colors[1]);
+        const pairColors = [leftColor, rightColor];
         const stickerColors =
           crossColor && pairColors.every((c) => c != null)
-            ? pairStickerColors(crossColor, frontColor, sideColor)
+            ? pairStickerColors(crossColor, leftColor!, rightColor!)
             : null;
         return (
         <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(p.from)}>

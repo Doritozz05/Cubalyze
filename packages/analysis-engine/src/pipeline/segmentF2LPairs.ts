@@ -102,14 +102,16 @@ export interface UnifiedF2LPair {
   /** The pair's two side colors (canonical face letters). */
   colors: [FaceLetter, FaceLetter];
   /**
-   * The pair's two side colors AS THE SOLVER SAW THEM, in canonical
-   * letters the renderer can paint directly (scheme-applied — rotation
-   * independent). `front` is the sticker that faced the solver, `side` the
-   * other one. Absent when the completion state cannot be read (defensive;
+   * The pair's two side colors in the order the canonical FR mini-case
+   * renders them — `left` goes on the render's F face (LEFT of the image),
+   * `right` on the render's R face. Derived from the ACTUAL sticker faces
+   * in the solver's frame (see pairDisplayColors), so they are physically
+   * correct — and never duplicated across mirror pairs — for ANY cross or
+   * scheme. Absent when the completion state cannot be read (defensive;
    * the panel then falls back to `colors`).
    */
-  frontColor?: FaceLetter;
-  sideColor?: FaceLetter;
+  leftColor?: FaceLetter;
+  rightColor?: FaceLetter;
   /**
    * Moves that completed this pair, one token per timeline entry: the
    * SOLVER's raw notation when the caller provided displayTokens (text
@@ -175,9 +177,19 @@ function entriesToTokens(
 }
 
 /**
- * The pair's two side colors as the solver actually saw them, read from
- * the corner at the slot's home position in a DP-rotated solver-frame
- * state.
+ * The pair's two side colors in the order the canonical FR mini-case
+ * renders them, read from the corner at the slot's home position in a
+ * DP-rotated solver-frame state.
+ *
+ * The order is derived from the ACTUAL faces the stickers sit on in the
+ * solver's frame, never from a fixed per-slot table or from the color
+ * letters (which only describe a canonical scheme):
+ *
+ *   - a pair touching the L face shows its L sticker on the LEFT (FL/BL →
+ *     orange-left/green-right, the mirror of FR instead of a duplicate),
+ *   - else the F-face sticker goes LEFT (FR pairs → green-left/red-right),
+ *   - else the B-face sticker (BR pairs → blue-left/red-right),
+ *   - else the R-face sticker (side-cross slots like UR/DR).
  *
  * Why raw stickers: `colors` (edgeColor of the slot's home edge) is in
  * the frame's own letters, which for a rotated frame (cross on F/B/R/L)
@@ -189,15 +201,14 @@ function entriesToTokens(
  * edgeColor says ['U','L'] = white+orange). The facelet letters at the
  * corner ARE the physical colors (U=white, R=red, …), so reading them
  * directly paints the pair exactly as the solver saw it — independent of
- * the solve's rotation. `front` is the sticker that faced the solver: on
- * the frame's F face when the corner touches it, else the R/L face
- * adjacent to it (back/bottom slots).
+ * the solve's rotation or scheme. Returns null when the state cannot be
+ * read.
  */
-function pairFrontSideColors(
+function pairDisplayColors(
   state: CubeState,
   crossFace: string,
   slotIndex: number,
-): { front: FaceLetter; side: FaceLetter } | null {
+): { left: FaceLetter; right: FaceLetter } | null {
   const facelets = FaceletStringConverter.toFaceletString(state);
   const cornerPos = FACE_LAYERS[crossFace]?.f2lCorners?.[slotIndex];
   if (cornerPos == null) return null;
@@ -207,15 +218,23 @@ function pairFrontSideColors(
   }
   const sideFaces = Object.keys(perFace).filter((f) => f !== crossFace);
   if (sideFaces.length !== 2) return null;
-  // Sticker that faced the solver: on F when the corner touches it, else
-  // the R/L face adjacent to it (BR/BL/UR/UL/DR/DL/UB/DB).
-  const frontFace = sideFaces.includes('F')
-    ? 'F'
-    : (sideFaces.find((f) => f === 'R' || f === 'L') ?? sideFaces[0]);
-  const front = perFace[frontFace] as FaceLetter;
-  const side = perFace[sideFaces.find((f) => f !== frontFace)!] as FaceLetter;
-  if (!front || !side) return null;
-  return { front, side };
+  // LEFT = the sticker on the face that sits on the viewer's left when the
+  // pair is seen from outside the cube: L for FL/BL, F for FR, B for BR
+  // (side-cross slots without F/B keep their R face). RIGHT = the other
+  // one. Face-based, so it holds for any cross frame.
+  const leftFace = sideFaces.includes('L')
+    ? 'L'
+    : sideFaces.includes('F')
+      ? 'F'
+      : sideFaces.includes('B')
+        ? 'B'
+        : sideFaces.includes('R')
+          ? 'R'
+          : sideFaces[0];
+  const left = perFace[leftFace] as FaceLetter;
+  const right = perFace[sideFaces.find((f) => f !== leftFace)!] as FaceLetter;
+  if (!left || !right) return null;
+  return { left, right };
 }
 
 /**
@@ -451,10 +470,10 @@ export function segmentF2LPairs(
         // The pair's real stickers (scheme-applied canonical letters) — the
         // corner at the slot's home position is guaranteed to be the pair by
         // the piece-anchored completion check above.
-        let pairSide: { front: FaceLetter; side: FaceLetter } | null = null;
+        let pairSide: { left: FaceLetter; right: FaceLetter } | null = null;
         if (slotInfo && state) {
           try {
-            pairSide = pairFrontSideColors(state, crossFace, b);
+            pairSide = pairDisplayColors(state, crossFace, b);
           } catch {
             pairSide = null; // never break segmentation over colors
           }
@@ -468,8 +487,8 @@ export function segmentF2LPairs(
           colors: slotInfo
             ? slotInfo.colors
             : (['?', '?'] as unknown as [FaceLetter, FaceLetter]),
-          frontColor: pairSide?.front,
-          sideColor: pairSide?.side,
+          leftColor: pairSide?.left,
+          rightColor: pairSide?.right,
           moves: rangeMoves,
           movesCount: i - segmentStart + 1,
           auf: leadingUMoves(rangeMoves),
