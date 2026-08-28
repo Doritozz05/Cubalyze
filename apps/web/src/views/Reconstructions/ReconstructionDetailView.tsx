@@ -366,12 +366,12 @@ export function ReconstructionDetailView({
         </div>
       </header>
 
-      {/* ── Main Layout: Stacked (mobile-style) or Split (side-by-side) ── */}
+      {/* ── Main Layout: Stacked (mobile-style or user preference) vs Desktop Split (side-by-side) ── */}
       {isStacked ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-5">
             {solve && (
-              <div className="flex flex-col aspect-16/10 sm:aspect-video w-full min-h-75 sm:min-h-95 max-h-130 rounded-xl border border-line bg-surface p-3 sm:p-4 shadow-xs">
+              <div className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-video w-full min-h-75 sm:min-h-95 max-h-130 rounded-xl border border-line bg-surface p-3 sm:p-4 shadow-xs">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
@@ -386,11 +386,11 @@ export function ReconstructionDetailView({
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          {/* Replay — responsive split: 48% on lg (tablets), 58% on xl (desktops), ~45vh on mobile/portrait */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden lg:flex-row">
+          {/* Replay — on mobile (< lg), scrolls in document flow with the content list; on desktop (lg+), sticky split column */}
           {solve && (
-            <div className="flex min-h-0 w-full flex-col max-lg:h-[46vh] max-lg:min-h-72.5 max-lg:max-h-105 lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
-              <div className="flex w-full h-full min-h-0 flex-col p-2.5 sm:p-4">
+            <div className="w-full shrink-0 max-lg:px-3 max-lg:pt-4 max-lg:pb-1 max-w-4xl mx-auto lg:mx-0 lg:max-w-none lg:h-full lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
+              <div className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-auto w-full min-h-75 sm:min-h-95 lg:min-h-0 lg:h-full rounded-xl border border-line bg-surface p-3 sm:p-4 lg:rounded-none lg:border-0 lg:bg-transparent shadow-xs lg:shadow-none">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
@@ -403,8 +403,8 @@ export function ReconstructionDetailView({
             </div>
           )}
 
-          {/* Right — scrollable content list */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:w-[52%] xl:w-5/12 lg:flex-1">
+          {/* Right — content list: on mobile (< lg), flows seamlessly in the same scroll container; on desktop (lg+), scrolls independently */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:overflow-y-auto lg:w-[52%] xl:w-5/12">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 py-4 sm:px-5 sm:py-5">
               {contentList}
             </div>
