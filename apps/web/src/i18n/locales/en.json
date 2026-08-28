@@ -3375,7 +3375,9 @@
       "chipLl": "LL",
       "chipRotations": "Rotations",
       "chipAvg": "Avg",
-      "chipCube": "Cube"
+      "chipCube": "Cube",
+      "layoutStacked": "Vertical layout",
+      "layoutSplit": "Split layout"
     },
     "detection": {
       "title": "Our detection",

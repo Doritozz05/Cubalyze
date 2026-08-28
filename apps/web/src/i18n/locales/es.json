@@ -3375,7 +3375,9 @@
       "chipLl": "LL",
       "chipRotations": "Rotaciones",
       "chipAvg": "Media",
-      "chipCube": "Cubo"
+      "chipCube": "Cubo",
+      "layoutStacked": "Modo vertical",
+      "layoutSplit": "Modo dividido"
     },
     "detection": {
       "title": "Nuestra detección",

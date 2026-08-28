@@ -118,9 +118,10 @@ function aufRotationDeg(aufFace?: string): number {
 
 // ─── Table Grid Layout Constants ────────────────────────────────────────────
 
-const GRID_CONTAINER = "grid grid-cols-[7.5rem_minmax(5.5rem,max-content)_1fr_2.75rem]";
+const GRID_CONTAINER =
+  "grid min-w-[26rem] sm:min-w-0 grid-cols-[5.5rem_minmax(4.5rem,max-content)_1fr_2.25rem] sm:grid-cols-[6.5rem_minmax(5rem,max-content)_1fr_2.5rem] xl:grid-cols-[7.5rem_minmax(5.5rem,max-content)_1fr_2.75rem]";
 const ROW_GRID = "grid grid-cols-subgrid col-span-4";
-const ROW = "items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2";
+const ROW = "items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors hover:bg-surface-2";
 const ROW_LINE = "border-b border-line";
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ function CaseMiniCube({
   if (!url) {
     return (
       <span
-        className="block size-10 shrink-0 animate-pulse rounded-md border border-line bg-surface-2/40"
+        className="block size-8 sm:size-10 shrink-0 animate-pulse rounded-md border border-line bg-surface-2/40"
         aria-hidden
       />
     );
@@ -171,7 +172,7 @@ function CaseMiniCube({
       src={url}
       alt={alt}
       draggable={false}
-      className="pointer-events-none size-10 shrink-0 rounded-md border border-line bg-surface-2/40 object-contain"
+      className="pointer-events-none size-8 sm:size-10 shrink-0 rounded-md border border-line bg-surface-2/40 object-contain"
     />
   );
 }
@@ -198,7 +199,7 @@ function LastLayerCaseCell({
         setupScramble={caseData.setupScramble}
         style={style}
         rotation={rotation}
-        className="size-10 shrink-0 rounded-md border border-line bg-surface-2/40"
+        className="size-8 sm:size-10 shrink-0 rounded-md border border-line bg-surface-2/40"
       />
       <span className="flex min-w-0 flex-col">
         <span className="text-[0.74rem] font-medium text-ink truncate">
@@ -474,9 +475,9 @@ export function OurDetectionPanel({
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2 sm:py-2.5">
         <SectionHeader title={t("detection.title")} eyebrow={t("detection.eyebrow")} />
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <CfopMiniBar
             crossMoves={crossMoves.length}
             f2lMoves={f2lTotalMoves}
@@ -492,191 +493,193 @@ export function OurDetectionPanel({
         </div>
       </div>
 
-      {/* ── Outer 4-Column Table Grid ── */}
-      <div className={GRID_CONTAINER}>
-        {/* Column headers */}
-        <div
-          className={cn(
-            ROW_GRID,
-            "items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
-          )}
-        >
-          <span className="whitespace-nowrap">{t("detail.colPhase")}</span>
-          <span className="whitespace-nowrap">{t("detail.colCase")}</span>
-          <span className="whitespace-nowrap">{t("detail.colMoves")}</span>
-          <span className="text-right whitespace-nowrap">#</span>
-        </div>
-
-        {/* ── Orientation Row ── */}
-        <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
-          <span className="text-[0.74rem] font-medium text-ink whitespace-nowrap">
-            {t("detection.orientation")}
-          </span>
-          <span className="flex items-center gap-1.5 whitespace-nowrap">
-            {orient && (
-              <>
-                <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                  {t("detection.up")}
-                </span>
-                <FaceChip face={orient.up} />
-                <span className="ml-1 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
-                  {t("detection.front")}
-                </span>
-                <FaceChip face={orient.front} />
-              </>
+      {/* ── Outer 4-Column Table Grid with horizontal scroll guard ── */}
+      <div className="overflow-x-auto overflow-y-hidden min-w-0 scrollbar-thin">
+        <div className={GRID_CONTAINER}>
+          {/* Column headers */}
+          <div
+            className={cn(
+              ROW_GRID,
+              "items-center gap-2 border-b border-line bg-surface-2/60 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[0.56rem] sm:text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
             )}
-            {!orient && <span className="text-[0.64rem] text-ink-3">—</span>}
-          </span>
-          <MovesSeq tokens={inspectionTokens.length > 0 ? inspectionTokens : null} />
-          <span className="nums text-right text-xs text-ink-3 whitespace-nowrap">—</span>
-        </div>
+          >
+            <span className="whitespace-nowrap">{t("detail.colPhase")}</span>
+            <span className="whitespace-nowrap">{t("detail.colCase")}</span>
+            <span className="whitespace-nowrap">{t("detail.colMoves")}</span>
+            <span className="text-right whitespace-nowrap">#</span>
+          </div>
 
-        {/* ── Cross Row ── */}
-        <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(crossStart)}>
-          <span className="flex min-w-0 flex-col">
-            <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
-            <span className="mt-0.5 flex items-center gap-1.5">
-              {isXCross && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
-                        recon.cross.type !== "xcross"
-                          ? "border border-caution/40 bg-caution/10 text-caution"
-                          : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
-                      )}
-                    >
-                      {recon.cross.type}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {recon.cross.type === "pseudo xcross"
-                      ? t("detection.xcrossPseudo")
-                      : recon.cross.xcrossPair
-                        ? t("detection.xcrossPair", { name: recon.cross.xcrossPair.name })
-                        : t("detection.xcrossGeneric")}
-                  </TooltipContent>
-                </Tooltip>
+          {/* ── Orientation Row ── */}
+          <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
+            <span className="text-[0.74rem] font-medium text-ink whitespace-nowrap">
+              {t("detection.orientation")}
+            </span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              {orient && (
+                <>
+                  <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                    {t("detection.up")}
+                  </span>
+                  <FaceChip face={orient.up} />
+                  <span className="ml-1 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-3">
+                    {t("detection.front")}
+                  </span>
+                  <FaceChip face={orient.front} />
+                </>
               )}
-              {crossColor && <FaceChip face={crossColor} />}
+              {!orient && <span className="text-[0.64rem] text-ink-3">—</span>}
             </span>
-          </span>
-          <span className="text-[0.64rem] text-ink-3/50">—</span>
-          <MovesSeq tokens={crossDisplay} />
-          <CountCell count={crossMoves.length} />
-        </div>
+            <MovesSeq tokens={inspectionTokens.length > 0 ? inspectionTokens : null} />
+            <span className="nums text-right text-xs text-ink-3 whitespace-nowrap">—</span>
+          </div>
 
-        {/* ── F2L Pairs Rows ── */}
-        {pairs.map((p, i) => {
-          const [leftColor, rightColor] =
-            p.leftColor && p.rightColor
-              ? [p.leftColor, p.rightColor]
-              : orderPairColors(p.colors[0], p.colors[1], crossColor ?? undefined);
-          const pairColors = [leftColor, rightColor];
-          const stickerColors =
-            crossColor && pairColors.every((c) => c != null)
-              ? pairStickerColors(crossColor, leftColor!, rightColor!)
-              : null;
-
-          return (
-            <div key={p.slot || `f2l-${i}`} className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(p.from)}>
-              <span className="flex min-w-0 flex-col">
-                <span className="text-[0.74rem] font-medium text-ink">
-                  {p.slot
-                    ? t("detection.f2lPair", { count: crossPairCount + i + 1 })
-                    : t("detection.f2l")}
-                </span>
-                <span className="mt-0.5 flex items-center gap-1.5">
-                  {p.slot ? (
-                    <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
-                      {p.slot}
-                    </span>
-                  ) : (
-                    <span className="text-[0.64rem] text-ink-3">
-                      {t("detection.noPairSegmentation")}
-                    </span>
-                  )}
-                  {pairColors.map((c) => c != null && <FaceChip key={c} face={c} />)}
-                </span>
+          {/* ── Cross Row ── */}
+          <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(crossStart)}>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
+              <span className="mt-0.5 flex items-center gap-1.5">
+                {isXCross && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide cursor-help",
+                          recon.cross.type !== "xcross"
+                            ? "border border-caution/40 bg-caution/10 text-caution"
+                            : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                        )}
+                      >
+                        {recon.cross.type}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {recon.cross.type === "pseudo xcross"
+                        ? t("detection.xcrossPseudo")
+                        : recon.cross.xcrossPair
+                          ? t("detection.xcrossPair", { name: recon.cross.xcrossPair.name })
+                          : t("detection.xcrossGeneric")}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {crossColor && <FaceChip face={crossColor} />}
               </span>
+            </span>
+            <span className="text-[0.64rem] text-ink-3/50">—</span>
+            <MovesSeq tokens={crossDisplay} />
+            <CountCell count={crossMoves.length} />
+          </div>
 
-              <span className="flex min-w-0 items-center gap-2">
-                {p.detectedCase &&
-                  (() => {
-                    const caseData =
-                      casesByNumber.get(p.detectedCase!.caseNumber) ??
-                      casesByNumber.get(p.detectedCase!.caseName);
-                    if (!caseData) return null;
-                    return (
-                      <CaseMiniCube
-                        caseData={caseData}
-                        slotIndex={0}
-                        stickerColors={stickerColors}
-                        alt={p.detectedCase!.caseName}
-                      />
-                    );
-                  })()}
+          {/* ── F2L Pairs Rows ── */}
+          {pairs.map((p, i) => {
+            const [leftColor, rightColor] =
+              p.leftColor && p.rightColor
+                ? [p.leftColor, p.rightColor]
+                : orderPairColors(p.colors[0], p.colors[1], crossColor ?? undefined);
+            const pairColors = [leftColor, rightColor];
+            const stickerColors =
+              crossColor && pairColors.every((c) => c != null)
+                ? pairStickerColors(crossColor, leftColor!, rightColor!)
+                : null;
+
+            return (
+              <div key={p.slot || `f2l-${i}`} className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(p.from)}>
                 <span className="flex min-w-0 flex-col">
-                  {p.detectedCase ? (
-                    <>
-                      <span className="text-[0.74rem] font-medium text-ink truncate">
-                        {p.detectedCase.caseName}
+                  <span className="text-[0.74rem] font-medium text-ink">
+                    {p.slot
+                      ? t("detection.f2lPair", { count: crossPairCount + i + 1 })
+                      : t("detection.f2l")}
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-1.5">
+                    {p.slot ? (
+                      <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
+                        {p.slot}
                       </span>
-                      <span className="mt-0.5 text-[0.56rem] text-ink-3 font-mono">
-                        {p.detectedCase.caseNumber}
+                    ) : (
+                      <span className="text-[0.64rem] text-ink-3">
+                        {t("detection.noPairSegmentation")}
                       </span>
-                    </>
-                  ) : (
-                    <span className="text-[0.64rem] text-ink-3/50">—</span>
-                  )}
+                    )}
+                    {pairColors.map((c) => c != null && <FaceChip key={c} face={c} />)}
+                  </span>
                 </span>
+
+                <span className="flex min-w-0 items-center gap-2">
+                  {p.detectedCase &&
+                    (() => {
+                      const caseData =
+                        casesByNumber.get(p.detectedCase!.caseNumber) ??
+                        casesByNumber.get(p.detectedCase!.caseName);
+                      if (!caseData) return null;
+                      return (
+                        <CaseMiniCube
+                          caseData={caseData}
+                          slotIndex={0}
+                          stickerColors={stickerColors}
+                          alt={p.detectedCase!.caseName}
+                        />
+                      );
+                    })()}
+                  <span className="flex min-w-0 flex-col">
+                    {p.detectedCase ? (
+                      <>
+                        <span className="text-[0.74rem] font-medium text-ink truncate">
+                          {p.detectedCase.caseName}
+                        </span>
+                        <span className="mt-0.5 text-[0.56rem] text-ink-3 font-mono">
+                          {p.detectedCase.caseNumber}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[0.64rem] text-ink-3/50">—</span>
+                    )}
+                  </span>
+                </span>
+
+                <MovesSeq tokens={p.display} aufMoves={p.auf} />
+                <CountCell count={p.moves.length} />
+              </div>
+            );
+          })}
+
+          {/* ── OLL Row ── */}
+          {recon.oll && (
+            <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(ollFrom)}>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">{t("detection.oll")}</span>
+                {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
               </span>
-
-              <MovesSeq tokens={p.display} aufMoves={p.auf} />
-              <CountCell count={p.moves.length} />
+              {recon.oll.detectedCase ? (
+                <LastLayerCaseCell detectedCase={recon.oll.detectedCase} casesByNumber={casesByNumber} />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={ollDisplay} />
+              <CountCell count={ollMoves?.length ?? 0} />
             </div>
-          );
-        })}
+          )}
 
-        {/* ── OLL Row ── */}
-        {recon.oll && (
-          <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(ollFrom)}>
-            <span className="flex min-w-0 flex-col">
-              <span className="text-[0.74rem] font-medium text-ink">{t("detection.oll")}</span>
-              {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
-            </span>
-            {recon.oll.detectedCase ? (
-              <LastLayerCaseCell detectedCase={recon.oll.detectedCase} casesByNumber={casesByNumber} />
-            ) : (
-              <span className="text-[0.64rem] text-ink-3/50">—</span>
-            )}
-            <MovesSeq tokens={ollDisplay} />
-            <CountCell count={ollMoves?.length ?? 0} />
-          </div>
-        )}
-
-        {/* ── PLL Row ── */}
-        {recon.pll && (
-          <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(pllStart)}>
-            <span className="flex min-w-0 flex-col">
-              <span className="text-[0.74rem] font-medium text-ink">{t("detection.pll")}</span>
-              {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
-            </span>
-            {recon.pll.detectedCase ? (
-              <LastLayerCaseCell detectedCase={recon.pll.detectedCase} casesByNumber={casesByNumber} />
-            ) : (
-              <span className="text-[0.64rem] text-ink-3/50">—</span>
-            )}
-            <MovesSeq tokens={pllDisplay} />
-            <CountCell count={pllMoves?.length ?? 0} />
-          </div>
-        )}
+          {/* ── PLL Row ── */}
+          {recon.pll && (
+            <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(pllStart)}>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">{t("detection.pll")}</span>
+                {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
+              </span>
+              {recon.pll.detectedCase ? (
+                <LastLayerCaseCell detectedCase={recon.pll.detectedCase} casesByNumber={casesByNumber} />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={pllDisplay} />
+              <CountCell count={pllMoves?.length ?? 0} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Clean Understated Footer ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-2/60 px-3 py-1.5 text-[0.6rem] text-ink-3 border-t border-line/60">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-surface-2/60 px-3 py-1.5 text-[0.58rem] sm:text-[0.6rem] text-ink-3 border-t border-line/60">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <span className="flex items-center gap-1">
             <RotateCcw className="size-3" />
             {t("detection.rotationCount", { count: recon.rotations.length })}
