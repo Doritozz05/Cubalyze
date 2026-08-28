@@ -389,7 +389,7 @@ export function ReconstructionDetailView({
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:overflow-hidden lg:flex-row">
           {/* Replay — on mobile (< lg), scrolls in document flow with the content list; on desktop (lg+), sticky split column */}
           {solve && (
-            <div className="w-full shrink-0 max-lg:px-3 max-lg:pt-4 max-lg:pb-1 max-w-4xl mx-auto lg:mx-0 lg:max-w-none lg:h-full lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
+            <div className="w-full shrink-0 max-lg:px-3 max-lg:pt-4 max-lg:pb-1 max-w-4xl mx-auto lg:mx-0 lg:h-full lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
               <div className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-auto w-full min-h-75 sm:min-h-95 lg:min-h-0 lg:h-full rounded-xl border border-line bg-surface p-3 sm:p-4 lg:rounded-none lg:border-0 lg:bg-transparent shadow-xs lg:shadow-none">
                 <ReplaySection
                   ref={replayRef}
