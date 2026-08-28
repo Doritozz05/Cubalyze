@@ -47,7 +47,7 @@ import {
   type AlgorithmCase,
 } from "@cubeforge/algorithm-db";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
-import { isRotation, tokenize } from "@cubeforge/math-core";
+import { isRotation, orderPairFaces, tokenize } from "@cubeforge/math-core";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import { FACE_HEX } from "@/components/Insights/atoms/faceColors";
 import type { ReconFullRecord } from "./reconData";
@@ -87,12 +87,9 @@ function interleave(
 // ─── Mini case cube (3D snapshot, recolored to the solve's colors) ──────────
 
 /**
- * Order a pair's two colors for the canonical FR mini-case render, as the
- * pair is seen from outside the cube: the L sticker goes LEFT (FL/BL —
- * orange-left/green-right, the mirror of FR instead of a duplicate), else
- * the F sticker (FR — green-left/red-right), else the B sticker (BR —
- * blue-left/red-right), else R (side-cross slots). Mirrors are always
- * distinct — never two pairs that both look green-left.
+ * Order a pair's two colors for the canonical FR mini-case render using 3D
+ * vector geometry (orderPairFaces), so the pair is oriented according to the
+ * cube's physical orientation and cross face.
  *
  * The engine's `leftColor`/`rightColor` (read from the ACTUAL sticker
  * faces in the detection frame — scheme-applied, rotation independent)
@@ -102,20 +99,10 @@ function interleave(
 function orderPairColors(
   a: string | undefined,
   b: string | undefined,
+  crossColor?: string,
 ): [string | undefined, string | undefined] {
   if (a == null || b == null) return [a, b];
-  const pair = [a, b];
-  const left = pair.includes("L")
-    ? "L"
-    : pair.includes("F")
-      ? "F"
-      : pair.includes("B")
-        ? "B"
-        : pair.includes("R")
-          ? "R"
-          : a;
-  const right = pair.find((c) => c !== left) ?? b;
-  return [left, right];
+  return orderPairFaces(crossColor ?? "D", a, b);
 }
 
 /** Sticker-color override for the mini cube: the reconstruction's REAL
@@ -578,7 +565,7 @@ export function OurDetectionPanel({
         const [leftColor, rightColor] =
           p.leftColor && p.rightColor
             ? [p.leftColor, p.rightColor]
-            : orderPairColors(p.colors[0], p.colors[1]);
+            : orderPairColors(p.colors[0], p.colors[1], crossColor ?? undefined);
         const pairColors = [leftColor, rightColor];
         const stickerColors =
           crossColor && pairColors.every((c) => c != null)
@@ -615,12 +602,7 @@ export function OurDetectionPanel({
                 return (
                   <CaseMiniCube
                     caseData={caseData}
-                    // Rotate the model to the pair's home slot (FR/FL/BL/BR)
-                    // so the pair's two colors land on the front F and right
-                    // R stickers exactly as leftColor/rightColor order them.
-                    // Every F2L seed presents the pair at FR; the slot id
-                    // rotates the model so each slot reads from the front.
-                    slotIndex={p.renderSlotIndex ?? 0}
+                    slotIndex={0}
                     stickerColors={stickerColors}
                     alt={p.detectedCase!.caseName}
                   />

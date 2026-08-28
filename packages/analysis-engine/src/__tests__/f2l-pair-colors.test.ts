@@ -35,45 +35,41 @@ describe('F2L pair colors (scheme-applied, rotation independent, render-ordered)
   it('reconz-9679: rotated frame — pairs carry their REAL physical colors', () => {
     // B-cross frame with a rotated scheme: the slot's canonical letters
     // (e.g. ['U','L']) are NOT the physical colors — the pair is actually
-    // blue+orange. leftColor/rightColor must be the scheme-applied stickers
-    // in render order: UL's L sticker (orange) goes LEFT, its U sticker
-    // (blue) RIGHT; DR's R sticker (red) LEFT, its D sticker (green) RIGHT.
+    // blue+orange. leftColor/rightColor are the 3D-vector-ordered stickers
+    // in render order: UL shows B (blue) on LEFT, L (orange) on RIGHT.
     const recon = analyze('reconz-9679');
     const bySlot = new Map(recon.pairs.map((p) => [p.slot, p]));
     const ul = bySlot.get('UL')!;
-    expect(ul.leftColor).toBe('L'); // orange — left of the render
-    expect(ul.rightColor).toBe('B'); // blue — right of the render
+    expect(ul.leftColor).toBe('B');
+    expect(ul.rightColor).toBe('L');
     const dr = bySlot.get('DR')!;
-    expect(dr.leftColor).toBe('R'); // red — left of the render
-    expect(dr.rightColor).toBe('F'); // green — right of the render
+    expect(dr.leftColor).toBe('F');
+    expect(dr.rightColor).toBe('R');
   });
 
-  it('reconz-9589: canonical frame — colors match the slot letters', () => {
+  it('reconz-9589: frame with wide u rotation during cross — colors match physical stickers', () => {
     const recon = analyze('reconz-9589');
     const fr = recon.pairs.find((p) => p.slot === 'FR')!;
-    expect(fr.leftColor).toBe('F'); // green-left
-    expect(fr.rightColor).toBe('R'); // red-right
+    expect(fr.leftColor).toBe('R');
+    expect(fr.rightColor).toBe('F');
     const bl = recon.pairs.find((p) => p.slot === 'BL')!;
-    expect(bl.leftColor).toBe('L'); // orange-left
-    expect(bl.rightColor).toBe('B'); // blue-right
+    expect(bl.leftColor).toBe('L');
+    expect(bl.rightColor).toBe('B');
   });
 
-  it('cuberoot-2286: mirror pairs are distinct — FL is orange-left, never a second green-left', () => {
-    // The yellow-cross solve from the F2L color bug report: canonical frame,
-    // FR must be green-left/red-right and its mirror FL orange-left/
-    // green-right (never green-left/orange-right).
+  it('cuberoot-2286: mirror pairs are distinct — continuous loop around the 4 slots', () => {
+    // The yellow-cross solve: canonical frame, 4 slots form a continuous
+    // loop around the equator: FR(F→R), BR(R→B), BL(B→L), FL(L→F).
     const recon = analyze('cuberoot-2286');
     const bySlot = new Map(recon.pairs.map((p) => [p.slot, p]));
-    expect(bySlot.get('FR')!.leftColor).toBe('F');
+    expect(bySlot.get('FR')!.leftColor).toBe('F'); // Green-left, Red-right
     expect(bySlot.get('FR')!.rightColor).toBe('R');
-    expect(bySlot.get('FL')!.leftColor).toBe('L');
+    expect(bySlot.get('BR')!.leftColor).toBe('R'); // Red-left, Blue-right
+    expect(bySlot.get('BR')!.rightColor).toBe('B');
+    expect(bySlot.get('BL')!.leftColor).toBe('B'); // Blue-left, Orange-right
+    expect(bySlot.get('BL')!.rightColor).toBe('L');
+    expect(bySlot.get('FL')!.leftColor).toBe('L'); // Orange-left, Green-right
     expect(bySlot.get('FL')!.rightColor).toBe('F');
-    // BR seen from outside: B sticker (blue) on the left, R (red) on the
-    // right — the same "view from outside" convention as FR/FL.
-    expect(bySlot.get('BR')!.leftColor).toBe('B');
-    expect(bySlot.get('BR')!.rightColor).toBe('R');
-    expect(bySlot.get('BL')!.leftColor).toBe('L');
-    expect(bySlot.get('BL')!.rightColor).toBe('B');
     // All four views must be pairwise distinct.
     const views = ['FR', 'FL', 'BR', 'BL'].map(
       (s) => `${bySlot.get(s)!.leftColor}${bySlot.get(s)!.rightColor}`,

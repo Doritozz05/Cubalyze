@@ -6,6 +6,7 @@ import {
   cornerFacelet,
   FaceletStringConverter,
   FACE_LAYERS,
+  orderPairFaces,
 } from '@cubeforge/math-core';
 import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
@@ -228,21 +229,9 @@ function pairDisplayColors(
   }
   const sideFaces = Object.keys(perFace).filter((f) => f !== crossFace);
   if (sideFaces.length !== 2) return null;
-  // LEFT = the sticker on the face that sits on the viewer's left when the
-  // pair is seen from outside the cube: L for FL/BL, F for FR, B for BR
-  // (side-cross slots without F/B keep their R face). RIGHT = the other
-  // one. Face-based, so it holds for any cross frame.
-  const leftFace = sideFaces.includes('L')
-    ? 'L'
-    : sideFaces.includes('F')
-      ? 'F'
-      : sideFaces.includes('B')
-        ? 'B'
-        : sideFaces.includes('R')
-          ? 'R'
-          : sideFaces[0];
+  const [leftFace, rightFace] = orderPairFaces(crossFace, sideFaces[0], sideFaces[1]);
   const left = perFace[leftFace] as FaceLetter;
-  const right = perFace[sideFaces.find((f) => f !== leftFace)!] as FaceLetter;
+  const right = perFace[rightFace] as FaceLetter;
   if (!left || !right) return null;
   return { left, right };
 }

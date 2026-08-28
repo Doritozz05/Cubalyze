@@ -58,6 +58,42 @@ import { FACE_LAYERS } from './cfopMasks';
 export const FACE_LETTERS = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
 export type FaceLetter = (typeof FACE_LETTERS)[number];
 
+export const FACE_NORMAL: Record<FaceLetter, [number, number, number]> = {
+  U: [0, 1, 0],
+  D: [0, -1, 0],
+  R: [1, 0, 0],
+  L: [-1, 0, 0],
+  F: [0, 0, 1],
+  B: [0, 0, -1],
+};
+
+/**
+ * Orders two adjacent side faces of a corner when viewed from outside the cube
+ * with `crossFace` pointing DOWN (away from view).
+ *
+ * Uses the scalar triple product (determinant) of the face normal vectors in 3D:
+ * det(v_cross, v_A, v_B) = v_cross · (v_A × v_B).
+ *
+ * Returns [leftFace, rightFace] where leftFace is on the viewer's left
+ * and rightFace is on the viewer's right.
+ */
+export function orderPairFaces(
+  crossFace: FaceLetter | string,
+  faceA: FaceLetter | string,
+  faceB: FaceLetter | string,
+): [FaceLetter, FaceLetter] {
+  const c = FACE_NORMAL[crossFace as FaceLetter] ?? [0, -1, 0];
+  const a = FACE_NORMAL[faceA as FaceLetter] ?? [0, 0, 1];
+  const b = FACE_NORMAL[faceB as FaceLetter] ?? [1, 0, 0];
+  const cx = a[1] * b[2] - a[2] * b[1];
+  const cy = a[2] * b[0] - a[0] * b[2];
+  const cz = a[0] * b[1] - a[1] * b[0];
+  const dot = c[0] * cx + c[1] * cy + c[2] * cz;
+  return dot < 0
+    ? [faceA as FaceLetter, faceB as FaceLetter]
+    : [faceB as FaceLetter, faceA as FaceLetter];
+}
+
 const OPPOSITE: Record<FaceLetter, FaceLetter> = {
   U: 'D',
   D: 'U',
