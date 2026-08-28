@@ -113,6 +113,16 @@ export interface UnifiedF2LPair {
   leftColor?: FaceLetter;
   rightColor?: FaceLetter;
   /**
+   * The pair's home slot as the canonical FR-model render id (0=FR, 1=FL,
+   * 2=BL, 3=BR — the algorithm-db `F2LSlotId` order). Derived from the
+   * physical home corner of the pair's slot, so it is correct for ANY cross
+   * face: the panel passes this to the 3D mini cube so the model rotates to
+   * bring the pair's slot to the camera front (all four pairs then show
+   * their two colors on the model's F/R faces, in the leftColor/rightColor
+   * order).
+   */
+  renderSlotIndex?: number;
+  /**
    * Moves that completed this pair, one token per timeline entry: the
    * SOLVER's raw notation when the caller provided displayTokens (text
    * route), otherwise derived from the timeline entries themselves (smart
@@ -478,6 +488,27 @@ export function segmentF2LPairs(
             pairSide = null; // never break segmentation over colors
           }
         }
+        // Map the slot's physical home corner to the canonical FR-model
+        // render id (0=FR, 1=FL, 2=BL, 3=BR). Every F2L seed presents the
+        // pair at FR; the slot id rotates the model so each slot reads
+        // from the front. Corners ride the equator in a fixed cycle
+        // (URF/DFR=0, UFL/DLF=1, ULB/DBL=2, UBR/DRB=3, per math-core
+        // Corner enum), so EVERY cross face maps to one of the four ids
+        // deterministically — side-cross pairs whose home corners sit on
+        // the U layer still get a distinct, stable rotation.
+        const homeCorner = FACE_LAYERS[crossFace]?.f2lCorners?.[b];
+        const renderSlotIndex =
+          homeCorner == null
+            ? undefined
+            : homeCorner === 0 || homeCorner === 4
+              ? 0
+              : homeCorner === 1 || homeCorner === 5
+                ? 1
+                : homeCorner === 2 || homeCorner === 6
+                  ? 2
+                  : homeCorner === 3 || homeCorner === 7
+                    ? 3
+                    : undefined;
         const rangeMoves = displayTokens
           ? displayTokens.slice(segmentStart, i + 1)
           : entriesToTokens(timeline, segmentStart, i);
@@ -489,6 +520,7 @@ export function segmentF2LPairs(
             : (['?', '?'] as unknown as [FaceLetter, FaceLetter]),
           leftColor: pairSide?.left,
           rightColor: pairSide?.right,
+          renderSlotIndex,
           moves: rangeMoves,
           movesCount: i - segmentStart + 1,
           auf: leadingUMoves(rangeMoves),

@@ -615,7 +615,12 @@ export function OurDetectionPanel({
                 return (
                   <CaseMiniCube
                     caseData={caseData}
-                    slotIndex={0}
+                    // Rotate the model to the pair's home slot (FR/FL/BL/BR)
+                    // so the pair's two colors land on the front F and right
+                    // R stickers exactly as leftColor/rightColor order them.
+                    // Every F2L seed presents the pair at FR; the slot id
+                    // rotates the model so each slot reads from the front.
+                    slotIndex={p.renderSlotIndex ?? 0}
                     stickerColors={stickerColors}
                     alt={p.detectedCase!.caseName}
                   />

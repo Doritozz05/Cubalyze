@@ -92,6 +92,12 @@ export interface F2LPairResult {
   leftColor?: FaceLetter;
   rightColor?: FaceLetter;
   /**
+   * The pair's home slot as the canonical FR-model render id (0=FR, 1=FL,
+   * 2=BL, 3=BR) — pass to the 3D mini cube so it rotates to the pair's slot
+   * (see segmentF2LPairs). Absent for unreadable slots (fallback 0).
+   */
+  renderSlotIndex?: number;
+  /**
    * The moves that completed this pair, in the SOLVER's raw notation
    * (wide moves as written: r', u2, …), one token per timeline entry —
    * exactly what the reconstructor wrote, so the panel reads 1:1 with
@@ -793,6 +799,7 @@ function buildPairs(
       colors: p.colors as [FaceLetter, FaceLetter],
       leftColor: p.leftColor,
       rightColor: p.rightColor,
+      renderSlotIndex: p.renderSlotIndex,
       moves: p.moves,
       completionIndex: p.completionIndex,
       auf: p.auf,

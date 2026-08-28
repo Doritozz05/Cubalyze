@@ -80,4 +80,27 @@ describe('F2L pair colors (scheme-applied, rotation independent, render-ordered)
     );
     expect(new Set(views).size).toBe(4);
   });
+
+  it('cuberoot-2286: each pair carries the model slot id so the mini cube rotates to its home slot', () => {
+    // The mini cube should rotate the canonical FR-pair model to the pair's
+    // own home slot, so the two colors land on the front/right stickers in
+    // leftColor/rightColor order. Model ids: 0=FR, 1=FL, 2=BL, 3=BR.
+    const recon = analyze('cuberoot-2286');
+    const bySlot = new Map(recon.pairs.map((p) => [p.slot, p]));
+    expect(bySlot.get('FR')!.renderSlotIndex).toBe(0);
+    expect(bySlot.get('FL')!.renderSlotIndex).toBe(1);
+    expect(bySlot.get('BL')!.renderSlotIndex).toBe(2);
+    expect(bySlot.get('BR')!.renderSlotIndex).toBe(3);
+  });
+
+  it('reconz-9679: B-cross pairs still carry a defined, stable slot id', () => {
+    // A B cross's slots live at U-layer corners (UBR/ULB) plus DRB/DBL, so
+    // no single y-rotation can put all four distinct at the front — the ids
+    // are stable per slot but not necessarily all distinct. What matters:
+    // every pair has a valid model slot so the view is never undefined.
+    const recon = analyze('reconz-9679');
+    for (const p of recon.pairs) {
+      expect([0, 1, 2, 3]).toContain(p.renderSlotIndex);
+    }
+  });
 });
