@@ -102,6 +102,58 @@ export function getSortDate(e: ReconIndexEntry): string {
 
 // ─── Row ────────────────────────────────────────────────────────────────────
 
+/** Desktop/tablet table columns: # · solver · time · date · competition · method · tech (≥xl).
+ *  Uses fixed tracks for numerical/badge columns and proportional fr tracks for
+ *  solver and competition so column positions align with 100% precision across
+ *  every row regardless of tag count or text lengths. */
+const ROW_GRID =
+  "grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_5.25rem] xl:grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_5.25rem_6.25rem]";
+
+/** Method chip, coloured per family with the design-system phase palette. */
+function methodBadgeClass(entry: ReconIndexEntry): string {
+  const m = (entry.method || "").toUpperCase();
+  const group = (entry.methodGroup || "").toUpperCase();
+
+  if (m === "CFOP" || group === "CFOP") {
+    return "border-phase-blue/40 bg-phase-blue/10 text-phase-blue";
+  }
+  if (m === "ROUX" || group === "ROUX") {
+    return "border-phase-violet/40 bg-phase-violet/10 text-phase-violet";
+  }
+  if (m.startsWith("EG") || m === "CLL" || m.includes("ORTEGA")) {
+    return "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald";
+  }
+  if (
+    m.startsWith("ZB") ||
+    m === "YAU" ||
+    m === "HOYA" ||
+    m.startsWith("L4E") ||
+    m.startsWith("L2L") ||
+    m === "ZZ" ||
+    m === "PETRUS"
+  ) {
+    return "border-phase-amber/40 bg-phase-amber/10 text-phase-amber";
+  }
+  if (m.includes("MOVER")) {
+    return "border-phase-purple/40 bg-phase-purple/10 text-phase-purple";
+  }
+  return "border-line bg-surface-2 text-ink-3";
+}
+
+function MethodBadge({ entry }: { entry: ReconIndexEntry }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center w-fit max-w-full rounded border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider whitespace-nowrap",
+        methodBadgeClass(entry),
+      )}
+      title={entry.method}
+    >
+      <span className="truncate">{entry.method}</span>
+    </span>
+  );
+}
+
 function ReconRow({
   entry,
   rank,
@@ -113,69 +165,88 @@ function ReconRow({
   selected: boolean;
   onSelect: (key: string) => void;
 }) {
+  const time = entry.time > 0 ? formatTime(entry.time * 1000) : "—";
+  const date = formatDisplayDate(entry.date, entry.competition, entry.url);
+
   return (
     <button
       type="button"
       onClick={() => onSelect(entry.key)}
       className={cn(
-        "grid w-full grid-cols-[2.75rem_1.6fr_4.25rem_6.75rem_1.7fr_4.5rem_1.2fr] items-center gap-2 border-b border-line/60 px-3 text-left transition-colors",
+        "block w-full border-b border-line/60 px-3 text-left transition-colors",
         "hover:bg-surface-2",
         selected && "bg-surface-2",
       )}
-      style={{ height: 44 }}
     >
-      <span className="nums text-right text-xs text-ink-3">{rank + 1}</span>
+      {/* Desktop / tablet (≥lg) — single-line table row */}
+      <span
+        className={cn(
+          "hidden w-full items-center gap-2.5 py-2 lg:grid",
+          ROW_GRID,
+        )}
+      >
+        <span className="nums text-right text-xs text-ink-3">{rank + 1}</span>
 
-      <span className="min-w-0">
-        <span className="block truncate text-[0.8rem] font-medium text-ink">
+        <span className="min-w-0 truncate text-[0.8rem] font-medium text-ink">
           {entry.solver}
         </span>
-        <span className="block truncate text-[0.6rem] text-ink-3">
+
+        <span className="nums text-right text-[0.85rem] font-semibold text-ink">
+          {time}
+        </span>
+
+        <span className="nums text-xs text-ink-3 truncate">{date}</span>
+
+        <span className="min-w-0 truncate text-xs text-ink-2">
           {entry.competition || "—"}
         </span>
-      </span>
 
-      <span className="nums text-[0.85rem] font-semibold tabular-nums text-ink">
-        {entry.time > 0 ? formatTime(entry.time * 1000) : "—"}
-      </span>
+        <div className="flex min-w-0 items-center justify-start">
+          <MethodBadge entry={entry} />
+        </div>
 
-      <span className="nums text-xs text-ink-2 max-xl:hidden">
-        {formatDisplayDate(entry.date, entry.competition, entry.url)}
-      </span>
-
-      <span className="truncate text-xs text-ink-2 max-lg:hidden">
-        {entry.competition}
-      </span>
-
-      <span>
-        <span
-          className={cn(
-            "inline-block rounded border px-1.5 py-0.5 text-[0.58rem] font-semibold uppercase tracking-wider",
-            (entry.method === "CFOP" || entry.methodGroup === "CFOP") && "border-phase-blue/40 bg-phase-blue/10 text-phase-blue",
-            (entry.method === "Roux" || entry.methodGroup === "Roux") && "border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
-            (entry.method === "EG" || entry.method === "CLL" || entry.method === "Ortega" || entry.method === "ORTEGA") && "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald",
-            (entry.method === "ZB" || entry.method === "Yau" || entry.method === "Hoya" || entry.method === "L4E") && "border-phase-amber/40 bg-phase-amber/10 text-phase-amber",
-            !["CFOP", "Roux", "EG", "CLL", "Ortega", "ORTEGA", "ZB", "Yau", "Hoya", "L4E"].includes(entry.method) && entry.methodGroup !== "CFOP" && entry.methodGroup !== "Roux" && "border-line bg-surface-2 text-ink-3",
+        <div className="hidden xl:flex min-w-0 items-center justify-end gap-1">
+          {entry.tags.slice(0, 2).map((t) => (
+            <span
+              key={t}
+              className="max-w-16 truncate rounded border border-line/60 bg-surface-2 px-1.5 py-0.5 text-[0.56rem] font-medium text-ink-2"
+              title={t}
+            >
+              {t}
+            </span>
+          ))}
+          {entry.tags.length > 2 && (
+            <span
+              className="nums text-[0.56rem] text-ink-3"
+              title={entry.tags.slice(2).join(", ")}
+            >
+              +{entry.tags.length - 2}
+            </span>
           )}
-        >
-          {entry.method}
-        </span>
+        </div>
       </span>
 
-      <span className="flex min-w-0 items-center justify-end gap-1 max-lg:hidden">
-        {entry.tags.slice(0, 2).map((t) => (
-          <span
-            key={t}
-            className="truncate rounded bg-surface-2 px-1.5 py-0.5 text-[0.56rem] font-medium text-ink-2 border border-line/60 max-w-20"
-          >
-            {t}
+      {/* Mobile (<lg) — compact two-line card */}
+      <span className="flex w-full items-center gap-2.5 py-2 lg:hidden">
+        <span className="nums w-6 shrink-0 text-right text-xs text-ink-3">
+          {rank + 1}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[0.8rem] font-medium text-ink">
+            {entry.solver}
           </span>
-        ))}
-        {entry.tags.length > 2 && (
-          <span className="nums text-[0.56rem] text-ink-3">
-            +{entry.tags.length - 2}
+          <span className="block truncate text-[0.62rem] text-ink-3">
+            {entry.competition || "—"}
           </span>
-        )}
+        </span>
+
+        <div className="shrink-0 text-right flex flex-col items-end gap-0.5">
+          <span className="nums block text-[0.85rem] font-semibold text-ink">
+            {time}
+          </span>
+          <MethodBadge entry={entry} />
+        </div>
       </span>
     </button>
   );
@@ -346,8 +417,11 @@ export function ReconstructionsView() {
   const rowVirtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 44,
+    // Mobile rows are two-line cards, desktop rows single-line — every row is
+    // re-measured after mount (measureElement), so this is just a start size.
+    estimateSize: () => 48,
     overscan: 14,
+    getItemKey: (i) => sorted[i].key,
   });
 
   const handleSelect = useCallback(
@@ -393,9 +467,9 @@ export function ReconstructionsView() {
           />
         </div>
 
-        {/* Chips + sort */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5 overflow-x-auto max-w-full">
+        {/* Chips + sort — one horizontally scrollable strip on mobile, wrapping on desktop */}
+        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto pb-0.5 lg:flex-wrap lg:overflow-visible">
+          <div className="flex shrink-0 items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
             {methodChips.map((m) => {
               const count = getChipCount(m);
               return (
@@ -420,7 +494,7 @@ export function ReconstructionsView() {
             })}
           </div>
 
-          <div className="flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
+          <div className="flex shrink-0 items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
             {SOURCE_CHIPS.map((s) => (
               <button
                 key={s}
@@ -438,7 +512,7 @@ export function ReconstructionsView() {
           </div>
 
           <Select value={puzzle} onValueChange={setPuzzle}>
-            <SelectTrigger className="h-7 w-32 gap-2 rounded-md border-line bg-surface px-2 text-[0.65rem] font-medium text-ink">
+            <SelectTrigger className="h-7 w-32 shrink-0 gap-2 rounded-md border-line bg-surface px-2 text-[0.65rem] font-medium text-ink">
               <SelectValue placeholder={t("list.allPuzzles")} />
             </SelectTrigger>
             <SelectContent>
@@ -451,7 +525,7 @@ export function ReconstructionsView() {
             </SelectContent>
           </Select>
 
-          <div className="ml-auto flex items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-line/70 bg-surface p-0.5">
             {SORT_OPTIONS.map((o) => (
               <button
                 key={o.id}
@@ -488,15 +562,20 @@ export function ReconstructionsView() {
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col">
-          {/* Column header */}
-          <div className="grid shrink-0 grid-cols-[2.75rem_1.6fr_4.25rem_6.75rem_1.7fr_4.5rem_1.2fr] items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-wider text-ink-3">
+          {/* Column header — desktop/tablet only; mobile cards are self-explanatory */}
+          <div
+            className={cn(
+              "hidden shrink-0 items-center gap-2.5 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-wider text-ink-3 lg:grid",
+              ROW_GRID,
+            )}
+          >
             <span className="text-right">#</span>
             <span>{t("list.colSolver")}</span>
-            <span>{t("list.colTime")}</span>
-            <span className="max-xl:hidden">{t("list.colDate")}</span>
-            <span className="max-lg:hidden">{t("list.colCompetition")}</span>
+            <span className="text-right">{t("list.colTime")}</span>
+            <span>{t("list.colDate")}</span>
+            <span>{t("list.colCompetition")}</span>
             <span>{t("list.colMethod")}</span>
-            <span className="text-right max-lg:hidden">{t("list.colTech")}</span>
+            <span className="text-right hidden xl:block">{t("list.colTech")}</span>
           </div>
 
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
@@ -513,6 +592,8 @@ export function ReconstructionsView() {
                 {rowVirtualizer.getVirtualItems().map((vi) => (
                   <div
                     key={sorted[vi.index].key}
+                    data-index={vi.index}
+                    ref={rowVirtualizer.measureElement}
                     className="absolute left-0 top-0 w-full"
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
