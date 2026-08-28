@@ -30,6 +30,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     reset,
     applyScramble,
     rotateCamera,
+    setIsometricView,
     zoomCamera,
     engineRef,
   } = useCube3D({ maxRecentMoves: 15, order, scramble, connectSmartCube: true });
@@ -45,6 +46,10 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     if (pts.length < 2) return 0;
     const [a, b] = pts;
     return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  const handleDoubleClick = () => {
+    setIsometricView(true);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -189,6 +194,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          onDoubleClick={handleDoubleClick}
           onWheel={handleWheel}
         />
 

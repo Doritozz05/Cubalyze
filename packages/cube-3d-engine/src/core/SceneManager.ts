@@ -37,24 +37,20 @@ export class SceneManager {
   private readonly maxOrbitRadius: number = 20;
 
   /**
-   * Orbit camera state — trackball technique (no poles, no flips).
+   * Turntable Orbit camera state (0% Roll Drift).
    *
-   * The camera orbits the cube center, always looking straight at it. Drags
-   * are applied as rotations around the CAMERA's screen-space axes: horizontal
-   * drags orbit around the camera's up vector (the screen's vertical axis),
-   * vertical drags pitch around the camera's right vector (the screen's
-   * horizontal axis). The up vector is rotated together with the position, so
-   * it stays perpendicular to the view direction forever: no orientation is
-   * ever degenerate, and rolling over the U (yellow) / D (white) face centers
-   * is a continuous infinite rotation instead of a dead zone or a 180° flip.
-   * (World-up lookAt degenerates exactly at the poles — the classic "everything
-   * inverts" bug — which is why the up must follow the camera.)
+   * The camera orbits the cube target (0, 0, 0) using spherical coordinates:
+   *   - orbitTheta: Azimuth angle around World Y (yaw).
+   *   - orbitPhi:   Elevation angle from horizontal plane (pitch), clamped to avoid pole singularities.
+   *   - currentOrbitRadius: Distance to target.
    *
-   * Persistent state lives on the camera itself (position + up). The vectors
-   * below are scratch space to avoid per-frame allocations.
+   * The camera's up vector is permanently locked to World Up (0, 1, 0), which
+   * mathematically guarantees 0 roll drift (the horizon is always perfectly level).
    */
-  private readonly orbitForward = new Vector3();
-  private readonly orbitRight = new Vector3();
+  private orbitTheta = 0;
+  private orbitPhi = 0;
+  private currentOrbitRadius = 7;
+  private readonly maxElevation = Math.PI / 2 - 0.01; // ~89.4 deg to avoid gimbal singularity
   /**
    * Near plane bounds for dynamic depth precision. A fixed near of 0.1 at
    * max zoom-out (radius 20) compresses the depth buffer so much that the
@@ -97,9 +93,7 @@ export class SceneManager {
     const safeAspect = width > 0 && height > 0 ? width / height : 1;
     this.camera = new PerspectiveCamera(this.baseFov, safeAspect, this.minNearPlane, 100);
     this.updateCameraAspectAndFov(width, height);
-    this.camera.position.set(0, 0, this.orbitRadius);
-    this.camera.lookAt(0, 0, 0);
-    this.updateNearPlane();
+    this.updateCameraTransform();
 
     this.cameraGroup = new Group();
     this.scene.add(this.cameraGroup);
@@ -222,83 +216,84 @@ export class SceneManager {
     this.camera.updateProjectionMatrix();
   }
 
-  public rotateCamera(dx: number, dy: number): void {
-    const SPEED = 0.005;
-    const pos = this.camera.position;
+  /**
+   * Applies the spherical orbit coordinates (theta, phi, radius) to the
+   * camera's position and lookAt target.
+   *
+   * By fixing camera.up to (0, 1, 0) and evaluating spherical coordinates,
+   * roll drift is mathematically eliminated (0% roll drift under any sequence
+   * of drag gestures).
+   */
+  private updateCameraTransform(): void {
+    this.orbitPhi = Math.max(-this.maxElevation, Math.min(this.maxElevation, this.orbitPhi));
+    this.currentOrbitRadius = Math.max(
+      this.minOrbitRadius,
+      Math.min(this.maxOrbitRadius, this.currentOrbitRadius),
+    );
 
-    // View direction toward the cube center (the orbit target).
-    this.orbitForward.copy(pos).negate().normalize();
-
-    // Screen-horizontal axis — always well-defined because camera.up is
-    // rotated together with the camera (never parallel to the view direction).
-    this.orbitRight.crossVectors(this.orbitForward, this.camera.up);
-    if (this.orbitRight.lengthSq() > 1e-12) {
-      this.orbitRight.normalize();
-    } else {
-      // Unreachable in practice (up is kept perpendicular to the view), but
-      // avoid NaN poisoning if it ever happens.
-      this.orbitRight.set(1, 0, 0);
-    }
-
-    const angleX = dx * SPEED; // horizontal drag → orbit around the screen's vertical axis
-    const angleY = dy * SPEED; // vertical drag → pitch around the screen's horizontal axis
-    pos.applyAxisAngle(this.camera.up, -angleX);
-    pos.applyAxisAngle(this.orbitRight, -angleY);
-    this.camera.up.applyAxisAngle(this.orbitRight, -angleY);
-    this.camera.up.normalize();
-
+    const cosPhi = Math.cos(this.orbitPhi);
+    this.camera.position.set(
+      this.currentOrbitRadius * cosPhi * Math.sin(this.orbitTheta),
+      this.currentOrbitRadius * Math.sin(this.orbitPhi),
+      this.currentOrbitRadius * cosPhi * Math.cos(this.orbitTheta),
+    );
+    this.camera.up.set(0, 1, 0);
     this.camera.lookAt(0, 0, 0);
     this.updateNearPlane();
+  }
+
+  /**
+   * Rotate the orbit camera around the target (0, 0, 0) via pointer/touch drag.
+   *
+   * @param dx  Horizontal drag offset in pixels. Rotates azimuth around World Y.
+   * @param dy  Vertical drag offset in pixels. Elevates / pitches viewing angle.
+   */
+  public rotateCamera(dx: number, dy: number): void {
+    const SPEED = 0.005;
+    this.orbitTheta -= dx * SPEED;
+    this.orbitPhi += dy * SPEED;
+    this.updateCameraTransform();
   }
 
   /**
    * Scale the orbit radius by `factor` (> 1 zooms in, < 1 zooms out),
-   * clamped to [minOrbitRadius, maxOrbitRadius]. Preserves the current
-   * viewing direction and up vector.
+   * clamped to [minOrbitRadius, maxOrbitRadius]. Preserves current viewing angles.
    */
   public zoomBy(factor: number): void {
     if (!Number.isFinite(factor) || factor <= 0) return;
-    const len = this.camera.position.length();
-    if (len <= 0) return;
-    const clamped = Math.max(
+    this.currentOrbitRadius = Math.max(
       this.minOrbitRadius,
-      Math.min(this.maxOrbitRadius, len * factor),
+      Math.min(this.maxOrbitRadius, this.currentOrbitRadius * factor),
     );
-    this.camera.position.setLength(clamped);
-    this.camera.lookAt(0, 0, 0);
-    this.updateNearPlane();
+    this.updateCameraTransform();
   }
 
-  /** Resets the camera to the default front-facing position (exact (0, 0, r)). */
+  /** Resets the camera to the default front-facing position (0, 0, orbitRadius). */
   public resetCamera(): void {
-    this.camera.position.set(0, 0, this.orbitRadius);
-    this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(0, 0, 0);
-    this.updateNearPlane();
+    this.orbitTheta = 0;
+    this.orbitPhi = 0;
+    this.currentOrbitRadius = this.orbitRadius;
+    this.updateCameraTransform();
   }
 
   /**
    * Sets the camera to specific orbit angles (radians).
-   * `theta` = azimuth around Y axis.  `phi` = elevation from horizontal plane.
-   * Elevation is clamped to avoid flipping. Preset views (isometric, gyro
-   * calibration) — not the free drag, which rolls over the poles.
+   * `theta` = azimuth around Y axis. `phi` = elevation from horizontal plane.
    */
   public setOrbitAngles(theta: number, phi: number, radius = this.orbitRadius): void {
-    const MAX_ELEVATION = Math.PI / 2 - 0.1;
-    const clampedPhi = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, phi));
-    const clampedRadius = Math.max(
-      this.minOrbitRadius,
-      Math.min(this.maxOrbitRadius, Number.isFinite(radius) ? radius : this.orbitRadius),
-    );
-    const cosPhi = Math.cos(clampedPhi);
-    this.camera.position.set(
-      clampedRadius * cosPhi * Math.sin(theta),
-      clampedRadius * Math.sin(clampedPhi),
-      clampedRadius * cosPhi * Math.cos(theta),
-    );
-    this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(0, 0, 0);
-    this.updateNearPlane();
+    this.orbitTheta = theta;
+    this.orbitPhi = phi;
+    this.currentOrbitRadius = Number.isFinite(radius) ? radius : this.orbitRadius;
+    this.updateCameraTransform();
+  }
+
+  /** Gets current spherical orbit angles (theta, phi, radius). */
+  public getOrbitAngles(): { theta: number; phi: number; radius: number } {
+    return {
+      theta: this.orbitTheta,
+      phi: this.orbitPhi,
+      radius: this.currentOrbitRadius,
+    };
   }
 
   public render(): void {

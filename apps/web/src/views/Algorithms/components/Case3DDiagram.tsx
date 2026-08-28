@@ -230,6 +230,15 @@ export function Case3DCanvas({
     }
   };
 
+  const handleDoubleClick = () => {
+    if (lockOrbit || !engineRef.current) return;
+    engineRef.current.animateCameraTo(
+      plan.camera.theta,
+      plan.camera.phi,
+      plan.camera.radius,
+    );
+  };
+
   useEffect(() => {
     if (isReady && engineRef.current) onEngineReady?.(engineRef.current);
   }, [isReady, engineRef, onEngineReady]);
@@ -269,6 +278,7 @@ export function Case3DCanvas({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
         className={cn(
           "absolute inset-0 h-full w-full outline-none touch-none",
           lockOrbit ? "cursor-default" : "cursor-grab active:cursor-grabbing",

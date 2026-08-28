@@ -72,6 +72,10 @@ export interface UseCube3DResult {
   zoomCamera: (delta: number) => void;
   /** Rotate camera view by delta X and delta Y (for orbit controls). */
   rotateCamera: (dx: number, dy: number) => void;
+  /** Reset camera view angle (smooth optional). */
+  resetCameraView: (smooth?: boolean) => void;
+  /** Set isometric viewing angle (smooth optional). */
+  setIsometricView: (smooth?: boolean) => void;
   /** Direct ref to the underlying Cube3DEngine instance. */
   engineRef: React.RefObject<Cube3DEngine | null>;
 }
@@ -379,6 +383,14 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     engineRef.current?.rotateCamera(dx, dy);
   }, []);
 
+  const resetCameraView = useCallback((smooth = true) => {
+    engineRef.current?.resetCamera(smooth);
+  }, []);
+
+  const setIsometricView = useCallback((smooth = true) => {
+    engineRef.current?.setIsometricView(smooth);
+  }, []);
+
   const zoomCamera = useCallback((delta: number) => {
     engineRef.current?.zoomCamera(delta);
   }, []);
@@ -394,6 +406,8 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     reset,
     applyScramble,
     rotateCamera,
+    resetCameraView,
+    setIsometricView,
     zoomCamera,
     engineRef,
   };

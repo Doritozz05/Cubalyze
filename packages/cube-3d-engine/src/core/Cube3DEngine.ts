@@ -58,6 +58,18 @@ export class Cube3DEngine {
     resolve?: () => void;
   } | null = null;
 
+  private cameraAnim: {
+    startTheta: number;
+    startPhi: number;
+    startRadius: number;
+    targetTheta: number;
+    targetPhi: number;
+    targetRadius: number;
+    startTime: number;
+    durationMs: number;
+    resolve?: () => void;
+  } | null = null;
+
   private lastTime: number = 0;
   private isRunning: boolean = false;
   private animFrameId: number | null = null;
@@ -301,6 +313,7 @@ export class Cube3DEngine {
   public flushAnimations(): void {
     if (this.rotationEngine) this.rotationEngine.flushAll();
     this.finishOrientationAnim();
+    this.finishCameraAnim();
     this.requestRender();
   }
 
@@ -623,12 +636,90 @@ export class Cube3DEngine {
     };
   }
 
-  public setIsometricView(): void {
+  public setIsometricView(smooth = false): Promise<void> | void {
     if (!this.sceneManager) return;
+    if (smooth) {
+      return this.animateCameraTo(Math.PI / 6, Math.PI / 6, 7);
+    }
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
+    this.finishCameraAnim();
     this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6);
     this.requestRender();
+  }
+
+  public resetCamera(smooth = false): Promise<void> | void {
+    if (!this.sceneManager) return;
+    if (smooth) {
+      return this.animateCameraTo(0, 0, 7);
+    }
+    this.cameraMomentum = null;
+    this.cameraMomentumState = 'idle';
+    this.finishCameraAnim();
+    this.sceneManager.resetCamera();
+    this.requestRender();
+  }
+
+  /**
+   * Smoothly animates the camera to target orbit spherical angles.
+   *
+   * @param targetTheta  Azimuth around World Y (radians).
+   * @param targetPhi    Elevation from horizontal plane (radians).
+   * @param targetRadius Orbit distance. Defaults to 7.
+   * @param durationMs   Animation duration in milliseconds. Defaults to 260ms.
+   */
+  public animateCameraTo(
+    targetTheta: number,
+    targetPhi: number,
+    targetRadius = 7,
+    durationMs = 260,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.sceneManager) {
+        resolve();
+        return;
+      }
+      this.cameraMomentum = null;
+      this.cameraMomentumState = 'idle';
+
+      const current = this.sceneManager.getOrbitAngles();
+
+      if (durationMs <= 0) {
+        this.finishCameraAnim();
+        this.sceneManager.setOrbitAngles(targetTheta, targetPhi, targetRadius);
+        this.requestRender();
+        resolve();
+        return;
+      }
+
+      this.finishCameraAnim();
+
+      // Find shortest angular path for theta (wrap 2*PI)
+      let dTheta = (targetTheta - current.theta) % (Math.PI * 2);
+      if (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      if (dTheta < -Math.PI) dTheta += Math.PI * 2;
+
+      this.cameraAnim = {
+        startTheta: current.theta,
+        startPhi: current.phi,
+        startRadius: current.radius,
+        targetTheta: current.theta + dTheta,
+        targetPhi,
+        targetRadius,
+        startTime: performance.now(),
+        durationMs,
+        resolve,
+      };
+
+      this.requestRender();
+    });
+  }
+
+  /** Resolve any in-flight camera animation awaiter and clear it. */
+  private finishCameraAnim(): void {
+    const anim = this.cameraAnim;
+    this.cameraAnim = null;
+    anim?.resolve?.();
   }
 
   /**
@@ -980,6 +1071,7 @@ export class Cube3DEngine {
    */
   private hasActiveAnimation(): boolean {
     if (this.orientationAnim) return true;
+    if (this.cameraAnim) return true;
     if (this.rotationEngine?.isAnimating()) return true;
     if (this.gyroFusion?.isEnabled()) return true;
     if (this.cameraMomentum && this.cameraMomentumState !== 'idle') return true;
@@ -1028,6 +1120,30 @@ export class Cube3DEngine {
       }
     }
 
+    if (this.cameraAnim && this.sceneManager) {
+      const elapsed = timeMs - this.cameraAnim.startTime;
+      const t = Math.min(1.0, elapsed / this.cameraAnim.durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      const curTheta =
+        this.cameraAnim.startTheta +
+        (this.cameraAnim.targetTheta - this.cameraAnim.startTheta) * eased;
+      const curPhi =
+        this.cameraAnim.startPhi +
+        (this.cameraAnim.targetPhi - this.cameraAnim.startPhi) * eased;
+      const curRadius =
+        this.cameraAnim.startRadius +
+        (this.cameraAnim.targetRadius - this.cameraAnim.startRadius) * eased;
+
+      this.sceneManager.setOrbitAngles(curTheta, curPhi, curRadius);
+
+      if (t >= 1.0) {
+        const resolve = this.cameraAnim.resolve;
+        this.cameraAnim = null;
+        resolve?.();
+      }
+    }
+
     if (this.orientationAnim && this.model) {
       const elapsed = timeMs - this.orientationAnim.startTime;
       let t = elapsed / this.orientationAnim.durationMs;
@@ -1068,6 +1184,7 @@ export class Cube3DEngine {
       this.animFrameId = null;
     }
     this.finishOrientationAnim();
+    this.finishCameraAnim();
     this.needsRender = false;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';

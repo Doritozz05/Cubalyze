@@ -80,6 +80,22 @@ export class EngineWorkerAPI {
     this.engine?.rotateCamera(dx, dy);
   }
 
+  public zoomCamera(deltaY: number) {
+    this.engine?.zoomCamera(deltaY);
+  }
+
+  public resetCamera(smooth = false) {
+    return this.engine?.resetCamera(smooth);
+  }
+
+  public setIsometricView(smooth = false) {
+    return this.engine?.setIsometricView(smooth);
+  }
+
+  public animateCameraTo(theta: number, phi: number, radius?: number, durationMs?: number) {
+    return this.engine?.animateCameraTo(theta, phi, radius, durationMs);
+  }
+
   public updateGyro(
     x: number,
     y: number,
@@ -122,10 +138,6 @@ export class EngineWorkerAPI {
 
   public resetGyroCalibration() {
     this.engine?.resetGyroCalibration();
-  }
-
-  public setIsometricView() {
-    this.engine?.setIsometricView();
   }
 
   public setCubeOrientation(orientationIndex: number, animationDurationMs?: number): Promise<void> | undefined {

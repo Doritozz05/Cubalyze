@@ -728,6 +728,9 @@ function ReplaySection({
                     isDraggingRef.current = false;
                     (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
                   }}
+                  onDoubleClick={() => {
+                    workerProxyRef.current?.setIsometricView(true).catch(console.error);
+                  }}
                 />
 
                 {/* Progress bar overlay at bottom of canvas */}
