@@ -36,7 +36,7 @@
  * share the same flat catalog without ever colliding.
  */
 import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
-import { CROSS_TO_D, recolorState } from '../crossFaceAdapter';
+import { CROSS_TO_D } from '../crossFaceAdapter';
 import type { DetectionProbe } from './types';
 
 /** The 4 y-rotations — the AUF equivalence class of a last layer. */
@@ -178,37 +178,21 @@ function minimizeOverTwoSidedU(
 const U_F_FACELET = 7;
 
 /**
- * Scheme that swaps the U/D colors — turns a 'lower' LL (canonical D-color
- * pieces) into the catalog's 'upper' convention (canonical U-color pieces).
- *
- * Used via `recolorState`, which re-derives the piece IDs AND the corner
- * twists / edge flips from the sticker geometry. That makes the transform
- * rotation-independent: for a 'lower' LL the Kociemba co bits are measured
- * with the D color as reference, so the same physical twist reads the
- * mirrored value (1↔2) and the edge flips stay put — but only a full
- * re-derivation (as opposed to a fixed arithmetic transform) is correct for
- * every cross face, since the normalization rotation (x2 for a U-cross, x'
- * for an F-cross, …) re-derives the orientation bits itself.
+ * Mapping for lower LL pieces (canonical D-color pieces rotated to the U layer):
+ * Relabels piece IDs onto 0-3 according to their home position under the D-cross anchor
+ * without spatial reflection (preserving chirality and permutation conjugacy).
  */
-const SWAP_UD: Record<string, string> = {
-  U: 'D',
-  D: 'U',
-  F: 'F',
-  B: 'B',
-  R: 'R',
-  L: 'L',
-};
+const LOWER_CORNER_MAP: Record<number, number> = { 7: 0, 6: 1, 5: 2, 4: 3 };
+const LOWER_EDGE_MAP: Record<number, number> = { 4: 0, 7: 1, 6: 2, 5: 3 };
 
-/**
- * Normalize a 'lower' anchor state onto the catalog convention: swap the
- * LL/cross colors so the LL reads as the canonical U-color pieces at the U
- * positions. The PLL signature's two-sided AUF orbit composes the U-turn
- * permutation, which only permutes piece IDs 0-3 — a lower LL relabeled by
- * hand would collapse the orbit to its right side, so the pieces must be
- * re-identified BEFORE the orbit runs.
- */
-function normalizeLowerLL(state: CubeState): CubeState {
-  return recolorState(state, SWAP_UD);
+function relabelLowerAnchor(anchor: CubeState): CubeState {
+  const cp = Array.from(anchor.cp);
+  const ep = Array.from(anchor.ep);
+  for (let i = 0; i < 4; i++) {
+    cp[i] = LOWER_CORNER_MAP[cp[i]] ?? cp[i];
+    ep[i] = LOWER_EDGE_MAP[ep[i]] ?? ep[i];
+  }
+  return new CubeState(cp, anchor.co, ep, anchor.eo);
 }
 
 /**
@@ -237,14 +221,10 @@ export const lastLayerOrientationProbe: DetectionProbe = {
   signature(state, ctx) {
     if (ctx.probe !== 'last-layer-orientation') return '';
     const anchor = normalizeToAnchor(state, ctx.crossFace);
-    // A 'lower' LL (canonical D-color pieces, e.g. a white cross on a non-D
-    // face) reads mirrored corner twists — negate them onto the catalog
-    // convention before signing (see normalizeLowerLL).
     const kind = lastLayerPieceKind(anchor);
     if (!kind) return '';
-    const work = kind === 'lower' ? normalizeLowerLL(anchor) : anchor;
 
-    return minimizeOverY(work, (t) => {
+    return minimizeOverY(anchor, (t) => {
       const eo = t.eo;
       const co = t.co;
       // Edge orientation bits (0/1) + corner twists (0/1/2) of the 4
@@ -278,22 +258,16 @@ export const lastLayerPermutationProbe: DetectionProbe = {
   signature(state, ctx) {
     if (ctx.probe !== 'last-layer-permutation') return '';
     const anchor = normalizeToAnchor(state, ctx.crossFace);
-    // The LL pieces can be the canonical U pieces (0-3) or the canonical D
-    // pieces (4-7) — see lastLayerPieceKind. For the 'lower' family the
-    // pieces MUST be relabeled onto 0-3 BEFORE the two-sided AUF orbit: the
-    // left multiplication U^a · state composes the U-turn permutation, which
-    // only permutes piece IDs 0-3, so an un-relabeled lower state would
-    // collapse the orbit to its right side and canonicalize to a different
-    // signature than the catalog (built from U-color LL pieces).
     const kind = lastLayerPieceKind(anchor);
     if (!kind) return '';
-    const work = kind === 'lower' ? normalizeLowerLL(anchor) : anchor;
 
     // A PLL state is fully oriented by definition: reject any misoriented
     // last-layer piece so an OLL state can never alias a permutation.
     for (let p = 0; p < 4; p++) {
       if (anchor.co[p] !== 0 || anchor.eo[p] !== 0) return '';
     }
+
+    const work = kind === 'lower' ? relabelLowerAnchor(anchor) : anchor;
 
     // Canonicalize over the TWO-SIDED AUF orbit: a PLL pre-state can differ
     // from the catalog case by a leading AUF (left multiplication) when the
