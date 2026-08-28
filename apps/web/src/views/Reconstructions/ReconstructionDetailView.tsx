@@ -234,13 +234,13 @@ export function ReconstructionDetailView({
                 <span className="flex items-center gap-1">
                   <Calendar className="size-3" /> {formatDisplayDate(record.date, record.competition, record.url)}
                 </span>                  <span className="nums flex items-center gap-1">
-                    <span className="text-ink-2">#{record.id}</span>
-                    {record.solveNum != null && (
-                      <span className="text-ink-3">
-                        {t("detail.solveNum", { count: record.solveNum })}
-                      </span>
-                    )}
-                  </span>
+                  <span className="text-ink-2">#{record.id}</span>
+                  {record.solveNum != null && (
+                    <span className="text-ink-3">
+                      {t("detail.solveNum", { count: record.solveNum })}
+                    </span>
+                  )}
+                </span>
                 {record.reconstructor && (
                   <span className="flex items-center gap-1">
                     <UserRound className="size-3" /> {t("detail.reconBy", { name: record.reconstructor })}

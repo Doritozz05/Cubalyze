@@ -3391,7 +3391,24 @@
       "xcrossPseudo": "The written cross block never contained a real cross (edges left misordered / partial — fixed inside the F2L pairs)",
       "xcrossPair": "{{name}} pair solved at cross completion",
       "xcrossGeneric": "An F2L pair was already solved at cross completion",
-      "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally."
+      "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally.",
+      "cfopSplit": "CFOP Flow & Split",
+      "f2lAvg": "Avg/Pair: {{avg}}m",
+      "rotationRate": "{{rate}} R/M",
+      "copyAlg": "Copy algorithm",
+      "copiedAlg": "Algorithm copied to clipboard",
+      "seekToPhase": "Click to jump 3D replay to this step",
+      "optimal": "Optimal",
+      "standard": "Standard",
+      "extended": "Extended",
+      "inspectionGrip": "Inspection grip",
+      "inSolveRotations": "In-solve rotations",
+      "sliceTurns": "Slice turns (M/E/S)",
+      "wideTurns": "Wide turns (Rw/r...)",
+      "movesShare": "{{percent}}% of solve",
+      "aufCount": "{{count}} AUF alignments",
+      "slotSequence": "Slot flow",
+      "efficiency": "Efficiency"
     }
   },
   "widgets": {

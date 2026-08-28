@@ -3391,7 +3391,24 @@
       "xcrossPseudo": "El bloque de cruz escrito nunca contuvo una cruz real (aristas desordenadas / parciales — corregido dentro de los pares F2L)",
       "xcrossPair": "Par {{name}} resuelto al completar la cruz",
       "xcrossGeneric": "Un par F2L ya estaba resuelto al completar la cruz",
-      "apiError": "Nuestra detección no pudo analizar esta resolución (error de API). Esto es un bug — se supone que el camino de incoherencia se maneja internamente."
+      "apiError": "Nuestra detección no pudo analizar esta resolución (error de API). Esto es un bug — se supone que el camino de incoherencia se maneja internamente.",
+      "cfopSplit": "Flujo y distribución CFOP",
+      "f2lAvg": "Promedio/Par: {{avg}}m",
+      "rotationRate": "{{rate}} R/M",
+      "copyAlg": "Copiar algoritmo",
+      "copiedAlg": "Algoritmo copiado al portapapeles",
+      "seekToPhase": "Clic para saltar el replay 3D a este paso",
+      "optimal": "Óptimo",
+      "standard": "Estándar",
+      "extended": "Extenso",
+      "inspectionGrip": "Agarre en inspección",
+      "inSolveRotations": "Rotaciones en resolución",
+      "sliceTurns": "Giros de capa media (M/E/S)",
+      "wideTurns": "Giros dobles (Rw/r...)",
+      "movesShare": "{{percent}}% del solve",
+      "aufCount": "{{count}} alineaciones AUF",
+      "slotSequence": "Secuencia de slots",
+      "efficiency": "Eficiencia"
     }
   },
   "widgets": {
