@@ -923,7 +923,9 @@
       "stepForwardAria": "Paso adelante un movimiento",
       "play": "Reproducir",
       "pause": "Pausa",
-      "speed": "Velocidad {{speed}}x"
+      "speed": "Velocidad {{speed}}x",
+      "solved": "Resuelto",
+      "startState": "Estado inicial (Scramble)"
     },
     "analysis": {
       "cyclePenalty": "Clic para cambiar la penalización",

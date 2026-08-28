@@ -923,7 +923,9 @@
       "stepForwardAria": "Step forward one move",
       "play": "Play",
       "pause": "Pause",
-      "speed": "{{speed}}x speed"
+      "speed": "{{speed}}x speed",
+      "solved": "Solved",
+      "startState": "Initial state (Scramble)"
     },
     "analysis": {
       "cyclePenalty": "Click to cycle penalty",

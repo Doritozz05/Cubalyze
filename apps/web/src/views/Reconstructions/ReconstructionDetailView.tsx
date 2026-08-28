@@ -200,92 +200,91 @@ export function ReconstructionDetailView({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* ── Header: identity + context, fixed, no panels ── */}
-      <header className="shrink-0 px-5 pb-4 pt-3">
-          <div className="mx-auto flex max-w-6xl">
-            <button
-              onClick={onBack}
-              className="text-ink-3 hover:text-ink flex items-center gap-1.5 pr-6 text-xs font-medium transition-colors"
-            >
-              <ArrowLeft className="size-3.5" /> {t('detail.back')}
-            </button>
-          </div>
+      {/* ── Header: identity + context, fixed, flush with sidebar/replay ── */}
+      <header className="shrink-0 border-b border-line bg-surface/40 px-5 pb-4 pt-3 sm:px-6">
+        <div className="flex items-center">
+          <button
+            onClick={onBack}
+            className="text-ink-3 hover:text-ink flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="size-3.5" /> {t('detail.back')}
+          </button>
+        </div>
 
-          <div className="mx-auto mt-1 max-w-6xl">
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-              {/* Time + solver + provenance */}
-              <div className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-2">
-                <div className="nums text-ink text-5xl leading-none font-semibold tracking-tight tabular-nums">
-                  {record.time > 0 ? formatTime(record.time * 1000) : '—'}
-                </div>
-                <div className="min-w-0 pb-1">
-                  <h2 className="text-ink text-xl font-semibold tracking-tight">{record.solver}</h2>
-                  <div className="text-ink-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                    {record.country && <span className="uppercase">{record.country}</span>}
-                    {record.source && <span className="capitalize">{record.source}</span>}
-                    <span className="nums text-ink-2">#{record.id}</span>
-                    {record.compWcaId && (
-                      <a
-                        href={`https://www.worldcubeassociation.org/competitions/${record.compWcaId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-ink-3 hover:text-ink flex items-center gap-1 transition-colors"
-                      >
-                        <Trophy className="size-3" /> wca
-                      </a>
-                    )}
-                  </div>
+        <div className="mt-2.5">
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            {/* Time + solver + provenance */}
+            <div className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-2">
+              <div className="nums text-ink text-4xl sm:text-5xl leading-none font-semibold tracking-tight tabular-nums">
+                {record.time > 0 ? formatTime(record.time * 1000) : '—'}
+              </div>
+              <div className="min-w-0 pb-1">
+                <h2 className="text-ink text-xl font-semibold tracking-tight">{record.solver}</h2>
+                <div className="text-ink-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                  {record.country && <span className="uppercase">{record.country}</span>}
+                  {record.source && <span className="capitalize">{record.source}</span>}
+                  <span className="nums text-ink-2">#{record.id}</span>
+                  {record.compWcaId && (
+                    <a
+                      href={`https://www.worldcubeassociation.org/competitions/${record.compWcaId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-ink-3 hover:text-ink flex items-center gap-1 transition-colors"
+                    >
+                      <Trophy className="size-3" /> wca
+                    </a>
+                  )}
                 </div>
               </div>
-
-              {/* Actions */}
-              {actions}
             </div>
 
-            {/* Meta strip: puzzle · method · competition · date · solve · record */}
-            <div className="text-ink-3 mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <span className="text-ink-2 font-medium">{record.puzzle}</span>
-              <span className="text-ink-2 font-medium">{record.method}</span>
-              <span className="truncate">{record.competition || '—'}</span>
-              {dateDisplay !== '—' && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="size-3" /> {dateDisplay}
-                </span>
-              )}
-              {record.solveNum != null && <span>{t('detail.solveNum', { count: record.solveNum })}</span>}
-              {record.reconstructor && (
-                <span className="flex items-center gap-1">
-                  <UserRound className="size-3" />
-                  {t('detail.reconBy', { name: record.reconstructor })}
-                </span>
-              )}
-              {record.record && (
-                <span className="text-plus2 font-semibold uppercase">{record.record}</span>
-              )}
-            </div>
-
-            {/* Stats — tile grid, Profile style */}
+            {/* Actions */}
+            {actions}
           </div>
-        </header>
+
+          {/* Meta strip: puzzle · method · competition · date · solve · record */}
+          <div className="text-ink-3 mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+            <span className="text-ink-2 font-medium">{record.puzzle}</span>
+            <span className="text-ink-2 font-medium">{record.method}</span>
+            <span className="truncate">{record.competition || '—'}</span>
+            {dateDisplay !== '—' && (
+              <span className="flex items-center gap-1">
+                <Calendar className="size-3" /> {dateDisplay}
+              </span>
+            )}
+            {record.solveNum != null && <span>{t('detail.solveNum', { count: record.solveNum })}</span>}
+            {record.reconstructor && (
+              <span className="flex items-center gap-1">
+                <UserRound className="size-3" />
+                {t('detail.reconBy', { name: record.reconstructor })}
+              </span>
+            )}
+            {record.record && (
+              <span className="text-plus2 font-semibold uppercase">{record.record}</span>
+            )}
+          </div>
+        </div>
+      </header>
 
         {/* ── Replay anchors left · rest scrolls right ── */}
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           {/* Replay — fills remaining height on lg (no scroll), stacks on smaller */}
           {solve && (
-            <div className="flex min-h-0 w-full flex-col lg:w-3/5 lg:min-w-[24rem] lg:max-w-[48rem] lg:flex-none lg:border-r lg:border-line/60">
-              <div className="flex aspect-[5/4] w-full min-h-0 flex-col px-5 py-4 lg:aspect-auto lg:flex-1 lg:items-center lg:justify-center lg:px-7 lg:py-6">
+            <div className="flex min-h-0 w-full flex-col lg:w-3/5 lg:min-w-[26rem] lg:max-w-[50rem] lg:flex-none lg:border-r lg:border-line/60">
+              <div className="flex aspect-[5/4] w-full min-h-0 flex-col p-4 sm:p-5 lg:aspect-auto lg:h-full lg:flex-1">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
                   size="large"
-                  className="h-full min-h-0 border-0 px-0 py-0"
+                  collapsible={false}
+                  className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
                 />
               </div>
             </div>
           )}
 
-          {/* Right — scrollable content list (1/3 on lg) */}
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:w-2/5 lg:max-w-[34rem] lg:flex-none">
+          {/* Right — scrollable content list */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:w-2/5 lg:flex-1">
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-5 sm:px-5">
               {/* Scramble */}
             {record.scramble && (
