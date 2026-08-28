@@ -371,12 +371,13 @@ export function ReconstructionDetailView({
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-3 py-4 sm:px-6 sm:py-5">
             {solve && (
-              <div className="aspect-16/10 sm:aspect-video w-full min-h-75 sm:min-h-95 max-h-130 rounded-xl border border-line bg-surface/30 overflow-hidden">
+              <div className="flex flex-col aspect-16/10 sm:aspect-video w-full min-h-75 sm:min-h-95 max-h-130 rounded-xl border border-line bg-surface p-3 sm:p-4 shadow-xs">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
                   size="large"
                   collapsible={false}
+                  showHeader={false}
                   className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
                 />
               </div>
@@ -395,6 +396,7 @@ export function ReconstructionDetailView({
                   solve={solve}
                   size="large"
                   collapsible={false}
+                  showHeader={false}
                   className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
                 />
               </div>

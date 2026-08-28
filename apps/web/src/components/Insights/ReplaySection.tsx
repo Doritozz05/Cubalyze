@@ -654,10 +654,10 @@ function ReplaySection({
               <div
                 ref={containerRef}
                 className={cn(
-                  "relative overflow-hidden rounded-xl bg-surface-2/30 border border-line/40 flex items-center justify-center",
+                  "relative overflow-hidden flex items-center justify-center",
                   size === "large"
-                    ? "flex-1 w-full min-h-0"
-                    : "w-full aspect-square max-w-xs",
+                    ? "flex-1 w-full min-h-0 bg-transparent border-0 rounded-lg"
+                    : "w-full aspect-square max-w-xs rounded-xl bg-surface-2/30 border border-line/40",
                 )}
               >
                 <canvas
