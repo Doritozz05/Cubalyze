@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ExternalLink,
@@ -16,7 +16,10 @@ import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReplaySection } from "@/components/Insights/ReplaySection";
+import {
+  ReplaySection,
+  type ReplaySectionHandle,
+} from "@/components/Insights/ReplaySection";
 import { AlgorithmNotation, SectionHeader } from "@/components/Insights/atoms";
 import {
   fetchReconRecord,
@@ -107,6 +110,10 @@ export function ReconstructionDetailView({
   const [record, setRecord] = useState<ReconFullRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Imperative replay control — phase rows in OurDetectionPanel seek the
+  // cube to the state right before the clicked phase's first move.
+  const replayRef = useRef<ReplaySectionHandle>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,12 +328,17 @@ export function ReconstructionDetailView({
           {/* ── Replay ── */}
           {solve && (
             <div className="mt-4">
-              <ReplaySection solve={solve} />
+              <ReplaySection ref={replayRef} solve={solve} />
             </div>
           )}
 
           {/* ── Our detection (Fase 3) ── */}
-          <OurDetectionPanel record={record} />
+          <OurDetectionPanel
+            record={record}
+            onSeekToMove={(moveIndex) =>
+              void replayRef.current?.seekToMove(moveIndex)
+            }
+          />
 
           {/* ── Phase table ── */}
           {record.phases.length > 0 && (

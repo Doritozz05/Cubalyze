@@ -3,6 +3,9 @@ import {
   applyFrameRotation,
   bestFrameRotationSequence,
   countCompletedF2LSlotsInFrame,
+  cornerFacelet,
+  FaceletStringConverter,
+  FACE_LAYERS,
 } from '@cubeforge/math-core';
 import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
@@ -99,6 +102,15 @@ export interface UnifiedF2LPair {
   /** The pair's two side colors (canonical face letters). */
   colors: [FaceLetter, FaceLetter];
   /**
+   * The pair's two side colors AS THE SOLVER SAW THEM, in canonical
+   * letters the renderer can paint directly (scheme-applied — rotation
+   * independent). `front` is the sticker that faced the solver, `side` the
+   * other one. Absent when the completion state cannot be read (defensive;
+   * the panel then falls back to `colors`).
+   */
+  frontColor?: FaceLetter;
+  sideColor?: FaceLetter;
+  /**
    * Moves that completed this pair, one token per timeline entry: the
    * SOLVER's raw notation when the caller provided displayTokens (text
    * route), otherwise derived from the timeline entries themselves (smart
@@ -160,6 +172,50 @@ function entriesToTokens(
     if (entry) out.push(entryToken(entry.move));
   }
   return out;
+}
+
+/**
+ * The pair's two side colors as the solver actually saw them, read from
+ * the corner at the slot's home position in a DP-rotated solver-frame
+ * state.
+ *
+ * Why raw stickers: `colors` (edgeColor of the slot's home edge) is in
+ * the frame's own letters, which for a rotated frame (cross on F/B/R/L)
+ * are NOT the physical colors of the pieces — the pair the solver's scan
+ * matched can be a DIFFERENT physical piece set (the piece-anchored check
+ * passes on scheme-relabeled stickers, so in a rotated frame the pieces
+ * at a "home" slot need not be the position's canonical ones — e.g. the
+ * reconz-9679 U-cross "UL" pair is physically blue+orange while
+ * edgeColor says ['U','L'] = white+orange). The facelet letters at the
+ * corner ARE the physical colors (U=white, R=red, …), so reading them
+ * directly paints the pair exactly as the solver saw it — independent of
+ * the solve's rotation. `front` is the sticker that faced the solver: on
+ * the frame's F face when the corner touches it, else the R/L face
+ * adjacent to it (back/bottom slots).
+ */
+function pairFrontSideColors(
+  state: CubeState,
+  crossFace: string,
+  slotIndex: number,
+): { front: FaceLetter; side: FaceLetter } | null {
+  const facelets = FaceletStringConverter.toFaceletString(state);
+  const cornerPos = FACE_LAYERS[crossFace]?.f2lCorners?.[slotIndex];
+  if (cornerPos == null) return null;
+  const perFace: Record<string, string> = {};
+  for (const i of cornerFacelet[cornerPos]) {
+    perFace['URFDLB'[Math.floor(i / 9)]] = facelets[i];
+  }
+  const sideFaces = Object.keys(perFace).filter((f) => f !== crossFace);
+  if (sideFaces.length !== 2) return null;
+  // Sticker that faced the solver: on F when the corner touches it, else
+  // the R/L face adjacent to it (BR/BL/UR/UL/DR/DL/UB/DB).
+  const frontFace = sideFaces.includes('F')
+    ? 'F'
+    : (sideFaces.find((f) => f === 'R' || f === 'L') ?? sideFaces[0]);
+  const front = perFace[frontFace] as FaceLetter;
+  const side = perFace[sideFaces.find((f) => f !== frontFace)!] as FaceLetter;
+  if (!front || !side) return null;
+  return { front, side };
 }
 
 /**
@@ -392,6 +448,17 @@ export function segmentF2LPairs(
       for (let b = 0; b < 4; b++) {
         if (!(newBits & (1 << b))) continue;
         const slotInfo = comp.slots.find((s) => s.slotIndex === b);
+        // The pair's real stickers (scheme-applied canonical letters) — the
+        // corner at the slot's home position is guaranteed to be the pair by
+        // the piece-anchored completion check above.
+        let pairSide: { front: FaceLetter; side: FaceLetter } | null = null;
+        if (slotInfo && state) {
+          try {
+            pairSide = pairFrontSideColors(state, crossFace, b);
+          } catch {
+            pairSide = null; // never break segmentation over colors
+          }
+        }
         const rangeMoves = displayTokens
           ? displayTokens.slice(segmentStart, i + 1)
           : entriesToTokens(timeline, segmentStart, i);
@@ -401,6 +468,8 @@ export function segmentF2LPairs(
           colors: slotInfo
             ? slotInfo.colors
             : (['?', '?'] as unknown as [FaceLetter, FaceLetter]),
+          frontColor: pairSide?.front,
+          sideColor: pairSide?.side,
           moves: rangeMoves,
           movesCount: i - segmentStart + 1,
           auf: leadingUMoves(rangeMoves),

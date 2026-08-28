@@ -79,6 +79,14 @@ export interface F2LPairResult {
   /** The pair's two side colors (canonical face letters). */
   colors: [FaceLetter, FaceLetter];
   /**
+   * The pair's two side colors as the solver saw them — canonical letters,
+   * scheme-applied (rotation independent), `front` facing the solver. When
+   * absent (unreadable completion state) the caller should fall back to
+   * `colors`.
+   */
+  frontColor?: FaceLetter;
+  sideColor?: FaceLetter;
+  /**
    * The moves that completed this pair, in the SOLVER's raw notation
    * (wide moves as written: r', u2, …), one token per timeline entry —
    * exactly what the reconstructor wrote, so the panel reads 1:1 with
@@ -778,6 +786,8 @@ function buildPairs(
     const base: F2LPairResult = {
       slot: p.slot,
       colors: p.colors as [FaceLetter, FaceLetter],
+      frontColor: p.frontColor,
+      sideColor: p.sideColor,
       moves: p.moves,
       completionIndex: p.completionIndex,
       auf: p.auf,

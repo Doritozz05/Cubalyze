@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -51,16 +59,31 @@ export interface ReplaySectionProps {
   className?: string;
 }
 
+/**
+ * Imperative control surface for the replay (e.g. phase rows in the
+ * detection table seeking the cube to the state before a phase).
+ */
+export interface ReplaySectionHandle {
+  /**
+   * Pause the replay with exactly `moveIndex` moves applied (clamped to
+   * [0, moves.length - 1]; negative → the start). Move `n` applied means
+   * the cube shows the state AFTER move n — i.e. the position right before
+   * move n+1, which is what "the move before a phase" means.
+   */
+  seekToMove(moveIndex: number): Promise<void>;
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 // ─── ReplaySection ─────────────────────────────────────────────────────────
 
-export function ReplaySection({
+export const ReplaySection = forwardRef<ReplaySectionHandle, ReplaySectionProps>(
+function ReplaySection({
   solve,
   onReplayPosition,
   onReplayComplete,
   className,
-}: ReplaySectionProps) {
+}: ReplaySectionProps, ref) {
   const { t } = useTranslation("insights");
   const [expanded, setExpanded] = useState(true);
   const [replayState, setReplayState] = useState<ReplayState>("idle");
@@ -75,6 +98,11 @@ export function ReplaySection({
   const [canvasKey, setCanvasKey] = useState(0);
 
   const engineRef = useRef<ReplayEngine | null>(null);
+  /**
+   * A phase-row seek requested while the engine was not ready (section
+   * collapsed / worker still initializing) — applied once the engine exists.
+   */
+  const pendingSeekRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -393,6 +421,19 @@ export function ReplaySection({
           // still null at that point, so the React state never got updated.
           // Without this, a stale "playing" from before collapse persists.
           setReplayState("idle");
+
+          // A phase-row seek requested before the engine finished
+          // initializing (collapsed section or worker still warming up)
+          // applies now that the engine is ready.
+          if (pendingSeekRef.current != null) {
+            const target = pendingSeekRef.current;
+            pendingSeekRef.current = null;
+            const clamped = Math.max(
+              0,
+              Math.min(target, moves.length - 1),
+            );
+            void engine.seek(clamped * REPLAY_MOVE_SPACING_MS);
+          }
         }
       } catch (err) {
         console.warn("[Replay] Mini cube init failed:", err);
@@ -450,6 +491,26 @@ export function ReplaySection({
   }, []);
 
   const canPlay = hasMoves && replayState !== "seeking";
+
+  // ── Imperative seek (driven by phase rows in the detection panel) ───────
+
+  const seekToMove = useCallback(
+    async (moveIndex: number): Promise<void> => {
+      pendingSeekRef.current = moveIndex;
+      // Clicking a phase row while the section is collapsed must still work:
+      // expand (re-inits the engine) and apply the seek once it's ready.
+      setExpanded(true);
+      const engine = engineRef.current;
+      if (!engine) return; // the init effect applies the pending seek
+      engine.pause();
+      const clamped = Math.max(0, Math.min(moveIndex, moves.length - 1));
+      await engine.seek(clamped * REPLAY_MOVE_SPACING_MS);
+      if (pendingSeekRef.current === moveIndex) pendingSeekRef.current = null;
+    },
+    [moves.length],
+  );
+
+  useImperativeHandle(ref, () => ({ seekToMove }), [seekToMove]);
 
   return (
     <div
@@ -677,4 +738,4 @@ export function ReplaySection({
       )}
     </div>
   );
-}
+});

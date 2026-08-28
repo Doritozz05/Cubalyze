@@ -23,7 +23,7 @@
  * pair colors sit with the phase: the slot chip below the phase name, colors
  * to its right.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Eye, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -86,16 +86,24 @@ function interleave(
 
 // ─── Mini case cube (3D snapshot, recolored to the solve's colors) ──────────
 
-/** Which of the pair's two side colors is the FRONT-facing one, per slot.
- *  The canonical seed renders the case at FR, so the pair's front (F face
- *  of the render) must show the color that faces the solver in the solve:
- *  for FR/FL that is the edge's first home color (F), for BR/BL the second
- *  (R/L). The other side color goes to the right. */
+/** Fallback front/side ordering when the engine could not read the pair's
+ *  real stickers (unreadable completion state): for FR/FL the edge's first
+ *  home color (F) faces the solver, for BR/BL the second (R/L). The engine's
+ *  `frontColor`/`sideColor` (scheme-applied, rotation independent) replace
+ *  this whenever present. */
 const FRONT_SIDE_INDEX: Record<string, number> = {
   FR: 0,
   FL: 0,
   BR: 1,
   BL: 1,
+  UF: 0,
+  DF: 0,
+  UR: 1,
+  UL: 1,
+  DR: 1,
+  DL: 1,
+  UB: 1,
+  DB: 1,
 };
 
 /** Sticker-color override for the mini cube: the reconstruction's REAL
@@ -105,20 +113,19 @@ const FRONT_SIDE_INDEX: Record<string, number> = {
  *  LOCAL cubie face, so the pair pieces (DFR corner = D/F/R stickers, FR
  *  edge = F/R stickers) always show exactly cross + pair colors wherever
  *  the case places them; the F2L mask grays everything that is not the
- *  pair. The case geometry is the canonical setup, untouched. */
+ *  pair. The case geometry is the canonical setup, untouched. `front` and
+ *  `side` arrive ALREADY ordered (from the engine's scheme-applied read, or
+ *  the FRONT_SIDE_INDEX fallback above) — no rotation logic here. */
 function pairStickerColors(
   crossColor: string,
-  sideColors: [string, string],
-  slot: string,
+  frontColor: string,
+  sideColor: string,
 ): Record<string, string> {
-  const frontIdx = FRONT_SIDE_INDEX[slot] ?? 0;
-  const frontColor = sideColors[frontIdx];
-  const rightColor = sideColors[1 - frontIdx];
   return {
     U: CASE_RENDER_GRAY,
     D: FACE_HEX[crossColor] ?? crossColor,
     F: FACE_HEX[frontColor] ?? frontColor,
-    R: FACE_HEX[rightColor] ?? rightColor,
+    R: FACE_HEX[sideColor] ?? sideColor,
     B: CASE_RENDER_GRAY,
     L: CASE_RENDER_GRAY,
   };
@@ -266,7 +273,19 @@ function LastLayerCaseCell({
 
 // ─── Panel ─────────────────────────────────────────────────────────────────
 
-export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
+export function OurDetectionPanel({
+  record,
+  onSeekToMove,
+}: {
+  record: ReconFullRecord;
+  /**
+   * Clicking a phase row seeks the 3D replay to the state right before that
+   * phase's first move (the last move of the previous phase applied). The
+   * index is in replay-EVENT space (the `solve.moves` array the ReplaySection
+   * consumes).
+   */
+  onSeekToMove?: (moveIndex: number) => void;
+}) {
   const { t } = useTranslation("reconstructions");
   // Only CFOP on a 3×3 makes sense for the state-based CFOP detector.
   const canDetect =
@@ -321,6 +340,43 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const report = result.timeline.detectionReport;
   const reportPhases = report?.phases ?? [];
 
+  // ── Row → replay seek mapping ─────────────────────────────────────────────
+  // Detection indices (phase startIndex, rotation/slice moveIndex) live in
+  // TIMELINE-ENTRY space: one entry per FACE token — rotations and standalone
+  // slices share the index of the move they precede (they never occupy an
+  // entry). The replay `solve.moves` array is one event per written token
+  // with rotations dropped (wides stay whole, slices keep their event). So
+  // the number of replay events that have run when the phase at entry `S`
+  // begins is exactly `S` face tokens + every slice pointing before `S`:
+  //
+  //   eventsBefore(S) = S + #{ slices with moveIndex < S }
+  //
+  // Seeking with `eventsBefore(S) - 1` applied leaves the cube at the last
+  // move of the previous phase — OLL lands on the last F2L4 move, PLL on
+  // the last OLL move, cross on the scrambled start.
+  const solveSlicesAll = recon.slices ?? [];
+  const eventsBeforeEntry = (entryIdx: number): number =>
+    entryIdx +
+    solveSlicesAll.filter((s) => s.moveIndex < entryIdx).length;
+  const seekToEntry = (entryIdx: number) => {
+    onSeekToMove?.(eventsBeforeEntry(entryIdx) - 1);
+  };
+  // Clickable rows (pointer + keyboard) — only when a seek handler exists.
+  const seekRowProps = (entryIdx: number) =>
+    onSeekToMove
+      ? {
+          role: "button" as const,
+          tabIndex: 0,
+          onClick: () => seekToEntry(entryIdx),
+          onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              seekToEntry(entryIdx);
+            }
+          },
+        }
+      : {};
+
   // Real global indices from the detection report (startIndex/endIndex are
   // timeline-entry indices, exactly the space of orientationTimeline). A
   // running cursor would misalign OLL/PLL when the cross completes late or
@@ -369,7 +425,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       from,
       from + moves.length - 1,
     );
-    return { ...p, moves, auf, display: interleave(moves, rots, from) };
+    return { ...p, from, moves, auf, display: interleave(moves, rots, from) };
   });
 
   const ollMoves = recon.oll ? recon.oll.moves : null;
@@ -410,6 +466,9 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
   const warnings = report?.warnings ?? [];
   const orient = recon.orientation;
   const inspectionTokens = inspectionRotations.map((r) => r.token);
+  // Rows that can seek the replay (Cross, pairs, OLL, PLL) get a pointer
+  // cursor when a seek handler is wired up.
+  const seekRowCls = onSeekToMove ? " cursor-pointer" : "";
 
   return (
     <div className="mt-4 rounded-lg border border-line bg-surface">
@@ -462,7 +521,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       </div>
 
       {/* ── Cross ── */}
-      <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
+      <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(crossStart)}>
         <span className="flex min-w-0 flex-col">
           <span className="text-[0.74rem] font-medium text-ink">{t("detection.cross")}</span>
           <span className="mt-0.5 flex items-center gap-1.5">
@@ -498,8 +557,20 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
       </div>
 
       {/* ── F2L pairs ── */}
-      {pairs.map((p, i) => (
-        <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE)}>
+      {pairs.map((p, i) => {
+        // The pair's two side colors as the solver saw them: the engine's
+        // scheme-applied read (rotation independent) when present, else the
+        // canonical slot letters with the FRONT_SIDE_INDEX fallback.
+        const frontIdx = FRONT_SIDE_INDEX[p.slot] ?? 0;
+        const frontColor = p.frontColor ?? p.colors[frontIdx];
+        const sideColor = p.sideColor ?? p.colors[1 - frontIdx];
+        const pairColors = [frontColor, sideColor];
+        const stickerColors =
+          crossColor && pairColors.every((c) => c != null)
+            ? pairStickerColors(crossColor, frontColor, sideColor)
+            : null;
+        return (
+        <div key={p.slot} className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(p.from)}>
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">
               {p.slot
@@ -516,9 +587,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                   {t("detection.noPairSegmentation")}
                 </span>
               )}
-              {p.colors.map((c) => (
-                <FaceChip key={c} face={c} />
-              ))}
+              {pairColors.map((c) => c != null && <FaceChip key={c} face={c} />)}
             </span>
           </span>
           <span className="flex min-w-0 items-center gap-2">
@@ -528,14 +597,6 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                   casesByNumber.get(p.detectedCase!.caseNumber) ??
                   casesByNumber.get(p.detectedCase!.caseName);
                 if (!caseData) return null;
-                const stickerColors =
-                  crossColor && p.colors.length === 2
-                    ? pairStickerColors(
-                        crossColor,
-                        p.colors as [string, string],
-                        p.slot,
-                      )
-                    : null;
                 return (
                   <CaseMiniCube
                     caseData={caseData}
@@ -559,8 +620,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
                 <span className="text-[0.64rem] text-ink-3/50">—</span>
               )}
             </span>
-          </span>
-          <span className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+          </span>          <span className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1">
             <MovesSeq tokens={p.display} />
             {p.auf.length > 0 && (
               <span className="shrink-0 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
@@ -570,11 +630,12 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
           </span>
           <CountCell count={p.moves.length} />
         </div>
-      ))}
+        );
+      })}
 
       {/* ── OLL / PLL ── */}
       {recon.oll && (
-        <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
+        <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(ollFrom)}>
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">{t("detection.oll")}</span>
             {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
@@ -589,7 +650,7 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
         </div>
       )}
       {recon.pll && (
-        <div className={cn(ROW_GRID, ROW, ROW_LINE)}>
+        <div className={cn(ROW_GRID, ROW, ROW_LINE, seekRowCls)} {...seekRowProps(pllStart)}>
           <span className="flex min-w-0 flex-col">
             <span className="text-[0.74rem] font-medium text-ink">{t("detection.pll")}</span>
             {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
