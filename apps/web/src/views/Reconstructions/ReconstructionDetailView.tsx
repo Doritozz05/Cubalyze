@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ExternalLink,
@@ -10,94 +10,68 @@ import {
   Trophy,
   Calendar,
   UserRound,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
-import { formatTime } from "@/utils/formatTime";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ReplaySection,
-  type ReplaySectionHandle,
-} from "@/components/Insights/ReplaySection";
-import { AlgorithmNotation, SectionHeader } from "@/components/Insights/atoms";
-import {
-  fetchReconRecord,
-  reconToSolve,
-  type ReconFullRecord,
-  type ReconPhase,
-} from "./reconData";
-import { OurDetectionPanel } from "./OurDetectionPanel";
-import { formatDisplayDate } from "./ReconstructionsView";
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { formatTime } from '@/utils/formatTime';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SectionHeader } from '@/components/Insights/atoms';
+import { MetricTile } from '@/components/Stats/atoms/MetricTile';
+import { ReplaySection, type ReplaySectionHandle } from '@/components/Insights/ReplaySection';
+import { fetchReconRecord, reconToSolve, type ReconFullRecord, type ReconPhase } from './reconData';
+import { OurDetectionPanel } from './OurDetectionPanel';
+import { formatDisplayDate } from './ReconstructionsView';
 
-// ─── Phase type / color helpers ─────────────────────────────────────────────
-
-
-export function getMethodBadgeClass(method: string): string {
-  const m = (method || "").toUpperCase();
-  if (m.includes("CFOP") || m.includes("CROSS") || m.includes("F2L")) {
-    return "border-phase-blue/40 bg-phase-blue/10 text-phase-blue";
-  }
-  if (m.includes("ROUX") || m.includes("PLL")) {
-    return "border-phase-violet/40 bg-phase-violet/10 text-phase-violet";
-  }
-  if (m.includes("EG") || m.includes("CLL") || m.includes("ORTEGA") || m.includes("PBL")) {
-    return "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald";
-  }
-  if (m.includes("ZB") || m.includes("YAU") || m.includes("HOYA") || m.includes("L4E") || m.includes("L2L")) {
-    return "border-phase-amber/40 bg-phase-amber/10 text-phase-amber";
-  }
-  return "border-line bg-surface-2 text-ink-3";
-}
-
-// ─── Stat chip ──────────────────────────────────────────────────────────────
-
-function StatChip({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 rounded-md border border-line/70 bg-surface px-2.5 py-1.5">
-      <span className="text-[0.56rem] font-semibold uppercase tracking-wider text-ink-3">
-        {label}
-      </span>
-      <span className={cn("nums text-[0.8rem] font-semibold tabular-nums", accent ?? "text-ink")}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-// ─── Phase row ──────────────────────────────────────────────────────────────
+// ─── Fallback steps table (only when OUR detection isn't available) ────────
 
 function PhaseRow({ phase, last }: { phase: ReconPhase; last: boolean }) {
   return (
     <div
       className={cn(
-        "grid grid-cols-subgrid col-span-4 items-center gap-2 px-3 py-2 transition-colors hover:bg-surface-2",
-        !last && "border-b border-line/60",
+        'col-span-4 grid grid-cols-subgrid items-center gap-3 px-3 py-2',
+        !last && 'border-line/50 border-b',
       )}
     >
-      <span className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-[0.74rem] font-medium text-ink">{phase.label}</span>
+      <span className="text-ink truncate text-[0.72rem] font-medium">{phase.label}</span>
+      <span className="text-ink-3 text-[0.6rem]">—</span>
+      <span className="text-ink-2 min-w-0 font-mono text-[0.68rem] leading-relaxed">
+        {phase.moves || '—'}
       </span>
-
-      {/* Case column — the v1 case-recognition chips (recog) were removed
-          with the recognition system; the column stays for grid alignment
-          with Our detection, which renders its own F2L slot labels. */}
-      <span className="text-[0.64rem] text-ink-3">—</span>
-
-      <span className="min-w-0">
-        {phase.moves ? (
-          <AlgorithmNotation notation={phase.moves} size="sm" />
-        ) : (
-          <span className="text-xs text-ink-3">—</span>
-        )}
-      </span>
-
-      <span className="nums text-right text-xs text-ink-2">{phase.moveCount}</span>
+      <span className="nums text-ink-3 text-right text-xs tabular-nums">{phase.moveCount}</span>
     </div>
   );
 }
 
-// ─── View ───────────────────────────────────────────────────────────────────
+function RawPhasesTable({ record }: { record: ReconFullRecord }) {
+  const { t } = useTranslation('reconstructions');
+  if (record.phases.length === 0) return null;
+  return (
+    <div className="border-line bg-surface overflow-hidden rounded-lg border">
+      <div className="border-line flex items-center justify-between border-b px-4 py-3">
+        <SectionHeader title={t('detail.stepsTitle')} eyebrow={t('detail.stepsEyebrow')} />
+        <span className="nums text-ink-3 text-xs">
+          {t('detail.movesCount', {
+            count: record.phases.reduce((n, p) => n + p.moveCount, 0),
+          })}
+        </span>
+      </div>
+      <div className="grid grid-cols-[7.5rem_minmax(5rem,max-content)_1fr_2.75rem]">
+        <div className="border-line bg-surface-2/50 text-ink-3 col-span-4 grid grid-cols-subgrid items-center gap-3 border-b px-3 py-1.5 text-[0.56rem] font-semibold tracking-wider uppercase">
+          <span>{t('detail.colPhase')}</span>
+          <span>{t('detail.colCase')}</span>
+          <span>{t('detail.colMoves')}</span>
+          <span className="text-right">#</span>
+        </div>
+        {record.phases.map((p, i) => (
+          <PhaseRow key={`${p.label}-${i}`} phase={p} last={i === record.phases.length - 1} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── View ──────────────────────────────────────────────────────────────────
 
 export function ReconstructionDetailView({
   recordKey,
@@ -106,7 +80,7 @@ export function ReconstructionDetailView({
   recordKey: string;
   onBack: () => void;
 }) {
-  const { t, i18n } = useTranslation("reconstructions");
+  const { t, i18n } = useTranslation('reconstructions');
   const [record, setRecord] = useState<ReconFullRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -124,7 +98,7 @@ export function ReconstructionDetailView({
         if (!cancelled) setRecord(r);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : t("detail.errorLoad"));
+        if (!cancelled) setError(e instanceof Error ? e.message : t('detail.errorLoad'));
       });
     return () => {
       cancelled = true;
@@ -149,9 +123,9 @@ export function ReconstructionDetailView({
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2">
-        <p className="text-sm text-dnf">{error}</p>
+        <p className="text-dnf text-sm">{error}</p>
         <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="size-3.5" /> {i18n.t("common:back")}
+          <ArrowLeft className="size-3.5" /> {i18n.t('common:back')}
         </Button>
       </div>
     );
@@ -159,233 +133,237 @@ export function ReconstructionDetailView({
 
   if (!record) {
     return (
-      <div className="flex h-full flex-col gap-3 px-6 py-5">
-        <Skeleton className="h-8 w-64" />
-        <div className="grid grid-cols-4 gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-14" />
-          ))}
+      <div className="flex h-full flex-col gap-4 px-6 py-5">
+        <Skeleton className="h-4 w-24" />
+        <div className="flex items-end justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+          <Skeleton className="h-12 w-28" />
         </div>
-        <Skeleton className="h-64 w-full" />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(19rem,26rem)]">
+          <Skeleton className="h-80 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-56 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
 
   const stm = record.stm;
   const tps = record.tps;
+  const dateDisplay = formatDisplayDate(record.date, record.competition, record.url);
+
+  // OUR detection replaces the reconstructor's hardcoded phase table for CFOP
+  // 3×3 records with a valid state-based analysis (orientation/cross/F2L/OLL/PLL).
+  const canDetect = record.methodGroup === 'CFOP' && record.puzzle === '3x3';
+  const hasDetection = canDetect && record.ourDetection !== null;
+  const showRawPhases = !hasDetection;
+
+  const actions = (
+    <div className="flex items-center gap-1.5">
+      {record.url && (
+        <a
+          href={record.url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-ink-3 hover:bg-surface-2 hover:text-ink flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors"
+        >
+          <ExternalLink className="size-3.5" /> {t('detail.source')}
+        </a>
+      )}
+      {record.stats.videoUrl && (
+        <a
+          href={record.stats.videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-ink-3 hover:bg-surface-2 hover:text-ink flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors"
+        >
+          <Video className="size-3.5" /> {t('detail.video')}
+        </a>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleCopy}
+        className="text-ink-3 hover:text-ink h-8 gap-1.5 px-2.5 text-xs"
+      >
+        {copied ? <Check className="text-ready size-3.5" /> : <Copy className="size-3.5" />}
+        {copied ? t('detail.copied') : t('detail.copy')}
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* ── Scrollable content ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl px-5 py-4">
-          {/* Back */}
-          <button
-            onClick={onBack}
-            className="mb-3 flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
-          >
-            <ArrowLeft className="size-3.5" /> {t("detail.back")}
-          </button>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      {/* ── Header: identity + context, fixed, no panels ── */}
+      <header className="shrink-0 px-5 pb-4 pt-3">
+          <div className="mx-auto flex max-w-6xl">
+            <button
+              onClick={onBack}
+              className="text-ink-3 hover:text-ink flex items-center gap-1.5 pr-6 text-xs font-medium transition-colors"
+            >
+              <ArrowLeft className="size-3.5" /> {t('detail.back')}
+            </button>
+          </div>
 
-          {/* ── Header ── */}
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold tracking-tight text-ink">
-                  {record.solver}
-                </h2>
-                <span
-                  className={cn(
-                    "rounded border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider",
-                    getMethodBadgeClass(record.method),
-                  )}
-                >
-                  {record.method}
-                </span>
-                <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-3">
-                  {record.source}
-                </span>
-                {record.record && (
-                  <span className="rounded border border-phase-amber/40 bg-phase-amber/10 px-1.5 py-0.5 text-[0.6rem] font-semibold text-phase-amber">
-                    {record.record}
-                  </span>
-                )}
-                {record.official && record.official !== "" && record.official !== "none" && (
-                  <span className="rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[0.6rem] font-medium uppercase text-ink-3">
-                    {record.official}
-                  </span>
-                )}
-                {record.stats.recordAverage && (
-                  <span className="rounded bg-caution/10 px-1.5 py-0.5 text-[0.6rem] font-semibold text-caution border border-caution/30">
-                    {record.stats.recordAverage}
-                  </span>
-                )}
+          <div className="mx-auto mt-1 max-w-6xl">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+              {/* Time + solver + provenance */}
+              <div className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-2">
+                <div className="nums text-ink text-5xl leading-none font-semibold tracking-tight tabular-nums">
+                  {record.time > 0 ? formatTime(record.time * 1000) : '—'}
+                </div>
+                <div className="min-w-0 pb-1">
+                  <h2 className="text-ink text-xl font-semibold tracking-tight">{record.solver}</h2>
+                  <div className="text-ink-3 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                    {record.country && <span className="uppercase">{record.country}</span>}
+                    {record.source && <span className="capitalize">{record.source}</span>}
+                    <span className="nums text-ink-2">#{record.id}</span>
+                    {record.compWcaId && (
+                      <a
+                        href={`https://www.worldcubeassociation.org/competitions/${record.compWcaId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-ink-3 hover:text-ink flex items-center gap-1 transition-colors"
+                      >
+                        <Trophy className="size-3" /> wca
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3">
+              {/* Actions */}
+              {actions}
+            </div>
+
+            {/* Meta strip: puzzle · method · competition · date · solve · record */}
+            <div className="text-ink-3 mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className="text-ink-2 font-medium">{record.puzzle}</span>
+              <span className="text-ink-2 font-medium">{record.method}</span>
+              <span className="truncate">{record.competition || '—'}</span>
+              {dateDisplay !== '—' && (
                 <span className="flex items-center gap-1">
-                  <Trophy className="size-3" /> {record.competition || "—"}
+                  <Calendar className="size-3" /> {dateDisplay}
                 </span>
-                {record.country && (
-                  <span className="flex items-center gap-1">
-                    <span className="uppercase">{record.country}</span>
-                  </span>
-                )}
+              )}
+              {record.solveNum != null && <span>{t('detail.solveNum', { count: record.solveNum })}</span>}
+              {record.reconstructor && (
                 <span className="flex items-center gap-1">
-                  <Calendar className="size-3" /> {formatDisplayDate(record.date, record.competition, record.url)}
-                </span>                  <span className="nums flex items-center gap-1">
-                  <span className="text-ink-2">#{record.id}</span>
-                  {record.solveNum != null && (
-                    <span className="text-ink-3">
-                      {t("detail.solveNum", { count: record.solveNum })}
+                  <UserRound className="size-3" />
+                  {t('detail.reconBy', { name: record.reconstructor })}
+                </span>
+              )}
+              {record.record && (
+                <span className="text-plus2 font-semibold uppercase">{record.record}</span>
+              )}
+            </div>
+
+            {/* Stats — tile grid, Profile style */}
+          </div>
+        </header>
+
+        {/* ── Replay anchors left · rest scrolls right ── */}
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          {/* Replay — fills remaining height on lg (no scroll), stacks on smaller */}
+          {solve && (
+            <div className="flex min-h-0 w-full flex-col lg:w-3/5 lg:min-w-[24rem] lg:max-w-[48rem] lg:flex-none lg:border-r lg:border-line/60">
+              <div className="flex aspect-[5/4] w-full min-h-0 flex-col px-5 py-4 lg:aspect-auto lg:flex-1 lg:items-center lg:justify-center lg:px-7 lg:py-6">
+                <ReplaySection
+                  ref={replayRef}
+                  solve={solve}
+                  size="large"
+                  className="h-full min-h-0 border-0 px-0 py-0"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Right — scrollable content list (1/3 on lg) */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:w-2/5 lg:max-w-[34rem] lg:flex-none">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-5 sm:px-5">
+              {/* Scramble */}
+            {record.scramble && (
+              <div className="border-line bg-surface rounded-lg border px-4 py-3.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-ink-3 text-[0.56rem] font-semibold tracking-wider uppercase">
+                    {t('detail.scramble')}
+                  </span>
+                  {stm != null && (
+                    <span className="nums text-ink-3 text-[0.6rem]">
+                      {t('detail.stm', { count: stm })}
                     </span>
                   )}
-                </span>
-                {record.reconstructor && (
-                  <span className="flex items-center gap-1">
-                    <UserRound className="size-3" /> {t("detail.reconBy", { name: record.reconstructor })}
-                  </span>
-                )}
-                {record.compWcaId && (
-                  <a
-                    href={`https://www.worldcubeassociation.org/competitions/${record.compWcaId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 text-ink-3 transition-colors hover:text-ink"
-                  >
-                    <ExternalLink className="size-3" /> wca
-                  </a>
-                )}
-              </div>
-            </div>
-
-            <div className="text-right">
-              <div className="nums text-4xl font-bold tabular-nums leading-none text-ink">
-                {record.time > 0 ? formatTime(record.time * 1000) : "—"}
-              </div>
-              <div className="mt-1 flex items-center justify-end gap-2">
-                {record.url && (
-                  <a
-                    href={record.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
-                  >
-                    <ExternalLink className="size-3" /> {t("detail.source")}
-                  </a>
-                )}
-                {record.stats.videoUrl && (
-                  <a
-                    href={record.stats.videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-ink-3 transition-colors hover:text-ink"
-                  >
-                    <Video className="size-3" /> {t("detail.video")}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Scramble */}
-          {record.scramble && (
-            <div className="mt-3 rounded-md border border-line bg-surface px-3 py-2">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
-                  {t("detail.scramble")}
-                </span>
-                <span className="text-[0.58rem] text-ink-3">
-                  {stm != null ? t("detail.stm", { count: stm }) : "—"}
-                </span>
-              </div>
-              <p className="font-mono text-[0.72rem] leading-relaxed text-ink-2">
-                {record.scramble}
-              </p>
-            </div>
-          )}
-
-          {/* ── Stat chips ── */}
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-            <StatChip label={t("detail.chipStm")} value={stm != null ? String(stm) : "—"} />
-            <StatChip label={t("detail.chipTps")} value={tps != null ? tps.toFixed(2) : "—"} />
-            <StatChip
-              label={t("detail.chipCrossStm")}
-              value={record.stats.crossStm != null ? String(record.stats.crossStm) : "—"}
-            />
-            <StatChip label={t("detail.chipF2l")} value={record.stats.f2l != null ? String(record.stats.f2l) : "—"} />
-            <StatChip label={t("detail.chipLl")} value={record.stats.ll != null ? String(record.stats.ll) : "—"} />
-            <StatChip
-              label={t("detail.chipRotations")}
-              value={String(record.rotationCount ?? 0)}
-            />
-            {record.average != null && (
-              <StatChip label={t("detail.chipAvg")} value={formatTime(record.average * 1000)} />
-            )}
-            {record.cube && <StatChip label={t("detail.chipCube")} value={record.cube} />}
-          </div>
-
-          {/* ── Replay ── */}
-          {solve && (
-            <div className="mt-4">
-              <ReplaySection ref={replayRef} solve={solve} />
-            </div>
-          )}
-
-          {/* ── Our detection (Fase 3) ── */}
-          <OurDetectionPanel
-            record={record}
-            onSeekToMove={(moveIndex) =>
-              void replayRef.current?.seekToMove(moveIndex)
-            }
-          />
-
-          {/* ── Phase table ── */}
-          {record.phases.length > 0 && (
-            <div className="mt-4 rounded-lg border border-line bg-surface">
-              <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-                <SectionHeader title={t("detail.stepsTitle")} />
-                <span className="nums text-xs text-ink-3">
-                  {t("detail.movesCount", {
-                    count: record.phases.reduce((n, p) => n + p.moveCount, 0),
-                  })}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-[7.5rem_minmax(5rem,max-content)_1fr_2.75rem]">
-                <div className="grid grid-cols-subgrid col-span-4 items-center gap-2 border-b border-line bg-surface-2/60 px-3 py-1.5 text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3">
-                  <span>{t("detail.colPhase")}</span>
-                  <span>{t("detail.colCase")}</span>
-                  <span>{t("detail.colMoves")}</span>
-                  <span className="text-right">#</span>
                 </div>
-
-                {record.phases.map((p, i) => (
-                  <PhaseRow
-                    key={`${p.label}-${i}`}
-                    phase={p}
-                    last={i === record.phases.length - 1}
-                  />
-                ))}
+                <p className="text-ink-2 font-mono text-[0.7rem] leading-relaxed break-words">
+                  {record.scramble}
+                </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── Raw text ── */}
-          {record.text && (
-            <div className="mt-4 rounded-lg border border-line bg-surface">
-              <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
-                <SectionHeader title={t("detail.reconTitle")} eyebrow={t("detail.reconEyebrow")} />
-                <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 gap-1 px-2 text-xs text-ink-3 hover:text-ink">
-                  {copied ? <Check className="size-3 text-ready" /> : <Copy className="size-3" />}
-                  {copied ? t("detail.copied") : t("detail.copy")}
-                </Button>
-              </div>
-              <pre className="max-h-80 overflow-y-auto px-4 py-3 font-mono text-[0.72rem] leading-relaxed text-ink-2">
-                {record.text}
-              </pre>
+            {/* Stats — tile grid below the scramble */}
+            <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line">
+              <MetricTile label={t('detail.chipStm')} value={stm != null ? String(stm) : '—'} />
+              <MetricTile label={t('detail.chipTps')} value={tps != null ? tps.toFixed(2) : '—'} />
+              <MetricTile
+                label={t('detail.chipCrossStm')}
+                value={record.stats.crossStm != null ? String(record.stats.crossStm) : '—'}
+              />
+              <MetricTile
+                label={t('detail.chipF2l')}
+                value={record.stats.f2l != null ? String(record.stats.f2l) : '—'}
+              />
+              <MetricTile
+                label={t('detail.chipLl')}
+                value={record.stats.ll != null ? String(record.stats.ll) : '—'}
+              />
+              <MetricTile
+                label={t('detail.chipRotations')}
+                value={String(record.rotationCount ?? 0)}
+              />
+              {record.average != null && (
+                <MetricTile label={t('detail.chipAvg')} value={formatTime(record.average * 1000)} />
+              )}
+              {record.cube && <MetricTile label={t('detail.chipCube')} value={record.cube} />}
             </div>
-          )}
+
+            {/* Our detection — replaces the hardcoded steps for CFOP 3×3 */}
+            <OurDetectionPanel
+              record={record}
+              onSeekToMove={(moveIndex) => void replayRef.current?.seekToMove(moveIndex)}
+            />
+
+            {/* Reconstructor's raw phases — only when OUR detection is absent */}
+            {showRawPhases && <RawPhasesTable record={record} />}
+
+            {/* Raw solution text */}
+            {record.text && (
+              <div className="border-line bg-surface rounded-lg border px-4 py-3.5">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-ink-3 text-[0.56rem] font-semibold tracking-wider uppercase">
+                    {t('detail.reconEyebrow')}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="text-ink-3 hover:text-ink h-6 gap-1 px-2 text-xs"
+                  >
+                    {copied ? <Check className="text-ready size-3" /> : <Copy className="size-3" />}
+                    {copied ? t('detail.copied') : t('detail.copy')}
+                  </Button>
+                </div>
+                <pre className="text-ink-2 max-h-72 overflow-y-auto font-mono text-[0.7rem] leading-relaxed break-words whitespace-pre-wrap">
+                  {record.text}
+                </pre>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

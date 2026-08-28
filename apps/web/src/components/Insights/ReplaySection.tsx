@@ -56,6 +56,12 @@ export interface ReplaySectionProps {
   onReplayPosition?: (positionMs: number, moveIndex: number) => void;
   /** Called when replay completes. */
   onReplayComplete?: () => void;
+  /**
+   * "normal" keeps the compact cube used inside Insights. "large" widens
+   * the cube + controls so the replay can anchor a dedicated column (the
+   * reconstruction detail view).
+   */
+  size?: "normal" | "large";
   className?: string;
 }
 
@@ -82,6 +88,7 @@ function ReplaySection({
   solve,
   onReplayPosition,
   onReplayComplete,
+  size = "normal",
   className,
 }: ReplaySectionProps, ref) {
   const { t } = useTranslation("insights");
@@ -548,11 +555,22 @@ function ReplaySection({
                 : t("replay.noMoveDataSmartCube")}
             </p>
           ) : (
-            <div className="flex flex-col gap-3 items-center">
-              {/* Mini cube 3D — centered, max-w-sm for compactness */}
+            <div
+              className={cn(
+                "flex flex-col items-center gap-3",
+                size === "large" && "flex-1 min-h-0 justify-center",
+              )}
+            >
+              {/* Mini cube 3D — "large" fills the anchored column so it fits
+                  under the header without scrolling; "normal" stays square. */}
               <div
                 ref={containerRef}
-                className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg bg-black/3"
+                className={cn(
+                  "relative overflow-hidden rounded-lg bg-black/3",
+                  size === "large"
+                    ? "flex-1 w-full max-w-xl min-h-0"
+                    : "w-full aspect-square max-w-xs",
+                )}
               >
                 <canvas
                   key={canvasKey}
@@ -595,7 +613,12 @@ function ReplaySection({
               </div>
 
               {/* Controls bar — centered, max-w-sm */}
-              <div className="flex flex-col gap-2 w-full max-w-xs">
+              <div
+                className={cn(
+                  "flex flex-col gap-2 w-full shrink-0",
+                  size === "large" ? "max-w-md" : "max-w-xs",
+                )}
+              >
                 {/* Top row: move stats — the replay is move-driven, so there is
                     no seconds counter (a virtual clock would be misleading). */}
                 <div className="flex items-center justify-end">
