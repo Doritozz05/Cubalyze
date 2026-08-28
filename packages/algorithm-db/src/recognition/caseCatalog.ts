@@ -26,7 +26,7 @@
  * SubsetManifests — the catalog builder is subset-agnostic.
  */
 import { CaseStateGenerator } from '../caseGenerator';
-import { pairSignature } from './pairSignature';
+import { getProbe } from './probes';
 import type {
   CatalogEntry,
   SubsetManifest,
@@ -39,13 +39,18 @@ import type {
  * Build the recognition catalog for one or more subsets.
  *
  * For each case in the seed data:
- *   1. Generate the D-cross state from the setup scramble.
- *   2. Compute the FR-slot pair signature (corner 4, edge 8) — the
- *      canonical anchor slot of the seed catalog.
+ *   1. Generate the D-anchored state from the setup scramble (setups are
+ *      always D-cross: cross on D, last layer on U).
+ *   2. Compute the probe's signature in its ANCHOR context — the FR slot
+ *      of the D-cross frame for F2L, the D-cross frame itself for the
+ *      last-layer probes.
  *   3. Register it under every crossFace in the subset manifest.
  *
- * Setups are always D-cross; slot normalization happens at DETECTION time
- * (the observed state is rotated to the FR anchor), never here.
+ * The crossFace is part of the catalog key, so every frame's lookups are
+ * isolated even when two frames would produce the same signature (e.g. a
+ * U-cross OLL state vs a D-cross OLL state — the observed state is
+ * normalized onto the D-cross anchor at DETECTION time, so lookups always
+ * use the D-anchored signature under the solver's own crossFace key).
  */
 export function buildCatalog(
   subsets: SubsetManifest[],
@@ -54,6 +59,8 @@ export function buildCatalog(
   const index = new Map<string, CatalogEntry>();
 
   for (const subset of subsets) {
+    const probe = getProbe(subset.probe ?? 'f2l-slot');
+    const anchorCtx = probe.catalogContext();
     const cases = loadCases(subset.subsetId, 'D');
     const crossFaces = subset.crossFaces.length > 0
       ? subset.crossFaces
@@ -68,16 +75,13 @@ export function buildCatalog(
         setupScramble: c.setupScramble,
       };
 
-      // Generate the D-cross state and compute the FR anchor signature.
-      // The seed states are D-cross (cross sticker color 'D'), and the
-      // observed states are normalized onto this same anchor by the
-      // detector's slot→anchor rotation, so crossColor is always 'D' here.
+      // The seed states are D-anchored — the probe's own catalog context
+      // (D-cross FR slot for F2L, D-cross frame for LL probes).
       const state = CaseStateGenerator.generateFromScramble(c.setupScramble);
-      let sig: string;
-      try {
-        sig = pairSignature(state, 4, 8, 'D');
-      } catch {
-        // Setup does not contain the FR pair — skip.
+      const sig = probe.signature(state, anchorCtx);
+      if (!sig) {
+        // No signature derivable from the setup (e.g. the setup does not
+        // produce the case's anchor configuration) — skip.
         continue;
       }
 

@@ -36,6 +36,7 @@ import {
 import {
   CaseDetector,
   createBasicF2LDetector,
+  createCFOPDetector,
   recolorState,
   type DetectionResult,
 } from '@cubeforge/algorithm-db';
@@ -105,6 +106,22 @@ export interface F2LPairResult {
   };
 }
 
+export interface LastLayerDetectedCase {
+  /** Case number from the catalog, e.g. "OLL 24" / "Tb". */
+  caseNumber: string;
+  /** Case name, e.g. "OLL 24" / "Tb Perm". */
+  caseName: string;
+  /** 'exact' when the state matched the catalog. */
+  confidence: 'exact' | 'unknown';
+  /**
+   * The sticker on the U face that sits at the solver's F position in the
+   * state we detected. The catalog renders the case at its canonical AUF;
+   * rotating the diagram by this face shows the case from the solver's
+   * exact angle.
+   */
+  aufFace?: string;
+}
+
 export interface SolveReconstruction {
   method: 'CFOP';
   inspection: string;
@@ -149,8 +166,18 @@ export interface SolveReconstruction {
    *  the raw text (e.g. an OLL "U' S R …" keeps its S visible). */
   slices: { token: string; moveIndex: number }[];
   /** Last-layer phases in the SOLVER's raw notation (empty when skipped). */
-  oll: { moves: string[]; skipped: boolean } | null;
-  pll: { moves: string[]; skipped: boolean } | null;
+  oll: {
+    moves: string[];
+    skipped: boolean;
+    /** The recognized OLL case (state-based), when detected. */
+    detectedCase?: LastLayerDetectedCase;
+  } | null;
+  pll: {
+    moves: string[];
+    skipped: boolean;
+    /** The recognized PLL case (state-based), when detected. */
+    detectedCase?: LastLayerDetectedCase;
+  } | null;
   finalSolved: boolean;
   warnings: PhaseDetectionReport['warnings'];
   /** Raw `//` segments as parsed from the input text (for the contrast). */
@@ -524,6 +551,74 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     front: schemeToUse[grip.faceMap.F as FaceLetter] ?? 'F',
   };
 
+  // ── State-based last-layer case detection (OLL + PLL) ────────────────
+  // The SAME modular detector the F2L pairs use, wired for the last-layer
+  // probes. The state is read at the phase's completion — the exact frame
+  // the solver held, with the solver's AUF applied — so the detected case
+  // carries the AUF face (see LastLayerDetectedCase.aufFace) that lets the
+  // renderer show the case from the solver's exact angle.
+  const llDetector = createCFOPDetector();
+  const llStateAt = (index: number | undefined): CubeState | null => {
+    if (index === undefined || index < 0 || index >= timeline.entries.length) {
+      return null;
+    }
+    // Read the POST-P2 timeline entries, NOT solverFrameStates: the
+    // crossFace from the detection report is measured on these entries, and
+    // the probe must see the state in the same frame as its crossFace.
+    // solverFrameStates can be rotated relative to the entries (P2 recovery
+    // vs the solver-grip rotation), so probing them with the report's
+    // crossFace feeds a state whose cross sits on a DIFFERENT face — the
+    // reconz-3008/4996/2463 B-cross PLL misses (Ja/Ua states rejected while
+    // the entries state detects cleanly).
+    const snap = timeline.entries[index]?.state;
+    if (!snap) return null;
+    return TimelineBuilder.fromSnapshot(snap);
+  };
+  // The state at the phase's start (the last entry BEFORE its first move)
+  // is the case the solver faced. `startIndex - 1` is the previous phase's
+  // completion — exactly the frame with the solver's AUF applied.
+  const llCaseStateAt = (phase: PhaseDetectionReport['phases'][number] | undefined): CubeState | null => {
+    const start = phase?.startIndex;
+    return llStateAt(start !== undefined ? start - 1 : undefined);
+  };
+  const detectLL = (
+    phase: PhaseDetectionReport['phases'][number] | undefined,
+    probe: 'last-layer-orientation' | 'last-layer-permutation',
+  ): LastLayerDetectedCase | undefined => {
+    if (!phase || phase.skipped) return undefined;
+    // The CASE is the state the solver FACED at the phase's start — the
+    // last entry before the first move of the phase (startIndex - 1). The
+    // completion index is where the phase's mask matches (already
+    // oriented / solved), so detecting there would always see the solved
+    // pattern, never the case.
+    const state = llCaseStateAt(phase);
+    if (!state) return undefined;
+    // NOTE: do NOT recolorState() here. The probe + native multi-crossFace
+    // catalog detect the PHYSICAL state directly for all 6 cross faces (see
+    // pll-crossface-24.test.ts: 24 rotations x 6 faces, 0 misses). Recoloring
+    // with a rotation-type scheme (cross on F/B/R/L) corrupts the piece
+    // permutation (the recolored state's cross pieces land on no single
+    // face), which is why side-cross PLLs like reconz-9679 (Ja) were missed
+    // while the un-recolored state detects cleanly. The aufFace is then
+    // relative to the physical frame; the D-cross identity scheme is a
+    // no-op, so canonical solves are unaffected.
+    const canon = state;
+    try {
+      const result = llDetector.detectWith(canon, { probe, crossFace });
+      if (result.entry && result.confidence === 'exact') {
+        return {
+          caseNumber: result.entry.caseNumber,
+          caseName: result.entry.caseName,
+          confidence: result.confidence,
+          aufFace: result.aufFace,
+        };
+      }
+    } catch {
+      // Detection must never break the reconstruction.
+    }
+    return undefined;
+  };
+
   const reconstruction: SolveReconstruction = {
     method: 'CFOP',
     inspection,
@@ -546,8 +641,14 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
     ),
     rotations,
     slices: solveSlices,
-    oll: buildLLPhase(report, 'OLL', displayTokens),
-    pll: buildLLPhase(report, 'PLL', displayTokens),
+    oll: buildLLPhase(report, 'OLL', displayTokens, detectLL(
+      report.phases.find((p) => p.phaseName === 'OLL'),
+      'last-layer-orientation',
+    )),
+    pll: buildLLPhase(report, 'PLL', displayTokens, detectLL(
+      report.phases.find((p) => p.phaseName === 'PLL'),
+      'last-layer-permutation',
+    )),
     finalSolved: report.finalStateSolved,
     warnings: report.warnings,
     rawPhases: rawPhases.map((p) => ({ label: p.label, moves: tokenize(p.raw) })),
@@ -726,7 +827,8 @@ function buildLLPhase(
   report: PhaseDetectionReport,
   name: 'OLL' | 'PLL',
   displayTokens: readonly string[],
-): { moves: string[]; skipped: boolean } | null {
+  detectedCase?: LastLayerDetectedCase,
+): { moves: string[]; skipped: boolean; detectedCase?: LastLayerDetectedCase } | null {
   const phase = report.phases.find((p) => p.phaseName === name);
   if (!phase) return null;
   // A skipped phase owns no move (its completion index equals the previous
@@ -737,7 +839,7 @@ function buildLLPhase(
         phase.startIndex ?? 0,
         (phase.endIndex ?? phase.startIndex ?? 0) + 1,
       );
-  return { moves, skipped: !!phase.skipped };
+  return { moves, skipped: !!phase.skipped, detectedCase };
 }
 
 

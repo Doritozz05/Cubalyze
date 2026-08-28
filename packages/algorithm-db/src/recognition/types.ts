@@ -7,7 +7,7 @@
  * registering its catalog entries — no code changes to the detector.
  */
 
-// ─── Catalog ─────────────────────────────────────────────────────────────────
+import type { ProbeKind } from './probes/types';
 
 /**
  * One entry in the recognition catalog.
@@ -31,7 +31,8 @@ export interface CatalogEntry {
 
 /**
  * A SubsetManifest describes one algorithmic subset the detector can
- * recognize. It links a method/subset ID pair to the seed data.
+ * recognize. It links a method/subset ID pair to the seed data and names
+ * the PROBE whose signature family recognizes it.
  */
 export interface SubsetManifest {
   methodId: string;
@@ -40,6 +41,11 @@ export interface SubsetManifest {
   label: string;
   /** The cross faces this subset can be natively built for. */
   crossFaces: string[];
+  /**
+   * The detection probe this subset's cases are recognized with
+   * (defaults to 'f2l-slot' for backwards compatibility).
+   */
+  probe?: ProbeKind;
 }
 
 // ─── Detection ───────────────────────────────────────────────────────────────
@@ -58,6 +64,14 @@ export interface DetectionResult {
   confidence: 'exact' | 'unknown';
   /** The raw signature that was looked up (for diagnostics). */
   queriedSignature: string;
+  /**
+   * The sticker on the U face that sits at the solver's F position in the
+   * OBSERVED state (last-layer probes only). The catalog renders a case at
+   * its canonical AUF; rotating the diagram by this face shows the case
+   * from the solver's exact angle. Undefined for F2L detection and for
+   * unknown results.
+   */
+  aufFace?: string;
 }
 
 // ─── Detector ────────────────────────────────────────────────────────────────

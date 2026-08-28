@@ -11,6 +11,15 @@ export type {
   CaseSeedData,
 } from './types';
 
+// Probe abstraction (signature families)
+export type { ProbeKind, ProbeContext } from './probes';
+export { getProbe } from './probes';
+export { f2lSlotProbe } from './probes/f2lSlotProbe';
+export {
+  lastLayerOrientationProbe,
+  lastLayerPermutationProbe,
+} from './probes/lastLayerProbes';
+
 // Core modules
 export { pairSignature } from './pairSignature';
 export { resolveSlotPieces, slotToFRRotation } from './slotResolver';
@@ -26,9 +35,18 @@ export {
 } from './caseCatalog';
 export { CaseDetector } from './caseDetector';
 
-// ─── Pre-built loader for Basic F2L ─────────────────────────────────────────
+// ─── Pre-built loaders ──────────────────────────────────────────────────────
 export {
   BASIC_F2L_SUBSET_MANIFEST,
   loadBasicF2LCases,
   createBasicF2LDetector,
 } from './loaders/basicF2L';
+export {
+  OLL_SUBSET_MANIFEST,
+  PLL_SUBSET_MANIFEST,
+  loadOLLCases,
+  loadPLLCases,
+  createOLLDetector,
+  createPLLDetector,
+  createCFOPDetector,
+} from './loaders/lastLayer';

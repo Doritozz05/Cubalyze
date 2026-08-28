@@ -42,8 +42,11 @@ import {
 import {
   CASE_RENDER_GRAY,
   getSeedData,
+  getSubset,
+  resolveVisualizationStyleForSubset,
   type AlgorithmCase,
 } from "@cubeforge/algorithm-db";
+import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { isRotation, tokenize } from "@cubeforge/math-core";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import { FACE_HEX } from "@/components/Insights/atoms/faceColors";
@@ -197,6 +200,68 @@ function MovesSeq({ tokens }: { tokens: string[] | null }) {
 
 function CountCell({ count }: { count: number }) {
   return <span className="nums text-right text-xs text-ink-2 whitespace-nowrap">{count}</span>;
+}
+
+/**
+ * CSS rotation (degrees) that turns the canonical 2D case diagram so it
+ * matches the angle the solver held the cube. `aufFace` is the sticker on
+ * the U face that sat at the solver's F position when the case was
+ * detected; rotating the diagram to bring that sticker to the bottom (F)
+ * reproduces the solver's exact view.
+ *
+ * The diagram's U face is laid out B / L·U·R / F (F at the bottom). A CSS
+ * `rotate(θ)` turns clockwise, so bringing the R sticker down needs 90°,
+ * B needs 180°, L needs 270°. F (or no AUF) needs no rotation.
+ */
+function aufRotationDeg(aufFace?: string): number {
+  switch (aufFace) {
+    case "R":
+      return 90;
+    case "B":
+      return 180;
+    case "L":
+      return 270;
+    default:
+      return 0; // 'F' or unknown — already facing the solver
+  }
+}
+
+/**
+ * The detected last-layer case rendered as a 2D diagram rotated to the
+ * solver's exact AUF angle, with the case name/number underneath.
+ */
+function LastLayerCaseCell({
+  detectedCase,
+  casesByNumber,
+}: {
+  detectedCase: NonNullable<NonNullable<SolveReconstruction["oll"]>["detectedCase"]>;
+  casesByNumber: Map<string, AlgorithmCase>;
+}) {
+  const caseData =
+    casesByNumber.get(detectedCase.caseNumber) ??
+    casesByNumber.get(detectedCase.caseName);
+  if (!caseData) return null;
+  const subset = getSubset(caseData.subsetId);
+  const style = resolveVisualizationStyleForSubset(subset?.name);
+  const rotation = aufRotationDeg(detectedCase.aufFace);
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <CaseDiagram
+        setupScramble={caseData.setupScramble}
+        style={style}
+        rotation={rotation}
+        className="size-10 shrink-0 rounded-md border border-line bg-surface-2/40"
+      />
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[0.74rem] font-medium text-ink">
+          {detectedCase.caseName}
+        </span>
+        <span className="mt-0.5 text-[0.56rem] text-ink-3">
+          {detectedCase.caseNumber}
+        </span>
+      </span>
+    </span>
+  );
 }
 
 // ─── Panel ─────────────────────────────────────────────────────────────────
@@ -514,7 +579,11 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
             <span className="text-[0.74rem] font-medium text-ink">{t("detection.oll")}</span>
             {recon.oll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          {recon.oll.detectedCase ? (
+            <LastLayerCaseCell detectedCase={recon.oll.detectedCase} casesByNumber={casesByNumber} />
+          ) : (
+            <span className="text-[0.64rem] text-ink-3/50">—</span>
+          )}
           <MovesSeq tokens={ollDisplay} />
           <CountCell count={ollMoves?.length ?? 0} />
         </div>
@@ -525,7 +594,11 @@ export function OurDetectionPanel({ record }: { record: ReconFullRecord }) {
             <span className="text-[0.74rem] font-medium text-ink">{t("detection.pll")}</span>
             {recon.pll.skipped && <SkippedBadge className="mt-0.5 w-fit" />}
           </span>
-          <span className="text-[0.64rem] text-ink-3/50">—</span>
+          {recon.pll.detectedCase ? (
+            <LastLayerCaseCell detectedCase={recon.pll.detectedCase} casesByNumber={casesByNumber} />
+          ) : (
+            <span className="text-[0.64rem] text-ink-3/50">—</span>
+          )}
           <MovesSeq tokens={pllDisplay} />
           <CountCell count={pllMoves?.length ?? 0} />
         </div>

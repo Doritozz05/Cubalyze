@@ -10,43 +10,29 @@
  *   3. Compute the relational pair signature (minimized over y × AUF).
  *   4. Look up in the frame-agnostic catalog.
  *
- * The slot→FR normalization rotates the observed state into the anchor
+ * The slot→D normalization rotates the observed state into the anchor
  * frame; the relational signature (see pairSignature.ts) then minimizes
  * over all y-rotations × AUF, so the pair is recognized regardless of
- * which slot it sits in, its AUF, or which physical pieces carry the
- * pair's colors (a parked/mirror corner collapses onto the same case).
+ * which slot it occupies, its crossFace, or which physical pieces carry
+ * the pair's colors (a parked/mirrored pair collapses onto the same
+ * case).
  *
  * Designed to be puzzle- / method- / subset-agnostic: the catalog
- * determines what can be recognized. Adding OLL or 2×2 cases means
+ * determines what can be recognized. Adding OLL, PLL or 2×2 cases means
  * loading their data into the same catalog structure.
  */
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
-import { pairSignature } from './pairSignature';
-import { resolveSlotPiecesByColor, slotToFRRotation } from './slotResolver';
+import { CubeState } from '@cubeforge/math-core';
 import { lookupCatalog, createCatalog } from './caseCatalog';
+import { getProbe } from './probes';
 import type {
   CatalogEntry,
   DetectionResult,
   SubsetManifest,
   CaseSeedData,
 } from './types';
+import type { ProbeContext } from './probes';
 
 // ─── Detector ────────────────────────────────────────────────────────────────
-
-/** Facelet index of each face's center (U:4, R:13, F:22, D:31, L:40, B:49). */
-const CENTER_FACELET: Record<string, number> = {
-  U: 4,
-  R: 13,
-  F: 22,
-  D: 31,
-  L: 40,
-  B: 49,
-};
-
-/** Facelet index of the center of a given face (undefined for unknown). */
-function centerFacelet(face: string): number | undefined {
-  return CENTER_FACELET[face];
-}
 
 /**
  * CaseDetector — recognizes algorithmic cases from cube states.
@@ -60,10 +46,10 @@ function centerFacelet(face: string): number | undefined {
  *       crossFaces: ['D', 'U'] },
  *   ], loadBasicF2L);
  *
- *   const result = detector.detect(state, 'U', 'FR');
+ *   const result = detector.detect(state, 'D', 'FR');
  */
 export class CaseDetector {
-  private catalog: Map<string, CatalogEntry>;
+  private readonly catalog: Map<string, CatalogEntry>;
 
   private constructor(catalog: Map<string, CatalogEntry>) {
     this.catalog = catalog;
@@ -96,60 +82,33 @@ export class CaseDetector {
     crossFace: string,
     slotName: string,
   ): DetectionResult {
-    // Resolve the pair pieces BY COLOR (the slot's {cross, sideA, sideB}
-    // corner and {sideA, sideB} edge) wherever they sit in the state — a
-    // corner parked in a neighboring slot still resolves to its own pair,
-    // and the same color rule holds for every cross frame after the
-    // pipeline's recolor.
-    const pieces = resolveSlotPiecesByColor(state, crossFace, slotName);
-    if (!pieces) {
+    return this.detectWith(state, {
+      probe: 'f2l-slot',
+      crossFace,
+      slotName,
+    });
+  }
+
+  /**
+   * Detect a case with an explicit probe context.
+   *
+   * This is the generic entry point: F2L slots (the original `detect`),
+   * the last-layer orientation (OLL) and the last-layer permutation (PLL)
+   * are all dispatched here. The probe is chosen from the context, and the
+   * signature is computed by that probe — so the catalog and the lookup
+   * always agree on the signature format.
+   */
+  detectWith(state: CubeState, ctx: ProbeContext): DetectionResult {
+    const probe = getProbe(ctx.probe);
+    const sig = probe.signature(state, ctx);
+    if (!sig) {
       return {
         entry: null,
         confidence: 'unknown',
         queriedSignature: '',
       };
     }
-
-    // Normalize the pair into the D-cross anchor frame: every cross face
-    // rotates onto 'D' (U via x2, F via x', B via x, R via z, L via z',
-    // D via identity). The relational signature additionally minimizes
-    // over all y-rotations × AUF, so the pair is recognized regardless of
-    // which slot it sits in or which AUF it has.
-    const rotation = slotToFRRotation(crossFace, slotName);
-    if (rotation === null) {
-      return {
-        entry: null,
-        confidence: 'unknown',
-        queriedSignature: '',
-      };
-    }
-
-    const normalized = state.clone();
-    if (rotation) normalized.applySequence(rotation);
-
-    // The cross sticker's color in this state (the center of the cross
-    // face): 'D' for D-cross solves, 'R' for R-cross, etc. The signature
-    // identifies the pair's cross sticker by this color, then records it
-    // by face POSITION — after the rotation above every cross face sits
-    // on the D-cross anchor face, so the signature matches the 'D'-seeded
-    // catalog regardless of the solver's cross color.
-    const facelets = FaceletStringConverter.toFaceletString(state);
-    const crossIdx = centerFacelet(crossFace);
-    const crossColor =
-      crossIdx !== undefined ? (facelets[crossIdx] ?? 'D') : 'D';
-
-    let sig: string;
-    try {
-      sig = pairSignature(normalized, pieces.C, pieces.E, crossColor);
-    } catch {
-      return {
-        entry: null,
-        confidence: 'unknown',
-        queriedSignature: '',
-      };
-    }
-
-    const entry = lookupCatalog(this.catalog, crossFace, sig);
+    const entry = lookupCatalog(this.catalog, ctx.crossFace, sig);
     if (!entry) {
       return {
         entry: null,
@@ -157,11 +116,16 @@ export class CaseDetector {
         queriedSignature: sig,
       };
     }
-
+    // Last-layer probes report the AUF face of the observed state so the
+    // renderer can show the case from the solver's exact angle. The F2L
+    // slot probe has no AUF (its relational signature is already
+    // slot-minimized), so aufFace stays undefined there.
+    const aufFace = probe.aufFace?.(state, ctx, sig);
     return {
       entry,
       confidence: 'exact',
       queriedSignature: sig,
+      aufFace,
     };
   }
 
@@ -171,4 +135,4 @@ export class CaseDetector {
   get catalogSize(): number {
     return this.catalog.size;
   }
-}
+}
