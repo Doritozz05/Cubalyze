@@ -17,7 +17,7 @@ de análisis.
 | --- | --- |
 | `ReconstructionsView.tsx` | Explorador: índice con filtro por puzzle (3x3…megaminx, con "All"), ordenación por fecha (`getSortDate`), formato de fecha (`formatDisplayDate`), navegación al detalle |
 | `reconData.ts` | Capa de datos: los assets viven en `public/reconstructions/` (generados por `pruebas/scripts/build-recon-web-data.ts` a partir de crawls de CubeRoot + reco.nz): `index.json` (metadatos de cada solve) y los JSON de reconstrucción; tipos `ReconIndexEntry`, `ReconPhase`, `ReconFullRecord` |
-| `ReconstructionDetailView.tsx` | Detalle de una reconstrucción: badges de método (`getMethodBadgeClass`), fases del reconstructor, solución, consumo del motor de replay |
+| `ReconstructionDetailView.tsx` | Detalle de una reconstrucción: **header fijo** compacto (tiempo, solver, meta, acciones, sin stats); debajo un split donde el **replay 3D ancla a la izquierda (~2/3) y rellena el alto disponible** (sin scroll) mientras la derecha scrollea en lista (scramble, tiles de stats estilo Profile, Our detection, solución). En tablet se apila. Cuando hay detección CFOP válida (3x3), se oculta la tabla de fases hardcodeada del reconstructor |
 | `OurDetectionPanel.tsx` | **Fase 3** de la unificación del análisis: ejecuta la API headless `analyzeSolveText` (mismo setup + inspección + solución que consume el ReplayEngine) sobre el registro y renderiza la detección por estados propia, junto a las fases crudas del reconstructor, en forma de tabla (Fase | Caso | Movimientos | #) |
 
 ## Datos

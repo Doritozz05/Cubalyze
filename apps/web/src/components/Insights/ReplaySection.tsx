@@ -31,6 +31,7 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronRight,
+  Check,
 } from "lucide-react";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -56,6 +57,22 @@ export interface ReplaySectionProps {
   onReplayPosition?: (positionMs: number, moveIndex: number) => void;
   /** Called when replay completes. */
   onReplayComplete?: () => void;
+  /**
+   * "normal" keeps the compact cube used inside Insights. "large" widens
+   * the cube + controls so the replay can anchor a dedicated column (the
+   * reconstruction detail view).
+   */
+  size?: "normal" | "large";
+  /**
+   * Whether the replay section can be collapsed with a chevron toggle.
+   * Defaults to true. When false, the section is permanently expanded and
+   * shows a static header without collapse button.
+   */
+  collapsible?: boolean;
+  /**
+   * Whether to render the section header. Defaults to true.
+   */
+  showHeader?: boolean;
   className?: string;
 }
 
@@ -82,10 +99,14 @@ function ReplaySection({
   solve,
   onReplayPosition,
   onReplayComplete,
+  size = "normal",
+  collapsible = true,
+  showHeader = true,
   className,
 }: ReplaySectionProps, ref) {
   const { t } = useTranslation("insights");
   const [expanded, setExpanded] = useState(true);
+  const isExpanded = collapsible ? expanded : true;
   const [replayState, setReplayState] = useState<ReplayState>("idle");
   const [positionMs, setPositionMs] = useState(0);
   const [speed, setSpeed] = useState<number>(1);
@@ -134,17 +155,21 @@ function ReplaySection({
   const solveRef = useRef(solve);
   solveRef.current = solve;
 
-  // ── Reactive appearance (skin) — watch user preference ──────────────
+  // ── Reactive appearance (skin & floating stickers) — watch user preference ──
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
+  const replayFloatingStickers = useStore(preferencesStore, (s) => s.replayFloatingStickers);
 
-  // Push skin changes to the replay worker whenever the user changes skin
+  // Push skin and floating sticker changes to the replay worker
   useEffect(() => {
     if (!workerProxyRef.current || !cubeReadyRef.current) return;
     const style = getSkinStyle(appearance3d);
     workerProxyRef.current
-      .updateStyle(style)
+      .updateStyle({
+        ...style,
+        floatingStickers: replayFloatingStickers,
+      })
       .catch((err: unknown) => console.warn("[Replay] updateStyle failed", err));
-  }, [appearance3d]);
+  }, [appearance3d, replayFloatingStickers]);
 
   // ── Reset state when solve changes ────────────────────────────────────────
   // This runs BEFORE the init effect, resetting display state so the user
@@ -250,7 +275,47 @@ function ReplaySection({
       workerRef.current.terminate();
       workerRef.current = null;
     }
-  }, []);    // ── Initialize mini cube worker ─────────────────────────────────────────
+  }, []);
+
+  // ── Responsive resize via ResizeObserver ──────────────────────────────────
+  const resizeRef = useRef<{ w: number; h: number } | null>(null);
+  const resizeRafRef = useRef<number | null>(null);
+
+  const scheduleResize = useCallback((width: number, height: number) => {
+    resizeRef.current = { w: width, h: height };
+    if (resizeRafRef.current == null) {
+      resizeRafRef.current = requestAnimationFrame(() => {
+        resizeRafRef.current = null;
+        if (!resizeRef.current || !workerProxyRef.current || !cubeReadyRef.current) return;
+        const { w, h } = resizeRef.current;
+        workerProxyRef.current.resize(w, h).catch((err: unknown) => {
+          console.warn("[Replay] resize failed", err);
+        });
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current || !isExpanded) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width >= 20 && height >= 20) {
+          scheduleResize(Math.round(width), Math.round(height));
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => {
+      observer.disconnect();
+      if (resizeRafRef.current != null) {
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = null;
+      }
+    };
+  }, [scheduleResize, canvasKey, isExpanded]);
+
+  // ── Initialize mini cube worker ─────────────────────────────────────────
   // Lazily init the cube worker only when expanded.
   // On collapse, fully tear down everything so re-expand starts fresh.
   //
@@ -262,7 +327,7 @@ function ReplaySection({
   // call stable React state setters (which are identity-stable), using the
   // closure-captured values is safe.
   useEffect(() => {
-    if (!expanded) {
+    if (!isExpanded) {
       teardownWorker();
       // Force fresh canvas on re-expand — transferControlToOffscreen() is
       // a one-way operation that can only be called once per element.
@@ -320,19 +385,29 @@ function ReplaySection({
           solveRef.current.puzzleType === "2x2"
             ? 2
             : 3;
+
+        const container = containerRef.current;
+        const rect = container?.getBoundingClientRect();
+        const initW = rect && rect.width > 0 ? Math.round(rect.width) : (canvas.clientWidth || 300);
+        const initH = rect && rect.height > 0 ? Math.round(rect.height) : (canvas.clientHeight || 300);
+
         await proxy.init(
           Comlink.transfer(offscreen, [offscreen]),
-          canvas.clientWidth || 160,
-          canvas.clientHeight || 160,
+          initW,
+          initH,
           window.devicePixelRatio,
           puzzleOrder,
         );
 
         cubeReadyRef.current = true;
 
-        // Apply current skin style to the replay cube
+        // Apply current skin style & floating stickers to the replay cube
         const currentSkin = getSkinStyle(preferencesStore.getState().appearance3d);
-        proxy.updateStyle(currentSkin).catch((err: unknown) =>
+        const floatingStickers = preferencesStore.getState().replayFloatingStickers;
+        proxy.updateStyle({
+          ...currentSkin,
+          floatingStickers,
+        }).catch((err: unknown) =>
           console.warn("[Replay] Initial skin update failed", err),
         );
 
@@ -428,11 +503,13 @@ function ReplaySection({
           if (pendingSeekRef.current != null) {
             const target = pendingSeekRef.current;
             pendingSeekRef.current = null;
-            const clamped = Math.max(
-              0,
-              Math.min(target, moves.length - 1),
-            );
-            void engine.seek(clamped * REPLAY_MOVE_SPACING_MS);
+            if (target < 0) {
+              void engine.seek(0);
+            } else {
+              const clamped = Math.min(target, moves.length - 1);
+              const targetMs = (clamped + 1) * REPLAY_MOVE_SPACING_MS - 1;
+              void engine.seek(targetMs);
+            }
           }
         }
       } catch (err) {
@@ -446,7 +523,7 @@ function ReplaySection({
       canvasGenRef.current = -1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, canvasKey]);
+  }, [isExpanded, canvasKey]);
 
   // ── Cleanup on unmount — also reset playback state ─────────────────────
   useEffect(() => {
@@ -499,15 +576,22 @@ function ReplaySection({
       pendingSeekRef.current = moveIndex;
       // Clicking a phase row while the section is collapsed must still work:
       // expand (re-inits the engine) and apply the seek once it's ready.
-      setExpanded(true);
+      if (collapsible) {
+        setExpanded(true);
+      }
       const engine = engineRef.current;
       if (!engine) return; // the init effect applies the pending seek
       engine.pause();
-      const clamped = Math.max(0, Math.min(moveIndex, moves.length - 1));
-      await engine.seek(clamped * REPLAY_MOVE_SPACING_MS);
+      if (moveIndex < 0) {
+        await engine.seek(0);
+      } else {
+        const clampedMove = Math.min(moveIndex, moves.length - 1);
+        const targetMs = (clampedMove + 1) * REPLAY_MOVE_SPACING_MS - 1;
+        await engine.seek(targetMs);
+      }
       if (pendingSeekRef.current === moveIndex) pendingSeekRef.current = null;
     },
-    [moves.length],
+    [collapsible, moves.length],
   );
 
   useImperativeHandle(ref, () => ({ seekToMove }), [seekToMove]);
@@ -516,51 +600,70 @@ function ReplaySection({
     <div
       className={cn(
         "rounded-lg border border-line bg-surface px-5 py-4",
+        size === "large" ? "flex flex-col h-full w-full min-h-0" : "",
         className,
       )}
     >
-      {/* Header (clickable toggle) */}
-      <button
-        onClick={() => setExpanded((prev) => !prev)}
-        className="flex w-full items-center justify-between text-left"
-      >
-        <SectionHeader
-          title={t("replay.title")}
-          eyebrow={expanded && hasMoves ? t("replay.movesCount", { count: totalMoves }) : undefined}
-        />
-        <span className="text-ink-3 transition-transform duration-200">
-          {expanded ? (
-            <ChevronDown className="size-4" />
-          ) : (
-            <ChevronRight className="size-4" />
-          )}
-        </span>
-      </button>
+      {/* Header */}
+      {showHeader && (
+        collapsible ? (
+          <button
+            onClick={() => setExpanded((prev) => !prev)}
+            className="flex w-full items-center justify-between text-left shrink-0 cursor-pointer"
+          >
+            <SectionHeader
+              title={t("replay.title")}
+              eyebrow={isExpanded && hasMoves ? t("replay.movesCount", { count: totalMoves }) : undefined}
+            />
+            <span className="text-ink-3 transition-transform duration-200">
+              {expanded ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+            </span>
+          </button>
+        ) : (
+          <div className="flex w-full items-center justify-between shrink-0 mb-3">
+            <SectionHeader
+              title={t("replay.title")}
+              eyebrow={hasMoves ? t("replay.movesCount", { count: totalMoves }) : undefined}
+            />
+          </div>
+        )
+      )}
 
-      {/* Collapsible content */}
-      {expanded && (
-        <div className="mt-3">
+      {/* Content */}
+      {isExpanded && (
+        <div className={cn(size === "large" ? "flex-1 min-h-0 flex flex-col w-full" : "mt-3")}>
           {!hasMoves ? (
-            <p className="py-6 text-center text-[0.72rem] text-ink-3">
+            <div className="flex flex-1 items-center justify-center py-6 text-center text-[0.72rem] text-ink-3">
               {t("replay.noMoveData")}{" "}
               {solve.source === "manual"
                 ? t("replay.noMoveDataManual")
                 : t("replay.noMoveDataSmartCube")}
-            </p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-3 items-center">
-              {/* Mini cube 3D — centered, max-w-sm for compactness */}
+            <div
+              className={cn(
+                "flex flex-col items-center gap-3",
+                size === "large" ? "flex-1 min-h-0 w-full justify-between" : "",
+              )}
+            >
+              {/* Mini cube 3D — "large" fills the anchored column dynamically */}
               <div
                 ref={containerRef}
-                className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg bg-black/3"
+                className={cn(
+                  "relative overflow-hidden rounded-xl bg-surface-2/30 border border-line/40 flex items-center justify-center",
+                  size === "large"
+                    ? "flex-1 w-full min-h-0"
+                    : "w-full aspect-square max-w-xs",
+                )}
               >
                 <canvas
                   key={canvasKey}
                   ref={canvasRef}
-                  className={cn(
-                    "h-full w-full",
-                    "cursor-grab active:cursor-grabbing",
-                  )}
+                  className="h-full w-full block cursor-grab active:cursor-grabbing"
                   onPointerDown={(e) => {
                     isDraggingRef.current = true;
                     lastPointerRef.current = { x: e.clientX, y: e.clientY };
@@ -585,61 +688,72 @@ function ReplaySection({
 
                 {/* Progress bar overlay at bottom of canvas */}
                 {totalMs > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-line/40">
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-line/40">
                     <div
-                      className="h-full bg-phase-blue-500/60 transition-[width] duration-75 linear"
-                      style={{ width: `${Math.min(100, (positionMs / totalMs) * 100)}%` }}
+                      className="h-full bg-phase-blue-500/80 transition-[width] duration-75 ease-out"
+                      style={{ width: `${Math.min(100, Math.max(0, (positionMs / totalMs) * 100))}%` }}
                     />
                   </div>
                 )}
               </div>
 
-              {/* Controls bar — centered, max-w-sm */}
-              <div className="flex flex-col gap-2 w-full max-w-xs">
-                {/* Top row: move stats — the replay is move-driven, so there is
-                    no seconds counter (a virtual clock would be misleading). */}
-                <div className="flex items-center justify-end">
-                  <div className="flex items-center gap-3 text-[0.62rem] text-ink-3">
-                    {/* Move counter */}
-                    <span className="nums">
-                      {t("replay.move")}{" "}
-                      <span className="font-medium text-ink">
-                        {Math.max(0, currentMoveIdx + 1)}
+              {/* Controls bar */}
+              <div
+                className={cn(
+                  "flex flex-col gap-2 w-full shrink-0",
+                  size === "large" ? "max-w-2xl px-1 pb-1" : "max-w-xs",
+                )}
+              >
+                {/* Top row: live move stats */}
+                <div className="flex items-center justify-between gap-2 px-1 text-xs">
+                  {/* Left: Phase badge and move notation */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    {replayState === "complete" ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-ready/15 px-2.5 py-0.5 text-[0.7rem] font-semibold text-ready">
+                        <Check className="size-3" />
+                        {t("replay.solved")}
                       </span>
-                      /{totalMoves}
+                    ) : liveStats ? (
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {liveStats.phaseName && (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[0.68rem] font-medium tracking-wide uppercase text-ink-2">
+                            <span>{liveStats.phaseName}</span>
+                            <span className="nums opacity-75 text-[0.64rem] font-semibold text-ink">
+                              ({liveStats.phaseProgress})
+                            </span>
+                          </span>
+                        )}
+                        {liveStats.notation && (
+                          <span className="rounded-md bg-ink px-2 py-0.5 font-mono text-[0.75rem] font-bold text-background shadow-xs">
+                            {liveStats.notation}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[0.68rem] font-medium text-ink-3">
+                        {currentMoveIdx < 0 ? t("replay.startState") : "—"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right: move counter */}
+                  <div className="flex items-center gap-1 shrink-0 nums text-[0.72rem] text-ink-3">
+                    <span className="font-semibold text-ink">
+                      {Math.max(0, currentMoveIdx + 1)}
                     </span>
-
-                    {/* Current move notation */}
-                    {liveStats && (
-                      <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono font-medium text-ink text-xs">
-                        {liveStats.notation}
-                      </span>
-                    )}
-
-                    {/* Phase info */}
-                    {liveStats?.phaseName && (
-                      <span className="flex items-center gap-1">
-                        <span className="font-medium uppercase tracking-wide text-ink-2">
-                          {liveStats.phaseName}
-                        </span>
-                        <span className="nums font-semibold text-ink">
-                          {liveStats.phaseProgress}
-                        </span>
-                      </span>
-                    )}
-
+                    <span className="opacity-60"> / {totalMoves}</span>
                   </div>
                 </div>
 
-                {/* Bottom row: transport controls */}
-                <div className="flex items-center gap-1.5">
+                {/* Bottom row: transport buttons */}
+                <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-surface-2/50 border border-line/60 p-1.5 sm:px-2.5">
                   {/* Restart */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
                         onClick={handleRestart}
                         disabled={!canPlay}
-                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
                         aria-label={t("replay.restartAria")}
                       >
                         <RotateCcw className="size-3.5" />
@@ -653,8 +767,8 @@ function ReplaySection({
                     <TooltipTrigger asChild>
                       <button
                         onClick={handleSeekBackward}
-                        disabled={!canPlay}
-                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        disabled={!canPlay || currentMoveIdx < 0}
+                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
                         aria-label={t("replay.stepBackwardAria")}
                       >
                         <SkipBack className="size-3.5" />
@@ -670,9 +784,9 @@ function ReplaySection({
                         onClick={handlePlayPause}
                         disabled={!canPlay}
                         className={cn(
-                          "grid size-9 max-lg:size-11 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
+                          "grid size-9 place-items-center rounded-full transition-all duration-150 active:scale-95 disabled:opacity-30 cursor-pointer shadow-xs",
                           replayState === "playing"
-                            ? "bg-ink text-background hover:bg-ink/80 hover:scale-105"
+                            ? "bg-ink text-background hover:bg-ink/90 hover:scale-105"
                             : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
                         )}
                         aria-label={
@@ -697,7 +811,7 @@ function ReplaySection({
                       <button
                         onClick={handleSeekForward}
                         disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
-                        className="grid size-8 max-lg:size-10 place-items-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-30"
+                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
                         aria-label={t("replay.stepForwardAria")}
                       >
                         <SkipForward className="size-3.5" />
@@ -710,16 +824,16 @@ function ReplaySection({
                   <span className="flex-1" />
 
                   {/* Speed selector */}
-                  <div className="flex items-center gap-0.5 rounded-md border border-line/60 p-0.5">
+                  <div className="flex items-center gap-0.5 rounded-lg border border-line/70 bg-surface/80 p-0.5">
                     {SPEEDS.map((s) => (
                       <Tooltip key={s}>
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => handleSetSpeed(s)}
                             className={cn(
-                              "rounded px-2 py-1 max-lg:px-3 max-lg:py-2 text-[0.62rem] font-medium uppercase tracking-wider transition-all duration-150",
+                              "rounded px-2 py-1 text-[0.66rem] font-semibold tracking-wider transition-all duration-150 cursor-pointer",
                               speed === s
-                                ? "bg-ink text-background"
+                                ? "bg-ink text-background shadow-xs"
                                 : "text-ink-3 hover:text-ink hover:bg-surface-2",
                             )}
                           >

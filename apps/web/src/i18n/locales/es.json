@@ -282,7 +282,10 @@
       "methodCfop": "Cross, F2L, OLL, PLL — el método más popular.",
       "methodRoux": "Construcción de bloques con CMLL y LSE — sin rotaciones.",
       "methodZz": "Orientación de aristas primero, luego F2L + LL sin rotaciones.",
-      "methodPetrus": "Construcción de bloques con orientación de aristas temprana."
+      "methodPetrus": "Construcción de bloques con orientación de aristas temprana.",
+      "replayVisuals": "Visualización del Replay",
+      "floatingStickers": "Stickers flotantes",
+      "floatingStickersDesc": "Proyecta los stickers de las caras ocultas para ver todas las capas sin rotar el cubo en la reproducción."
     },
     "profile": {
       "defaultName": "Speedcuber",
@@ -923,7 +926,9 @@
       "stepForwardAria": "Paso adelante un movimiento",
       "play": "Reproducir",
       "pause": "Pausa",
-      "speed": "Velocidad {{speed}}x"
+      "speed": "Velocidad {{speed}}x",
+      "solved": "Resuelto",
+      "startState": "Estado inicial (Scramble)"
     },
     "analysis": {
       "cyclePenalty": "Clic para cambiar la penalización",
@@ -3370,7 +3375,9 @@
       "chipLl": "LL",
       "chipRotations": "Rotaciones",
       "chipAvg": "Media",
-      "chipCube": "Cubo"
+      "chipCube": "Cubo",
+      "layoutStacked": "Modo vertical",
+      "layoutSplit": "Modo dividido"
     },
     "detection": {
       "title": "Nuestra detección",
@@ -3391,7 +3398,24 @@
       "xcrossPseudo": "El bloque de cruz escrito nunca contuvo una cruz real (aristas desordenadas / parciales — corregido dentro de los pares F2L)",
       "xcrossPair": "Par {{name}} resuelto al completar la cruz",
       "xcrossGeneric": "Un par F2L ya estaba resuelto al completar la cruz",
-      "apiError": "Nuestra detección no pudo analizar esta resolución (error de API). Esto es un bug — se supone que el camino de incoherencia se maneja internamente."
+      "apiError": "Nuestra detección no pudo analizar esta resolución (error de API). Esto es un bug — se supone que el camino de incoherencia se maneja internamente.",
+      "cfopSplit": "Flujo y distribución CFOP",
+      "f2lAvg": "Promedio/Par: {{avg}}m",
+      "rotationRate": "{{rate}} R/M",
+      "copyAlg": "Copiar algoritmo",
+      "copiedAlg": "Algoritmo copiado al portapapeles",
+      "seekToPhase": "Clic para saltar el replay 3D a este paso",
+      "optimal": "Óptimo",
+      "standard": "Estándar",
+      "extended": "Extenso",
+      "inspectionGrip": "Agarre en inspección",
+      "inSolveRotations": "Rotaciones en resolución",
+      "sliceTurns": "Giros de capa media (M/E/S)",
+      "wideTurns": "Giros dobles (Rw/r...)",
+      "movesShare": "{{percent}}% del solve",
+      "aufCount": "{{count}} alineaciones AUF",
+      "slotSequence": "Secuencia de slots",
+      "efficiency": "Eficiencia"
     }
   },
   "widgets": {

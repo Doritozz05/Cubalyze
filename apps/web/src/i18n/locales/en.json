@@ -282,7 +282,10 @@
       "methodCfop": "Cross, F2L, OLL, PLL — the most popular method.",
       "methodRoux": "Blockbuilding with CMLL and LSE — no rotations.",
       "methodZz": "Edge orientation first, then rotationless F2L + LL.",
-      "methodPetrus": "Blockbuilding with early edge orientation."
+      "methodPetrus": "Blockbuilding with early edge orientation.",
+      "replayVisuals": "Replay Visuals",
+      "floatingStickers": "Floating Stickers",
+      "floatingStickersDesc": "Project stickers from hidden faces so you can view all layers simultaneously in replay without rotating."
     },
     "profile": {
       "defaultName": "Speedcuber",
@@ -923,7 +926,9 @@
       "stepForwardAria": "Step forward one move",
       "play": "Play",
       "pause": "Pause",
-      "speed": "{{speed}}x speed"
+      "speed": "{{speed}}x speed",
+      "solved": "Solved",
+      "startState": "Initial state (Scramble)"
     },
     "analysis": {
       "cyclePenalty": "Click to cycle penalty",
@@ -3370,7 +3375,9 @@
       "chipLl": "LL",
       "chipRotations": "Rotations",
       "chipAvg": "Avg",
-      "chipCube": "Cube"
+      "chipCube": "Cube",
+      "layoutStacked": "Vertical layout",
+      "layoutSplit": "Split layout"
     },
     "detection": {
       "title": "Our detection",
@@ -3391,7 +3398,24 @@
       "xcrossPseudo": "The written cross block never contained a real cross (edges left misordered / partial — fixed inside the F2L pairs)",
       "xcrossPair": "{{name}} pair solved at cross completion",
       "xcrossGeneric": "An F2L pair was already solved at cross completion",
-      "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally."
+      "apiError": "Our detection failed to analyze this solve (API error). This is a bug — the incoherence path is supposed to be handled internally.",
+      "cfopSplit": "CFOP Flow & Split",
+      "f2lAvg": "Avg/Pair: {{avg}}m",
+      "rotationRate": "{{rate}} R/M",
+      "copyAlg": "Copy algorithm",
+      "copiedAlg": "Algorithm copied to clipboard",
+      "seekToPhase": "Click to jump 3D replay to this step",
+      "optimal": "Optimal",
+      "standard": "Standard",
+      "extended": "Extended",
+      "inspectionGrip": "Inspection grip",
+      "inSolveRotations": "In-solve rotations",
+      "sliceTurns": "Slice turns (M/E/S)",
+      "wideTurns": "Wide turns (Rw/r...)",
+      "movesShare": "{{percent}}% of solve",
+      "aufCount": "{{count}} AUF alignments",
+      "slotSequence": "Slot flow",
+      "efficiency": "Efficiency"
     }
   },
   "widgets": {

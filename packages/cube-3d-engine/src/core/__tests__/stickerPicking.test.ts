@@ -32,7 +32,7 @@ const resolveSticker = (mesh: Mesh, cubieQuat: { x: number; y: number; z: number
   return resolveLayerHit({ meshLocalNormal, cubieQuaternion: cubieQuat });
 };
 
-/** The sticker child meshes of a cubie (skips the core body). */
+/** The sticker child meshes of a cubie (skips the core body and floating stickers). */
 const stickerMeshesOf = (model: CubeModel, gridX: number, gridY: number, gridZ: number): Mesh[] => {
   const cubie = model
     .getLogicalState()
@@ -40,6 +40,7 @@ const stickerMeshesOf = (model: CubeModel, gridX: number, gridY: number, gridZ: 
   if (!cubie) throw new Error(`cubie ${gridX},${gridY},${gridZ} not found`);
   return (cubie.mesh.children as Mesh[]).filter((m) => {
     if (!m.isMesh) return false;
+    if (m.userData?.isFloatingSticker) return false;
     const mat = m.material;
     if (Array.isArray(mat) || !mat) return false;
     const hex = (mat as MeshBasicMaterial).color?.getHexString?.();
