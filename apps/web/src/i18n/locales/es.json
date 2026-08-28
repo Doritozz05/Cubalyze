@@ -928,7 +928,9 @@
       "pause": "Pausa",
       "speed": "Velocidad {{speed}}x",
       "solved": "Resuelto",
-      "startState": "Estado inicial (Scramble)"
+      "startState": "Estado inicial (Scramble)",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa"
     },
     "analysis": {
       "cyclePenalty": "Clic para cambiar la penalización",

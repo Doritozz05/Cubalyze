@@ -32,6 +32,8 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -111,6 +113,24 @@ function ReplaySection({
   const [positionMs, setPositionMs] = useState(0);
   const [speed, setSpeed] = useState<number>(1);
   const [currentMoveIdx, setCurrentMoveIdx] = useState(-1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Keyboard shortcut (Escape) to exit in-app fullscreen and body overflow lock
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   // Incremented on each re-init to force a fresh <canvas> DOM element.
   // transferControlToOffscreen() can only be called once per canvas element,
@@ -601,11 +621,33 @@ function ReplaySection({
       className={cn(
         "rounded-lg border border-line bg-surface px-5 py-4",
         size === "large" ? "flex flex-col h-full w-full min-h-0" : "",
+        isFullscreen
+          ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-background/98 backdrop-blur-xl p-4 sm:p-6 shadow-2xl"
+          : "",
         className,
       )}
     >
-      {/* Header */}
-      {showHeader && (
+      {/* Fullscreen top navigation bar */}
+      {isFullscreen && (
+        <div className="flex items-center justify-between w-full shrink-0 mb-3 px-1">
+          <SectionHeader
+            title={t("replay.title")}
+            eyebrow={hasMoves ? t("replay.movesCount", { count: totalMoves }) : undefined}
+          />
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="flex items-center gap-1.5 rounded-lg border border-line/60 bg-surface px-3 py-1.5 text-xs text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer shadow-xs"
+            title={t("replay.exitFullscreen")}
+          >
+            <Minimize2 className="size-3.5" />
+            <span className="text-[0.72rem] font-medium hidden sm:inline">{t("replay.exitFullscreen")}</span>
+            <kbd className="text-[0.6rem] bg-line/80 px-1 py-0.5 rounded text-ink-3">ESC</kbd>
+          </button>
+        </div>
+      )}
+
+      {/* Normal Header */}
+      {!isFullscreen && showHeader && (
         collapsible ? (
           <button
             onClick={() => setExpanded((prev) => !prev)}
@@ -635,7 +677,7 @@ function ReplaySection({
 
       {/* Content */}
       {isExpanded && (
-        <div className={cn(size === "large" ? "flex-1 min-h-0 flex flex-col w-full" : "mt-3")}>
+        <div className={cn(size === "large" || isFullscreen ? "flex-1 min-h-0 flex flex-col w-full" : "mt-3")}>
           {!hasMoves ? (
             <div className="flex flex-1 items-center justify-center py-6 text-center text-[0.72rem] text-ink-3">
               {t("replay.noMoveData")}{" "}
@@ -647,15 +689,15 @@ function ReplaySection({
             <div
               className={cn(
                 "flex flex-col items-center gap-3",
-                size === "large" ? "flex-1 min-h-0 w-full justify-between" : "",
+                size === "large" || isFullscreen ? "flex-1 min-h-0 w-full justify-between" : "",
               )}
             >
-              {/* Mini cube 3D — "large" fills the anchored column dynamically */}
+              {/* Mini cube 3D — "large" or fullscreen fills the viewport dynamically */}
               <div
                 ref={containerRef}
                 className={cn(
                   "relative overflow-hidden flex items-center justify-center",
-                  size === "large"
+                  size === "large" || isFullscreen
                     ? "flex-1 w-full min-h-0 bg-transparent border-0 rounded-lg"
                     : "w-full aspect-square max-w-xs rounded-xl bg-surface-2/30 border border-line/40",
                 )}
@@ -701,7 +743,7 @@ function ReplaySection({
               <div
                 className={cn(
                   "flex flex-col gap-2 w-full shrink-0",
-                  size === "large" ? "max-w-2xl px-1 pb-1" : "max-w-xs",
+                  size === "large" || isFullscreen ? "max-w-2xl mx-auto px-1 pb-1" : "max-w-xs",
                 )}
               >
                 {/* Top row: live move stats */}
@@ -844,6 +886,26 @@ function ReplaySection({
                       </Tooltip>
                     ))}
                   </div>
+
+                  {/* Fullscreen toggle */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setIsFullscreen((prev) => !prev)}
+                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 cursor-pointer"
+                        aria-label={isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
+                      >
+                        {isFullscreen ? (
+                          <Minimize2 className="size-3.5" />
+                        ) : (
+                          <Maximize2 className="size-3.5" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>

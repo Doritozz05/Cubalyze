@@ -928,7 +928,9 @@
       "pause": "Pause",
       "speed": "{{speed}}x speed",
       "solved": "Solved",
-      "startState": "Initial state (Scramble)"
+      "startState": "Initial state (Scramble)",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
     },
     "analysis": {
       "cyclePenalty": "Click to cycle penalty",
