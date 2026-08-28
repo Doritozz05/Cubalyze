@@ -562,21 +562,25 @@ export function OurDetectionPanel({
         // scheme-applied read (rotation independent) when present, else the
         // canonical slot letters with the FRONT_SIDE_INDEX fallback.
         const frontIdx = FRONT_SIDE_INDEX[p.slot] ?? 0;
-        // The canonical mini-case is always viewed from FR. For pairs whose
-        // physical colors are F/R, F/L, B/R, or B/L, the left/right display
-        // orientation is determined by the color pair itself, not by the
-        // solver slot name. In particular F/L must render L on the left and
-        // F on the right; using the slot's canonical order made F/L render
-        // F-left + L-right (and could duplicate the apparent orientation of
-        // another pair).
+        // The canonical mini-case is always viewed from FR (F face on the
+        // LEFT of the image, R on the RIGHT), so the pair's two stickers
+        // must be placed by which face they belong to, not by the solver
+        // slot name. The left sticker of the pair is the L color, so any
+        // pair carrying an L sticker shows it on the LEFT; otherwise the
+        // front F sticker goes left (FR pairs); otherwise R. This keeps
+        // FR (green+red) as green-left/red-right and makes its mirror FL
+        // (green+orange) orange-left/green-right — two distinct views,
+        // never two pairs that both look green-left.
         const rawFront = p.frontColor ?? p.colors[frontIdx];
         const rawSide = p.sideColor ?? p.colors[1 - frontIdx];
         const pairColorsCanonical = [rawFront, rawSide];
         const frontColor = pairColorsCanonical.includes("L")
           ? "L"
-          : pairColorsCanonical.includes("R")
-            ? "R"
-            : rawFront;
+          : pairColorsCanonical.includes("F")
+            ? "F"
+            : pairColorsCanonical.includes("R")
+              ? "R"
+              : rawFront;
         const sideColor =
           pairColorsCanonical.find((c) => c !== frontColor) ?? rawSide;
         const pairColors = [frontColor, sideColor];
