@@ -87,8 +87,8 @@ describe('OLL probe — round-trip against the seed catalog', () => {
     }
   });
 
-  it('is cross-frame invariant: the same OLL is recognized on every cross face', () => {
-    for (const { caseDef } of OLL_CASES.slice(0, 10)) {
+  it('is cross-frame invariant: all 57 OLL cases are recognized on every cross face', () => {
+    for (const { caseDef } of OLL_CASES) {
       const base = CaseStateGenerator.generateFromScramble(caseDef.setupScramble);
       for (const crossFace of CROSS_FACES) {
         const state = toCrossFrame(base, crossFace);
@@ -170,8 +170,8 @@ describe('PLL probe — permutation round-trip and AUF invariance', () => {
     }
   });
 
-  it('is cross-frame invariant for a sample of PLL cases', () => {
-    for (const { caseDef } of PLL_CASES.slice(0, 6)) {
+  it('is cross-frame invariant: all 21 PLL cases are recognized on every cross face', () => {
+    for (const { caseDef } of PLL_CASES) {
       const base = CaseStateGenerator.generateFromScramble(caseDef.setupScramble);
       for (const crossFace of CROSS_FACES) {
         const state = toCrossFrame(base, crossFace);
@@ -183,6 +183,7 @@ describe('PLL probe — permutation round-trip and AUF invariance', () => {
           result.confidence,
           `PLL ${caseDef.caseNumber} in ${crossFace}`,
         ).toBe('exact');
+        expect(result.entry?.caseNumber, `PLL ${caseDef.caseNumber} in ${crossFace}`).toBe(caseDef.caseNumber);
       }
     }
   });
