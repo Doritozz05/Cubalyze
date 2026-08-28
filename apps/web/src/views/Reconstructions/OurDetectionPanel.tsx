@@ -562,8 +562,23 @@ export function OurDetectionPanel({
         // scheme-applied read (rotation independent) when present, else the
         // canonical slot letters with the FRONT_SIDE_INDEX fallback.
         const frontIdx = FRONT_SIDE_INDEX[p.slot] ?? 0;
-        const frontColor = p.frontColor ?? p.colors[frontIdx];
-        const sideColor = p.sideColor ?? p.colors[1 - frontIdx];
+        // The canonical mini-case is always viewed from FR. For pairs whose
+        // physical colors are F/R, F/L, B/R, or B/L, the left/right display
+        // orientation is determined by the color pair itself, not by the
+        // solver slot name. In particular F/L must render L on the left and
+        // F on the right; using the slot's canonical order made F/L render
+        // F-left + L-right (and could duplicate the apparent orientation of
+        // another pair).
+        const rawFront = p.frontColor ?? p.colors[frontIdx];
+        const rawSide = p.sideColor ?? p.colors[1 - frontIdx];
+        const pairColorsCanonical = [rawFront, rawSide];
+        const frontColor = pairColorsCanonical.includes("L")
+          ? "L"
+          : pairColorsCanonical.includes("R")
+            ? "R"
+            : rawFront;
+        const sideColor =
+          pairColorsCanonical.find((c) => c !== frontColor) ?? rawSide;
         const pairColors = [frontColor, sideColor];
         const stickerColors =
           crossColor && pairColors.every((c) => c != null)
