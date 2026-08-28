@@ -115,7 +115,7 @@ function ReplaySection({
   const [currentMoveIdx, setCurrentMoveIdx] = useState(-1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Keyboard shortcut (Escape) to exit in-app fullscreen and body overflow lock
+  // Keyboard shortcut (Escape) to exit in-app fullscreen and body overflow/sidebar lock
   useEffect(() => {
     if (!isFullscreen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,9 +125,11 @@ function ReplaySection({
     };
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.classList.add("replay-fullscreen-active");
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
+      document.body.classList.remove("replay-fullscreen-active");
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isFullscreen]);

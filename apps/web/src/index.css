@@ -652,5 +652,13 @@ input[type="image"],
   75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
 }
 
+/* ── In-App Fullscreen Replay Mode (Hide Chrome & Sidebar) ────────────────── */
+body.replay-fullscreen-active aside,
+body.replay-fullscreen-active nav,
+body.replay-fullscreen-active header {
+  display: none !important;
+}
 
-
+body.replay-fullscreen-active [class*="relative z-1"] {
+  z-index: 100 !important;
+}
