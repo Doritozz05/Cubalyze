@@ -819,7 +819,7 @@ function ReplaySection({
                     ) : liveStats ? (
                       <div className="flex items-center gap-1.5 min-w-0">
                         {liveStats.phaseName && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[0.68rem] font-medium tracking-wide uppercase text-ink-2 truncate max-w-[120px] sm:max-w-none">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[0.68rem] font-medium tracking-wide uppercase text-ink-2 truncate max-w-30 sm:max-w-none">
                             <span>{liveStats.phaseName}</span>
                             <span className="nums opacity-75 text-[0.64rem] font-semibold text-ink">
                               ({liveStats.phaseProgress})
@@ -938,7 +938,7 @@ function ReplaySection({
                               const next = SPEEDS[(idx === -1 ? 2 : idx + 1) % SPEEDS.length] ?? 1;
                               handleSetSpeed(next);
                             }}
-                            className="flex items-center justify-center rounded-lg border border-line/70 bg-surface/80 px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-[34px]"
+                            className="flex items-center justify-center rounded-lg border border-line/70 bg-surface/80 px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-8.5"
                             aria-label={t("replay.speed", { speed })}
                           >
                             {speed}x
