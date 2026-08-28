@@ -282,7 +282,10 @@
       "methodCfop": "Cross, F2L, OLL, PLL — the most popular method.",
       "methodRoux": "Blockbuilding with CMLL and LSE — no rotations.",
       "methodZz": "Edge orientation first, then rotationless F2L + LL.",
-      "methodPetrus": "Blockbuilding with early edge orientation."
+      "methodPetrus": "Blockbuilding with early edge orientation.",
+      "replayVisuals": "Replay Visuals",
+      "floatingStickers": "Floating Stickers",
+      "floatingStickersDesc": "Project stickers from hidden faces so you can view all layers simultaneously in replay without rotating."
     },
     "profile": {
       "defaultName": "Speedcuber",

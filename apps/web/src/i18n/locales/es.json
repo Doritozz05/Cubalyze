@@ -282,7 +282,10 @@
       "methodCfop": "Cross, F2L, OLL, PLL — el método más popular.",
       "methodRoux": "Construcción de bloques con CMLL y LSE — sin rotaciones.",
       "methodZz": "Orientación de aristas primero, luego F2L + LL sin rotaciones.",
-      "methodPetrus": "Construcción de bloques con orientación de aristas temprana."
+      "methodPetrus": "Construcción de bloques con orientación de aristas temprana.",
+      "replayVisuals": "Visualización del Replay",
+      "floatingStickers": "Stickers flotantes",
+      "floatingStickersDesc": "Proyecta los stickers de las caras ocultas para ver todas las capas sin rotar el cubo en la reproducción."
     },
     "profile": {
       "defaultName": "Speedcuber",

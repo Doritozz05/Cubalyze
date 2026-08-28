@@ -46,6 +46,16 @@ export interface CubeStyleOptions {
     R: string;
     L: string;
   };
+  /**
+   * Floating projection stickers on hidden faces.
+   * Renders offset tiles facing inward (180° opposite) so backface culling makes them visible
+   * only when viewing the opposite side of the cube.
+   */
+  floatingStickers?: boolean;
+  /** Distance offset from cubie face for floating stickers (default: 1.15). */
+  floatingStickerDistance?: number;
+  /** Size factor for floating stickers relative to main stickers (default: 0.88). */
+  floatingStickerSize?: number;
 }
 
 export const DEFAULT_STYLE: CubeStyleOptions = {
@@ -99,6 +109,7 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
 export class CubeMeshFactory {
   private coreGeometry: BoxGeometry;
   private stickerGeometry: ShapeGeometry;
+  private floatingStickerGeometry: ShapeGeometry;
   private coreMaterial!: MeshStandardMaterial;
   private seamMaterial!: MeshStandardMaterial;
   /** Normal sticker panels — stickered + coreless (FrontSide, opaque) */
@@ -107,8 +118,12 @@ export class CubeMeshFactory {
   private stickerlessFaceMaterials: Record<string, MeshBasicMaterial> = {};
   /** Translucent sticker panels — DoubleSide, depthWrite:false for see-through */
   private translucentStickerMaterials: Record<string, MeshBasicMaterial> = {};
+  /** Floating projection stickers — FrontSide + opacity (facing inward to project hidden faces) */
+  private floatingStickerMaterials: Record<string, MeshBasicMaterial> = {};
   /** Track all sticker meshes with their face for runtime material swaps */
   private stickerMeshes: { mesh: Mesh; face: string }[] = [];
+  /** Track floating sticker meshes for visibility & updates */
+  private floatingStickerMeshes: { mesh: Mesh; face: string }[] = [];
   /** Track all core meshes so we can update material/scale/visibility at runtime */
   private coreMeshes: { mesh: Mesh; x: number; y: number; z: number }[] = [];
   private style: CubeStyleOptions;
@@ -129,6 +144,10 @@ export class CubeMeshFactory {
     const size = this.style.stickerSize ?? 0.84;
     const radius = this.style.stickerRadius ?? 0.06;
     this.stickerGeometry = this.createRoundedStickerGeometry(size, size, radius);
+
+    // Floating stickers: scaled flat rounded-rect panels
+    const floatingSize = size * (this.style.floatingStickerSize ?? 0.88);
+    this.floatingStickerGeometry = this.createRoundedStickerGeometry(floatingSize, floatingSize, radius);
 
     this.initMaterials();
   }
@@ -207,6 +226,16 @@ export class CubeMeshFactory {
         side: DoubleSide,
         depthWrite: false,
         transparent: true,
+      });
+
+      // Floating projection stickers — FrontSide + opacity (facing inward to project hidden faces)
+      this.floatingStickerMaterials[face] = new MeshBasicMaterial({
+        color: new Color(this.style.stickerColors[face]),
+        transparent: true,
+        opacity: 0.92,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
       });
     }
   }
@@ -289,6 +318,11 @@ export class CubeMeshFactory {
     const stickerVisible = skinType !== 'stickerless';
     const activeMaterials = this.getActiveStickerMaterials();
 
+    // Floating sticker projection offset (doubled distance: 1.15 units)
+    const floatingDist = this.style.floatingStickerDistance ?? 1.15;
+    const floatingOffset = 0.5 + floatingDist;
+    const floatingVisible = this.style.floatingStickers === true;
+
     // Helper to create a sticker and track it
     const addSticker = (face: string, px: number, py: number, pz: number, rx?: number, ry?: number) => {
       const sticker = new Mesh(this.stickerGeometry, activeMaterials[face]);
@@ -300,12 +334,49 @@ export class CubeMeshFactory {
       this.stickerMeshes.push({ mesh: sticker, face });
     };
 
-    if (x === 1) addSticker('R', offset, 0, 0, undefined, Math.PI / 2);
-    if (x === -1) addSticker('L', -offset, 0, 0, undefined, -Math.PI / 2);
-    if (y === 1) addSticker('U', 0, offset, 0, -Math.PI / 2);
-    if (y === -1) addSticker('D', 0, -offset, 0, Math.PI / 2);
-    if (z === 1) addSticker('F', 0, 0, offset);
-    if (z === -1) addSticker('B', 0, 0, -offset, undefined, Math.PI);
+    // Helper to create a floating projection sticker and track it
+    const addFloatingSticker = (
+      face: string,
+      px: number,
+      py: number,
+      pz: number,
+      rx?: number,
+      ry?: number,
+    ) => {
+      const sticker = new Mesh(this.floatingStickerGeometry, this.floatingStickerMaterials[face]);
+      sticker.position.set(px, py, pz);
+      if (rx !== undefined) sticker.rotation.x = rx;
+      if (ry !== undefined) sticker.rotation.y = ry;
+      sticker.visible = floatingVisible;
+      sticker.userData = { isFloatingSticker: true };
+      group.add(sticker);
+      this.floatingStickerMeshes.push({ mesh: sticker, face });
+    };
+
+    if (x === 1) {
+      addSticker('R', offset, 0, 0, undefined, Math.PI / 2);
+      addFloatingSticker('R', floatingOffset, 0, 0, undefined, -Math.PI / 2);
+    }
+    if (x === -1) {
+      addSticker('L', -offset, 0, 0, undefined, -Math.PI / 2);
+      addFloatingSticker('L', -floatingOffset, 0, 0, undefined, Math.PI / 2);
+    }
+    if (y === 1) {
+      addSticker('U', 0, offset, 0, -Math.PI / 2);
+      addFloatingSticker('U', 0, floatingOffset, 0, Math.PI / 2);
+    }
+    if (y === -1) {
+      addSticker('D', 0, -offset, 0, Math.PI / 2);
+      addFloatingSticker('D', 0, -floatingOffset, 0, -Math.PI / 2);
+    }
+    if (z === 1) {
+      addSticker('F', 0, 0, offset);
+      addFloatingSticker('F', 0, 0, floatingOffset, undefined, Math.PI);
+    }
+    if (z === -1) {
+      addSticker('B', 0, 0, -offset, undefined, Math.PI);
+      addFloatingSticker('B', 0, 0, -floatingOffset);
+    }
 
     return group;
   }
@@ -316,14 +387,14 @@ export class CubeMeshFactory {
 
   /**
    * Update a single face color at runtime.
-   * Propagates to all three sticker material pools.
+   * Propagates to all sticker material pools.
    */
   public setFaceColor(face: CubeFace | 'Inner', color: string): void {
     if (face === 'Inner') {
       this.coreMaterial.color.set(color);
       this.coreMaterial.needsUpdate = true;
     } else {
-      // Update all three material pools so color stays consistent
+      // Update all material pools so color stays consistent
       // regardless of which skin type is currently active
       const mat1 = this.stickerMaterials[face];
       if (mat1) { mat1.color.set(color); mat1.needsUpdate = true; }
@@ -333,6 +404,9 @@ export class CubeMeshFactory {
 
       const mat3 = this.translucentStickerMaterials[face];
       if (mat3) { mat3.color.set(color); mat3.needsUpdate = true; }
+
+      const matFloating = this.floatingStickerMaterials[face];
+      if (matFloating) { matFloating.color.set(color); matFloating.needsUpdate = true; }
     }
   }
 
@@ -341,6 +415,7 @@ export class CubeMeshFactory {
    *
    * Handles:
    * - `skinType` changes → visibility + core material + sticker material pool + core scale
+   * - `floatingStickers` changes → toggle visibility of floating sticker panels
    * - `coreColor` / `coreOpacity` → core material updates
    * - `seamColor` → seam material color
    * - `stickerColors` → updates all sticker material pools
@@ -362,6 +437,14 @@ export class CubeMeshFactory {
     if (newStyle.cubieSize !== undefined && newStyle.cubieSize !== this.style.cubieSize) {
       this.style.cubieSize = newStyle.cubieSize;
       cubieSizeChanged = true;
+    }
+
+    // ── Floating projection stickers toggle ────────────────────────────
+    if (newStyle.floatingStickers !== undefined && newStyle.floatingStickers !== this.style.floatingStickers) {
+      this.style.floatingStickers = newStyle.floatingStickers;
+      for (const { mesh } of this.floatingStickerMeshes) {
+        mesh.visible = this.style.floatingStickers;
+      }
     }
 
     // ── Core color ────────────────────────────────────────────────────
@@ -386,7 +469,7 @@ export class CubeMeshFactory {
       this.seamMaterial.needsUpdate = true;
     }
 
-    // ── Sticker colors (propagate to all three material pools) ────────
+    // ── Sticker colors (propagate to all material pools) ─────────────
     if (newStyle.stickerColors) {
       for (const [face, color] of Object.entries(newStyle.stickerColors)) {
         this.setFaceColor(face as CubeFace, color);
@@ -443,12 +526,19 @@ export class CubeMeshFactory {
 
     if (geometryNeedsUpdate) {
       this.stickerGeometry.dispose();
+      this.floatingStickerGeometry.dispose();
       const size = this.style.stickerSize ?? 0.84;
       const radius = this.style.stickerRadius ?? 0.06;
       this.stickerGeometry = this.createRoundedStickerGeometry(size, size, radius);
 
+      const floatingSize = size * (this.style.floatingStickerSize ?? 0.88);
+      this.floatingStickerGeometry = this.createRoundedStickerGeometry(floatingSize, floatingSize, radius);
+
       for (const { mesh } of this.stickerMeshes) {
         mesh.geometry = this.stickerGeometry;
+      }
+      for (const { mesh } of this.floatingStickerMeshes) {
+        mesh.geometry = this.floatingStickerGeometry;
       }
     }
   }
@@ -480,12 +570,15 @@ export class CubeMeshFactory {
   public dispose(): void {
     this.coreGeometry.dispose();
     this.stickerGeometry.dispose();
+    this.floatingStickerGeometry.dispose();
     this.coreMaterial.dispose();
     this.seamMaterial.dispose();
     Object.values(this.stickerMaterials).forEach((mat) => mat.dispose());
     Object.values(this.stickerlessFaceMaterials).forEach((mat) => mat.dispose());
     Object.values(this.translucentStickerMaterials).forEach((mat) => mat.dispose());
+    Object.values(this.floatingStickerMaterials).forEach((mat) => mat.dispose());
     this.stickerMeshes = [];
+    this.floatingStickerMeshes = [];
     this.coreMeshes = [];
   }
 }

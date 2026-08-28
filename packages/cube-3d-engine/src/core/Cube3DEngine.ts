@@ -535,6 +535,7 @@ export class Cube3DEngine {
     let coreFallback: typeof hits[0] | null = null;
     for (const h of hits) {
       if (!h.face) continue;
+      if (h.object.userData?.isFloatingSticker) continue;
       // World-space normal of the hit face. Three.js populates
       // h.face.normal in LOCAL space; transform it by the object's
       // world matrix (rotation part only — normalScale = 1 for uniform
@@ -725,6 +726,11 @@ export class Cube3DEngine {
   public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
     if (this.factory) {
       this.factory.updateStyle(newStyle);
+    }
+    if (newStyle.floatingStickers !== undefined && this.model) {
+      // Scale down slightly when floating stickers are active to leave ample breathing room for projected tiles
+      const scale = newStyle.floatingStickers ? 0.78 : 1.0;
+      this.model.root.scale.setScalar(scale);
     }
     this.requestRender();
   }

@@ -64,6 +64,10 @@ export interface PreferencesState {
   method: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
   setMethod: (value: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus') => void;
 
+  /** Project hidden face stickers in 3D replay to see all layers simultaneously. */
+  replayFloatingStickers: boolean;
+  setReplayFloatingStickers: (value: boolean) => void;
+
   /** Focus mode: hide everything except timer when ready or running. */
   focusMode: boolean;
   setFocusMode: (value: boolean) => void;
@@ -246,6 +250,7 @@ const DEFAULT_VALUES = {
   scrambleDisplay: true,
   scrambleVerification: true,
   method: 'CFOP' as const,
+  replayFloatingStickers: true,
   focusMode: true,
   audioCues: true,
   voiceType: 'male' as const,
@@ -308,6 +313,7 @@ export const createPreferencesStore = () => {
         setScrambleDisplay: (scrambleDisplay) => set({ scrambleDisplay }),
         setScrambleVerification: (scrambleVerification) => set({ scrambleVerification }),
         setMethod: (method) => set({ method }),
+        setReplayFloatingStickers: (replayFloatingStickers) => set({ replayFloatingStickers }),
         setFocusMode: (focusMode) => set({ focusMode }),
         setAudioCues: (audioCues) => set({ audioCues }),
         setVoiceType: (voiceType) => set({ voiceType }),

@@ -270,8 +270,8 @@ export function ReconstructionDetailView({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
           {/* Replay — fills remaining height on lg (no scroll), stacks on smaller */}
           {solve && (
-            <div className="flex min-h-0 w-full flex-col lg:w-3/5 lg:min-w-[26rem] lg:max-w-[50rem] lg:flex-none lg:border-r lg:border-line/60">
-              <div className="flex aspect-[5/4] w-full min-h-0 flex-col p-4 sm:p-5 lg:aspect-auto lg:h-full lg:flex-1">
+            <div className="flex min-h-0 w-full flex-col lg:w-3/5 lg:min-w-104 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
+              <div className="flex aspect-5/4 w-full min-h-0 flex-col p-4 sm:p-5 lg:aspect-auto lg:h-full lg:flex-1">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
@@ -299,7 +299,7 @@ export function ReconstructionDetailView({
                     </span>
                   )}
                 </div>
-                <p className="text-ink-2 font-mono text-[0.7rem] leading-relaxed break-words">
+                <p className="text-ink-2 font-mono text-[0.7rem] leading-relaxed wrap-break-word">
                   {record.scramble}
                 </p>
               </div>
@@ -357,7 +357,7 @@ export function ReconstructionDetailView({
                     {copied ? t('detail.copied') : t('detail.copy')}
                   </Button>
                 </div>
-                <pre className="text-ink-2 max-h-72 overflow-y-auto font-mono text-[0.7rem] leading-relaxed break-words whitespace-pre-wrap">
+                <pre className="text-ink-2 max-h-72 overflow-y-auto font-mono text-[0.7rem] leading-relaxed wrap-break-word whitespace-pre-wrap">
                   {record.text}
                 </pre>
               </div>

@@ -5,6 +5,7 @@ import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import type { ParseKeys } from 'i18next';
 import { preferencesStore } from '@cubeforge/state';
+import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import type { SolveMethod } from '@/types';
 
 const METHODS: { id: SolveMethod; label: string; descKey: ParseKeys<'settings'> }[] = [
@@ -18,9 +19,11 @@ export function AnalysisSection() {
   const { t } = useTranslation('settings');
   const method = useStore(preferencesStore, (s) => s.method);
   const setMethod = useStore(preferencesStore, (s) => s.setMethod);
+  const replayFloatingStickers = useStore(preferencesStore, (s) => s.replayFloatingStickers);
+  const setReplayFloatingStickers = useStore(preferencesStore, (s) => s.setReplayFloatingStickers);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <BarChart3 className="size-4 text-ink-2" />
@@ -71,6 +74,18 @@ export function AnalysisSection() {
             );
           })}
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+          {t('analysis.replayVisuals')}
+        </h3>
+        <SettingToggle
+          title={t('analysis.floatingStickers')}
+          description={t('analysis.floatingStickersDesc')}
+          checked={replayFloatingStickers}
+          onCheckedChange={setReplayFloatingStickers}
+        />
       </div>
     </div>
   );

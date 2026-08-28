@@ -155,17 +155,21 @@ function ReplaySection({
   const solveRef = useRef(solve);
   solveRef.current = solve;
 
-  // ── Reactive appearance (skin) — watch user preference ──────────────
+  // ── Reactive appearance (skin & floating stickers) — watch user preference ──
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
+  const replayFloatingStickers = useStore(preferencesStore, (s) => s.replayFloatingStickers);
 
-  // Push skin changes to the replay worker whenever the user changes skin
+  // Push skin and floating sticker changes to the replay worker
   useEffect(() => {
     if (!workerProxyRef.current || !cubeReadyRef.current) return;
     const style = getSkinStyle(appearance3d);
     workerProxyRef.current
-      .updateStyle(style)
+      .updateStyle({
+        ...style,
+        floatingStickers: replayFloatingStickers,
+      })
       .catch((err: unknown) => console.warn("[Replay] updateStyle failed", err));
-  }, [appearance3d]);
+  }, [appearance3d, replayFloatingStickers]);
 
   // ── Reset state when solve changes ────────────────────────────────────────
   // This runs BEFORE the init effect, resetting display state so the user
@@ -397,9 +401,13 @@ function ReplaySection({
 
         cubeReadyRef.current = true;
 
-        // Apply current skin style to the replay cube
+        // Apply current skin style & floating stickers to the replay cube
         const currentSkin = getSkinStyle(preferencesStore.getState().appearance3d);
-        proxy.updateStyle(currentSkin).catch((err: unknown) =>
+        const floatingStickers = preferencesStore.getState().replayFloatingStickers;
+        proxy.updateStyle({
+          ...currentSkin,
+          floatingStickers,
+        }).catch((err: unknown) =>
           console.warn("[Replay] Initial skin update failed", err),
         );
 
