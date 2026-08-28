@@ -366,7 +366,7 @@ export function segmentF2LPairs(
     // (spanOk false) the state list is partial but `frames` is empty, and
     // applying an undefined rotation would throw.
     if (j < 0 || j >= frames.length) return null;
-    return applyFrameRotation(spanStates[j], frames[j]);
+    return applyFrameRotation(spanStates[j], frames[j], crossFace);
   };
 
   // Seed prevMask with the state just before F2L starts (the cross end).

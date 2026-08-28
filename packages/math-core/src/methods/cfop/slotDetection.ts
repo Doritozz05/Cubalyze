@@ -9,154 +9,133 @@ import { FACE_LETTERS, type FaceLetter } from './ColorPhaseDetector';
  * layers (D face + equator), i.e. the solver's F2L frame. A plain D or E
  * move rotates only one of the groups and is a normal solve move, not a
  * frame change. Each list is in the cyclic order the D1/E1 base moves use
- * (verified against CubeState's baseD/baseE): new[i] = old[(i - k + 4) % 4]
- * for a k-step rotation.
+ * Rotate ONLY the cross layer (cross corners + cross edges) of a CubeState by `steps`
+ * quarter turns (mod 4), leaving the equator and opposite layer untouched.
  */
-const D_PLUS_E_CORNERS = [Corner.DFR, Corner.DRB, Corner.DBL, Corner.DLF];
-const D_PLUS_E_D_EDGES = [Edge.DF, Edge.DR, Edge.DB, Edge.DL];
-const D_PLUS_E_E_EDGES = [Edge.FR, Edge.BR, Edge.BL, Edge.FL];
-
-/**
- * Rotate the D+E block (D-layer corners + edges and equator edges) of a
- * CubeState by `steps` quarter turns (mod 4), including the equator edge
- * orientation flip an odd number of E turns produces.
- *
- * A wide d regrip rotates the bottom two layers together without moving the
- * U layer; undoing the accumulated d-rotations before the piece-anchored
- * slot check keeps slot identities stable across the regrip (the pieces stay
- * "home" in the solver's frame). The inverse rotation is `-steps`. Returns a
- * new state when `steps` is non-zero, the same instance when zero.
- */
-export function rotateDPlusEBlock(state: CubeState, steps: number): CubeState {
+export function rotateCrossLayerOnly(
+  state: CubeState,
+  steps: number,
+  crossFace: string = 'D',
+): CubeState {
   const s = steps & 3;
   if (s === 0) return state;
-  const n = D_PLUS_E_CORNERS.length;
+  const faceData = FACE_LAYERS[crossFace] ?? FACE_LAYERS.D;
+  const corners = faceData.f2lCorners;
+  const edges = faceData.crossEdges;
+  const n = 4;
   const cp = Array.from(state.cp) as number[];
   const co = Array.from(state.co) as number[];
   const ep = Array.from(state.ep) as number[];
   const eo = Array.from(state.eo) as number[];
 
-  // Orientations TRAVEL with their pieces (a corner's twist follows it to its
-  // new position), and an odd number of E turns additionally flips the eo of
-  // the 4 equator edges. Copying only the permutation (cp/ep) while leaving
-  // co/eo in place would corrupt the slot check on real solves.
   const newCorners: number[] = [];
   const newCornerOrients: number[] = [];
-  const newDEdges: number[] = [];
-  const newEEdges: number[] = [];
-  const newEEdgeOrients: number[] = [];
+  const newEdges: number[] = [];
+  const newEdgeOrients: number[] = [];
   for (let i = 0; i < n; i++) {
     const from = (i - s + n) % n;
-    newCorners[i] = cp[D_PLUS_E_CORNERS[from]];
-    newCornerOrients[i] = co[D_PLUS_E_CORNERS[from]];
-    newDEdges[i] = ep[D_PLUS_E_D_EDGES[from]];
-    newEEdges[i] = ep[D_PLUS_E_E_EDGES[from]];
-    newEEdgeOrients[i] = eo[D_PLUS_E_E_EDGES[from]] ^ (s & 1);
+    newCorners[i] = cp[corners[from]];
+    newCornerOrients[i] = co[corners[from]];
+    newEdges[i] = ep[edges[from]];
+    newEdgeOrients[i] = eo[edges[from]];
   }
   for (let i = 0; i < n; i++) {
-    cp[D_PLUS_E_CORNERS[i]] = newCorners[i];
-    co[D_PLUS_E_CORNERS[i]] = newCornerOrients[i];
-    ep[D_PLUS_E_D_EDGES[i]] = newDEdges[i];
-    ep[D_PLUS_E_E_EDGES[i]] = newEEdges[i];
-    eo[D_PLUS_E_E_EDGES[i]] = newEEdgeOrients[i];
+    cp[corners[i]] = newCorners[i];
+    co[corners[i]] = newCornerOrients[i];
+    ep[edges[i]] = newEdges[i];
+    eo[edges[i]] = newEdgeOrients[i];
   }
   return new CubeState(cp, co, ep, eo);
 }
 
 /**
- * Rotate ONLY the D layer (D corners + D edges) of a CubeState by `steps`
- * quarter turns (mod 4), leaving the equator and U layer untouched.
+ * Rotate the cross layer and equator layer together (the whole F2L block) of a
+ * CubeState by `steps` quarter turns (mod 4), including the equator edge
+ * orientation flip an odd number of turns produces.
  *
- * Needed to undo a solver-frame regrip when D and E did NOT rotate together
- * (a wide u regrip rotates U+E — the equator moves while the D layer stays,
- * so a D+E block rotation can never undo it). Returns a new state when
- * `steps` is non-zero, the same instance when zero.
+ * A wide d (or wide u/f/b/r/l) regrip rotates the cross and equator layers
+ * together without moving the opposite layer. The inverse rotation is `-steps`.
  */
-export function rotateDLayerOnly(state: CubeState, steps: number): CubeState {
-  const s = steps & 3;
-  if (s === 0) return state;
-  const n = D_PLUS_E_CORNERS.length;
-  const cp = Array.from(state.cp) as number[];
-  const co = Array.from(state.co) as number[];
-  const ep = Array.from(state.ep) as number[];
-  const newCorners: number[] = [];
-  const newCornerOrients: number[] = [];
-  const newDEdges: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const from = (i - s + n) % n;
-    newCorners[i] = cp[D_PLUS_E_CORNERS[from]];
-    newCornerOrients[i] = co[D_PLUS_E_CORNERS[from]];
-    newDEdges[i] = ep[D_PLUS_E_D_EDGES[from]];
-  }
-  for (let i = 0; i < n; i++) {
-    cp[D_PLUS_E_CORNERS[i]] = newCorners[i];
-    co[D_PLUS_E_CORNERS[i]] = newCornerOrients[i];
-    ep[D_PLUS_E_D_EDGES[i]] = newDEdges[i];
-  }
-  return new CubeState(cp, co, ep, Array.from(state.eo));
-}
-
-/**
- * Rotate ONLY the equator (E edges) of a CubeState by `steps` quarter turns
- * (mod 4), leaving the D and U layers untouched. Includes the equator edge
- * orientation flip an odd number of E turns produces (same convention as
- * `rotateDPlusEBlock`). Returns a new state when `steps` is non-zero, the
- * same instance when zero.
- */
-export function rotateELayerOnly(state: CubeState, steps: number): CubeState {
-  const s = steps & 3;
-  if (s === 0) return state;
-  const n = D_PLUS_E_E_EDGES.length;
-  const ep = Array.from(state.ep) as number[];
-  const eo = Array.from(state.eo) as number[];
-  const newEEdges: number[] = [];
-  const newEEdgeOrients: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const from = (i - s + n) % n;
-    newEEdges[i] = ep[D_PLUS_E_E_EDGES[from]];
-    newEEdgeOrients[i] = eo[D_PLUS_E_E_EDGES[from]] ^ (s & 1);
-  }
-  for (let i = 0; i < n; i++) {
-    ep[D_PLUS_E_E_EDGES[i]] = newEEdges[i];
-    eo[D_PLUS_E_E_EDGES[i]] = newEEdgeOrients[i];
-  }
-  return new CubeState(Array.from(state.cp), Array.from(state.co), ep, eo);
-}
-
-/** A D-layer rotation step plus an E-layer rotation step (each 0-3). */
-export interface FrameRotation {
-  /** D-layer quarter turns to apply (0-3). */
-  d: number;
-  /** E-layer quarter turns to apply (0-3). */
-  e: number;
-}
-
-/**
- * Apply a FrameRotation to a state: D-layer and E-layer independently.
- * Returns a new state when anything rotates, the same instance when both are
- * zero.
- */
-export function applyFrameRotation(state: CubeState, rot: FrameRotation): CubeState {
-  let cube = state;
-  if (rot.d) cube = rotateDLayerOnly(cube, rot.d);
-  if (rot.e) cube = rotateELayerOnly(cube, rot.e);
+export function rotateDPlusEBlock(
+  state: CubeState,
+  steps: number,
+  crossFace: string = 'D',
+): CubeState {
+  let cube = rotateCrossLayerOnly(state, steps, crossFace);
+  cube = rotateELayerOnly(cube, steps, crossFace);
   return cube;
 }
 
 /**
- * Find the D/E frame rotation that maximizes the completed-slot count on a
+ * Backward compatibility alias for rotateCrossLayerOnly.
+ */
+export function rotateDLayerOnly(
+  state: CubeState,
+  steps: number,
+  crossFace: string = 'D',
+): CubeState {
+  return rotateCrossLayerOnly(state, steps, crossFace);
+}
+
+/**
+ * Rotate ONLY the equator layer (f2l edges) of a CubeState by `steps` quarter turns
+ * (mod 4), leaving the cross and opposite layers untouched. Includes the equator edge
+ * orientation flip an odd number of turns produces.
+ */
+export function rotateELayerOnly(
+  state: CubeState,
+  steps: number,
+  crossFace: string = 'D',
+): CubeState {
+  const s = steps & 3;
+  if (s === 0) return state;
+  const faceData = FACE_LAYERS[crossFace] ?? FACE_LAYERS.D;
+  const edges = faceData.f2lEdges;
+  const n = 4;
+  const ep = Array.from(state.ep) as number[];
+  const eo = Array.from(state.eo) as number[];
+  const newEdges: number[] = [];
+  const newEdgeOrients: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const from = (i - s + n) % n;
+    newEdges[i] = ep[edges[from]];
+    newEdgeOrients[i] = eo[edges[from]] ^ (s & 1);
+  }
+  for (let i = 0; i < n; i++) {
+    ep[edges[i]] = newEdges[i];
+    eo[edges[i]] = newEdgeOrients[i];
+  }
+  return new CubeState(Array.from(state.cp), Array.from(state.co), ep, eo);
+}
+
+/** A cross-layer rotation step plus an equator-layer rotation step (each 0-3). */
+export interface FrameRotation {
+  /** Cross-layer quarter turns to apply (0-3). */
+  d: number;
+  /** Equator-layer quarter turns to apply (0-3). */
+  e: number;
+}
+
+/**
+ * Apply a FrameRotation to a state: cross-layer and equator-layer independently.
+ * Returns a new state when anything rotates, the same instance when both are zero.
+ */
+export function applyFrameRotation(
+  state: CubeState,
+  rot: FrameRotation,
+  crossFace: string = 'D',
+): CubeState {
+  let cube = state;
+  if (rot.d) cube = rotateCrossLayerOnly(cube, rot.d, crossFace);
+  if (rot.e) cube = rotateELayerOnly(cube, rot.e, crossFace);
+  return cube;
+}
+
+/**
+ * Find the cross/equator frame rotation that maximizes the completed-slot count on a
  * state, for a given cross face + scheme. Tiebreaks toward `preferred` (the
  * rotation chosen at the previous index) so the chosen frame stays stable
  * across a solve and only changes when another rotation is strictly better.
- *
- * Why state-based instead of token-accumulated offsets: a wide `u` regrip
- * rotates U+E together (the equator moves while D stays), so the D+E block
- * does NOT always rotate as a rigid unit. A token-based d-accumulator is
- * therefore wrong whenever a `u` precedes a `d` (reconz-9068: the cross's
- * `u'` leaves D/E rotated; the F2L `d'` then COMPENSATES it, so the correct
- * frame is identity AFTER the d', not rotated). Measuring the frame that
- * maximizes home slots captures both real d-regrips (reconz-12340) and
- * compensated ones (9068) automatically.
  */
 export function bestFrameRotation(
   state: CubeState,
@@ -169,17 +148,15 @@ export function bestFrameRotation(
   let bestCount = -1;
   for (let d = 0; d < 4; d++) {
     for (let e = 0; e < 4; e++) {
-      let cube = state;
-      if (d) cube = rotateDLayerOnly(cube, d);
-      if (e) cube = rotateELayerOnly(cube, e);
-      const count = countCompletedF2LSlotsInFrame(cube, crossFace, scheme).completedCount;
+      const rot = { d, e };
+      const count = countF2LSlotsInFrameAfterRotation(state, rot, crossFace, scheme);
       if (count > bestCount) {
         bestCount = count;
-        best = { d, e };
+        best = rot;
       } else if (count === bestCount && preferred) {
         const cur = dist(best.d, preferred.d) + dist(best.e, preferred.e);
         const cand = dist(d, preferred.d) + dist(e, preferred.e);
-        if (cand < cur) best = { d, e };
+        if (cand < cur) best = rot;
       }
     }
   }
@@ -187,7 +164,7 @@ export function bestFrameRotation(
 }
 
 /**
- * All 16 D/E frame rotations, enumerated D-major so ties prefer the identity
+ * All 16 cross/equator frame rotations, enumerated cross-major so ties prefer the identity
  * rotation {0,0} (the canonical reading) when no rotation is strictly better.
  */
 const FRAME_ROTATIONS: FrameRotation[] = (() => {
@@ -199,51 +176,7 @@ const FRAME_ROTATIONS: FrameRotation[] = (() => {
 })();
 
 /**
- * Piece-position groups the D/E frame rotation permutes, in the cyclic order
- * the D1/E1 base moves use (new[i] = old[(i - k + 4) % 4] for a k-step
- * rotation — the same lists as `rotateDPlusEBlock`). D corners and D edges
- * rotate together by the d component; E edges rotate by the e component.
- */
-const D_CORNER_GROUP = [Corner.DFR, Corner.DRB, Corner.DBL, Corner.DLF];
-const D_EDGE_GROUP = [Edge.DF, Edge.DR, Edge.DB, Edge.DL];
-const E_EDGE_GROUP = [Edge.FR, Edge.BR, Edge.BL, Edge.FL];
-
-/**
- * Preimage map: after a k-step rotation of `group`, the piece at position
- * group[i] is the piece that WAS at group[(i - k + 4) % 4]. Positions outside
- * the group map to themselves. Values are position ids; the map is indexed by
- * position id.
- */
-function groupPreimage(group: readonly number[], k: number): Int8Array {
-  const s = k & 3;
-  const map = new Int8Array(12);
-  for (let p = 0; p < 12; p++) map[p] = p;
-  for (let i = 0; i < group.length; i++) {
-    map[group[i]] = group[(i - s + 4) % 4];
-  }
-  return map;
-}
-
-/** Precomputed preimages for every rotation step (0-3) of the three groups. */
-const PRE_D_EDGE: readonly Int8Array[] = [0, 1, 2, 3].map((k) =>
-  groupPreimage(D_EDGE_GROUP, k),
-);
-const PRE_D_CORNER: readonly Int8Array[] = [0, 1, 2, 3].map((k) =>
-  groupPreimage(D_CORNER_GROUP, k),
-);
-const PRE_E_EDGE: readonly Int8Array[] = [0, 1, 2, 3].map((k) =>
-  groupPreimage(E_EDGE_GROUP, k),
-);
-
-/**
- * Count completed F2L slots on a state AFTER applying a D/E frame rotation,
- * WITHOUT materializing the rotated state. The rotation is a permutation of
- * the D corners / D edges / E edges groups, so the piece at each slot
- * position is read from its preimage in the base state (an odd E turn also
- * flips the equator edges' orientation). Exactly equivalent to
- * `countCompletedF2LSlotsInFrame(applyFrameRotation(state, rot), …)` — used
- * by the frame DP to avoid allocating ~16 rotated CubeStates per timeline
- * index.
+ * Count completed F2L slots on a state AFTER applying a cross/equator frame rotation.
  */
 export function countF2LSlotsInFrameAfterRotation(
   state: CubeState,
@@ -251,67 +184,11 @@ export function countF2LSlotsInFrameAfterRotation(
   crossFace: string,
   scheme: Record<string, string>,
 ): number {
-  const faceData = FACE_LAYERS[crossFace];
-  if (!faceData) return 0;
-  const inverseScheme: Record<string, string> = {};
-  for (const f of FACE_LETTERS) inverseScheme[scheme[f]] = f;
-
-  const preDEdge = PRE_D_EDGE[rot.d & 3];
-  const preDCorner = PRE_D_CORNER[rot.d & 3];
-  const preEEdge = PRE_E_EDGE[rot.e & 3];
-  const flip = rot.e & 1;
-
-  let count = 0;
-  for (let i = 0; i < 4; i++) {
-    const edgePos = faceData.f2lEdges[i];
-    const cornerPos = faceData.f2lCorners[i];
-
-    let ec: number;
-    let eo: number;
-    if (edgePos >= 8) {
-      const pe = preEEdge[edgePos];
-      ec = state.ep[pe];
-      eo = state.eo[pe] ^ flip;
-    } else if (edgePos >= 4) {
-      const pe = preDEdge[edgePos];
-      ec = state.ep[pe];
-      eo = state.eo[pe];
-    } else {
-      ec = state.ep[edgePos];
-      eo = state.eo[edgePos];
-    }
-
-    let cc: number;
-    let co: number;
-    if (cornerPos >= 4) {
-      const pc = preDCorner[cornerPos];
-      cc = state.cp[pc];
-      co = state.co[pc];
-    } else {
-      cc = state.cp[cornerPos];
-      co = state.co[cornerPos];
-    }
-
-    let edgeOk = true;
-    for (let j = 0; j < 2; j++) {
-      if (inverseScheme[edgeColor[ec][(j - eo + 2) % 2]] !== edgeColor[edgePos][j]) {
-        edgeOk = false;
-        break;
-      }
-    }
-    let cornerOk = true;
-    for (let j = 0; j < 3; j++) {
-      if (
-        inverseScheme[cornerColor[cc][(j - co + 3) % 3]] !==
-        cornerColor[cornerPos][j]
-      ) {
-        cornerOk = false;
-        break;
-      }
-    }
-    if (edgeOk && cornerOk) count++;
+  if (rot.d === 0 && rot.e === 0) {
+    return countCompletedF2LSlotsInFrame(state, crossFace, scheme).completedCount;
   }
-  return count;
+  const rotated = applyFrameRotation(state, rot, crossFace);
+  return countCompletedF2LSlotsInFrame(rotated, crossFace, scheme).completedCount;
 }
 
 /** Cyclic distance between two quarter-turn counts (0-2). */

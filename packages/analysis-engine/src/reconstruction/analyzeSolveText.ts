@@ -750,7 +750,7 @@ function pairCutState(
   if (j < 0 || j >= frames.length) return null;
   const snap = timeline.solverFrameStates?.[cut] ?? timeline.entries[cut]?.state;
   if (!snap) return null;
-  return applyFrameRotation(TimelineBuilder.fromSnapshot(snap), frames[j]);
+  return applyFrameRotation(TimelineBuilder.fromSnapshot(snap), frames[j], crossFace);
 }
 
 function buildPairs(

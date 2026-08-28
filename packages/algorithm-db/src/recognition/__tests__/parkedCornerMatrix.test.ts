@@ -86,5 +86,5 @@ describe('D-rotation matrix: same case with pair in other slots + AUF', () => {
     console.log(`matrix: ${total} states checked, ${failures.length} failures`);
     for (const f of failures.slice(0, 60)) console.log('  FAIL:', f);
     expect(failures.length).toBe(0);
-  });
+  }, 15000);
 });

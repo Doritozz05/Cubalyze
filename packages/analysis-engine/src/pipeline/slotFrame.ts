@@ -91,7 +91,7 @@ export function pickSlotFrame(
     if (frames.length === 0) return 0;
     let total = 0;
     for (let i = start; i <= end; i++) {
-      const cube = applyFrameRotation(states[i], frames[i - start]);
+      const cube = applyFrameRotation(states[i], frames[i - start], frame.crossFace);
       total += countCompletedF2LSlotsInFrame(
         cube,
         frame.crossFace,

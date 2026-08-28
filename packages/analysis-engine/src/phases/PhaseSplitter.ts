@@ -655,7 +655,7 @@ export class PhaseSplitter {
             const cube = TimelineBuilder.fromSnapshot(snapshot);
             const j = idx - xstart;
             if (j < 0 || j >= xframes.length) return cube;
-            return applyFrameRotation(cube, xframes[j]);
+            return applyFrameRotation(cube, xframes[j], frameFace);
           };
           let best = countCompletedF2LSlotsInFrame(
             stateAt(crossPhase.completionIndex),
