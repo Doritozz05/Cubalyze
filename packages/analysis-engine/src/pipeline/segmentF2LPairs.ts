@@ -395,6 +395,8 @@ export function segmentF2LPairs(
     const state = frameStateAt(i);
     if (!state) break;
     const comp = countCompletedF2LSlotsInFrame(state, crossFace, schemeToUse);
+    let deferred = false;
+    let survivedBits = 0;
 
     // A previously-unsolved, not-yet-reported slot completed → the pair
     // finished at this entry. Persistence: the completion must survive the
@@ -412,15 +414,36 @@ export function segmentF2LPairs(
       // fabricate a pair. The F2L-span end has no lookahead and fires
       // directly.
       const next = frameStateAt(i + 1);
-      const survivedBits = next
+      const nextComp = next
         ? countCompletedF2LSlotsInFrame(next, crossFace, schemeToUse)
-            .slotMask & newBits
+        : null;
+      survivedBits = nextComp
+        ? nextComp.slotMask & newBits
         : 0;
       if (survivedBits) {
-        // Per-bit persistence: only the completions that survive the NEXT
-        // entry fire here — a simultaneous completion that dips re-fires at
-        // its own real completion (it stays excluded via prevMask).
-        newBits = survivedBits;
+        // Base conservation in conjugates (e.g. "f R' f'"):
+        // If a previously consolidated slot was temporarily broken at entry i
+        // (missingBase) but is restored at i + 1 alongside the new slot, entry i
+        // was an intermediate state of the conjugate (e.g. "f R'"). Deferring
+        // and waiting for entry i + 1 ensures the conjugate closure ("f'") is not
+        // leaked into the next pair.
+        const baseSlots = declaredMask | (prevMask & ~unsolvedMask);
+        const missingBase = baseSlots & ~comp.slotMask;
+        if (
+          missingBase !== 0 &&
+          nextComp &&
+          (nextComp.slotMask & missingBase) === missingBase &&
+          (nextComp.slotMask & survivedBits) === survivedBits
+        ) {
+          // Intermediate conjugate state: defer completion to entry i + 1.
+          deferred = true;
+          newBits = 0;
+        } else {
+          // Per-bit persistence: only the completions that survive the NEXT
+          // entry fire here — a simultaneous completion that dips re-fires at
+          // its own real completion (it stays excluded via prevMask).
+          newBits = survivedBits;
+        }
       } else {
         // Phase 2 — the completion dipped at the next entry. It is either
         // a mid-algorithm pass-through (killed here; it re-fires at its
@@ -530,7 +553,9 @@ export function segmentF2LPairs(
     // able to re-fire when it really completes — pinning prevMask to the last
     // FIRING entry would carry its un-declared bits forward and silently
     // suppress the re-fire (the reconz-1296 missing 4th pair).
-    prevMask = comp.slotMask;
+    // Conjugate deferral: do not mask out the deferred bits so they can fire
+    // at entry i + 1.
+    prevMask = deferred ? comp.slotMask & ~survivedBits : comp.slotMask;
     // A slot count can never exceed 4; stop scanning once every slot is
     // accounted for so LL moves can't fabricate extra pairs.
     if (pairs.length >= 4 || declaredMask === unsolvedMask) break;
