@@ -249,6 +249,7 @@ export class SceneManager {
    * @param dy  Vertical drag offset in pixels. Elevates / pitches viewing angle.
    */
   public rotateCamera(dx: number, dy: number): void {
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
     const SPEED = 0.005;
     this.orbitTheta -= dx * SPEED;
     this.orbitPhi += dy * SPEED;
@@ -281,6 +282,7 @@ export class SceneManager {
    * `theta` = azimuth around Y axis. `phi` = elevation from horizontal plane.
    */
   public setOrbitAngles(theta: number, phi: number, radius = this.orbitRadius): void {
+    if (!Number.isFinite(theta) || !Number.isFinite(phi)) return;
     this.orbitTheta = theta;
     this.orbitPhi = phi;
     this.currentOrbitRadius = Number.isFinite(radius) ? radius : this.orbitRadius;

@@ -65,7 +65,11 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
       pinchDistRef.current = currentPinchDistance();
       engineRef.current?.setCameraDragActive(true);
     }
-    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    } catch (_err) {
+      void _err;
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -100,9 +104,15 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     } else if (pointers.current.size === 1) {
       // Back to one finger → reset baseline so the next move doesn't jump.
       const remaining = [...pointers.current.values()][0];
-      lastPos.current = { x: remaining.x, y: remaining.y };
+      if (remaining) {
+        lastPos.current = { x: remaining.x, y: remaining.y };
+      }
     }
-    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+    } catch (_err) {
+      void _err;
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {

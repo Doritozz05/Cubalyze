@@ -156,9 +156,18 @@ function ReplaySection({
   const workerProxyRef = useRef<any>(null);
   const cubeReadyRef = useRef(false);
 
-  // Camera drag state for the mini cube
+  // Camera drag and multi-pointer state for the mini cube
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchDistRef = useRef(0);
+
+  const currentPinchDistance = () => {
+    const pts = [...pointersRef.current.values()];
+    if (pts.length < 2) return 0;
+    const [a, b] = pts;
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
 
   // Track which solve the worker is currently initialized for — when solve
   // changes, we must tear down and re-init with fresh state.
@@ -698,7 +707,7 @@ function ReplaySection({
               <div
                 ref={containerRef}
                 className={cn(
-                  "relative overflow-hidden flex items-center justify-center",
+                  "relative overflow-hidden flex items-center justify-center touch-none select-none",
                   size === "large" || isFullscreen
                     ? "flex-1 w-full min-h-0 bg-transparent border-0 rounded-lg"
                     : "w-full aspect-square max-w-xs rounded-xl bg-surface-2/30 border border-line/40",
@@ -707,13 +716,32 @@ function ReplaySection({
                 <canvas
                   key={canvasKey}
                   ref={canvasRef}
-                  className="h-full w-full block cursor-grab active:cursor-grabbing"
+                  className="h-full w-full block cursor-grab active:cursor-grabbing touch-none select-none outline-none"
                   onPointerDown={(e) => {
-                    isDraggingRef.current = true;
-                    lastPointerRef.current = { x: e.clientX, y: e.clientY };
-                    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+                    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    if (pointersRef.current.size === 1) {
+                      isDraggingRef.current = true;
+                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                    } else if (pointersRef.current.size === 2) {
+                      pinchDistRef.current = currentPinchDistance();
+                    }
+                    try {
+                      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+                    } catch (_err) {
+                      void _err;
+                    }
                   }}
                   onPointerMove={(e) => {
+                    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    if (pointersRef.current.size >= 2) {
+                      const dist = currentPinchDistance();
+                      if (pinchDistRef.current > 0 && dist > 0 && workerProxyRef.current) {
+                        const ratio = dist / pinchDistRef.current;
+                        workerProxyRef.current.zoomCamera((1 - ratio) * 600).catch(console.error);
+                        pinchDistRef.current = dist;
+                      }
+                      return;
+                    }
                     if (!isDraggingRef.current || !workerProxyRef.current) return;
                     const dx = e.clientX - lastPointerRef.current.x;
                     const dy = e.clientY - lastPointerRef.current.y;
@@ -721,15 +749,43 @@ function ReplaySection({
                     workerProxyRef.current.rotateCamera(dx, dy).catch(console.error);
                   }}
                   onPointerUp={(e) => {
-                    isDraggingRef.current = false;
-                    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    pointersRef.current.delete(e.pointerId);
+                    if (pointersRef.current.size === 0) {
+                      isDraggingRef.current = false;
+                    } else if (pointersRef.current.size === 1) {
+                      const remaining = [...pointersRef.current.values()][0];
+                      if (remaining) {
+                        lastPointerRef.current = { x: remaining.x, y: remaining.y };
+                      }
+                    }
+                    try {
+                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    } catch (_err) {
+                      void _err;
+                    }
                   }}
                   onPointerCancel={(e) => {
-                    isDraggingRef.current = false;
-                    (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    pointersRef.current.delete(e.pointerId);
+                    if (pointersRef.current.size === 0) {
+                      isDraggingRef.current = false;
+                    } else if (pointersRef.current.size === 1) {
+                      const remaining = [...pointersRef.current.values()][0];
+                      if (remaining) {
+                        lastPointerRef.current = { x: remaining.x, y: remaining.y };
+                      }
+                    }
+                    try {
+                      (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+                    } catch (_err) {
+                      void _err;
+                    }
                   }}
                   onDoubleClick={() => {
                     workerProxyRef.current?.setIsometricView(true).catch(console.error);
+                  }}
+                  onWheel={(e) => {
+                    e.preventDefault();
+                    workerProxyRef.current?.zoomCamera(e.deltaY).catch(console.error);
                   }}
                 />
 
@@ -748,13 +804,13 @@ function ReplaySection({
               <div
                 className={cn(
                   "flex flex-col gap-2 w-full shrink-0",
-                  size === "large" || isFullscreen ? "max-w-2xl mx-auto px-1 pb-1" : "max-w-xs",
+                  size === "large" || isFullscreen ? "max-w-2xl mx-auto px-1 pb-1" : "w-full max-w-sm sm:max-w-md mx-auto",
                 )}
               >
                 {/* Top row: live move stats */}
                 <div className="flex items-center justify-between gap-2 px-1 text-xs">
                   {/* Left: Phase badge and move notation */}
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     {replayState === "complete" ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-ready/15 px-2.5 py-0.5 text-[0.7rem] font-semibold text-ready">
                         <Check className="size-3" />
@@ -763,7 +819,7 @@ function ReplaySection({
                     ) : liveStats ? (
                       <div className="flex items-center gap-1.5 min-w-0">
                         {liveStats.phaseName && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[0.68rem] font-medium tracking-wide uppercase text-ink-2">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-0.5 text-[0.68rem] font-medium tracking-wide uppercase text-ink-2 truncate max-w-[120px] sm:max-w-none">
                             <span>{liveStats.phaseName}</span>
                             <span className="nums opacity-75 text-[0.64rem] font-semibold text-ink">
                               ({liveStats.phaseProgress})
@@ -771,7 +827,7 @@ function ReplaySection({
                           </span>
                         )}
                         {liveStats.notation && (
-                          <span className="rounded-md bg-ink px-2 py-0.5 font-mono text-[0.75rem] font-bold text-background shadow-xs">
+                          <span className="rounded-md bg-ink px-2 py-0.5 font-mono text-[0.75rem] font-bold text-background shadow-xs shrink-0">
                             {liveStats.notation}
                           </span>
                         )}
@@ -793,124 +849,147 @@ function ReplaySection({
                 </div>
 
                 {/* Bottom row: transport buttons */}
-                <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl bg-surface-2/50 border border-line/60 p-1.5 sm:px-2.5">
-                  {/* Restart */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleRestart}
-                        disabled={!canPlay}
-                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
-                        aria-label={t("replay.restartAria")}
-                      >
-                        <RotateCcw className="size-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">{t("replay.restart")}</TooltipContent>
-                  </Tooltip>
+                <div className="flex items-center justify-between gap-1 sm:gap-2 rounded-xl bg-surface-2/50 border border-line/60 p-1.5 sm:px-2.5">
+                  {/* Left: Transport playback controls */}
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                    {/* Restart */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handleRestart}
+                          disabled={!canPlay}
+                          className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer shrink-0"
+                          aria-label={t("replay.restartAria")}
+                        >
+                          <RotateCcw className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("replay.restart")}</TooltipContent>
+                    </Tooltip>
 
-                  {/* Step backward */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleSeekBackward}
-                        disabled={!canPlay || currentMoveIdx < 0}
-                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
-                        aria-label={t("replay.stepBackwardAria")}
-                      >
-                        <SkipBack className="size-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">{t("replay.stepBackward")}</TooltipContent>
-                  </Tooltip>
+                    {/* Step backward */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handleSeekBackward}
+                          disabled={!canPlay || currentMoveIdx < 0}
+                          className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer shrink-0"
+                          aria-label={t("replay.stepBackwardAria")}
+                        >
+                          <SkipBack className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("replay.stepBackward")}</TooltipContent>
+                    </Tooltip>
 
-                  {/* Play / Pause */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handlePlayPause}
-                        disabled={!canPlay}
-                        className={cn(
-                          "grid size-9 place-items-center rounded-full transition-all duration-150 active:scale-95 disabled:opacity-30 cursor-pointer shadow-xs",
-                          replayState === "playing"
-                            ? "bg-ink text-background hover:bg-ink/90 hover:scale-105"
-                            : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
-                        )}
-                        aria-label={
-                          replayState === "playing" ? t("replay.pause") : t("replay.play")
-                        }
-                      >
-                        {replayState === "playing" ? (
-                          <Pause className="size-4" />
-                        ) : (
-                          <Play className="size-4 pl-0.5" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      {replayState === "playing" ? t("replay.pause") : t("replay.play")}
-                    </TooltipContent>
-                  </Tooltip>
+                    {/* Play / Pause */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handlePlayPause}
+                          disabled={!canPlay}
+                          className={cn(
+                            "grid size-9 place-items-center rounded-full transition-all duration-150 active:scale-95 disabled:opacity-30 cursor-pointer shadow-xs shrink-0",
+                            replayState === "playing"
+                              ? "bg-ink text-background hover:bg-ink/90 hover:scale-105"
+                              : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
+                          )}
+                          aria-label={
+                            replayState === "playing" ? t("replay.pause") : t("replay.play")
+                          }
+                        >
+                          {replayState === "playing" ? (
+                            <Pause className="size-4" />
+                          ) : (
+                            <Play className="size-4 pl-0.5" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {replayState === "playing" ? t("replay.pause") : t("replay.play")}
+                      </TooltipContent>
+                    </Tooltip>
 
-                  {/* Step forward */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleSeekForward}
-                        disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
-                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer"
-                        aria-label={t("replay.stepForwardAria")}
-                      >
-                        <SkipForward className="size-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">{t("replay.stepForward")}</TooltipContent>
-                  </Tooltip>
-
-                  {/* Spacer */}
-                  <span className="flex-1" />
-
-                  {/* Speed selector */}
-                  <div className="flex items-center gap-0.5 rounded-lg border border-line/70 bg-surface/80 p-0.5">
-                    {SPEEDS.map((s) => (
-                      <Tooltip key={s}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleSetSpeed(s)}
-                            className={cn(
-                              "rounded px-2 py-1 text-[0.66rem] font-semibold tracking-wider transition-all duration-150 cursor-pointer",
-                              speed === s
-                                ? "bg-ink text-background shadow-xs"
-                                : "text-ink-3 hover:text-ink hover:bg-surface-2",
-                            )}
-                          >
-                            {s}x
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">{t("replay.speed", { speed: s })}</TooltipContent>
-                      </Tooltip>
-                    ))}
+                    {/* Step forward */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={handleSeekForward}
+                          disabled={!canPlay || currentMoveIdx >= totalMoves - 1}
+                          className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 disabled:opacity-30 cursor-pointer shrink-0"
+                          aria-label={t("replay.stepForwardAria")}
+                        >
+                          <SkipForward className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t("replay.stepForward")}</TooltipContent>
+                    </Tooltip>
                   </div>
 
-                  {/* Fullscreen toggle */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setIsFullscreen((prev) => !prev)}
-                        className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 cursor-pointer"
-                        aria-label={isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
-                      >
-                        {isFullscreen ? (
-                          <Minimize2 className="size-3.5" />
-                        ) : (
-                          <Maximize2 className="size-3.5" />
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      {isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* Right: Speed & Fullscreen */}
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                    {/* Mobile: Compact single button that cycles speeds */}
+                    <div className="flex sm:hidden">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => {
+                              const idx = (SPEEDS as readonly number[]).indexOf(speed);
+                              const next = SPEEDS[(idx === -1 ? 2 : idx + 1) % SPEEDS.length] ?? 1;
+                              handleSetSpeed(next);
+                            }}
+                            className="flex items-center justify-center rounded-lg border border-line/70 bg-surface/80 px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-[34px]"
+                            aria-label={t("replay.speed", { speed })}
+                          >
+                            {speed}x
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">{t("replay.speed", { speed })}</TooltipContent>
+                      </Tooltip>
+                    </div>
+
+                    {/* Desktop / sm+: Full speed pill selector */}
+                    <div className="hidden sm:flex items-center gap-0.5 rounded-lg border border-line/70 bg-surface/80 p-0.5">
+                      {SPEEDS.map((s) => (
+                        <Tooltip key={s}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleSetSpeed(s)}
+                              className={cn(
+                                "rounded px-2 py-1 text-[0.66rem] font-semibold tracking-wider transition-all duration-150 cursor-pointer",
+                                speed === s
+                                  ? "bg-ink text-background shadow-xs"
+                                  : "text-ink-3 hover:text-ink hover:bg-surface-2",
+                              )}
+                            >
+                              {s}x
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">{t("replay.speed", { speed: s })}</TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+
+                    {/* Fullscreen toggle */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setIsFullscreen((prev) => !prev)}
+                          className="grid size-8 place-items-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95 cursor-pointer shrink-0"
+                          aria-label={isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
+                        >
+                          {isFullscreen ? (
+                            <Minimize2 className="size-3.5" />
+                          ) : (
+                            <Maximize2 className="size-3.5" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {isFullscreen ? t("replay.exitFullscreen") : t("replay.fullscreen")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
             </div>

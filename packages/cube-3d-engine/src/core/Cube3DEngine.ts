@@ -330,6 +330,7 @@ export class Cube3DEngine {
   }
 
   public rotateCamera(dx: number, dy: number): void {
+    this.finishCameraAnim();
     if (this.sceneManager) {
       this.sceneManager.rotateCamera(dx, dy);
     }
@@ -350,6 +351,7 @@ export class Cube3DEngine {
    */
   public setCameraDragActive(active: boolean): void {
     if (active) {
+      this.finishCameraAnim();
       this.cameraMomentumState = 'dragging';
       this.cameraMomentum = null; // drop any leftover glide
     } else if (this.cameraMomentumState === 'dragging') {

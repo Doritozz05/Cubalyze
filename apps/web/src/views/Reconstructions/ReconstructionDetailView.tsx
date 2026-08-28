@@ -387,10 +387,10 @@ export function ReconstructionDetailView({
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-          {/* Replay — responsive split: 48% on lg (tablets), 58% on xl (desktops), 42vh on mobile/stacked */}
+          {/* Replay — responsive split: 48% on lg (tablets), 58% on xl (desktops), ~45vh on mobile/portrait */}
           {solve && (
-            <div className="flex min-h-0 w-full flex-col max-lg:max-h-[42vh] lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
-              <div className="flex aspect-4/3 sm:aspect-5/4 w-full min-h-0 flex-col p-3 sm:p-4 lg:aspect-auto lg:h-full lg:flex-1">
+            <div className="flex min-h-0 w-full flex-col max-lg:h-[46vh] max-lg:min-h-[290px] max-lg:max-h-[420px] lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
+              <div className="flex w-full h-full min-h-0 flex-col p-2.5 sm:p-4">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
