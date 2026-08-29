@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useAnimationControls } from "framer-motion";
-import { Dices, CheckCheck, XSquare, Sparkles } from "lucide-react";
+import { Dices, CheckCheck, XSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PuzzleCategory } from "@/types";
 import { PUZZLE_SELECTOR } from "@/utils/puzzleUtils";
@@ -202,8 +202,7 @@ export function RandomPuzzlePiece({
 
       {/* Right Click Context Menu */}
       <ContextMenuContent alignOffset={-5} className="w-56">
-        <ContextMenuLabel className="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-3">
-          <Sparkles className="size-3 text-amber-500" />
+        <ContextMenuLabel className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-3">
           {t("randomPuzzle")}
         </ContextMenuLabel>
         <ContextMenuSeparator />
