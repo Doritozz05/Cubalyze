@@ -58,15 +58,17 @@ export function ContextMenu() {
     return () => window.removeEventListener("scroll", handler, { capture: true });
   }, [state.open]);
 
-  // Close on click outside.
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent) => {
+  // Close on pointerdown outside.
+  useEffect(() => {
+    if (!state.open) return;
+    const onPointerDown = (e: PointerEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         contextMenuStore.close();
       }
-    },
-    [],
-  );
+    };
+    document.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => document.removeEventListener("pointerdown", onPointerDown, { capture: true });
+  }, [state.open]);
 
   const handleItemClick = useCallback(
     (item: ContextMenuItem) => {
@@ -80,25 +82,7 @@ export function ContextMenu() {
   return createPortal(
     <AnimatePresence>
       {state.open && (
-        <>
-          {/* Invisible backdrop to catch clicks outside. pointer-events-auto
-              is CRITICAL: Radix modal dialogs (Settings, Widget Explorer, …)
-              set document.body { pointer-events: none } while open, and this
-              portal would INHERIT it — clicks would pass through and the menu
-              could never be closed by clicking outside.
-
-              stopPropagation on pointerdown keeps this outside click from
-              reaching Radix's document-level outside-interaction detection,
-              which would otherwise close the dialog underneath. */}
-          <motion.div
-            className="pointer-events-auto fixed inset-0 z-[9998]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={handleBackdropClick}
-          />
-          <motion.div
+        <motion.div
             ref={menuRef}
             role="menu"
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -141,20 +125,26 @@ export function ContextMenu() {
                     "transition-colors duration-100",
                     item.disabled
                       ? "cursor-not-allowed text-ink-3/50"
-                      : "cursor-pointer text-ink-2 hover:bg-surface-2 hover:text-ink",
+                      : item.destructive
+                        ? "cursor-pointer text-dnf hover:bg-dnf/10 hover:text-dnf"
+                        : "cursor-pointer text-ink-2 hover:bg-surface-2 hover:text-ink",
                   )}
                 >
                   {item.icon && (
-                    <item.icon className="size-4 shrink-0 text-ink-3" />
+                    <item.icon
+                      className={cn(
+                        "size-4 shrink-0",
+                        item.destructive ? "text-dnf" : "text-ink-3",
+                      )}
+                    />
                   )}
                   <span className="truncate">
-                    {t(item.label as ParseKeys<"contextMenu">)}
+                    {t(item.label as ParseKeys<"contextMenu">, { defaultValue: item.label })}
                   </span>
                 </button>
               </div>
             ))}
           </motion.div>
-        </>
       )}
     </AnimatePresence>,
     document.body,

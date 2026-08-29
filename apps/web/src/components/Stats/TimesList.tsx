@@ -16,11 +16,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ScrollArea,
-} from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
 
 export interface TimesListProps {
   solves: Solve[];
@@ -199,6 +198,64 @@ const SolveRow = memo(function SolveRow({
 
   return (
     <li
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const items: ContextMenuItem[] = [
+          {
+            id: "plus2",
+            label: solve.penalty === "+2" ? "removePlus2" : "markPlus2",
+            icon: Plus,
+            onClick: () =>
+              onUpdate(solve.id, {
+                penalty: solve.penalty === "+2" ? "none" : "+2",
+              }),
+          },
+          {
+            id: "dnf",
+            label: solve.penalty === "DNF" ? "removeDnf" : "markDnf",
+            icon: XCircle,
+            onClick: () =>
+              onUpdate(solve.id, {
+                penalty: solve.penalty === "DNF" ? "none" : "DNF",
+              }),
+          },
+        ];
+        if (solve.penalty !== "none") {
+          items.push({
+            id: "clear-penalty",
+            label: "clearPenalty",
+            icon: Eraser,
+            onClick: () => onUpdate(solve.id, { penalty: "none" }),
+          });
+        }
+        if (onAnalyze) {
+          items.push({
+            id: "analyze",
+            label: "analysis",
+            icon: Activity,
+            separatorBefore: true,
+            onClick: () => onAnalyze(solve),
+          });
+        }
+        if (onReplay) {
+          items.push({
+            id: "replay",
+            label: "replay",
+            icon: RotateCcw,
+            onClick: () => onReplay(solve),
+          });
+        }
+        items.push({
+          id: "delete",
+          label: "deleteSolve",
+          icon: Trash2,
+          destructive: true,
+          separatorBefore: true,
+          onClick: () => setConfirmDeleteOpen(true),
+        });
+        contextMenuStore.open(e.clientX, e.clientY, items);
+      }}
       className="group flex items-center gap-2.5 border-b border-line/70 px-1 py-2.25 transition-colors hover:bg-surface-2 last:border-0"
     >
       {/* Index + best marker */}

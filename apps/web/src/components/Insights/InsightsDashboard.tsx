@@ -254,17 +254,37 @@ export function InsightsDashboard({
     (selected && selected.id === latestSolveId && !selected.analysis ? pendingAnalysis : null);
   const isLive = !!selected && !selected.analysis && selected.id === latestSolveId && !!pendingAnalysis;
 
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   const handleDelete = useCallback(
     (id: string) => {
       onDeleteSolve(id);
-      setSelectedId(null);
+      if (selectedId === id) setSelectedId(null);
     },
-    [onDeleteSolve],
+    [onDeleteSolve, selectedId],
   );
 
   const handleDeleteRequest = useCallback(() => {
+    setDeleteTargetId(null);
     setConfirmDeleteOpen(true);
   }, []);
+
+  const handleDeleteSolveRow = useCallback((id: string) => {
+    setDeleteTargetId(id);
+    setConfirmDeleteOpen(true);
+  }, []);
+
+  const handleMoveRequest = useCallback((ids: string[]) => {
+    setMoveIds(ids);
+    setMoveOpen(true);
+  }, []);
+
+  const handleMoveSolveRow = useCallback(
+    (id: string) => {
+      handleMoveRequest([id]);
+    },
+    [handleMoveRequest],
+  );
 
   // ── Selection-mode handlers ───────────────────────────────────────────
   const handleLongPress = useCallback((id: string) => {
@@ -318,11 +338,6 @@ export function InsightsDashboard({
     selection.forEach((id) => handleDelete(id));
     handleExitSelection();
   }, [selection, handleDelete, handleExitSelection]);
-
-  const handleMoveRequest = useCallback((ids: string[]) => {
-    setMoveIds(ids);
-    setMoveOpen(true);
-  }, []);
 
   const handleMoveConfirm = useCallback(
     (targetSessionId: string) => {
@@ -489,6 +504,8 @@ export function InsightsDashboard({
           onEnterSelection={handleEnterSelection}
           onDeleteSelected={() => setConfirmBulkDeleteOpen(true)}
           onMoveSelected={() => handleMoveRequest(Array.from(selection))}
+          onMoveSolve={handleMoveSolveRow}
+          onDeleteSolve={handleDeleteSolveRow}
           className={cn(
             "lg:w-85 lg:shrink-0",
             // Touch: the list is the master page (hidden while in Stats).
@@ -566,16 +583,21 @@ export function InsightsDashboard({
         </AnimatePresence>
       )}
 
-      {/* Confirmation before deleting a solve — shared by the desktop panel
-          and the touch detail overlay. */}
+      {/* Confirmation before deleting a solve — shared by the desktop panel,
+          touch detail overlay, and solve list context menu. */}
       <ConfirmDialog
         open={confirmDeleteOpen}
-        onOpenChange={setConfirmDeleteOpen}
+        onOpenChange={(open) => {
+          setConfirmDeleteOpen(open);
+          if (!open) setDeleteTargetId(null);
+        }}
         title={t("analysis.confirmDeleteTitle")}
         description={t("analysis.confirmDeleteDescription")}
         confirmLabel={t("analysis.delete")}
         onConfirm={() => {
-          if (selected) handleDelete(selected.id);
+          const target = deleteTargetId ?? selected?.id;
+          if (target) handleDelete(target);
+          setDeleteTargetId(null);
         }}
       />
 

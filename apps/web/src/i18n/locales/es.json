@@ -3715,7 +3715,17 @@
     "addManualSolve": "Añadir solve manual…",
     "openWidgets": "Abrir widgets…",
     "settings": "Ajustes…",
-    "editDock": "Editar dock…"
+    "editDock": "Editar dock…",
+    "moveToSession": "Mover a otra sesión…",
+    "deleteSolve": "Borrar solve…",
+    "deleteSolves": "Borrar solves…",
+    "markPlus2": "Penalización +2",
+    "removePlus2": "Quitar +2",
+    "markDnf": "Penalización DNF",
+    "removeDnf": "Quitar DNF",
+    "clearPenalty": "Limpiar penalización",
+    "analysis": "Análisis…",
+    "replay": "Repetición…"
   },
   "auth": {
     "eyebrow": "CubeForge",

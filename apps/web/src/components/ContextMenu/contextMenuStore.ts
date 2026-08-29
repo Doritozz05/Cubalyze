@@ -18,6 +18,8 @@ export interface ContextMenuItem {
   separatorBefore?: boolean;
   /** Grey out + disable click. */
   disabled?: boolean;
+  /** Red/destructive styling for danger actions like delete. */
+  destructive?: boolean;
 }
 
 // ── Module-level state ─────────────────────────────────────────────────

@@ -23,6 +23,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
 import type { StatsFilters, SortOrder, SolveFilterCategory } from "@/hooks/useStatsFilters";
+import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -110,6 +111,9 @@ export interface SolveListPanelProps {
   /** Bulk actions from the selection bar. */
   onDeleteSelected: () => void;
   onMoveSelected: () => void;
+  /** Single-solve context menu actions */
+  onMoveSolve?: (id: string) => void;
+  onDeleteSolve?: (id: string) => void;
   className?: string;
 }
 
@@ -140,6 +144,8 @@ export const SolveListPanel = memo(function SolveListPanel({
   onEnterSelection,
   onDeleteSelected,
   onMoveSelected,
+  onMoveSolve,
+  onDeleteSolve,
   className,
 }: SolveListPanelProps) {
   const { t } = useTranslation("insights");
@@ -456,6 +462,33 @@ export const SolveListPanel = memo(function SolveListPanel({
                       else onSelect(isSelected ? null : s.id);
                     }
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isMulti = selectionMode && selection.has(s.id) && selection.size > 1;
+                    const items: ContextMenuItem[] = [
+                      {
+                        id: "move-solve",
+                        label: "moveToSession",
+                        icon: FolderInput,
+                        onClick: () => {
+                          if (isMulti) onMoveSelected();
+                          else onMoveSolve?.(s.id);
+                        },
+                      },
+                      {
+                        id: "delete-solve",
+                        label: isMulti ? "deleteSolves" : "deleteSolve",
+                        icon: Trash2,
+                        destructive: true,
+                        onClick: () => {
+                          if (isMulti) onDeleteSelected();
+                          else onDeleteSolve?.(s.id);
+                        },
+                      },
+                    ];
+                    contextMenuStore.open(e.clientX, e.clientY, items);
+                  }}
                   aria-label={`${t("common.solveAria", {
                     number: solves.length - i,
                     time: isDnf ? "DNF" : formatTime(eff),
@@ -557,14 +590,26 @@ export const SolveListPanel = memo(function SolveListPanel({
           <span className="flex-1" />
           <button
             onClick={onMoveSelected}
-            className="flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+            disabled={selection.size === 0}
+            className={cn(
+              "flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors",
+              selection.size === 0
+                ? "opacity-40 cursor-not-allowed"
+                : "hover:bg-surface-2 hover:text-ink cursor-pointer",
+            )}
           >
             <FolderInput className="size-3.5" />
             {t("list.moveToSession")}
           </button>
           <button
             onClick={onDeleteSelected}
-            className="flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors hover:bg-surface-2 hover:text-dnf"
+            disabled={selection.size === 0}
+            className={cn(
+              "flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors",
+              selection.size === 0
+                ? "opacity-40 cursor-not-allowed"
+                : "hover:bg-surface-2 hover:text-dnf cursor-pointer",
+            )}
           >
             <Trash2 className="size-3.5" />
             {i18n.t("common:delete")}
