@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const DATA_DIR = path.join(ROOT, "apps/web/public/reconstructions/data");
+const DATA_DIR = path.join(ROOT, "apps/web/public/recon-data/data");
 
 function stmOf(text: string): number {
   let total = 0;
@@ -18,7 +18,7 @@ function stmOf(text: string): number {
 }
 
 let total = 0, withStm = 0, match = 0, diffs: [string, number, number][] = [];
-const files = fs.readdirSync(DATA_DIR).filter((f) => f.endsWith(".json"));
+const files = fs.readdirSync(DATA_DIR).filter((f: string) => f.endsWith(".json"));
 for (const f of files) {
   const { solves } = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), "utf8"));
   for (const s of solves) {

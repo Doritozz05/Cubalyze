@@ -34,7 +34,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync
 import { resolve } from "path";
 
 const ROOT = resolve(__dirname, "..");
-const OUT = resolve(ROOT, "../apps/web/public/reconstructions");
+const OUT = resolve(ROOT, "../apps/web/public/recon-data");
 const CHUNK = 300;
 
 // ─── Source types ───────────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ function loadPrevRecognition(): Map<string, ReconFullRecord["recognition"]> {
   const map = new Map<string, ReconFullRecord["recognition"]>();
   const dataDir = resolve(OUT, "data");
   if (!existsSync(dataDir)) return map;
-  for (const f of readdirSync(dataDir).filter((x) => x.endsWith(".json"))) {
+  for (const f of readdirSync(dataDir).filter((x: string) => x.endsWith(".json"))) {
     let chunk: { solves?: ReconFullRecord[] };
     try {
       chunk = JSON.parse(readFileSync(resolve(dataDir, f), "utf-8"));

@@ -5,7 +5,7 @@ import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 
 const DATA_DIR = path.resolve(
   __dirname,
-  '../../../../apps/web/public/reconstructions/data',
+  '../../../../apps/web/public/recon-data/data',
 );
 
 function findRecord(key: string) {

@@ -21,6 +21,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^19.5.0
         version: 19.8.1
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
       '@vitest/coverage-v8':
         specifier: ^3.0.5
         version: 3.2.7(vitest@3.2.7(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(yaml@2.9.0))

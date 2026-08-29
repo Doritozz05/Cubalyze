@@ -22,7 +22,7 @@ const {
 } = require("../packages/analysis-engine/dist/index.js");
 
 const ROOT = path.join(__dirname, "..");
-const DIR = path.join(ROOT, "apps/web/public/reconstructions");
+const DIR = path.join(ROOT, "apps/web/public/recon-data");
 const idx = JSON.parse(fs.readFileSync(path.join(DIR, "index.json"), "utf8"));
 
 const ROT_RE = /^[xyz][2']?$/;

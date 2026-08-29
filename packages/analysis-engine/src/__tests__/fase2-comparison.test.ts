@@ -17,7 +17,7 @@ interface ChunkRecord {
 }
 
 function loadRecords(): ChunkRecord[] {
-  const dir = path.resolve(__dirname, '../../../../apps/web/public/reconstructions/data');
+  const dir = path.resolve(__dirname, '../../../../apps/web/public/recon-data/data');
   const out: ChunkRecord[] = [];
   for (let c = 0; c < 6; c++) {
     const f = path.join(dir, `chunk-${String(c).padStart(3, '0')}.json`);

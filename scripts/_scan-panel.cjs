@@ -1,13 +1,13 @@
 const fs = require("fs");
 const files = fs
-  .readdirSync("apps/web/public/reconstructions/data")
+  .readdirSync("apps/web/public/recon-data/data")
   .filter((f) => f.startsWith("chunk-"));
 
 const byKey = new Map();
 let cfop3 = 0;
 let total = 0;
 for (const f of files) {
-  const d = JSON.parse(fs.readFileSync("apps/web/public/reconstructions/data/" + f, "utf8"));
+  const d = JSON.parse(fs.readFileSync("apps/web/public/recon-data/data/" + f, "utf8"));
   for (const r of d.solves) {
     total++;
     byKey.set(r.key, r);

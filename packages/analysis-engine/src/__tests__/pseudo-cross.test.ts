@@ -20,7 +20,7 @@
  *    following "xcross" block (raw@10 would be a false regression).
  *
  * Fixtures come from the shared reconstructions dataset
- * (apps/web/public/reconstructions/data/chunk-*.json).
+ * (apps/web/public/recon-data/data/chunk-*.json).
  */
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
@@ -29,7 +29,7 @@ import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 
 const DATA_DIR = path.resolve(
   __dirname,
-  '../../../../apps/web/public/reconstructions/data',
+  '../../../../apps/web/public/recon-data/data',
 );
 
 function load(key: string): { setup: string; text: string; time: number } {

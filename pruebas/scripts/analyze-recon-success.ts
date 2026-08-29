@@ -24,8 +24,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
-const DATA_DIR = path.join(ROOT, "apps/web/public/reconstructions/data");
-const INDEX_PATH = path.join(ROOT, "apps/web/public/reconstructions/index.json");
+const DATA_DIR = path.join(ROOT, "apps/web/public/recon-data/data");
+const INDEX_PATH = path.join(ROOT, "apps/web/public/recon-data/index.json");
 
 // ─── Args ──────────────────────────────────────────────────────────────────
 function parseArgs(argv: string[]) {

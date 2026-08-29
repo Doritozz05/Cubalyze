@@ -8,7 +8,7 @@
  *   RUN_PLL_BATCH=1 pnpm --dir packages/analysis-engine exec vitest run \
  *     src/__tests__/pll-detection-batch.test.ts
  *
- * For every 3x3 CFOP solve in apps/web/public/reconstructions/data it runs
+ * For every 3x3 CFOP solve in apps/web/public/recon-data/data it runs
  * the production text route (analyzeSolveText, relaxed cross) and compares
  * the STATE-based PLL detection against what the reconstructionist wrote.
  *
@@ -124,7 +124,7 @@ function classifyStandardPll(state: CubeState): string | null {
 const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 const DATA_DIR = path.resolve(
   __dirname,
-  '../../../../apps/web/public/reconstructions/data',
+  '../../../../apps/web/public/recon-data/data',
 );
 
 interface Rec {

@@ -50,7 +50,7 @@ export interface AuditResult {
 const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 const DATA_DIR = path.resolve(
   __dirname,
-  '../../../../../apps/web/public/reconstructions/data',
+  '../../../../../apps/web/public/recon-data/data',
 );
 
 export function loadAll(): Rec[] {

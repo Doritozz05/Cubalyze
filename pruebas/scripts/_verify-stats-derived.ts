@@ -7,13 +7,13 @@
  */
 import { analyzeSolveText } from "../../packages/analysis-engine/dist/index.js";
 import { tokenize } from "../../packages/math-core/src/notation/moveNotation.js";
-import { OrientationTable } from "../../packages/math-core/src/orientation/orientationTable.js";
+import { OrientationTable } from "../../packages/math-core/src/orientation/OrientationTable.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const DATA_DIR = path.join(ROOT, "apps/web/public/reconstructions/data");
+const DATA_DIR = path.join(ROOT, "apps/web/public/recon-data/data");
 const ROT_TEST = /^[xyz][2']?$/;
 
 function displayRotationEntry(dt: string): boolean {
@@ -26,7 +26,7 @@ function displayRotationEntry(dt: string): boolean {
 
 // ── Load all 3x3 CFOP records ────────────────────────────────────────────────
 const records: any[] = [];
-for (const f of fs.readdirSync(DATA_DIR).filter((x) => x.endsWith(".json"))) {
+for (const f of fs.readdirSync(DATA_DIR).filter((x: string) => x.endsWith(".json"))) {
   const { solves } = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), "utf8"));
   for (const s of solves) {
     if (s.puzzle === "3x3" && s.methodGroup === "CFOP" && s.text) records.push(s);
