@@ -180,22 +180,20 @@ export function RandomPuzzlePiece({
             </div>
 
             {/* Slot Machine Lever */}
-            <div className="relative flex h-8 w-3 shrink-0 items-center justify-center">
-              {/* Vertical track / slot groove */}
-              <div className="absolute h-4 w-1 rounded-full bg-line/60 dark:bg-line/50 shadow-inner" />
+            <div className="relative flex h-full items-center px-0.5">
+              {/* Lever base fixture */}
+              <div className="h-3.5 w-1 rounded-sm bg-line/80 dark:bg-line-2" />
 
-              {/* Animated mechanical arm & knob centered over track */}
+              {/* Animated mechanical arm & knob */}
               <motion.div
                 animate={leverControls}
-                style={{ originX: "50%", originY: "100%" }}
-                className="relative z-10 flex flex-col items-center -translate-y-0.5 cursor-pointer"
+                style={{ originX: "0px", originY: "12px" }}
+                className="relative flex flex-col items-center -ml-0.5 cursor-pointer py-1"
               >
-                {/* Proportional Metallic Knob */}
-                <div className="size-2 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 transition-transform group-hover:scale-110" />
+                {/* Metallic Knob */}
+                <div className="size-2.5 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 transition-transform group-hover:scale-110" />
                 {/* Rod */}
-                <div className="h-3 w-0.5 rounded-full bg-linear-to-b from-ink-3/80 to-ink-3/40 dark:from-line-2 dark:to-line" />
-                {/* Pivot joint */}
-                <div className="size-1 rounded-full bg-line-2 dark:bg-line -mt-0.5" />
+                <div className="h-3 w-0.5 bg-linear-to-b from-line-2 to-line" />
               </motion.div>
             </div>
           </button>
