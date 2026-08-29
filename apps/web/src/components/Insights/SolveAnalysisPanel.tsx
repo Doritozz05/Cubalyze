@@ -4,11 +4,33 @@ import { useState, useMemo, useRef, useCallback } from "react";
 import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
+import {
+  deriveTimeline,
+  derivePairSegments,
+  type TimelineData,
+  type TimelineSegment,
+  type PairSegment,
+} from "@/utils/insights";
 import { phaseColorHex, pauseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import type { Penalty, Solve } from "@/types";
-import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics } from "@cubeforge/types";
+import type {
+  SolveMetrics,
+  RotationMetrics,
+  EfficiencyMetrics,
+} from "@cubeforge/types";
+import {
+  CaseMiniCube,
+  LastLayerCaseCell,
+  MovesSeq,
+  CfopMiniBar,
+  leadingU,
+  orderPairColors,
+  pairStickerColors,
+  ROW,
+  ROW_LINE,
+} from "@/components/Cases";
+import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -19,9 +41,10 @@ import {
   EmptyState,
   MetricRing,
   SkippedBadge,
+  FaceChip,
   FACE_HEX,
 } from "./atoms";
-import { ReplaySection } from "./ReplaySection";
+import { ReplaySection, type ReplaySectionHandle } from "./ReplaySection";
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -99,6 +122,26 @@ export function SolveAnalysisPanel({
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
   const [replayMoveIdx, setReplayMoveIdx] = useState<number | null>(null);
   const [, setReplaying] = useState(false);
+  const replayRef = useRef<ReplaySectionHandle>(null);
+
+  // F2L pairs as timeline sub-segments (the "pairs lane" under the phase
+  // blocks) — same shared boundaries the case table uses, so what the
+  // timeline paints and what the table lists are the same pairs.
+  const pairSegments = useMemo<PairSegment[]>(
+    () =>
+      m?.cfop?.f2lPairs?.length ? derivePairSegments(m, solve.moves) : [],
+    [m, solve.moves],
+  );
+
+  // Seek the 3D replay to a move index (pair/phase rows + timeline lane).
+  // The playhead snaps to the move's tick immediately; the cube follows once
+  // the engine applies the seek (async).
+  const seekToMove = useCallback((moveIndex: number) => {
+    setReplayPosMs(null);
+    setReplayMoveIdx(moveIndex);
+    setReplaying(true);
+    void replayRef.current?.seekToMove(moveIndex);
+  }, []);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
   const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -326,6 +369,7 @@ export function SolveAnalysisPanel({
 
       {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
       <ReplaySection
+        ref={replayRef}
         solve={replaySolve}
         onReplayPosition={(ms, moveIndex) => {
           setReplayPosMs(ms);
@@ -362,6 +406,8 @@ export function SolveAnalysisPanel({
             onHoverPhase={setHoveredPhase}
             replayPositionMs={replayPosMs}
             replayMoveIdx={replayMoveIdx}
+            pairSegments={pairSegments}
+            onSeekToMove={seekToMove}
           />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
@@ -379,7 +425,13 @@ export function SolveAnalysisPanel({
           {/* (removed — pauses are now integrated in the timeline above) */}
 
           {/* ── Method-specific details ─────────────────────────────────── */}
-          {m.cfop && <CfopDetailsSection metrics={m} />}
+          {m.cfop && (
+            <CfopDetailsSection
+              metrics={m}
+              solve={solve}
+              onSeekToMove={seekToMove}
+            />
+          )}
           {m.roux && <RouxDetailsSection metrics={m} />}
 
           {/* ── Rotations & efficiency ──────────────────────────────────── */}
@@ -399,6 +451,8 @@ function TimelineSection({
   onHoverPhase,
   replayPositionMs,
   replayMoveIdx,
+  pairSegments,
+  onSeekToMove,
 }: {
   timeline: TimelineData;
   meanTps: number;
@@ -408,6 +462,10 @@ function TimelineSection({
   replayPositionMs?: number | null;
   /** Replay move index (aligned with moveTicks) for the playhead. */
   replayMoveIdx?: number | null;
+  /** F2L pairs as timeline sub-segments, painted as a lane under the blocks. */
+  pairSegments?: PairSegment[];
+  /** Clicking a pair seeks the 3D replay to its first move. */
+  onSeekToMove?: (moveIndex: number) => void;
 }) {
   const { t } = useTranslation("insights");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -415,6 +473,15 @@ function TimelineSection({
 
   const { totalMs, moveTicks, moveVisualMs, tpsSamples, segments, pauseMarks } = timeline;
   const width = 600; // viewBox width; scales to container via preserveAspectRatio
+
+  // ── F2L pairs sub-divide the F2L phase bar ITSELF ───────────────────────
+  // No separate lane: when pair data exists, the green F2L block renders as
+  // one colored slice per pair (light → dark green), each with its own hover
+  // card above the bar and click-to-seek.
+  const hasPairs = (pairSegments?.length ?? 0) > 0;
+  const PAIR_COLORS = ["#86EFAC", "#4ADE80", "#22C55E", "#15803D"];
+  const pairColor = (pairNumber: number) =>
+    PAIR_COLORS[(pairNumber - 1) % PAIR_COLORS.length];
 
   // TPS scale: data-driven ceiling rounded up to a sensible tick.
   const maxTps = useMemo(() => {
@@ -701,7 +768,9 @@ function TimelineSection({
               )}
 
               {/* Unified segment blocks — sharp rectangles, no rounded corners,
-                  no colored borders, clean cross-highlight via opacity only. */}
+                  no colored borders, clean cross-highlight via opacity only.
+                  The F2L block itself is sub-divided into its pairs (one
+                  light→dark green slice per pair) when pair data exists. */}
               {segments.map((seg, i) => {
                 const x = xForMs(seg.startMs);
                 const w = Math.max(0.5, xForMs(seg.endMs) - x);
@@ -713,6 +782,31 @@ function TimelineSection({
                 const fillOpacity = isPause
                   ? hl === "dim" ? 0.18 : hl === "active" ? 0.65 : 0.40
                   : hl === "dim" ? 0.12 : hl === "active" ? 0.55 : 0.30;
+                const isF2L =
+                  !isPause && seg.phaseName === "F2L" && hasPairs;
+
+                if (isF2L) {
+                  const pairCount = pairSegments!.length;
+                  return pairSegments!.map((pseg) => {
+                    // Clip each pair to the F2L bar's own range.
+                    const px = Math.max(x, xForMs(pseg.startMs));
+                    const pend = Math.min(x + w, xForMs(pseg.endMs));
+                    const pw = Math.max(0.5, pend - px);
+                    const gap = pairCount > 1 ? 1 : 0;
+                    return (
+                      <rect
+                        key={`f2l-pair-${pseg.pairNumber}`}
+                        x={px}
+                        y={SEG_TOP}
+                        width={Math.max(0.5, pw - gap)}
+                        height={SEG_BOTTOM - SEG_TOP}
+                        fill={pairColor(pseg.pairNumber)}
+                        fillOpacity={fillOpacity}
+                      />
+                    );
+                  });
+                }
+
                 return (
                   <rect
                     key={`${seg.kind}-${i}`}
@@ -896,10 +990,15 @@ function TimelineSection({
                     </HoverCard>
                   );
                 })}
-            {/* Phase hover popover triggers: invisible divs over each phase block */}
+            {/* Phase hover popover triggers: invisible divs over each phase block.
+                The F2L block gets per-pair triggers instead (below). */}
             {totalMs > 0 &&
               segments
-                .filter((s) => s.kind === "phase")
+                .filter(
+                  (s) =>
+                    s.kind === "phase" &&
+                    !(s.phaseName === "F2L" && hasPairs),
+                )
                 .map((seg, i) => {
                   const leftPct = (seg.startMs / totalMs) * 100;
                   const widthPct = (seg.durationMs / totalMs) * 100;
@@ -983,6 +1082,126 @@ function TimelineSection({
                     </HoverCard>
                   );
                 })}
+
+            {/* F2L pair overlays — one invisible trigger per pair over the
+                divided F2L bar: hover card ABOVE the bar + click-to-seek */}
+            {hasPairs &&
+              totalMs > 0 &&
+              pairSegments!.map((seg) => {
+                const leftPct = (seg.startMs / totalMs) * 100;
+                const widthPct = (seg.durationMs / totalMs) * 100;
+                const topPct = (SEG_TOP / TIMELINE_HEIGHT) * 100;
+                const heightPct = ((SEG_BOTTOM - SEG_TOP) / TIMELINE_HEIGHT) * 100;
+                const color = pairColor(seg.pairNumber);
+                const seekable = !!onSeekToMove && seg.moveStartIndex >= 0;
+
+                return (
+                  <HoverCard key={`pair-${seg.pairNumber}`} openDelay={200} closeDelay={150}>
+                    <HoverCardTrigger asChild>
+                      <div
+                        className={cn("absolute", seekable && "cursor-pointer")}
+                        style={{
+                          left: `${leftPct}%`,
+                          width: `max(${widthPct}%, 8px)`,
+                          top: `${topPct}%`,
+                          height: `${heightPct}%`,
+                          minHeight: 10,
+                        }}
+                        role={seekable ? "button" : undefined}
+                        tabIndex={seekable ? 0 : undefined}
+                        onClick={
+                          seekable
+                            ? () => onSeekToMove!(seg.moveStartIndex)
+                            : undefined
+                        }
+                        onKeyDown={
+                          seekable
+                            ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  onSeekToMove!(seg.moveStartIndex);
+                                }
+                              }
+                            : undefined
+                        }
+                        title={seekable ? t("analysis.pairSeekHint") : undefined}
+                      />
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      side="top"
+                      align="start"
+                      sideOffset={4}
+                      className="w-64 p-3 text-xs"
+                    >
+                      {/* Pair identity */}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block size-2.5 shrink-0 rounded-sm"
+                          style={{ background: color }}
+                        />
+                        <span className="font-medium text-ink">
+                          {t("analysis.pair", { number: seg.pairNumber })}
+                        </span>
+                        {seg.slot && (
+                          <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.58rem] font-medium text-ink-2">
+                            {seg.slot}
+                          </span>
+                        )}
+                      </div>
+                      {/* Detected case */}
+                      {seg.caseName && (
+                        <div className="mt-1.5 flex items-baseline gap-2">
+                          <span className="text-[0.74rem] font-medium text-ink-2">
+                            {seg.caseName}
+                          </span>
+                          {seg.caseNumber && (
+                            <span className="font-mono text-[0.58rem] text-ink-3">
+                              {seg.caseNumber}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Stats */}
+                      <div className="mt-2 flex items-baseline gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
+                            {t("analysis.phaseTime")}
+                          </span>
+                          <span className="nums text-base font-medium text-ink">
+                            {formatTime(seg.durationMs)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
+                            {t("analysis.phaseMoves")}
+                          </span>
+                          <span className="nums text-base font-medium text-ink">
+                            {seg.moves}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
+                            TPS
+                          </span>
+                          <span className="nums text-base font-medium text-ink">
+                            {seg.tps.toFixed(1)}
+                          </span>
+                        </div>
+                        {seg.pauseBeforeMs > 50 && (
+                          <div className="flex flex-col">
+                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
+                              {t("analysis.pauseBefore")}
+                            </span>
+                            <span className="nums text-base font-medium text-caution">
+                              {formatTime(seg.pauseBeforeMs)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                );
+              })}
           </div>
         </div>
 
@@ -1012,15 +1231,38 @@ function TimelineSection({
 
       {/* Legend — real labels, grouped: phases / pauses / TPS / avg */}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.58rem] text-ink-3">
-        {timeline.stageSegments.map((seg, i) => (
-          <span key={seg.phaseName} className="flex items-center gap-1.5">
-            <span
-              className="inline-block size-2 rounded-sm"
-              style={{ background: phaseColorHex(seg.phaseName, i), opacity: 0.7 }}
-            />
-            {seg.phaseName}
-          </span>
-        ))}
+        {timeline.stageSegments.map((seg, i) => {
+          // The F2L legend chip becomes a 4-color strip when the bar is
+          // divided into its pairs.
+          const isF2LDivided = seg.phaseName === "F2L" && hasPairs;
+          return (
+            <span key={seg.phaseName} className="flex items-center gap-1.5">
+              {isF2LDivided ? (
+                <span className="flex gap-0.5">
+                  {pairSegments!.map((pseg) => (
+                    <span
+                      key={pseg.pairNumber}
+                      className="inline-block size-2 rounded-[2px]"
+                      style={{
+                        background: pairColor(pseg.pairNumber),
+                        opacity: 0.8,
+                      }}
+                    />
+                  ))}
+                </span>
+              ) : (
+                <span
+                  className="inline-block size-2 rounded-sm"
+                  style={{
+                    background: phaseColorHex(seg.phaseName, i),
+                    opacity: 0.7,
+                  }}
+                />
+              )}
+              {seg.phaseName}
+            </span>
+          );
+        })}
         {pauseMarks.length > 0 && (
           <span className="flex items-center gap-1.5">
             <span
@@ -1358,7 +1600,15 @@ function PhaseBreakdownSection({
 
 // ─── CFOP details ──────────────────────────────────────────────────────────
 
-function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
+function CfopDetailsSection({
+  metrics,
+  solve,
+  onSeekToMove,
+}: {
+  metrics: SolveMetrics;
+  solve: Solve;
+  onSeekToMove?: (moveIndex: number) => void;
+}) {
   const { t } = useTranslation("insights");
   const cfop = metrics.cfop!;
   const crossType = metrics.detectionReport?.crossType;
@@ -1403,105 +1653,349 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
         <DetailTile label={t("analysis.f2lPairs")} value={`${cfop.f2lPairs.length}`} />
       </div>
 
-      {/* F2L pair breakdown */}
-      {cfop.f2lPairs.length > 0 && <F2LPairs pairs={cfop.f2lPairs} />}
+      {/* Professional case table — same shared components as reconstructions */}
+      {cfop.f2lPairs.length > 0 && (
+        <CaseTable
+          metrics={metrics}
+          solve={solve}
+          onSeekToMove={onSeekToMove}
+        />
+      )}
     </div>
   );
 }
 
-// ─── F2L slot color mapping (derived from face letters) ────────────────────
+// ─── Professional CFOP case table ──────────────────────────────────────────
 
 /**
- * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).
- * Fallback only — the unified pipeline now provides `pair.colors` directly.
+ * The same case table as reconstructions (shared `@/components/Cases` cells),
+ * adapted to the smart/virtual metric payload: 5 columns (Phase | Case |
+ * Moves | Time | TPS) with the real recorded move stream as notation, OLL/PLL
+ * diagrams rotated to the solver's AUF, and click-to-seek on every row.
  */
-function slotFaceColors(slotId: string): [string, string] | null {
-  if (slotId.length < 2) return null;
-  const a = FACE_HEX[slotId[0]];
-  const b = FACE_HEX[slotId[1]];
-  if (!a || !b) return null;
-  return [a, b];
-}
+const CASE_GRID_CONTAINER =
+  "grid min-w-[34rem] grid-cols-[5.5rem_minmax(6.5rem,max-content)_minmax(0,1fr)_4.25rem_3.25rem] sm:grid-cols-[6.5rem_minmax(7.5rem,max-content)_minmax(0,1fr)_4.75rem_3.5rem]";
+const CASE_ROW_GRID = "grid grid-cols-subgrid col-span-5";
 
-function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
+function CaseTable({
+  metrics,
+  solve,
+  onSeekToMove,
+}: {
+  metrics: SolveMetrics;
+  solve: Solve;
+  onSeekToMove?: (moveIndex: number) => void;
+}) {
   const { t } = useTranslation("insights");
-  const slowest = Math.max(...pairs.map((p) => p.timeMs));
+  const cfop = metrics.cfop!;
+  const report = metrics.detectionReport;
+  const crossColor = report?.crossColor;
+  const crossType = report?.crossType;
+  const skips = report?.skips ?? [];
+  const crossPhase = metrics.phases.find((p) => p.phaseName === "Cross");
+  const ollPhase = metrics.phases.find((p) => p.phaseName === "OLL");
+  const pllPhase = metrics.phases.find((p) => p.phaseName === "PLL");
+
+  const casesByNumber = useMemo(() => {
+    const m = new Map<string, AlgorithmCase>();
+    for (const c of getSeedData().cases) {
+      if (!m.has(c.caseNumber)) m.set(c.caseNumber, c);
+      if (c.name && !m.has(c.name)) m.set(c.name, c);
+    }
+    return m;
+  }, []);
+
+  // ── Notation from the recorded move stream ────────────────────────────
+  // Smart/virtual pairs don't persist per-pair notation; rebuild it from
+  // solve.moves using the pair's shared timeline boundaries (completionIndex
+  // − moves + 1). Face turns map 1:1 to timeline entries; wide moves expand
+  // to two state entries, so those slices fall back to "—" when off-range.
+  const notationOf = useCallback(
+    (from: number, to: number): string[] | null => {
+      const src = solve.moves ?? [];
+      if (from < 0 || to < from || to >= src.length) return null;
+      return src.slice(from, to + 1).map((mv) => {
+        const suffix = mv.direction === 2 ? "2" : mv.direction === -1 ? "'" : "";
+        return `${mv.face}${suffix}`;
+      });
+    },
+    [solve.moves],
+  );
+
+  // Cumulative move windows (entry indices) across the solve.
+  const crossTo = cfop.crossMoves - 1;
+  const crossNotation = notationOf(0, crossTo);
+  const pairs = cfop.f2lPairs.map((p) => {
+    const completion = p.completionIndex ?? -1;
+    const from =
+      completion >= 0 ? completion - Math.max(0, p.moves) + 1 : -1;
+    return { pair: p, from, notation: notationOf(from, completion) };
+  });
+  const lastPairEnd =
+    pairs.length > 0
+      ? Math.max(...pairs.map((x) => x.pair.completionIndex ?? -1))
+      : crossTo;
+  const ollStart = lastPairEnd + 1;
+  const ollTo = ollStart + (ollPhase?.moveCount ?? 0) - 1;
+  const ollNotation = notationOf(ollStart, ollTo);
+  const pllStart = ollTo + 1;
+  const pllTo = pllStart + (pllPhase?.moveCount ?? 0) - 1;
+  const pllNotation = notationOf(pllStart, pllTo);
+
+  const f2lMoves = pairs.reduce((n, x) => n + x.pair.moves, 0);
+  const f2lAvg = pairs.length > 0 ? (f2lMoves / pairs.length).toFixed(1) : null;
+  const slowest = Math.max(...cfop.f2lPairs.map((p) => p.timeMs));
+
+  // Clicking a row seeks the 3D replay to the state right BEFORE that
+  // phase's first move (same convention as the reconstruction table).
+  const seekRowProps = (moveIndex: number) =>
+    onSeekToMove
+      ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick: () => onSeekToMove(moveIndex),
+        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSeekToMove(moveIndex);
+          }
+        },
+      }
+      : {};
+  const seekCls = onSeekToMove ? "cursor-pointer" : "";
+
   return (
     <div className="mt-3">
-      <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
-        {t("analysis.f2lPairBreakdown")}
-      </span>
-      <div className="mt-1.5 space-y-0">
-        {pairs.map((pair) => {
-          const isSlowest = pair.timeMs === slowest;
-          // Unified pipeline colors are canonical FACE LETTERS (e.g. ["F","R"]),
-          // not CSS colors — map them to hex before painting. Unknown letters
-          // (or missing colors in older persisted data) fall back to the
-          // slot-derived colors.
-          const rawColors =
-            pair.colors && pair.colors.length === 2 ? pair.colors : null;
-          const colors: [string, string] | null =
-            rawColors && FACE_HEX[rawColors[0]] && FACE_HEX[rawColors[1]]
-              ? [FACE_HEX[rawColors[0]], FACE_HEX[rawColors[1]]]
-              : pair.slotId
-                ? slotFaceColors(pair.slotId)
-                : null;
-          const auf = pair.auf ?? [];
+      <div className="overflow-x-auto overflow-y-hidden min-w-0 scrollbar-thin">
+        <div className={CASE_GRID_CONTAINER}>
+          {/* Column headers */}
+          <div
+            className={cn(
+              CASE_ROW_GRID,
+              "items-center gap-2 border-b border-line bg-surface-2/60 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[0.56rem] sm:text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
+            )}
+          >
+            <span className="whitespace-nowrap">{t("analysis.colPhase")}</span>
+            <span className="whitespace-nowrap">{t("analysis.colCase")}</span>
+            <span className="whitespace-nowrap">{t("analysis.colMoves")}</span>
+            <span className="text-right whitespace-nowrap">{t("analysis.colTime")}</span>
+            <span className="text-right whitespace-nowrap">TPS</span>
+          </div>
 
-          return (
-            <div
-              key={pair.pairNumber}
-              className={cn(
-                "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
-                isSlowest && "bg-caution/5",
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-ink-2 font-medium">{t("analysis.pair", { number: pair.pairNumber })}</span>
-                {isSlowest && (
-                  <span className="text-[0.6rem] uppercase tracking-wider text-caution font-medium">
-                    {t("analysis.slowest")}
+          {/* ── Cross row ── */}
+          <div className={cn(CASE_ROW_GRID, ROW, ROW_LINE, seekCls)} {...seekRowProps(-1)}>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[0.74rem] font-medium text-ink">Cross</span>
+              <span className="mt-0.5 flex items-center gap-1.5">
+                {crossType && crossType !== "plain" && (
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide",
+                      crossType !== "xcross"
+                        ? "border border-caution/40 bg-caution/10 text-caution"
+                        : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                    )}
+                  >
+                    {crossType}
                   </span>
                 )}
-              </div>
-              <div className="flex items-center gap-3 nums text-ink-3">
-                {colors && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="flex items-center gap-1">
-                        <span
-                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
-                          style={{ background: colors[0] }}
-                        />
-                        <span
-                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
-                          style={{ background: colors[1] }}
-                        />
+                {crossColor && <FaceChip face={crossColor} />}
+              </span>
+            </span>
+            <span className="text-[0.64rem] text-ink-3/50">—</span>
+            <MovesSeq tokens={crossNotation} />
+            <span className="nums text-right text-xs text-ink-3">
+              {crossPhase ? formatTime(crossPhase.durationMs) : "—"}
+            </span>
+            <span className="nums text-right text-xs font-medium text-ink">
+              {cfop.crossTPS.toFixed(1)}
+            </span>
+          </div>
+
+          {/* ── F2L pair rows ── */}
+          {pairs.map(({ pair, from, notation }) => {
+            const isSlowest = pair.timeMs === slowest;
+            const [leftColor, rightColor] =
+              pair.colors && pair.colors.length === 2
+                ? orderPairColors(pair.colors[0], pair.colors[1], crossColor ?? undefined)
+                : [undefined, undefined];
+            const stickerColors =
+              crossColor && leftColor && rightColor
+                ? pairStickerColors(crossColor, leftColor, rightColor)
+                : null;
+            const auf =
+              pair.auf && pair.auf.length > 0
+                ? pair.auf
+                : leadingU(notation ?? []);
+            const seekIdx = from > 0 ? from - 1 : -1;
+
+            return (
+              <div
+                key={pair.pairNumber}
+                className={cn(
+                  CASE_ROW_GRID,
+                  ROW,
+                  ROW_LINE,
+                  seekCls,
+                  isSlowest && "bg-caution/5",
+                )}
+                {...seekRowProps(seekIdx)}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[0.74rem] font-medium text-ink">
+                      {t("analysis.pair", { number: pair.pairNumber })}
+                    </span>
+                    {isSlowest && (
+                      <span className="text-[0.56rem] uppercase tracking-wider text-caution font-medium">
+                        {t("analysis.slowest")}
                       </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {pair.slotId ?? rawColors?.join(" ") ?? "—"}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                {/* Leading U moves (AUF-style) before the insertion. */}
-                {auf.length > 0 && (
-                  <span className="rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
-                    auf {auf.join(" ")}
+                    )}
                   </span>
-                )}
-                <span>{pair.moves}m</span>
-                <span>{formatTime(pair.timeMs)}</span>
-                <span className="font-medium text-ink">{pair.tps.toFixed(1)} tps</span>
-                {pair.pauseBeforeMs > 50 && (
-                  <span className="text-caution/70">
-                    +{formatTime(pair.pauseBeforeMs)}
+                  <span className="mt-0.5 flex items-center gap-1.5">
+                    {pair.slotId ? (
+                      <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
+                        {pair.slotId}
+                      </span>
+                    ) : (
+                      <span className="text-[0.64rem] text-ink-3">
+                        {t("analysis.noPairSegmentation")}
+                      </span>
+                    )}
+                    {leftColor && <FaceChip face={leftColor} />}
+                    {rightColor && <FaceChip face={rightColor} />}
                   </span>
-                )}
+                </span>
+
+                <span className="flex min-w-0 items-center gap-2">
+                  {pair.detectedCase &&
+                    (() => {
+                      const caseData =
+                        casesByNumber.get(pair.detectedCase!.caseNumber) ??
+                        casesByNumber.get(pair.detectedCase!.caseName);
+                      if (!caseData) return null;
+                      return (
+                        <>
+                          <CaseMiniCube
+                            caseData={caseData}
+                            slotIndex={0}
+                            stickerColors={stickerColors}
+                            alt={pair.detectedCase!.caseName}
+                          />
+                          <span className="flex min-w-0 flex-col">
+                            <span className="text-[0.74rem] font-medium text-ink truncate">
+                              {pair.detectedCase!.caseName}
+                            </span>
+                            <span className="mt-0.5 text-[0.56rem] text-ink-3 font-mono">
+                              {pair.detectedCase!.caseNumber}
+                            </span>
+                          </span>
+                        </>
+                      );
+                    })()}
+                  {!pair.detectedCase && (
+                    <span className="text-[0.64rem] text-ink-3/50">—</span>
+                  )}
+                </span>
+
+                <MovesSeq
+                  tokens={notation}
+                  aufMoves={auf.length > 0 ? auf : undefined}
+                />
+                <span className="nums text-right text-xs text-ink-3">
+                  {formatTime(pair.timeMs)}
+                  {pair.pauseBeforeMs > 50 && (
+                    <span className="ml-1 text-caution/70">
+                      +{formatTime(pair.pauseBeforeMs)}
+                    </span>
+                  )}
+                </span>
+                <span className="nums text-right text-xs font-medium text-ink">
+                  {pair.tps.toFixed(1)}
+                </span>
               </div>
+            );
+          })}
+
+          {/* ── OLL row ── */}
+          {(ollPhase || cfop.ollCase) && (
+            <div
+              className={cn(CASE_ROW_GRID, ROW, ROW_LINE, seekCls)}
+              {...seekRowProps(lastPairEnd)}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">OLL</span>
+                {skips.includes("oll") && <SkippedBadge className="mt-0.5 w-fit" />}
+              </span>
+              {cfop.ollCase ? (
+                <LastLayerCaseCell
+                  detectedCase={cfop.ollCase}
+                  casesByNumber={casesByNumber}
+                />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={ollNotation} />
+              <span className="nums text-right text-xs text-ink-3">
+                {ollPhase ? formatTime(ollPhase.durationMs) : "—"}
+              </span>
+              <span className="nums text-right text-xs font-medium text-ink">
+                {cfop.ollTPS.toFixed(1)}
+              </span>
             </div>
-          );
-        })}
+          )}
+
+          {/* ── PLL row ── */}
+          {(pllPhase || cfop.pllCase) && (
+            <div
+              className={cn(CASE_ROW_GRID, ROW, seekCls)}
+              {...seekRowProps(ollTo)}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">PLL</span>
+                {skips.includes("pll") && <SkippedBadge className="mt-0.5 w-fit" />}
+              </span>
+              {cfop.pllCase ? (
+                <LastLayerCaseCell
+                  detectedCase={cfop.pllCase}
+                  casesByNumber={casesByNumber}
+                />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={pllNotation} />
+              <span className="nums text-right text-xs text-ink-3">
+                {pllPhase ? formatTime(pllPhase.durationMs) : "—"}
+              </span>
+              <span className="nums text-right text-xs font-medium text-ink">
+                {cfop.pllTPS.toFixed(1)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-surface-2/60 px-3 py-1.5 text-[0.58rem] sm:text-[0.6rem] text-ink-3 border-t border-line/60">
+        <span className="flex items-center gap-2.5">
+          <CfopMiniBar
+            crossMoves={cfop.crossMoves}
+            f2lMoves={f2lMoves}
+            ollMoves={ollPhase?.moveCount ?? 0}
+            pllMoves={pllPhase?.moveCount ?? 0}
+            totalMoves={metrics.totalMoves}
+          />
+          {f2lAvg && (
+            <span className="nums text-ink-2 font-mono">
+              {t("analysis.f2lAvg", { avg: f2lAvg })}
+            </span>
+          )}
+        </span>
+        {onSeekToMove && (
+          <span className="text-[0.56rem] text-ink-3/70">
+            {t("analysis.seekHint")}
+          </span>
+        )}
       </div>
     </div>
   );
