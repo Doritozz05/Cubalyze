@@ -12,6 +12,7 @@ import {
   SeparatorVertical,
   Activity,
   TrendingUp,
+  Dices,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
@@ -56,6 +57,7 @@ export const DOCK_AREAS: DockAreaDef[] = [
   { id: "battery", icon: Battery, labelKey: "battery", descKey: "desc.battery", category: "system" },
   { id: "session-stats", icon: Activity, labelKey: "sessionStats", descKey: "desc.sessionStats", category: "system" },
   { id: "session-chart", icon: TrendingUp, labelKey: "sessionChart", descKey: "desc.sessionChart", category: "system" },
+  { id: "random-puzzle", icon: Dices, labelKey: "randomPuzzle", descKey: "desc.randomPuzzle", category: "system" },
   { id: "spacer", icon: RectangleHorizontal, labelKey: "spacer", descKey: "desc.spacer", category: "layout", repeatable: true },
   { id: "separator", icon: SeparatorVertical, labelKey: "separator", descKey: "desc.separator", category: "layout", repeatable: true },
 ];

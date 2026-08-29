@@ -23,6 +23,7 @@ import {
   PuzzlePiece,
   SessionStatsPiece,
   SessionChartPiece,
+  RandomPuzzlePiece,
 } from "@/widgets/dock/pieces";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
@@ -335,6 +336,15 @@ export function Header({
     all["profile"] = <ProfilePiece onOpenProfile={onOpenProfile} />;
     all["session-stats"] = <SessionStatsPiece solves={solves ?? []} />;
     all["session-chart"] = <SessionChartPiece solves={solves ?? []} />;
+    all["random-puzzle"] = (
+      <RandomPuzzlePiece
+        puzzle={puzzle}
+        onPuzzleChange={(p) => {
+          setPuzzle(p);
+          onPuzzleChange?.(p);
+        }}
+      />
+    );
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
     return all;

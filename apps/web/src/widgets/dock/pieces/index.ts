@@ -8,3 +8,4 @@ export { SessionPiece } from "./session/SessionPiece";
 export { PuzzlePiece } from "./puzzle/PuzzlePiece";
 export { SessionStatsPiece } from "./session-stats/SessionStatsPiece";
 export { SessionChartPiece } from "./session-chart/SessionChartPiece";
+export { RandomPuzzlePiece } from "./random-puzzle/RandomPuzzlePiece";

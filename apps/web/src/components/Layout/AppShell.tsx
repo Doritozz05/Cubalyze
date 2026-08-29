@@ -170,6 +170,17 @@ export function AppShell(props: AppShellProps) {
     document.addEventListener("pointercancel", onPointerCancel, CAPTURE);
 
     const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        e.defaultPrevented ||
+        !target ||
+        target.closest("[data-slot='context-menu-trigger']") ||
+        target.closest("[data-radix-context-menu-trigger]") ||
+        target.closest("[data-no-global-context-menu]")
+      ) {
+        return;
+      }
+
       // Fallback: some engines fire `contextmenu` for a long-press without a
       // reliable pointerdown (e.g. long-pressing selectable text). The event's
       // own source capabilities flag a touch origin when supported.
@@ -181,16 +192,22 @@ export function AppShell(props: AppShellProps) {
         // Long-press on touch: never open the app menu. Editable fields
         // keep their native menu (selection / paste); everywhere else the
         // browser menu is suppressed too — long-press just does nothing.
-        const target = e.target as HTMLElement | null;
         const editable =
-          !!target &&
-          (target.isContentEditable ||
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.tagName === "SELECT");
+          target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT";
         if (!editable) e.preventDefault();
         return;
       }
+
+      const editable =
+        target.isContentEditable ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT";
+      if (editable) return;
+
       e.preventDefault();
       // Walk up from target to find a data-context-zone (up to document)
       let zone: string | null = null;
