@@ -245,6 +245,7 @@ export function RandomPuzzlePiece({
               key={item.category}
               checked={checked}
               disabled={isOnlyOne}
+              onSelect={(e) => e.preventDefault()}
               onCheckedChange={() => togglePuzzle(item.category)}
               className="text-xs capitalize cursor-pointer"
             >
@@ -256,7 +257,10 @@ export function RandomPuzzlePiece({
         <ContextMenuSeparator />
 
         <ContextMenuItem
-          onClick={selectAll}
+          onSelect={(e) => {
+            e.preventDefault();
+            selectAll();
+          }}
           className="gap-2 text-xs cursor-pointer text-ink-2 hover:text-ink"
         >
           <CheckCheck className="size-3.5 text-ink-3" />
@@ -264,7 +268,10 @@ export function RandomPuzzlePiece({
         </ContextMenuItem>
 
         <ContextMenuItem
-          onClick={deselectAll}
+          onSelect={(e) => {
+            e.preventDefault();
+            deselectAll();
+          }}
           className="gap-2 text-xs cursor-pointer text-ink-2 hover:text-ink"
         >
           <XSquare className="size-3.5 text-ink-3" />
