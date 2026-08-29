@@ -11,16 +11,34 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline, isComparablePhaseAnalysis } from "@/utils/insights";
+import {
+  deriveTimeline,
+  derivePairSegments,
+  isComparablePhaseAnalysis,
+  type PairSegment,
+} from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
 import type { SolveMetrics } from "@cubeforge/types";
 
 const MAX_SOLVES_IN_PICKER = 3;
 
+/**
+ * Distinct green-family hues so the 4 F2L pairs read as sub-segments of the
+ * F2L phase in the pairs view (the phases view keeps the semantic palette).
+ */
+const PAIR_COLORS = ["#22C55E", "#4ADE80", "#15803D", "#84CC16"];
+const pairColor = (i: number) => PAIR_COLORS[i % PAIR_COLORS.length];
+
 export interface FloatingPhaseTimelineProps {
   solves: Solve[];
   lastAnalysis?: SolveMetrics | null;
+  /**
+   * Optional: clicking an F2L pair row seeks the 3D replay to the pair's
+   * first move. Not wired from the widget host yet — the hook is ready for
+   * the N2 replay integration.
+   */
+  onSeekToMove?: (moveIndex: number) => void;
 }
 
 interface TimelineEntry {
@@ -41,11 +59,15 @@ interface TimelineEntry {
 export function FloatingPhaseTimeline({
   solves,
   lastAnalysis,
+  onSeekToMove,
 }: FloatingPhaseTimelineProps) {
   const { t } = useTranslation("widgets");
   const [selectedIdx, setSelectedIdx] = useState(0);
+  // "phases" = the classic per-phase breakdown; "pairs" = F2L split into
+  // its 4 pairs as sub-segments (shown only when pair data exists).
+  const [view, setView] = useState<"phases" | "pairs">("phases");
 
-  const { selectedSolve, derived, skippedPhases } = useMemo(() => {
+  const { selectedSolve, derived, skippedPhases, pairSegments } = useMemo(() => {
     const orderedSolves = [...solves].sort((a, b) => b.timestamp - a.timestamp);
     const firstSolve = orderedSolves[0];
     const hasPending =
@@ -57,18 +79,34 @@ export function FloatingPhaseTimeline({
     const solve: Solve | null =
       orderedSolves[selectedIdx] ?? (orderedSolves.length > 0 ? orderedSolves[0] : null);
 
-    if (!solve) return { selectedSolve: null, derived: null, skippedPhases: [] as string[] };
+    if (!solve) {
+      return {
+        selectedSolve: null,
+        derived: null,
+        skippedPhases: [] as string[],
+        pairSegments: [] as PairSegment[],
+      };
+    }
 
     const effectiveAnalysis = hasPending ? lastAnalysis! : solve.analysis;
     if (!isComparablePhaseAnalysis(effectiveAnalysis)) {
-      return { selectedSolve: solve, derived: null, skippedPhases: [] as string[] };
+      return {
+        selectedSolve: solve,
+        derived: null,
+        skippedPhases: [] as string[],
+        pairSegments: [] as PairSegment[],
+      };
     }
     const effectiveSolve: Solve = { ...solve, analysis: effectiveAnalysis };
     const tl = deriveTimeline(effectiveSolve);
     const skippedPhases = effectiveAnalysis.phases
       .filter((phase) => phase.skipped || (phase.durationMs === 0 && phase.moveCount === 0))
       .map((phase) => phase.phaseName);
-    return { selectedSolve: solve, derived: tl, skippedPhases };
+    const pairSegments = derivePairSegments(
+      effectiveAnalysis,
+      effectiveSolve.moves,
+    );
+    return { selectedSolve: solve, derived: tl, skippedPhases, pairSegments };
   }, [solves, selectedIdx, lastAnalysis]);
 
   const timelinePhaseEntries = useMemo<TimelineEntry[]>(() => {
@@ -183,7 +221,132 @@ export function FloatingPhaseTimeline({
                 ))}
               </div>
             )}
-            {timelinePhaseEntries.length > 0 && (
+            {/* View toggle — appears only when F2L pair data exists */}
+            {pairSegments.length > 0 && (
+              <div className="mb-2 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setView("phases")}
+                  className={cn(
+                    "rounded px-2 py-1 text-[0.6rem] transition-colors",
+                    view === "phases"
+                      ? "bg-ink text-surface"
+                      : "bg-surface-2 text-ink-3 hover:text-ink",
+                  )}
+                >
+                  {t("panel.solveTimeline.viewPhases")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("pairs")}
+                  className={cn(
+                    "rounded px-2 py-1 text-[0.6rem] transition-colors",
+                    view === "pairs"
+                      ? "bg-ink text-surface"
+                      : "bg-surface-2 text-ink-3 hover:text-ink",
+                  )}
+                >
+                  {t("panel.solveTimeline.viewPairs")}
+                </button>
+              </div>
+            )}
+
+            {view === "pairs" && pairSegments.length > 0 ? (
+              /* ── F2L split into its 4 pairs ── */
+              <>
+                <div className="mb-2 flex h-7 w-full overflow-hidden rounded-md">
+                  {pairSegments.map((seg, i) => (
+                    <Tooltip key={seg.pairNumber}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="relative flex items-center justify-center text-[0.6rem] font-medium text-white transition-all"
+                          style={{
+                            width: `${Math.max(totalMs > 0 ? (seg.durationMs / totalMs) * 100 : 0, 4)}%`,
+                            backgroundColor: pairColor(i),
+                            opacity: 0.85,
+                          }}
+                        >
+                          {totalMs > 0 && seg.durationMs / totalMs > 0.1 && (
+                            <span className="truncate px-0.5 drop-shadow-sm">{seg.pairNumber}</span>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {seg.slot ?? t("panel.solveTimeline.pairLabel", { count: seg.pairNumber })}: {formatTime(seg.durationMs)}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+
+                <div className="overflow-hidden rounded-lg border border-line/60">
+                  {pairSegments.map((seg, i) => (
+                    <div
+                      key={seg.pairNumber}
+                      className={cn(
+                        "flex items-center justify-between px-2.5 py-1.5 text-xs",
+                        i !== pairSegments.length - 1 && "border-b border-line/40",
+                        onSeekToMove && "cursor-pointer transition-colors hover:bg-surface-2",
+                      )}
+                      role={onSeekToMove ? "button" : undefined}
+                      tabIndex={onSeekToMove ? 0 : undefined}
+                      onClick={
+                        onSeekToMove
+                          ? () => onSeekToMove(seg.moveStartIndex)
+                          : undefined
+                      }
+                      onKeyDown={
+                        onSeekToMove
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onSeekToMove(seg.moveStartIndex);
+                              }
+                            }
+                          : undefined
+                      }
+                      title={onSeekToMove ? t("panel.solveTimeline.seekHint") : undefined}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: pairColor(i) }} />
+                        <span className="font-medium text-ink-2 uppercase tracking-wide text-[0.6rem]">
+                          {t("panel.solveTimeline.pairLabel", { count: seg.pairNumber })}
+                        </span>
+                        {seg.slot && (
+                          <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.54rem] font-medium text-ink-2">
+                            {seg.slot}
+                          </span>
+                        )}
+                        {seg.caseName && (
+                          <span className="truncate text-[0.6rem] text-ink-2">{seg.caseName}</span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2.5 nums text-[0.6rem] text-ink-3">
+                        <span>{formatTime(seg.durationMs)}</span>
+                        <span className="text-ink-2">{seg.tps.toFixed(1)} TPS</span>
+                        <span>{seg.moves}m</span>
+                        {seg.pauseBeforeMs > 50 && (
+                          <span className="text-caution/70">+{formatTime(seg.pauseBeforeMs)}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between text-[0.6rem] text-ink-3">
+                  <span>
+                    {t("panel.solveTimeline.movesTotal", {
+                      count: selectedSolve.moves?.length ?? 0,
+                      time: formatTime(totalMs),
+                    })}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block size-1.5 rounded-sm" style={{ backgroundColor: pairColor(0) }} />
+                    {t("panel.solveTimeline.viewPairs")}
+                  </span>
+                </div>
+              </>
+            ) : timelinePhaseEntries.length > 0 && (
+              /* ── Classic per-phase breakdown ── */
               <>
                 <div className="mb-2 flex h-7 w-full overflow-hidden rounded-md">
                   {timelinePhaseEntries.map((entry) => (

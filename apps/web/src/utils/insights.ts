@@ -18,9 +18,11 @@ export {
   isComparablePhaseAnalysis,
   derivePauseCause,
   deriveAvgTime,
+  derivePairSegments,
 } from "@cubeforge/analysis-engine";
 
 export type {
   TimelineSegment,
   TimelineData,
+  PairSegment,
 } from "@cubeforge/analysis-engine";

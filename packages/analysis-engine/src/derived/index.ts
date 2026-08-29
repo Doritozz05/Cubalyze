@@ -20,7 +20,7 @@ export {
 } from './phase-colors';
 
 // ─── Timeline ────────────────────────────────────────────────────────────
-export { deriveTimeline, derivePauseCause } from './timeline';
+export { deriveTimeline, derivePauseCause, derivePairSegments } from './timeline';
 export type {
   MoveTick,
   TpsSample,
@@ -30,6 +30,7 @@ export type {
   StageSegment,
   TimelineData,
   TimelineSolveInput,
+  PairSegment,
 } from './timeline';
 
 // ─── Distribution ────────────────────────────────────────────────────────
