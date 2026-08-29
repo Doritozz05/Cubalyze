@@ -41,6 +41,8 @@ import {
   MetricRing,
   SkippedBadge,
   FaceChip,
+  CoherenceBadge,
+  WarningsBadge,
   FACE_HEX,
 } from "./atoms";
 import { ReplaySection, type ReplaySectionHandle } from "./ReplaySection";
@@ -417,14 +419,17 @@ export function SolveAnalysisPanel({
           {/* ── Pauses with probable causes ─────────────────────────────── */}
           {/* (removed — pauses are now integrated in the timeline above) */}
 
-          {/* ── Method-specific details ─────────────────────────────────── */}
+          {/* ── CFOP Detection Table (Standalone Panel, matching reconstructions) ── */}
           {m.cfop && (
-            <CfopDetailsSection
+            <DetectionSection
               metrics={m}
               solve={solve}
               onSeekToMove={seekToMove}
             />
           )}
+
+          {/* ── Method-specific details ─────────────────────────────────── */}
+          {m.cfop && <CfopDetailsSection metrics={m} />}
           {m.roux && <RouxDetailsSection metrics={m} />}
 
           {/* ── Rotations & efficiency ──────────────────────────────────── */}
@@ -1518,15 +1523,7 @@ function PhaseBreakdownSection({
 
 // ─── CFOP details ──────────────────────────────────────────────────────────
 
-function CfopDetailsSection({
-  metrics,
-  solve,
-  onSeekToMove,
-}: {
-  metrics: SolveMetrics;
-  solve: Solve;
-  onSeekToMove?: (moveIndex: number) => void;
-}) {
+function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
   const { t } = useTranslation("insights");
   const cfop = metrics.cfop!;
   const crossType = metrics.detectionReport?.crossType;
@@ -1570,32 +1567,17 @@ function CfopDetailsSection({
         />
         <DetailTile label={t("analysis.f2lPairs")} value={`${cfop.f2lPairs.length}`} />
       </div>
-
-      {/* Professional case table — same shared components as reconstructions */}
-      {cfop.f2lPairs.length > 0 && (
-        <CaseTable
-          metrics={metrics}
-          solve={solve}
-          onSeekToMove={onSeekToMove}
-        />
-      )}
     </div>
   );
 }
 
-// ─── Professional CFOP case table ──────────────────────────────────────────
+// ─── Detection Table (Standalone Panel, matching reconstructions) ──────────
 
-/**
- * The same case table as reconstructions (shared `@/components/Cases` cells),
- * adapted to the smart/virtual metric payload: 5 columns (Phase | Case |
- * Moves | Time | TPS) with the real recorded move stream as notation, OLL/PLL
- * diagrams rotated to the solver's AUF, and click-to-seek on every row.
- */
 const CASE_GRID_CONTAINER =
   "grid min-w-[34rem] grid-cols-[5.5rem_minmax(6.5rem,max-content)_minmax(0,1fr)_4.25rem_3.25rem] sm:grid-cols-[6.5rem_minmax(7.5rem,max-content)_minmax(0,1fr)_4.75rem_3.5rem]";
 const CASE_ROW_GRID = "grid grid-cols-subgrid col-span-5";
 
-function CaseTable({
+function DetectionSection({
   metrics,
   solve,
   onSeekToMove,
@@ -1610,6 +1592,7 @@ function CaseTable({
   const crossColor = report?.crossColor;
   const crossType = report?.crossType;
   const skips = report?.skips ?? [];
+  const warnings = report?.warnings ?? [];
   const crossPhase = metrics.phases.find((p) => p.phaseName === "Cross");
   const ollPhase = metrics.phases.find((p) => p.phaseName === "OLL");
   const pllPhase = metrics.phases.find((p) => p.phaseName === "PLL");
@@ -1624,10 +1607,6 @@ function CaseTable({
   }, []);
 
   // ── Notation from the recorded move stream ────────────────────────────
-  // Smart/virtual pairs don't persist per-pair notation; rebuild it from
-  // solve.moves using the pair's shared timeline boundaries (completionIndex
-  // − moves + 1). Face turns map 1:1 to timeline entries; wide moves expand
-  // to two state entries, so those slices fall back to "—" when off-range.
   const notationOf = useCallback(
     (from: number, to: number): string[] | null => {
       const src = solve.moves ?? [];
@@ -1683,7 +1662,30 @@ function CaseTable({
   const seekCls = onSeekToMove ? "cursor-pointer" : "";
 
   return (
-    <div className="mt-3">
+    <div className="rounded-lg border border-line bg-surface overflow-hidden">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:py-3.5">
+        <SectionHeader
+          title={t("analysis.detectionTitle", { defaultValue: "Detection" })}
+          eyebrow={t("analysis.detectionEyebrow", { defaultValue: "CFOP" })}
+        />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <CfopMiniBar
+            crossMoves={cfop.crossMoves}
+            f2lMoves={f2lMoves}
+            ollMoves={ollPhase?.moveCount ?? 0}
+            pllMoves={pllPhase?.moveCount ?? 0}
+            totalMoves={metrics.totalMoves}
+          />
+          <WarningsBadge warnings={warnings} />
+          <CoherenceBadge coherent={report?.finalStateSolved ?? true} />
+          <span className="nums text-xs text-ink-3">
+            {metrics.totalMoves} moves
+          </span>
+        </div>
+      </div>
+
+      {/* ── Outer 5-Column Table Grid with horizontal scroll guard ── */}
       <div className="overflow-x-auto overflow-y-hidden min-w-0 scrollbar-thin">
         <div className={CASE_GRID_CONTAINER}>
           {/* Column headers */}

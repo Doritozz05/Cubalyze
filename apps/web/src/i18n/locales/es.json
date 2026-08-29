@@ -1010,6 +1010,11 @@
       "pauseCauseTransition": "Transición de {{from}} → {{to}}",
       "pauseCauseTransitionSingle": "Transición de {{phase}}",
       "gapExplanation": "Tiempo de resolución {{total}} = {{active}} activo + {{idle}} inactivo/transición",
+      "detectionTitle": "Detección",
+      "detectionEyebrow": "CFOP",
+      "orientation": "Orientación",
+      "up": "arriba",
+      "front": "delante",
       "cfopDetails": "Detalles CFOP",
       "crossPlain": "Normal",
       "crossEff": "Efic. Cross",
@@ -3392,7 +3397,7 @@
       "layoutSplit": "Modo dividido"
     },
     "detection": {
-      "title": "Nuestra detección",
+      "title": "Detección",
       "eyebrow": "CFOP",
       "orientation": "Orientación",
       "up": "arriba",

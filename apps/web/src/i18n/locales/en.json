@@ -1010,6 +1010,11 @@
       "pauseCauseTransition": "{{from}} → {{to}} transition",
       "pauseCauseTransitionSingle": "{{phase}} transition",
       "gapExplanation": "Solve time {{total}} = {{active}} active + {{idle}} idle/transition",
+      "detectionTitle": "Detection",
+      "detectionEyebrow": "CFOP",
+      "orientation": "Orientation",
+      "up": "up",
+      "front": "front",
       "cfopDetails": "CFOP details",
       "crossPlain": "Plain",
       "crossEff": "Cross eff",
@@ -3392,7 +3397,7 @@
       "layoutSplit": "Split layout"
     },
     "detection": {
-      "title": "Our detection",
+      "title": "Detection",
       "eyebrow": "CFOP",
       "orientation": "Orientation",
       "up": "up",
