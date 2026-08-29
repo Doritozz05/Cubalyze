@@ -42,6 +42,7 @@ export function RandomPuzzlePiece({
 
   const reelControls = useAnimationControls();
   const leverControls = useAnimationControls();
+  const rodControls = useAnimationControls();
 
   // Sync display puzzle with incoming prop when idle
   useEffect(() => {
@@ -78,11 +79,23 @@ export function RandomPuzzlePiece({
     setReelItems(sequence);
     setIsSpinning(true);
 
-    // Animate the lever pull down and spring back up
+    // Animate the knob sliding down and rod shortening from the top in sync
     leverControls.start({
-      rotate: [0, 52, 60, -8, 0],
-      y: [0, 5, 6, -1, 0],
-      transition: { duration: 0.45, ease: "easeInOut" },
+      y: [0, 8.5, -1, 0],
+      transition: {
+        duration: 0.38,
+        times: [0, 0.45, 0.8, 1],
+        ease: "easeInOut",
+      },
+    });
+
+    rodControls.start({
+      scaleY: [1, 0.575, 1.05, 1],
+      transition: {
+        duration: 0.38,
+        times: [0, 0.45, 0.8, 1],
+        ease: "easeInOut",
+      },
     });
 
     // Reset reel position
@@ -110,7 +123,7 @@ export function RandomPuzzlePiece({
 
     setIsSpinning(false);
     onPuzzleChange?.(target);
-  }, [isSpinning, enabledPuzzles, puzzle, displayPuzzle, leverControls, reelControls, onPuzzleChange]);
+  }, [isSpinning, enabledPuzzles, puzzle, displayPuzzle, leverControls, rodControls, reelControls, onPuzzleChange]);
 
   const playablePuzzles = PUZZLE_SELECTOR.filter((p) => p.playable);
 
@@ -180,21 +193,22 @@ export function RandomPuzzlePiece({
             </div>
 
             {/* Slot Machine Lever */}
-            <div className="relative flex h-full items-center px-0.5">
-              {/* Lever base fixture */}
-              <div className="h-3.5 w-1 rounded-sm bg-line/80 dark:bg-line-2" />
-
-              {/* Animated mechanical arm & knob */}
+            <div className="relative flex h-8 w-3 shrink-0 items-center justify-center">
+              {/* Rod anchored firmly at bottom, compressing/growing from the top */}
               <motion.div
+                initial={{ scaleY: 1 }}
+                animate={rodControls}
+                style={{ originX: "50%", originY: "100%" }}
+                className="h-5 w-0.5 rounded-full bg-linear-to-b from-ink-3/60 to-line-2 dark:from-line-2 dark:to-line"
+              />
+
+              {/* Animated Metallic Knob sliding down in sync with rod shortening */}
+              <motion.div
+                initial={{ y: 0 }}
                 animate={leverControls}
-                style={{ originX: "0px", originY: "12px" }}
-                className="relative flex flex-col items-center -ml-0.5 cursor-pointer py-1"
-              >
-                {/* Metallic Knob */}
-                <div className="size-2.5 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 transition-transform group-hover:scale-110" />
-                {/* Rod */}
-                <div className="h-3 w-0.5 bg-linear-to-b from-line-2 to-line" />
-              </motion.div>
+                whileHover={{ scale: 1.15 }}
+                className="absolute top-1 z-10 size-2.5 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 cursor-pointer"
+              />
             </div>
           </button>
         </div>
