@@ -223,7 +223,7 @@ export function FloatingPhaseTimeline({
               /* ── Per-phase breakdown — the F2L bar itself is divided into
                   its pairs (light→dark green slices) with rich hover info ── */
               <>
-                <div className="mb-2 flex h-7 w-full overflow-hidden rounded-md">
+                <div className="mb-2 flex h-7 w-full gap-px overflow-hidden rounded-md">
                   {timelinePhaseEntries.map((entry) => {
                     // The F2L phase bar is divided into its pairs: one
                     // light→dark green slice per pair, hover shows the pair's

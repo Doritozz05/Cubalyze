@@ -791,18 +791,46 @@ function TimelineSection({
                     // Clip each pair to the F2L bar's own range.
                     const px = Math.max(x, xForMs(pseg.startMs));
                     const pend = Math.min(x + w, xForMs(pseg.endMs));
-                    const pw = Math.max(0.5, pend - px);
-                    const gap = pairCount > 1 ? 1 : 0;
+                    const pw = Math.max(1, pend - px);
+                    // Solid slices + a real gap + outline so the four greens
+                    // read as a CLEAR division (phase blocks stay translucent).
+                    const gap = pairCount > 1 ? 2 : 0;
+                    const sliceW = Math.max(1, pw - gap);
+                    const sliceOpacity =
+                      hl === "dim" ? 0.3 : hl === "active" ? 0.95 : 0.85;
+                    const labelVisible = sliceW > 26;
                     return (
-                      <rect
-                        key={`f2l-pair-${pseg.pairNumber}`}
-                        x={px}
-                        y={SEG_TOP}
-                        width={Math.max(0.5, pw - gap)}
-                        height={SEG_BOTTOM - SEG_TOP}
-                        fill={pairColor(pseg.pairNumber)}
-                        fillOpacity={fillOpacity}
-                      />
+                      <g key={`f2l-pair-${pseg.pairNumber}`}>
+                        <rect
+                          x={px}
+                          y={SEG_TOP}
+                          width={sliceW}
+                          height={SEG_BOTTOM - SEG_TOP}
+                          fill={pairColor(pseg.pairNumber)}
+                          fillOpacity={sliceOpacity}
+                          stroke="var(--ink)"
+                          strokeOpacity={0.18}
+                          strokeWidth={0.6}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        {labelVisible && (
+                          <text
+                            x={px + sliceW / 2}
+                            y={(SEG_TOP + SEG_BOTTOM) / 2 + 3}
+                            textAnchor="middle"
+                            fontSize={8.5}
+                            fontWeight={700}
+                            fill="#fff"
+                            stroke="rgba(0,0,0,0.4)"
+                            strokeWidth={2.5}
+                            paintOrder="stroke"
+                            pointerEvents="none"
+                            className="select-none"
+                          >
+                            {pseg.slot ?? `P${pseg.pairNumber}`}
+                          </text>
+                        )}
+                      </g>
                     );
                   });
                 }

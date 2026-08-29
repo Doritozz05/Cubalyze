@@ -4,7 +4,7 @@ import type {
   F2LPairMetrics,
   SolveMetrics,
 } from '@cubeforge/types';
-import { derivePairSegments } from '../derived/timeline';
+import { derivePairSegments, deriveTimeline } from '../derived/timeline';
 
 /**
  * derivePairSegments — F2L divided into per-pair timeline sub-segments.
@@ -165,5 +165,38 @@ describe('derivePairSegments', () => {
     expect(segments[0].moveStartIndex).toBe(-1);
     expect(segments[0].moveEndIndex).toBe(-1);
     expect(segments[0].startMs).toBe(0);
+  });
+
+  it('falls inside the F2L phase segment of the same timeline (divided bar)', () => {
+    // Consistent synthetic solve: Cross 6 + F2L 16 + OLL 8 + PLL 6 = 36
+    // moves at 100 ms; four pairs of 4 moves each cover the F2L phase.
+    const moves = makeMoves(36);
+    const analysis = makeAnalysis([
+      makePair({ pairNumber: 1, timeMs: 400, moves: 4, completionIndex: 9 }),
+      makePair({ pairNumber: 2, timeMs: 400, moves: 4, completionIndex: 13 }),
+      makePair({ pairNumber: 3, timeMs: 400, moves: 4, completionIndex: 17 }),
+      makePair({ pairNumber: 4, timeMs: 400, moves: 4, completionIndex: 21 }),
+    ]);
+
+    const tl = deriveTimeline({ time: 3600, moves, analysis });
+    const f2l = tl.stageSegments.find((s) => s.phaseName === 'F2L');
+    expect(f2l).toBeDefined();
+
+    const pairs = derivePairSegments(analysis, moves);
+    expect(pairs).toHaveLength(4);
+
+    // The pair slices are the bars painted inside the F2L phase block:
+    // they must be ordered, contiguous, and (within one inter-move gap)
+    // inside the F2L segment's own bounds.
+    for (let i = 0; i < pairs.length; i++) {
+      const p = pairs[i];
+      expect(p.startMs).toBeGreaterThanOrEqual(f2l!.startMs - 0.001);
+      expect(p.endMs).toBeLessThanOrEqual(f2l!.endMs + 250);
+      if (i > 0) {
+        expect(p.startMs).toBeGreaterThanOrEqual(pairs[i - 1].endMs - 0.001);
+      }
+    }
+    // First pair starts exactly where the F2L phase starts (after the cross).
+    expect(pairs[0].startMs).toBe(f2l!.startMs);
   });
 });
