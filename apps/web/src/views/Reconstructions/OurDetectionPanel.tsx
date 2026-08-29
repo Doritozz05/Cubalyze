@@ -14,11 +14,14 @@
  *   - Coherence (finalSolved) + detection warnings
  *   - Interleaved rotations & standalone slices
  *   - Click-to-seek: clicking any row seeks the 3D replay to the exact state before that phase
+ *
+ * The case-table cells (CaseMiniCube, LastLayerCaseCell, MovesSeq, CountCell,
+ * CfopMiniBar) and their helpers live in the SHARED `@/components/Cases`
+ * module — the same table renders for smart/virtual solve analysis.
  */
-import { useEffect, useMemo, useState, type KeyboardEvent, useCallback } from "react";
-import { Eye, RotateCcw, Copy, Check } from "lucide-react";
+import { useMemo, type KeyboardEvent } from "react";
+import { Eye, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   SectionHeader,
@@ -32,290 +35,24 @@ import {
   analyzeSolveText,
   type SolveReconstruction,
 } from "@cubeforge/analysis-engine";
-import {
-  CASE_RENDER_GRAY,
-  getSeedData,
-  getSubset,
-  resolveVisualizationStyleForSubset,
-  type AlgorithmCase,
-} from "@cubeforge/algorithm-db";
-import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
-import { isRotation, orderPairFaces, tokenize } from "@cubeforge/math-core";
-import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
-import { FACE_HEX } from "@/components/Insights/atoms/faceColors";
+import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
+import { isRotation, tokenize } from "@cubeforge/math-core";
 import type { ReconFullRecord } from "./reconData";
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-/** Leading U moves (AUF-style) at the start of a move list. */
-function leadingU(moves: string[]): string[] {
-  const auf: string[] = [];
-  for (const m of moves) {
-    if (m[0] === "U") auf.push(m);
-    else break;
-  }
-  return auf;
-}
-
-/** Rotations of a phase, interleaved into the face moves at their position. */
-function interleave(
-  moves: string[],
-  rots: { token: string; moveIndex: number }[],
-  from: number,
-): string[] {
-  if (moves.length === 0) return [];
-  const sorted = [...rots].sort((a, b) => a.moveIndex - b.moveIndex);
-  if (sorted.length === 0) return moves;
-  const out: string[] = [];
-  let ri = 0;
-  for (let k = 0; k < moves.length; k++) {
-    while (ri < sorted.length && sorted[ri].moveIndex <= from + k)
-      out.push(sorted[ri++].token);
-    out.push(moves[k]);
-  }
-  while (ri < sorted.length) out.push(sorted[ri++].token);
-  return out;
-}
-
-/** Order pair colors for canonical FR mini-case render */
-function orderPairColors(
-  a: string | undefined,
-  b: string | undefined,
-  crossColor?: string,
-): [string | undefined, string | undefined] {
-  if (a == null || b == null) return [a, b];
-  return orderPairFaces(crossColor ?? "D", a, b);
-}
-
-function pairStickerColors(
-  crossColor: string,
-  leftColor: string,
-  rightColor: string,
-): Record<string, string> {
-  return {
-    U: CASE_RENDER_GRAY,
-    D: FACE_HEX[crossColor] ?? crossColor,
-    F: FACE_HEX[leftColor] ?? leftColor,
-    R: FACE_HEX[rightColor] ?? rightColor,
-    B: CASE_RENDER_GRAY,
-    L: CASE_RENDER_GRAY,
-  };
-}
-
-/** CSS rotation for AUF angle in 2D diagram */
-function aufRotationDeg(aufFace?: string): number {
-  switch (aufFace) {
-    case "R":
-      return 90;
-    case "B":
-      return 180;
-    case "L":
-      return 270;
-    default:
-      return 0;
-  }
-}
-
-// ─── Table Grid Layout Constants ────────────────────────────────────────────
-
-const GRID_CONTAINER =
-  "grid min-w-[26rem] sm:min-w-0 grid-cols-[5.5rem_minmax(4.5rem,max-content)_1fr_2.25rem] sm:grid-cols-[6.5rem_minmax(5rem,max-content)_1fr_2.5rem] xl:grid-cols-[7.5rem_minmax(5.5rem,max-content)_1fr_2.75rem]";
-const ROW_GRID = "grid grid-cols-subgrid col-span-4";
-const ROW = "items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors hover:bg-surface-2";
-const ROW_LINE = "border-b border-line";
-
-// ─── Sub-components ─────────────────────────────────────────────────────────
-
-/** Tiny 3D snapshot of an F2L case (shared offscreen WebGL engine + cache). */
-function CaseMiniCube({
-  caseData,
-  slotIndex,
-  stickerColors,
-  alt,
-}: {
-  caseData: AlgorithmCase;
-  slotIndex: number;
-  stickerColors?: Record<string, string> | null;
-  alt: string;
-}) {
-  const service = Global3DSnapshotService.getInstance();
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    service
-      .requestSnapshot(caseData, {
-        selectedSlot: slotIndex,
-        stickerColors: stickerColors ?? undefined,
-      })
-      .then((u) => {
-        if (alive) setUrl(u);
-      })
-      .catch(() => {
-        // WebGL unavailable fallback
-      });
-    return () => {
-      alive = false;
-    };
-  }, [service, caseData, slotIndex, stickerColors]);
-
-  if (!url) {
-    return (
-      <span
-        className="block size-8 sm:size-10 shrink-0 animate-pulse rounded-md border border-line bg-surface-2/40"
-        aria-hidden
-      />
-    );
-  }
-  return (
-    <img
-      src={url}
-      alt={alt}
-      draggable={false}
-      className="pointer-events-none size-8 sm:size-10 shrink-0 rounded-md border border-line bg-surface-2/40 object-contain"
-    />
-  );
-}
-
-/** Last layer 2D rotated case diagram */
-function LastLayerCaseCell({
-  detectedCase,
-  casesByNumber,
-}: {
-  detectedCase: NonNullable<NonNullable<SolveReconstruction["oll"]>["detectedCase"]>;
-  casesByNumber: Map<string, AlgorithmCase>;
-}) {
-  const caseData =
-    casesByNumber.get(detectedCase.caseNumber) ??
-    casesByNumber.get(detectedCase.caseName);
-  if (!caseData) return null;
-  const subset = getSubset(caseData.subsetId);
-  const style = resolveVisualizationStyleForSubset(subset?.name);
-  const rotation = aufRotationDeg(detectedCase.aufFace);
-
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <CaseDiagram
-        setupScramble={caseData.setupScramble}
-        style={style}
-        rotation={rotation}
-        className="size-8 sm:size-10 shrink-0 rounded-md border border-line bg-surface-2/40"
-      />
-      <span className="flex min-w-0 flex-col">
-        <span className="text-[0.74rem] font-medium text-ink truncate">
-          {detectedCase.caseName}
-        </span>
-        <span className="mt-0.5 text-[0.56rem] text-ink-3 font-mono">
-          {detectedCase.caseNumber}
-        </span>
-      </span>
-    </span>
-  );
-}
-
-/** Clean Moves Sequence with subtle AUF pill and quiet copy */
-function MovesSeq({
-  tokens,
-  aufMoves,
-}: {
-  tokens: string[] | null;
-  aufMoves?: string[];
-}) {
-  const { t } = useTranslation("reconstructions");
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!tokens || tokens.length === 0) return;
-      try {
-        await navigator.clipboard.writeText(tokens.join(" "));
-        setCopied(true);
-        toast.success(t("detection.copiedAlg"));
-        setTimeout(() => setCopied(false), 1500);
-      } catch {
-        /* clipboard unavailable */
-      }
-    },
-    [tokens, t],
-  );
-
-  if (!tokens || tokens.length === 0) {
-    return <span className="text-[0.74rem] text-ink-3">—</span>;
-  }
-
-  return (
-    <div className="group/seq flex min-w-0 items-center gap-2">
-      <span className="min-w-0 wrap-break-word whitespace-normal font-mono text-[0.74rem] font-medium text-ink leading-relaxed">
-        {tokens.join(" ")}
-      </span>
-
-      {aufMoves && aufMoves.length > 0 && (
-        <span className="shrink-0 rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
-          {t("detection.auf", { moves: aufMoves.join(" ") })}
-        </span>
-      )}
-
-      <button
-        type="button"
-        onClick={handleCopy}
-        title={t("detection.copyAlg")}
-        aria-label={t("detection.copyAlg")}
-        className="opacity-0 group-hover/seq:opacity-100 transition-opacity p-0.5 rounded text-ink-3 hover:text-ink hover:bg-surface-3 cursor-pointer shrink-0"
-      >
-        {copied ? (
-          <Check className="size-3 text-ready" />
-        ) : (
-          <Copy className="size-3" />
-        )}
-      </button>
-    </div>
-  );
-}
-
-function CountCell({ count }: { count: number }) {
-  return <span className="nums text-right text-xs text-ink-2 tabular-nums whitespace-nowrap">{count}</span>;
-}
-
-/** Minimal CFOP distribution bar in the table header */
-function CfopMiniBar({
-  crossMoves,
-  f2lMoves,
-  ollMoves,
-  pllMoves,
-  totalMoves,
-}: {
-  crossMoves: number;
-  f2lMoves: number;
-  ollMoves: number;
-  pllMoves: number;
-  totalMoves: number;
-}) {
-  if (totalMoves <= 0) return null;
-  const crossPct = (crossMoves / totalMoves) * 100;
-  const f2lPct = (f2lMoves / totalMoves) * 100;
-  const ollPct = (ollMoves / totalMoves) * 100;
-  const pllPct = (pllMoves / totalMoves) * 100;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex h-1.5 w-24 overflow-hidden rounded-full bg-surface-3 border border-line/60">
-          <div style={{ width: `${crossPct}%` }} className="h-full bg-phase-blue" />
-          <div style={{ width: `${f2lPct}%` }} className="h-full bg-phase-emerald" />
-          <div style={{ width: `${ollPct}%` }} className="h-full bg-phase-amber" />
-          <div style={{ width: `${pllPct}%` }} className="h-full bg-phase-violet" />
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="text-xs font-mono">
-        <div>Cross: {crossMoves}m ({crossPct.toFixed(0)}%)</div>
-        <div>F2L: {f2lMoves}m ({f2lPct.toFixed(0)}%)</div>
-        <div>OLL: {ollMoves}m ({ollPct.toFixed(0)}%)</div>
-        <div>PLL: {pllMoves}m ({pllPct.toFixed(0)}%)</div>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
+import {
+  CaseMiniCube,
+  LastLayerCaseCell,
+  MovesSeq,
+  CountCell,
+  CfopMiniBar,
+  leadingU,
+  interleave,
+  orderPairColors,
+  pairStickerColors,
+  GRID_CONTAINER,
+  ROW_GRID,
+  ROW,
+  ROW_LINE,
+} from "@/components/Cases";
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -710,4 +447,3 @@ export function OurDetectionPanel({
     </div>
   );
 }
-
