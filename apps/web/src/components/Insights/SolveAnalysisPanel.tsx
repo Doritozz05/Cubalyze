@@ -23,6 +23,7 @@ import {
   LastLayerCaseCell,
   MovesSeq,
   CfopMiniBar,
+  CountCell,
   leadingU,
   orderPairColors,
   pairStickerColors,
@@ -1713,8 +1714,8 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
 // ─── Detection Table (Standalone Panel, matching reconstructions) ──────────
 
 const CASE_GRID_CONTAINER =
-  "grid min-w-[34rem] grid-cols-[5.5rem_minmax(6.5rem,max-content)_minmax(0,1fr)_4.25rem_3.25rem] sm:grid-cols-[6.5rem_minmax(7.5rem,max-content)_minmax(0,1fr)_4.75rem_3.5rem]";
-const CASE_ROW_GRID = "grid grid-cols-subgrid col-span-5";
+  "grid min-w-[36rem] grid-cols-[5.5rem_minmax(6.5rem,max-content)_minmax(0,1fr)_4.25rem_3.25rem_2.25rem] sm:grid-cols-[6.5rem_minmax(7.5rem,max-content)_minmax(0,1fr)_4.75rem_3.5rem_2.5rem]";
+const CASE_ROW_GRID = "grid grid-cols-subgrid col-span-6";
 
 function DetectionSection({
   metrics,
@@ -1839,6 +1840,7 @@ function DetectionSection({
             <span className="whitespace-nowrap">{t("analysis.colMoves")}</span>
             <span className="text-right whitespace-nowrap">{t("analysis.colTime")}</span>
             <span className="text-right whitespace-nowrap">TPS</span>
+            <span className="text-right whitespace-nowrap">#</span>
           </div>
 
           {/* ── Cross row ── */}
@@ -1869,6 +1871,7 @@ function DetectionSection({
             <span className="nums text-right text-xs font-medium text-ink">
               {cfop.crossTPS.toFixed(1)}
             </span>
+            <CountCell count={crossNotation?.length ?? 0} />
           </div>
 
           {/* ── F2L pair rows ── */}
@@ -1972,6 +1975,7 @@ function DetectionSection({
                 <span className="nums text-right text-xs font-medium text-ink">
                   {pair.tps.toFixed(1)}
                 </span>
+                <CountCell count={pair.moves} />
               </div>
             );
           })}
@@ -2001,6 +2005,7 @@ function DetectionSection({
               <span className="nums text-right text-xs font-medium text-ink">
                 {cfop.ollTPS.toFixed(1)}
               </span>
+              <CountCell count={ollPhase?.moveCount ?? 0} />
             </div>
           )}
 
@@ -2029,6 +2034,7 @@ function DetectionSection({
               <span className="nums text-right text-xs font-medium text-ink">
                 {cfop.pllTPS.toFixed(1)}
               </span>
+              <CountCell count={pllPhase?.moveCount ?? 0} />
             </div>
           )}
         </div>
