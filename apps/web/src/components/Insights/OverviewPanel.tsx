@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { computeStats, formatTime, formatDuration, statLabel } from "@/utils/formatTime";
+import { CaseIntelligenceSection } from "./CaseIntelligenceSection";
+import { TechnicalSection } from "./TechnicalSection";
 import {
   deriveTpsSeries,
   deriveHistogram,
@@ -382,6 +384,12 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
           )}
         </div>
       </div>
+
+      {/* ── Case intelligence (session) ──────────────────────────────── */}
+      <CaseIntelligenceSection solves={solves} />
+
+      {/* ── Technical session analytics ──────────────────────────────── */}
+      <TechnicalSection solves={solves} />
 
       {/* ── Penalty mix ────────────────────────────────────────────────── */}
       <PenaltyMix solves={solves} />

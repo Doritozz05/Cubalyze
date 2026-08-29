@@ -291,7 +291,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     
     load();
     return () => { isMounted = false; };
-  }, []);
+    // reloadAll is a stable useCallback([]) — included for exhaustiveness
+    // only; it never changes, so this effect still runs exactly once.
+  }, [reloadAll]);
 
   const session = sessions.find(s => s.id === activeSessionId) || null;
 

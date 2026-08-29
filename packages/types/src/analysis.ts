@@ -474,6 +474,29 @@ export interface RotationMetrics {
 
 // ─── CFOP-Specific Metrics ───────────────────────────────────────────────────
 
+/**
+ * A recognized algorithmic case from the modular catalog (Basic F2L, OLL, PLL).
+ *
+ * Produced by the SHARED case detection used by BOTH the reconstruction text
+ * route (analyzeSolveText) and the smart/virtual route (analyzeSolve) so both
+ * report the same table of cases for the same solve. `aufFace` is present only
+ * for last-layer cases (OLL/PLL) — the sticker on the U face at the solver's F
+ * position — and used to rotate the case render to the solver's exact angle.
+ */
+export interface DetectedCase {
+  /** Case number from the catalog, e.g. "F2L 1" / "OLL 24" / "Tb". */
+  caseNumber: string;
+  /** BirdF2L / canonical case name, e.g. "Jb" / "T Perm". */
+  caseName: string;
+  /** 'exact' when the signature matched the catalog (else omitted). */
+  confidence: 'exact' | 'unknown';
+  /**
+   * The sticker on the U face at the solver's F position in the detected
+   * state (last-layer cases only). Undefined for F2L pairs.
+   */
+  aufFace?: string;
+}
+
 export interface CFOPMetrics {
   /** Cross efficiency: user moves / optimal (≤8). */
   crossEfficiency: number;
@@ -494,6 +517,19 @@ export interface CFOPMetrics {
   pllRecognitionMs: number;
   pllExecutionMs: number;
   pllTPS: number;
+
+  /**
+   * The recognized OLL case (state-based), when the shared detector matched.
+   * Shares the exact detection the reconstruction text route uses, so the
+   * smart/virtual solve reports the same last-layer cases as a reconstruction.
+   */
+  ollCase?: DetectedCase;
+
+  /**
+   * The recognized PLL case (state-based), when the shared detector matched.
+   * Shares the exact detection the reconstruction text route uses.
+   */
+  pllCase?: DetectedCase;
 }
 
 export interface F2LPairMetrics {
@@ -517,6 +553,13 @@ export interface F2LPairMetrics {
   movesNotation?: string[] | null;
   /** Timeline index where the pair completed. */
   completionIndex?: number;
+
+  /**
+   * The recognized Basic F2L case (41-case catalog), when the shared detector
+   * matched. Present only when the case is in the catalog; omitted for
+   * advanced F2L techniques and when confidence is not 'exact'.
+   */
+  detectedCase?: Pick<DetectedCase, 'caseNumber' | 'caseName' | 'confidence'>;
 }
 
 // ─── Roux-Specific Metrics ───────────────────────────────────────────────────

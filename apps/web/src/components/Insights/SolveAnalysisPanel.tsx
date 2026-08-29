@@ -1,14 +1,36 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw, Columns2, Rows2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
-import { deriveTimeline, type TimelineData, type TimelineSegment } from "@/utils/insights";
-import { phaseColorHex, pauseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
+import {
+  deriveTimeline,
+  derivePairSegments,
+  type TimelineData,
+  type PairSegment,
+} from "@/utils/insights";
+import { phaseColorHex } from "@/utils/phaseColors";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import type { Penalty, Solve } from "@/types";
-import type { SolveMetrics, RotationMetrics, EfficiencyMetrics, F2LPairMetrics } from "@cubeforge/types";
+import type {
+  SolveMetrics,
+  RotationMetrics,
+  EfficiencyMetrics,
+} from "@cubeforge/types";
+import {
+  CaseMiniCube,
+  LastLayerCaseCell,
+  MovesSeq,
+  CfopMiniBar,
+  CountCell,
+  leadingU,
+  orderPairColors,
+  pairStickerColors,
+  ROW,
+  ROW_LINE,
+} from "@/components/Cases";
+import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -19,9 +41,12 @@ import {
   EmptyState,
   MetricRing,
   SkippedBadge,
+  FaceChip,
+  CoherenceBadge,
+  WarningsBadge,
   FACE_HEX,
 } from "./atoms";
-import { ReplaySection } from "./ReplaySection";
+import { ReplaySection, type ReplaySectionHandle } from "./ReplaySection";
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -35,16 +60,15 @@ export interface SolveAnalysisPanelProps {
   /** Open the "Move to another session" dialog for this solve. */
   onMoveSolve?: () => void;
   onBackToOverview: () => void;
+  /** Reconstruction-style detail layout: replay pinned large on the left,
+      content in a scrollable right column. */
+  detailMode?: boolean;
+  /** Toggle detail mode (renders the toggle button when provided). */
+  onToggleDetailMode?: () => void;
   className?: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────
-
-const TIMELINE_HEIGHT = 92;
-const TPS_AREA_TOP = 4;
-const TPS_AREA_BOTTOM = 34; // TPS chart occupies the top band
-const SEG_TOP = 44;        // unified segment blocks (phases + pauses) live here
-const SEG_BOTTOM = 82;
 
 const EMPTY_ROTATION: RotationMetrics = {
   totalCount: 0,
@@ -65,6 +89,14 @@ const EMPTY_EFFICIENCY: EfficiencyMetrics = {
   forwardDrift: 0,
 };
 
+// Emerald gradient used to sub-divide the F2L phase bar into per-pair slices
+// (P1 lightest → P4 darkest). Stable at module scope so timeline memos keep
+// stable identities.
+const PAIR_COLORS = ["#10B981", "#059669", "#047857", "#065F46"];
+function pairColor(pairNumber: number): string {
+  return PAIR_COLORS[(pairNumber - 1) % PAIR_COLORS.length];
+}
+
 // ─── Main component ────────────────────────────────────────────────────────
 
 export function SolveAnalysisPanel({
@@ -76,6 +108,8 @@ export function SolveAnalysisPanel({
   onDeleteSolve,
   onMoveSolve,
   onBackToOverview,
+  detailMode,
+  onToggleDetailMode,
   className,
 }: SolveAnalysisPanelProps) {
   const { t } = useTranslation("insights");
@@ -99,6 +133,26 @@ export function SolveAnalysisPanel({
   const [replayPosMs, setReplayPosMs] = useState<number | null>(null);
   const [replayMoveIdx, setReplayMoveIdx] = useState<number | null>(null);
   const [, setReplaying] = useState(false);
+  const replayRef = useRef<ReplaySectionHandle>(null);
+
+  // F2L pairs as timeline sub-segments (the "pairs lane" under the phase
+  // blocks) — same shared boundaries the case table uses, so what the
+  // timeline paints and what the table lists are the same pairs.
+  const pairSegments = useMemo<PairSegment[]>(
+    () =>
+      m?.cfop?.f2lPairs?.length ? derivePairSegments(m, solve.moves) : [],
+    [m, solve.moves],
+  );
+
+  // Seek the 3D replay to a move index (pair/phase rows + timeline lane).
+  // The playhead snaps to the move's tick immediately; the cube follows once
+  // the engine applies the seek (async).
+  const seekToMove = useCallback((moveIndex: number) => {
+    setReplayPosMs(null);
+    setReplayMoveIdx(moveIndex);
+    setReplaying(true);
+    void replayRef.current?.seekToMove(moveIndex);
+  }, []);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
   const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -128,8 +182,10 @@ export function SolveAnalysisPanel({
     [solve, m],
   );
 
-  return (
-    <div className={cn("flex flex-col gap-4 px-1 pb-4 bg-canvas", className)}>
+  // topSections keeps the leading blocks shared by both layouts; only the
+  // replay is repositioned between normal and detail mode.
+  const topSections = (
+    <>
       {/* Back to overview — desktop only; the touch overlay provides its
           own sticky header with a back button. */}
       <button
@@ -189,6 +245,18 @@ export function SolveAnalysisPanel({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1">
+          {onToggleDetailMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleDetailMode}
+              className="h-7 gap-1 px-2 text-xs text-ink-2 hover:text-ink hidden lg:inline-flex"
+              title={detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
+            >
+              {detailMode ? <Rows2 className="size-3.5" /> : <Columns2 className="size-3.5" />}
+              {detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
+            </Button>
+          )}
           {canReanalyze && (
             <Button
               variant="ghost"
@@ -324,36 +392,31 @@ export function SolveAnalysisPanel({
         )}
       </div>
 
-      {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
-      <ReplaySection
-        solve={replaySolve}
-        onReplayPosition={(ms, moveIndex) => {
-          setReplayPosMs(ms);
-          setReplayMoveIdx(moveIndex);
-          setReplaying(true);
-        }}
-        onReplayComplete={() => {
-          setReplayPosMs(null);
-          setReplayMoveIdx(null);
-          setReplaying(false);
-        }}
-      />
+    </>
+  );
 
-      {/* Analysis sections or empty banner */}
-      {!m ? (
-        <EmptyState
-          title={t("analysis.noAnalysisTitle")}
-          description={
-            solve.source === "smart"
-              ? t("analysis.noAnalysisSmart")
-              : solve.source === "virtual"
-                ? t("analysis.noAnalysisVirtual")
-                : t("analysis.noAnalysisManual")
-          }
-          className="py-12"
-        />
-      ) : (
-        <>
+  // The replay lives in both layouts, positioned differently: in normal mode
+  // it flows in the single column (topSections → replay → analysisSections);
+  // in detail mode it becomes the pinned large left column.
+  const replay = (
+    <ReplaySection
+      ref={replayRef}
+      solve={replaySolve}
+      onReplayPosition={(ms, moveIndex) => {
+        setReplayPosMs(ms);
+        setReplayMoveIdx(moveIndex);
+        setReplaying(true);
+      }}
+      onReplayComplete={() => {
+        setReplayPosMs(null);
+        setReplayMoveIdx(null);
+        setReplaying(false);
+      }}
+    />
+  );
+
+  const analysisSections = m ? (
+    <>
           {/* ── Interactive timeline ────────────────────────────────────── */}
           <TimelineSection
             timeline={timeline}
@@ -362,6 +425,8 @@ export function SolveAnalysisPanel({
             onHoverPhase={setHoveredPhase}
             replayPositionMs={replayPosMs}
             replayMoveIdx={replayMoveIdx}
+            pairSegments={pairSegments}
+            onSeekToMove={seekToMove}
           />
 
           {/* ── Key metric rings ────────────────────────────────────────── */}
@@ -378,12 +443,88 @@ export function SolveAnalysisPanel({
           {/* ── Pauses with probable causes ─────────────────────────────── */}
           {/* (removed — pauses are now integrated in the timeline above) */}
 
+          {/* ── CFOP Detection Table (Standalone Panel, matching reconstructions) ── */}
+          {m.cfop && (
+            <DetectionSection
+              metrics={m}
+              solve={solve}
+              onSeekToMove={seekToMove}
+            />
+          )}
+
           {/* ── Method-specific details ─────────────────────────────────── */}
           {m.cfop && <CfopDetailsSection metrics={m} />}
           {m.roux && <RouxDetailsSection metrics={m} />}
 
           {/* ── Rotations & efficiency ──────────────────────────────────── */}
           <RotEfficiencySection metrics={m} />
+    </>
+  ) : (
+    <EmptyState
+      title={t("analysis.noAnalysisTitle")}
+      description={
+        solve.source === "smart"
+          ? t("analysis.noAnalysisSmart")
+          : solve.source === "virtual"
+            ? t("analysis.noAnalysisVirtual")
+            : t("analysis.noAnalysisManual")
+      }
+      className="py-12"
+    />
+  );
+
+  // ── Layouts ─────────────────────────────────────────────────────────────
+  // Normal  : single column  topSections → replay → analysisSections.
+  // Detail  : replay pinned large & sticky on the left; scrollable right
+  //           column with the rest of the content (reconstruction-style).
+  return (
+    <div
+      className={cn(
+        detailMode
+          ? "flex min-h-0 flex-col gap-4 bg-canvas lg:h-full lg:flex-row lg:overflow-hidden lg:px-1 lg:pb-4"
+          : "flex flex-col gap-4 px-1 pb-4 bg-canvas",
+        className,
+      )}
+    >
+      {detailMode ? (
+        <>
+          {/* Left — replay pinned large & sticky, like reconstructions */}
+          <div className="flex min-h-75 w-full shrink-0 flex-col sm:min-h-95 lg:min-h-0 lg:w-7/12 lg:max-w-200 lg:flex-none">
+            <div className="flex flex-col rounded-xl border border-line bg-surface p-3 shadow-xs sm:p-4 lg:min-h-0 lg:flex-1 lg:rounded-none lg:border-0 lg:border-r lg:border-line/60 lg:bg-transparent lg:shadow-none">
+              <ReplaySection
+                ref={replayRef}
+                solve={replaySolve}
+                size="large"
+                collapsible={false}
+                showHeader={false}
+                onReplayPosition={(ms, moveIndex) => {
+                  setReplayPosMs(ms);
+                  setReplayMoveIdx(moveIndex);
+                  setReplaying(true);
+                }}
+                onReplayComplete={() => {
+                  setReplayPosMs(null);
+                  setReplayMoveIdx(null);
+                  setReplaying(false);
+                }}
+                className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
+              />
+            </div>
+          </div>
+
+          {/* Right — scrollable content column */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full lg:overflow-y-auto">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-1 pb-4">
+              {topSections}
+              {analysisSections}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {topSections}
+          {replay}
+          {analysisSections}
         </>
       )}
     </div>
@@ -399,6 +540,8 @@ function TimelineSection({
   onHoverPhase,
   replayPositionMs,
   replayMoveIdx,
+  pairSegments,
+  onSeekToMove,
 }: {
   timeline: TimelineData;
   meanTps: number;
@@ -408,19 +551,73 @@ function TimelineSection({
   replayPositionMs?: number | null;
   /** Replay move index (aligned with moveTicks) for the playhead. */
   replayMoveIdx?: number | null;
+  /** F2L pairs as timeline sub-segments, painted as a lane under the blocks. */
+  pairSegments?: PairSegment[];
+  /** Clicking a pair seeks the 3D replay to its first move. */
+  onSeekToMove?: (moveIndex: number) => void;
 }) {
   const { t } = useTranslation("insights");
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
 
-  const { totalMs, moveTicks, moveVisualMs, tpsSamples, segments, pauseMarks } = timeline;
-  const width = 600; // viewBox width; scales to container via preserveAspectRatio
+  const { totalMs, moveTicks, moveVisualMs, tpsSamples, pauseMarks } = timeline;
+  const width = 600; // SVG internal coordinate base for TPS curve
+
+  // ── 1. Continuous Phase Segments (Cover [0, totalMs] with 0 gaps) ─────────
+  const continuousPhases = useMemo(() => {
+    if (!timeline.stageSegments || timeline.stageSegments.length === 0) return [];
+    const raw = timeline.stageSegments;
+    return raw.map((seg, i) => {
+      const startMs = i === 0 ? 0 : seg.startMs;
+      const nextStart = i + 1 < raw.length ? raw[i + 1].startMs : totalMs;
+      const endMs = Math.max(startMs, nextStart);
+      const durationMs = Math.max(0, endMs - startMs);
+      const color =
+        seg.phaseName === "OLL"
+          ? "#D97706"
+          : seg.phaseName === "Cross"
+            ? "#3B82F6"
+            : phaseColorHex(seg.phaseName, i);
+      return {
+        phaseName: seg.phaseName,
+        startMs,
+        endMs,
+        durationMs,
+        moveCount: seg.moveCount,
+        tps: seg.tps,
+        color,
+      };
+    });
+  }, [timeline.stageSegments, totalMs]);
+
+  // ── 2. F2L pairs sub-divide the F2L phase bar (High-contrast emerald gradient) ───
+  const hasPairs = (pairSegments?.length ?? 0) > 0;
+
+  const continuousPairs = useMemo(() => {
+    if (!hasPairs || !pairSegments || pairSegments.length === 0) return [];
+    const f2lSeg = continuousPhases.find((p) => p.phaseName === "F2L");
+    const f2lStartMs = f2lSeg ? f2lSeg.startMs : (pairSegments[0]?.startMs ?? 0);
+    const f2lEndMs = f2lSeg ? f2lSeg.endMs : (pairSegments[pairSegments.length - 1]?.endMs ?? totalMs);
+
+    return pairSegments.map((p, i, arr) => {
+      const startMs = i === 0 ? f2lStartMs : Math.max(f2lStartMs, p.startMs);
+      const nextStart = i + 1 < arr.length ? Math.max(startMs, arr[i + 1].startMs) : f2lEndMs;
+      const endMs = Math.min(f2lEndMs, Math.max(startMs, nextStart));
+      const durationMs = Math.max(0, endMs - startMs);
+      return {
+        ...p,
+        startMs,
+        endMs,
+        durationMs,
+        color: pairColor(p.pairNumber),
+      };
+    });
+  }, [hasPairs, pairSegments, continuousPhases, totalMs]);
 
   // TPS scale: data-driven ceiling rounded up to a sensible tick.
   const maxTps = useMemo(() => {
     const max = Math.max(...tpsSamples.map((s) => s.tps), 0);
     if (max <= 0) return 5;
-    // Round up to the next whole number with a little headroom (no arbitrary +1 floor).
     return Math.max(Math.ceil(max + 0.5), 3);
   }, [tpsSamples]);
 
@@ -445,75 +642,128 @@ function TimelineSection({
     setHoverMs(null);
   }, []);
 
-  // Replay playhead x-position. The replay clock is MOVE-DRIVEN (its ms are
-  // virtual, independent of solve.time), so anchor the playhead to the
-  // CURRENT MOVE's visual tick instead — that keeps it perfectly aligned
-  // with the phase/pause segments while every move plays back.
-  const replayX = useMemo(() => {
-    if (replayPositionMs == null) return null;
-    // Only anchor to move ticks when the timeline actually has segments
-    // (phaseRuns existed) — otherwise moveVisualMs is all zeros and the
-    // playhead would be pinned to x=0.
-    if (
-      segments.length > 0 &&
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const container = containerRef.current;
+      if (!container || totalMs <= 0 || !onSeekToMove || moveTicks.length === 0) return;
+      const rect = container.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      const clickMs = Math.max(0, Math.min(totalMs, ratio * totalMs));
+
+      // Find closest move to click
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      for (let i = 0; i < moveTicks.length; i++) {
+        const diff = Math.abs(moveTicks[i].offsetMs - clickMs);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = i;
+        }
+      }
+      onSeekToMove(closestIdx);
+    },
+    [totalMs, onSeekToMove, moveTicks],
+  );
+
+  // Replay playhead x percentage
+  const replayPct = useMemo(() => {
+    if (replayPositionMs == null || totalMs <= 0) return null;
+    const ms =
       replayMoveIdx != null &&
       replayMoveIdx >= 0 &&
-      replayMoveIdx < moveVisualMs.length
-    ) {
-      return xForMs(moveVisualMs[replayMoveIdx]);
-    }
-    return xForMs(replayPositionMs);
-  }, [replayPositionMs, replayMoveIdx, moveVisualMs, segments, xForMs]);
+      replayMoveIdx < moveVisualMs.length &&
+      moveVisualMs[replayMoveIdx] > 0
+        ? moveVisualMs[replayMoveIdx]
+        : replayPositionMs;
+    return Math.max(0, Math.min(100, (ms / totalMs) * 100));
+  }, [replayPositionMs, replayMoveIdx, moveVisualMs, totalMs]);
 
-  // TPS area path — always closes at the right edge (totalMs).
+  const hoverPct = useMemo(() => {
+    if (hoverMs == null || totalMs <= 0) return null;
+    return Math.max(0, Math.min(100, (hoverMs / totalMs) * 100));
+  }, [hoverMs, totalMs]);
+
+  // Smoothed TPS Path (using cubic Bezier smoothing) for 32px height
+  const TPS_HEIGHT = 32;
   const tpsPath = useMemo(() => {
     if (tpsSamples.length < 2) return "";
-    return tpsSamples
-      .map((s, i) => {
-        const x = xForMs(s.offsetMs);
-        const y = TPS_AREA_BOTTOM - (s.tps / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
-        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
+    const points = tpsSamples.map((s) => ({
+      x: xForMs(s.offsetMs),
+      y: TPS_HEIGHT - (s.tps / maxTps) * (TPS_HEIGHT - 4) - 2,
+    }));
+
+    if (points.length === 2) {
+      return `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`;
+    }
+
+    let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(0, i - 1)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(points.length - 1, i + 2)];
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
   }, [tpsSamples, xForMs, maxTps]);
 
   const tpsAreaPath = useMemo(() => {
     if (tpsPath === "") return "";
     const lastX = xForMs(tpsSamples[tpsSamples.length - 1]?.offsetMs ?? totalMs);
-    return `${tpsPath} L${lastX.toFixed(1)},${TPS_AREA_BOTTOM} L0,${TPS_AREA_BOTTOM} Z`;
+    return `${tpsPath} L${lastX.toFixed(1)},${TPS_HEIGHT} L0,${TPS_HEIGHT} Z`;
   }, [tpsPath, tpsSamples, xForMs, totalMs]);
 
-  // Total pause time for the eyebrow.
+  // Total pause time for the eyebrow
   const totalPauseMs = useMemo(
     () => pauseMarks.reduce((s, p) => s + p.durationMs, 0),
     [pauseMarks],
   );
   const meanPauseMs = pauseMarks.length > 0 ? totalPauseMs / pauseMarks.length : 0;
 
-  // P1.c — Y-axis TPS ticks (0 … maxTps)
-  const yTickCount = 4;
-  const yTicks = useMemo(
-    () => Array.from({ length: yTickCount }, (_, i) => (i / (yTickCount - 1)) * maxTps),
-    [maxTps],
+  // ── Per-move velocity mini-map ─────────────────────────────────────────
+  // One cell per move, colored by its instantaneous speed (inverse of the
+  // gap to the next move). Read as a TPS "heat strip" synced to the replay
+  // playhead (which sweeps this container).
+  const perMoveTps = useMemo(() => {
+    if (moveTicks.length < 2) return [] as number[];
+    const out: number[] = [];
+    for (let i = 0; i < moveTicks.length; i++) {
+      const cur = moveVisualMs[i] ?? 0;
+      const next = moveVisualMs[i + 1] ?? (moveVisualMs.length > 1 ? moveVisualMs[moveVisualMs.length - 1] + (moveVisualMs[moveVisualMs.length - 1] - moveVisualMs[moveVisualMs.length - 2]) : cur + 100);
+      const gapMs = Math.max(1, next - cur);
+      out.push(1000 / gapMs);
+    }
+    return out;
+  }, [moveTicks, moveVisualMs]);
+  const perMoveMax = useMemo(() => {
+    const m = Math.max(...perMoveTps, 0);
+    return m > 0 ? m : 5;
+  }, [perMoveTps]);
+  const tpsHeat = useCallback(
+    (tps: number): string => {
+      const r = Math.max(0, Math.min(1, tps / perMoveMax));
+      if (r < 0.4) return "#EF4444"; // slow
+      if (r < 0.7) return "#F59E0B"; // medium
+      return "#22C55E"; // fast
+    },
+    [perMoveMax],
   );
-  // P1.a — X-axis tick fractions (0/25/50/75/100%)
-  const xTickFracs = [0, 0.25, 0.5, 0.75, 1];
-  // P1.c — Mean TPS reference line y-position (clamped to the TPS band)
-  const meanTpsY =
-    TPS_AREA_BOTTOM - (Math.min(meanTps, maxTps) / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
-  // Y-axis label column width (px). Just needs to fit "tps" and the tick
-  // numbers (avg is only shown in the legend below). The X-axis label row uses
-  // the same constant for its left margin, so changing it keeps axes aligned.
-  const Y_LABEL_W = 36;
+  const hasMiniMap = moveTicks.length >= 2 && perMoveTps.length === moveTicks.length;
 
-  // P1.d — Segment highlight state for cross-highlight
-  const segHighlight = (seg: TimelineSegment): "active" | "dim" | "normal" => {
+  const xTickFracs = [0, 0.25, 0.5, 0.75, 1];
+  const meanTpsY = TPS_HEIGHT - (Math.min(meanTps, maxTps) / maxTps) * (TPS_HEIGHT - 4) - 2;
+
+  const segHighlight = (phaseName?: string): "active" | "dim" | "normal" => {
     if (hoveredPhase === null) return "normal";
-    return seg.phaseName === hoveredPhase ? "active" : "dim";
+    return phaseName === hoveredPhase ? "active" : "dim";
   };
 
-  // The pipeline emits English display strings for pause categories and
-  // probable causes — map them to the active language here.
   const categoryLabel = (cat: string): string => {
     switch (cat) {
       case "transition":
@@ -527,8 +777,8 @@ function TimelineSection({
     }
   };
 
-  const pauseCauseLabel = (seg: TimelineSegment): string => {
-    const cause = seg.probableCause ?? seg.label ?? "";
+  const pauseCauseLabel = (pm: { probableCause?: string; phase?: string }): string => {
+    const cause = pm.probableCause ?? "";
     switch (cause) {
       case "OLL recognition":
         return t("analysis.pauseCauseOllRecog");
@@ -569,7 +819,7 @@ function TimelineSection({
             phase: cause.slice(0, -" hesitation".length),
           });
         }
-        return cause;
+        return cause || `${pm.phase ?? "Solve"} pause`;
       }
     }
   };
@@ -593,405 +843,434 @@ function TimelineSection({
       />
 
       <div className="mt-3">
-        {/* Chart row: Y-labels column + SVG + pause overlays */}
-        <div className="flex items-stretch gap-1">
-          {/* P1.c — Y-axis TPS labels (HTML, not stretched by SVG) */}
-          <div className="relative shrink-0" style={{ width: Y_LABEL_W, height: TIMELINE_HEIGHT }}>
-            {yTicks.map((t, i) => {
-              const y = TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP);
-              return (
-                <span
-                  key={`yt-${i}`}
-                  className="absolute right-0 nums text-[0.6rem] leading-none text-ink-3"
-                  style={{ top: y, transform: "translateY(-50%)" }}
-                >
-                  {t.toFixed(0)}
+        {/* Chart row: Left labels column + Main Track Canvas */}
+        <div className="flex items-stretch gap-2">
+          {/* Left Y-axis labels perfectly aligned with each track */}
+          <div className="flex shrink-0 flex-col gap-1.5 select-none text-right font-mono" style={{ width: 38 }}>
+            {/* Row 1: TPS */}
+            <div className="flex h-[32px] flex-col justify-between py-0.5 pr-1">
+              <span className="text-[0.52rem] font-bold text-ink-3/70 leading-none">
+                TPS {maxTps.toFixed(0)}
+              </span>
+              <span className="text-[0.5rem] font-medium text-ink-3/40 leading-none">
+                0
+              </span>
+            </div>
+            {/* Row 2: Phase bar label */}
+            <div className="flex h-[26px] items-center justify-end pr-1">
+              <span className="text-[0.52rem] font-bold tracking-wider text-ink-3/60">
+                PHASE
+              </span>
+            </div>
+            {/* Row 3: Pause lane label */}
+            <div className="flex h-[8px] items-center justify-end pr-1">
+              <span className="text-[0.48rem] font-bold tracking-wider text-ink-3/60 leading-none">
+                PAUSE
+              </span>
+            </div>
+            {/* Row 4: Velocity mini-map label */}
+            {hasMiniMap && (
+              <div className="flex h-[10px] items-center justify-end pr-1">
+                <span className="text-[0.46rem] font-bold tracking-wider text-ink-3/40 leading-none">
+                  VEL
                 </span>
-              );
-            })}
-            <span className="absolute left-0 whitespace-nowrap text-[0.6rem] uppercase tracking-wider text-ink-3/50 leading-none"
-              style={{ top: 0, lineHeight: 1 }}
-            >
-              tps
-            </span>
+              </div>
+            )}
           </div>
 
-          {/* SVG + pause popover overlays */}
+          {/* Main timeline track container */}
           <div
             ref={containerRef}
-            className="relative flex-1"
-            style={{ height: TIMELINE_HEIGHT }}
+            className="relative flex-1 flex flex-col gap-1.5 select-none cursor-crosshair"
             onPointerMove={handleMove}
             onPointerLeave={handleLeave}
+            onClick={handleClick}
           >
-            <svg
-              width="100%"
-              height={TIMELINE_HEIGHT}
-              viewBox={`0 0 ${width} ${TIMELINE_HEIGHT}`}
-              preserveAspectRatio="none"
-              className="overflow-visible pointer-events-none"
-              role="img"
-              aria-label={t("analysis.timelineAria", {
-                count: segments.length,
-                time: formatTime(totalMs),
-              })}
-            >
-              <defs>
-                <linearGradient id="timeline-tps-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--ink-2)" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="var(--ink-2)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            {/* 1. TPS Chart Area (SVG only for curves/lines, zero text) */}
+            <div className="relative h-[32px] w-full overflow-hidden border-b border-line/40">
+              <svg
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${width} ${TPS_HEIGHT}`}
+                preserveAspectRatio="none"
+                className="absolute inset-0 pointer-events-none overflow-visible"
+              >
+                <defs>
+                  <linearGradient id="tps-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366F1" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#6366F1" stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
 
-              {/* P1.a — Vertical gridlines at 0/25/50/75/100% */}
-              {xTickFracs.map((f, i) => (
-                <line
-                  key={`gx-${i}`}
-                  x1={f * width}
-                  y1={TPS_AREA_TOP}
-                  x2={f * width}
-                  y2={SEG_BOTTOM}
-                  stroke="var(--ink-3)"
-                  strokeWidth={0.5}
-                  strokeOpacity={0.15}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
-              {/* P1.c — Horizontal TPS gridlines */}
-              {yTicks.map((t, i) => (
-                <line
-                  key={`gy-${i}`}
-                  x1={0}
-                  y1={TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP)}
-                  x2={width}
-                  y2={TPS_AREA_BOTTOM - (t / maxTps) * (TPS_AREA_BOTTOM - TPS_AREA_TOP)}
-                  stroke="var(--ink-3)"
-                  strokeWidth={0.5}
-                  strokeOpacity={0.1}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
+                {/* Vertical time gridlines */}
+                {xTickFracs.map((f, i) => (
+                  <line
+                    key={`gx-${i}`}
+                    x1={f * width}
+                    y1={0}
+                    x2={f * width}
+                    y2={TPS_HEIGHT}
+                    stroke="var(--ink-3)"
+                    strokeWidth={0.5}
+                    strokeOpacity={0.12}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
 
-              {/* TPS area fill */}
-              {tpsAreaPath && <path d={tpsAreaPath} fill="url(#timeline-tps-fill)" />}
-              {/* TPS line */}
-              {tpsPath && (
-                <path
-                  d={tpsPath}
-                  fill="none"
-                  stroke="var(--ink-2)"
-                  strokeWidth={1.2}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
+                {/* TPS area fill & path */}
+                {tpsAreaPath && <path d={tpsAreaPath} fill="url(#tps-gradient)" />}
+                {tpsPath && (
+                  <path
+                    d={tpsPath}
+                    fill="none"
+                    stroke="#6366F1"
+                    strokeWidth={1.5}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
 
-              {/* P1.c — Mean TPS dashed reference line */}
-              {meanTps > 0 && (
-                <line
-                  x1={0}
-                  y1={meanTpsY}
-                  x2={width}
-                  y2={meanTpsY}
-                  stroke="var(--ready)"
-                  strokeWidth={0.8}
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
+                {/* Mean TPS dashed line */}
+                {meanTps > 0 && (
+                  <line
+                    x1={0}
+                    y1={meanTpsY}
+                    x2={width}
+                    y2={meanTpsY}
+                    stroke="var(--ready, #22C55E)"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                    strokeOpacity={0.7}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
+              </svg>
 
-              {/* Unified segment blocks — sharp rectangles, no rounded corners,
-                  no colored borders, clean cross-highlight via opacity only. */}
-              {segments.map((seg, i) => {
-                const x = xForMs(seg.startMs);
-                const w = Math.max(0.5, xForMs(seg.endMs) - x);
-                const isPause = seg.kind === "pause";
-                const color = isPause
-                  ? pauseColorHex(seg.pauseCategory ?? "mid-phase")
-                  : phaseColorHex(seg.phaseName ?? "", i);
-                const hl = segHighlight(seg);
-                const fillOpacity = isPause
-                  ? hl === "dim" ? 0.18 : hl === "active" ? 0.65 : 0.40
-                  : hl === "dim" ? 0.12 : hl === "active" ? 0.55 : 0.30;
+              {/* Move tick marks on baseline */}
+              {moveVisualMs.map((visMs, i) => {
+                const leftPct = totalMs > 0 ? (visMs / totalMs) * 100 : 0;
                 return (
-                  <rect
-                    key={`${seg.kind}-${i}`}
-                    x={x}
-                    y={SEG_TOP}
-                    width={w}
-                    height={SEG_BOTTOM - SEG_TOP}
-                    fill={color}
-                    fillOpacity={fillOpacity}
+                  <div
+                    key={moveTicks[i]?.index ?? i}
+                    className="absolute bottom-0 w-[1px] h-[3px] bg-ink-3/40 pointer-events-none"
+                    style={{ left: `${leftPct}%` }}
                   />
                 );
               })}
+            </div>
 
-              {/* Move ticks — positioned using visual coords (aligned with segments) */}
-              {moveVisualMs.map((visMs, i) => (
-                <line
-                  key={moveTicks[i].index}
-                  x1={xForMs(visMs)}
-                  y1={TPS_AREA_BOTTOM + 1}
-                  x2={xForMs(visMs)}
-                  y2={SEG_TOP - 2}
-                  stroke="var(--ink-3)"
-                  strokeWidth={0.6}
-                  strokeOpacity={0.3}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
+            {/* 2. Main Phase Bar (Pure HTML Flex, Sharp Square Rectangles, Crisp Proportional Typography) */}
+            <div className="relative h-[26px] w-full flex overflow-hidden border border-line/70 bg-surface-2">
+              {continuousPhases.map((phase, pIdx) => {
+                const isF2LDivided = phase.phaseName === "F2L" && hasPairs;
+                const phaseWidthPct = totalMs > 0 ? (phase.durationMs / totalMs) * 100 : 0;
+                const isLastPhase = pIdx === continuousPhases.length - 1;
+                const hl = segHighlight(phase.phaseName);
 
-              {/* Hover playhead */}
-              {hoverMs !== null && (
-                <line
-                  x1={xForMs(hoverMs)}
-                  y1={TPS_AREA_TOP}
-                  x2={xForMs(hoverMs)}
-                  y2={SEG_BOTTOM}
-                  stroke="var(--ink)"
-                  strokeWidth={1}
-                  strokeOpacity={0.6}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
-
-              {/* Replay playhead — centered on segment blocks (does not extend into TPS area) */}
-              {replayX !== null && (
-                <>
-                  {/* Tail: subtle fill behind the playhead */}
-                  <rect
-                    x={0}
-                    y={SEG_TOP}
-                    width={replayX}
-                    height={SEG_BOTTOM - SEG_TOP}
-                    fill="#4F8CF7"
-                    fillOpacity={0.08}
-                  />
-                  <line
-                    x1={replayX}
-                    y1={SEG_TOP}
-                    x2={replayX}
-                    y2={SEG_BOTTOM}
-                    stroke="#4F8CF7"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.85}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                </>
-              )}
-            </svg>
-
-
-
-            {/* P1.b — Pause popover triggers: invisible divs over each pause block */}
-            {totalMs > 0 &&
-              segments
-                .filter((s) => s.kind === "pause")
-                .map((seg, i) => {
-                  const leftPct = (seg.startMs / totalMs) * 100;
-                  const widthPct = (seg.durationMs / totalMs) * 100;
-                  const topPct = (SEG_TOP / TIMELINE_HEIGHT) * 100;
-                  const heightPct = ((SEG_BOTTOM - SEG_TOP) / TIMELINE_HEIGHT) * 100;
-                  // Adjacent moves for the popover
-                  const startIdx = seg.moveStartIndex ?? 0;
-                  const endIdx = seg.moveEndIndex ?? 0;
-                  const before = [-2, -1]
-                    .map((d) => startIdx + d)
-                    .filter((j) => j >= 0)
-                    .map((j) => moveTicks[j])
-                    .filter(Boolean);
-                  const after = [1, 2]
-                    .map((d) => endIdx + d)
-                    .filter((j) => j < moveTicks.length)
-                    .map((j) => moveTicks[j])
-                    .filter(Boolean);
-                  const category = seg.pauseCategory ?? "mid-phase";
-                  const catColor = pauseColorHex(category);
-                  const vsMean =
-                    meanPauseMs > 0 ? ((seg.durationMs - meanPauseMs) / meanPauseMs) * 100 : 0;
-
+                if (isF2LDivided) {
                   return (
-                    <HoverCard key={`pause-${i}`} openDelay={200} closeDelay={150}>
-                      <HoverCardTrigger asChild>
-                        <div
-                          className="absolute cursor-help"
-                          style={{
-                            left: `${leftPct}%`,
-                            width: `max(${widthPct}%, 6px)`,
-                            top: `${topPct}%`,
-                            height: `${heightPct}%`,
-                            minHeight: 10,
-                          }}
-                          onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
-                          onMouseLeave={() => onHoverPhase(null)}
-                        />
-                      </HoverCardTrigger>
-                      <HoverCardContent
-                        side="bottom"
-                        align="start"
-                        sideOffset={4}
-                        className="w-72 p-3 text-xs"
-                      >
-                        {/* Cause */}
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="inline-block size-2.5 shrink-0 rounded-sm"
-                            style={{ background: catColor }}
-                          />
-                          <span className="font-medium text-ink">{pauseCauseLabel(seg)}</span>
-                        </div>
-                        {/* Category badge + phase */}
-                        <div className="mt-1.5 flex items-center gap-2 text-[0.6rem] text-ink-3">
-                          <span
-                            className="rounded px-1.5 py-0.5 font-medium uppercase tracking-wide"
-                            style={{ background: `${catColor}22`, color: catColor }}
-                          >
-                            {categoryLabel(category)}
-                          </span>
-                          <span className="uppercase tracking-wide">{seg.phaseName}</span>
-                        </div>
-                        {/* Duration + comparison vs avg */}
-                        <div className="mt-2 flex items-baseline gap-2">
-                          <span className="nums text-base font-medium text-ink">
-                            {formatTime(seg.durationMs)}
-                          </span>
-                          {meanPauseMs > 0 && (
-                            <span
-                              className={cn(
-                                "nums text-[0.6rem] font-medium",
-                                vsMean > 20
-                                  ? "text-dnf"
-                                  : vsMean < -20
-                                    ? "text-ready"
-                                    : "text-ink-3",
+                    <div
+                      key="f2l-container"
+                      className="h-full flex"
+                      style={{ width: `${phaseWidthPct}%` }}
+                    >
+                      {continuousPairs.map((pair, pairIdx) => {
+                        const pairWidthPct = phase.durationMs > 0 ? (pair.durationMs / phase.durationMs) * 100 : 25;
+                        const pairHl = segHighlight("F2L");
+                        const opacity = pairHl === "dim" ? 0.35 : pairHl === "active" ? 1.0 : 0.95;
+                        const seekable = !!onSeekToMove && pair.moveStartIndex >= 0;
+                        const isLastPair = pairIdx === continuousPairs.length - 1;
+
+                        return (
+                          <HoverCard key={`pair-${pair.pairNumber}`} openDelay={150} closeDelay={100}>
+                            <HoverCardTrigger asChild>
+                              <div
+                                className={cn(
+                                  "h-full relative flex items-center justify-center transition-opacity",
+                                  !isLastPair && "border-r border-black/15",
+                                  isLastPair && !isLastPhase && "border-r border-black/15",
+                                  seekable && "cursor-pointer",
+                                )}
+                                style={{
+                                  width: `${pairWidthPct}%`,
+                                  backgroundColor: pair.color,
+                                  opacity,
+                                }}
+                                onMouseEnter={() => onHoverPhase("F2L")}
+                                onMouseLeave={() => onHoverPhase(null)}
+                                onClick={seekable ? (e) => { e.stopPropagation(); onSeekToMove!(pair.moveStartIndex); } : undefined}
+                              >
+                                <span className="truncate px-1 font-sans text-[0.68rem] font-bold uppercase tracking-wider text-white select-none antialiased">
+                                  {pair.slot ?? `P${pair.pairNumber}`}
+                                </span>
+                              </div>
+                            </HoverCardTrigger>
+                            <HoverCardContent side="top" align="center" sideOffset={8} className="w-64 p-3 text-xs shadow-lg">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-block size-2.5 shrink-0" style={{ background: pair.color }} />
+                                <span className="font-semibold text-ink">
+                                  {t("analysis.pair", { number: pair.pairNumber })}
+                                </span>
+                                {pair.slot && (
+                                  <span className="rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-ink-2">
+                                    {pair.slot}
+                                  </span>
+                                )}
+                                {seekable && (
+                                  <span className="ml-auto text-[0.58rem] font-medium text-phase-indigo">
+                                    {t("analysis.pairSeekHint")}
+                                  </span>
+                                )}
+                              </div>
+                              {pair.caseName && (
+                                <div className="mt-1.5 flex items-baseline gap-2">
+                                  <span className="text-[0.74rem] font-medium text-ink-2">
+                                    {pair.caseName}
+                                  </span>
+                                  {pair.caseNumber && (
+                                    <span className="font-mono text-[0.58rem] text-ink-3">
+                                      {pair.caseNumber}
+                                    </span>
+                                  )}
+                                </div>
                               )}
-                            >
-                              {vsMean > 0 ? "+" : ""}
-                              {t("analysis.vsAvg", { pct: Math.round(vsMean) })}
-                            </span>
-                          )}
-                        </div>
-                        {/* Adjacent moves */}
-                        {(before.length > 0 || after.length > 0) && (
-                          <div className="mt-2 border-t border-line/40 pt-2">
-                            <span className="text-[0.6rem] uppercase tracking-wide text-ink-3">
-                              {t("analysis.adjacentMoves")}
-                            </span>
-                            <div className="mt-1 flex items-center gap-1 font-mono text-[0.65rem]">
-                              {before.map((m, j) => (
-                                <span key={`b-${j}`} className="text-ink-3">
-                                  {m.label}
-                                </span>
-                              ))}
-                              <span className="text-dnf">‖</span>
-                              {after.map((m, j) => (
-                                <span key={`a-${j}`} className="font-medium text-ink-2">
-                                  {m.label}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </HoverCardContent>
-                    </HoverCard>
+                              <div className="mt-2 flex items-baseline justify-between border-t border-line/40 pt-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    {t("analysis.phaseTime")}
+                                  </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {formatTime(pair.durationMs)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    {t("analysis.phaseMoves")}
+                                  </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {pair.moves}m
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    TPS
+                                  </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {pair.tps.toFixed(1)}
+                                  </span>
+                                </div>
+                                {pair.pauseBeforeMs > 50 && (
+                                  <div className="flex flex-col">
+                                    <span className="text-[0.58rem] uppercase tracking-wider text-caution">
+                                      {t("analysis.pauseBefore")}
+                                    </span>
+                                    <span className="nums text-sm font-semibold text-caution">
+                                      +{formatTime(pair.pauseBeforeMs)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
+                        );
+                      })}
+                    </div>
                   );
-                })}
-            {/* Phase hover popover triggers: invisible divs over each phase block */}
-            {totalMs > 0 &&
-              segments
-                .filter((s) => s.kind === "phase")
-                .map((seg, i) => {
-                  const leftPct = (seg.startMs / totalMs) * 100;
-                  const widthPct = (seg.durationMs / totalMs) * 100;
-                  const topPct = (SEG_TOP / TIMELINE_HEIGHT) * 100;
-                  const heightPct = ((SEG_BOTTOM - SEG_TOP) / TIMELINE_HEIGHT) * 100;
-                  const color = phaseColorHex(seg.phaseName ?? "", i);
-                  // Compute TPS and move count for this phase segment
-                  const moveCount = moveTicks.filter(
-                    (t) => t.phaseName === seg.phaseName &&
-                      t.offsetMs >= seg.startMs &&
-                      t.offsetMs <= seg.endMs
-                  ).length;
-                  const phaseTps = moveCount > 0 && seg.durationMs > 0
-                    ? (moveCount / seg.durationMs) * 1000
-                    : 0;
+                }
 
-                  return (
-                    <HoverCard key={`phase-${i}`} openDelay={200} closeDelay={150}>
-                      <HoverCardTrigger asChild>
-                        <div
-                          className="absolute cursor-pointer"
-                          style={{
-                            left: `${leftPct}%`,
-                            width: `max(${widthPct}%, 4px)`,
-                            top: `${topPct}%`,
-                            height: `${heightPct}%`,
-                            minHeight: 10,
-                          }}
-                          onMouseEnter={() => onHoverPhase(seg.phaseName ?? null)}
-                          onMouseLeave={() => onHoverPhase(null)}
-                        />
-                      </HoverCardTrigger>
-                      <HoverCardContent
-                        side="bottom"
-                        align="start"
-                        sideOffset={4}
-                        className="w-56 p-3 text-xs"
+                const opacity = hl === "dim" ? 0.35 : hl === "active" ? 1.0 : 0.95;
+
+                return (
+                  <HoverCard key={`phase-${phase.phaseName}`} openDelay={150} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div
+                        className={cn(
+                          "h-full relative flex items-center justify-center transition-opacity cursor-pointer",
+                          !isLastPhase && "border-r border-black/15",
+                        )}
+                        style={{
+                          width: `${phaseWidthPct}%`,
+                          backgroundColor: phase.color,
+                          opacity,
+                        }}
+                        onMouseEnter={() => onHoverPhase(phase.phaseName)}
+                        onMouseLeave={() => onHoverPhase(null)}
                       >
-                        {/* Phase name */}
-                        <div className="flex items-center gap-2">
+                        <span className="truncate px-1 font-sans text-[0.68rem] font-bold uppercase tracking-wider text-white select-none antialiased">
+                          {phase.phaseName}
+                        </span>
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent side="top" align="center" sideOffset={8} className="w-56 p-3 text-xs shadow-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block size-2.5 shrink-0" style={{ background: phase.color }} />
+                        <span className="font-semibold text-ink">{phase.phaseName}</span>
+                        <span className="ml-auto nums text-[0.65rem] text-ink-3">
+                          {Math.round((phase.durationMs / totalMs) * 100)}%
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-baseline justify-between border-t border-line/40 pt-2">
+                        <div className="flex flex-col">
+                          <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                            {t("analysis.phaseTime")}
+                          </span>
+                          <span className="nums text-sm font-semibold text-ink">
+                            {formatTime(phase.durationMs)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                            {t("analysis.phaseMoves")}
+                          </span>
+                          <span className="nums text-sm font-semibold text-ink">
+                            {phase.moveCount}m
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                            TPS
+                          </span>
+                          <span className="nums text-sm font-semibold text-ink">
+                            {phase.tps.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                );
+              })}
+            </div>
+
+            {/* 3. Pause Lane (HTML, Sleek Minimalist Track, Flat Square Blocks) */}
+            <div className="relative h-[8px] w-full bg-surface-2/60 border border-line/40 overflow-hidden">
+              {pauseMarks.map((pm, i) => {
+                const leftPct = totalMs > 0 ? (pm.startMs / totalMs) * 100 : 0;
+                const widthPct = totalMs > 0 ? (pm.durationMs / totalMs) * 100 : 0;
+                const isRecog = pm.category === "pre-algorithm" || pm.category === "transition";
+                const catColor = isRecog ? "#8B5CF6" : "#F59E0B";
+                const isLong = pm.durationMs >= 500;
+                const vsMean =
+                  meanPauseMs > 0 ? ((pm.durationMs - meanPauseMs) / meanPauseMs) * 100 : 0;
+
+                const startIdx = pm.startIndex ?? 0;
+                const endIdx = pm.endIndex ?? 0;
+                const before = [-2, -1]
+                  .map((d) => startIdx + d)
+                  .filter((j) => j >= 0)
+                  .map((j) => moveTicks[j])
+                  .filter(Boolean);
+                const after = [1, 2]
+                  .map((d) => endIdx + d)
+                  .filter((j) => j < moveTicks.length)
+                  .map((j) => moveTicks[j])
+                  .filter(Boolean);
+
+                return (
+                  <HoverCard key={`pause-${i}`} openDelay={150} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <div
+                        className="absolute top-0 bottom-0 transition-opacity cursor-help"
+                        style={{
+                          left: `${leftPct}%`,
+                          width: `max(${widthPct}%, 2px)`,
+                          backgroundColor: catColor,
+                          opacity: isLong ? 0.95 : 0.8,
+                        }}
+                        onMouseEnter={() => onHoverPhase(pm.phase ?? null)}
+                        onMouseLeave={() => onHoverPhase(null)}
+                      />
+                    </HoverCardTrigger>
+                    <HoverCardContent side="top" align="center" sideOffset={6} className="w-72 p-3 text-xs shadow-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block size-2.5 shrink-0" style={{ background: catColor }} />
+                        <span className="font-semibold text-ink">{pauseCauseLabel(pm)}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-[0.6rem] text-ink-3">
+                        <span
+                          className="rounded px-1.5 py-0.5 font-medium uppercase tracking-wide"
+                          style={{ background: `${catColor}22`, color: catColor }}
+                        >
+                          {categoryLabel(pm.category)}
+                        </span>
+                        <span className="uppercase tracking-wide font-medium">{pm.phase}</span>
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-2 border-t border-line/40 pt-2">
+                        <span className="nums text-base font-bold text-ink">
+                          {formatTime(pm.durationMs)}
+                        </span>
+                        {meanPauseMs > 0 && (
                           <span
-                            className="inline-block size-2.5 shrink-0 rounded-sm"
-                            style={{ background: color }}
-                          />
-                          <span className="font-medium text-ink">{seg.phaseName}</span>
-                        </div>
-                        {/* Stats */}
-                        <div className="mt-2 flex items-baseline gap-3">
-                          <div className="flex flex-col">
-                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
-                              {t("analysis.phaseTime")}
-                            </span>
-                            <span className="nums text-base font-medium text-ink">
-                              {formatTime(seg.durationMs)}
-                            </span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
-                              {t("analysis.phaseMoves")}
-                            </span>
-                            <span className="nums text-base font-medium text-ink">
-                              {moveCount}
-                            </span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[0.6rem] uppercase tracking-wider text-ink-3">
-                              TPS
-                            </span>
-                            <span className="nums text-base font-medium text-ink">
-                              {phaseTps.toFixed(1)}
-                            </span>
+                            className={cn(
+                              "nums text-[0.65rem] font-semibold",
+                              vsMean > 20 ? "text-dnf" : vsMean < -20 ? "text-ready" : "text-ink-3",
+                            )}
+                          >
+                            {vsMean > 0 ? "+" : ""}
+                            {t("analysis.vsAvg", { pct: Math.round(vsMean) })}
+                          </span>
+                        )}
+                      </div>
+                      {(before.length > 0 || after.length > 0) && (
+                        <div className="mt-2 border-t border-line/40 pt-1.5">
+                          <span className="text-[0.58rem] uppercase tracking-wide text-ink-3 font-semibold">
+                            {t("analysis.adjacentMoves")}
+                          </span>
+                          <div className="mt-1 flex items-center gap-1.5 font-mono text-[0.68rem]">
+                            {before.map((m, j) => (
+                              <span key={`b-${j}`} className="text-ink-3">
+                                {m.label}
+                              </span>
+                            ))}
+                            <span className="font-bold text-dnf">⏸</span>
+                            {after.map((m, j) => (
+                              <span key={`a-${j}`} className="font-semibold text-ink">
+                                {m.label}
+                              </span>
+                            ))}
                           </div>
                         </div>
-                        {/* Duration fraction */}
-                        <div className="mt-1.5 text-[0.6rem] text-ink-3">
-                          {t("analysis.pctOfSolve", {
-                            pct: Math.round((seg.durationMs / totalMs) * 100),
-                          })}
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  );
-                })}
+                      )}
+                    </HoverCardContent>
+                  </HoverCard>
+                );
+              })}
+            </div>
+
+            {/* 3.5 Velocity mini-map — per-move TPS heat strip */}
+            {hasMiniMap && (
+              <div className="relative h-[10px] w-full flex overflow-hidden rounded-sm bg-surface-2/60 border border-line/40">
+                {perMoveTps.map((t, i) => (
+                  <div
+                    key={`vel-${i}`}
+                    className="h-full transition-colors"
+                    style={{ width: `${100 / moveTicks.length}%`, backgroundColor: tpsHeat(t) }}
+                    title={`${moveTicks[i]?.label ?? ""} · ${t.toFixed(1)} TPS`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* 4. Playhead and Hover Scrubber Vertical Lines */}
+            {hoverPct !== null && (
+              <div
+                className="absolute top-0 bottom-0 w-[1px] bg-ink pointer-events-none opacity-60 z-20"
+                style={{ left: `${hoverPct}%` }}
+              />
+            )}
+            {replayPct !== null && (
+              <div
+                className="absolute top-0 bottom-0 w-[2px] bg-blue-500 pointer-events-none z-20 shadow-[0_0_4px_rgba(59,130,246,0.8)]"
+                style={{ left: `${replayPct}%` }}
+              />
+            )}
           </div>
         </div>
 
-        {/* P1.a — X-axis time labels */}
-        <div className="relative" style={{ height: 14, marginLeft: Y_LABEL_W + 4 }}>
+        {/* X-axis time labels (HTML) */}
+        <div className="relative mt-1 select-none" style={{ height: 14, marginLeft: 46 }}>
           {xTickFracs.map((f, i) => (
             <span
               key={`xt-${i}`}
-              className="absolute nums text-[0.6rem] leading-none text-ink-3/70"
+              className="absolute nums text-[0.58rem] font-medium leading-none text-ink-3/75"
               style={{
                 left: `${f * 100}%`,
                 transform:
@@ -1006,47 +1285,73 @@ function TimelineSection({
             </span>
           ))}
         </div>
-
-
       </div>
 
-      {/* Legend — real labels, grouped: phases / pauses / TPS / avg */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.58rem] text-ink-3">
-        {timeline.stageSegments.map((seg, i) => (
-          <span key={seg.phaseName} className="flex items-center gap-1.5">
-            <span
-              className="inline-block size-2 rounded-sm"
-              style={{ background: phaseColorHex(seg.phaseName, i), opacity: 0.7 }}
-            />
-            {seg.phaseName}
-          </span>
-        ))}
+      {/* Legend — Sharp square dots, clean typography */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line/40 pt-2.5 text-[0.6rem] text-ink-3">
+        {continuousPhases.map((phase) => {
+          const isF2LDivided = phase.phaseName === "F2L" && hasPairs;
+          return (
+            <button
+              key={phase.phaseName}
+              type="button"
+              className={cn(
+                "flex items-center gap-1.5 transition-opacity hover:opacity-100",
+                hoveredPhase && hoveredPhase !== phase.phaseName ? "opacity-40" : "opacity-90",
+              )}
+              onMouseEnter={() => onHoverPhase(phase.phaseName)}
+              onMouseLeave={() => onHoverPhase(null)}
+            >
+              {isF2LDivided ? (
+                <span className="flex gap-0.5">
+                  {continuousPairs.map((pair) => (
+                    <span
+                      key={pair.pairNumber}
+                      className="inline-block size-2"
+                      style={{ background: pair.color }}
+                    />
+                  ))}
+                </span>
+              ) : (
+                <span
+                  className="inline-block size-2"
+                  style={{ background: phase.color }}
+                />
+              )}
+              <span className="font-medium text-ink-2">{phase.phaseName}</span>
+            </button>
+          );
+        })}
+
         {pauseMarks.length > 0 && (
           <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block size-2 rounded-sm"
-              style={{
-                background: PAUSE_COLOR_BY_CATEGORY["mid-phase"],
-                opacity: 0.7,
-              }}
-            />
-            {t("analysis.pausesLegend", {
-              count: pauseMarks.length,
-              time: formatTime(totalPauseMs),
-            })}
+            <span className="flex gap-0.5">
+              <span className="inline-block size-2 bg-[#8B5CF6]" title="Recognition / Transition" />
+              <span className="inline-block size-2 bg-[#F59E0B]" title="Hesitation / Search" />
+            </span>
+            <span className="font-medium text-ink-2">
+              {t("analysis.pausesLegend", {
+                count: pauseMarks.length,
+                time: formatTime(totalPauseMs),
+              })}
+            </span>
           </span>
         )}
+
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-4 bg-ink-2" />
-          TPS
+          <span className="inline-block h-0.5 w-3.5 bg-[#6366F1]" />
+          <span className="font-medium text-ink-2">TPS</span>
         </span>
+
         {meanTps > 0 && (
           <span className="flex items-center gap-1.5">
             <span
-              className="inline-block h-0 w-4 border-t border-dashed"
-              style={{ borderColor: "var(--ready)", opacity: 0.6 }}
+              className="inline-block h-0 w-3.5 border-t border-dashed"
+              style={{ borderColor: "var(--ready, #22C55E)", borderWidth: 1 }}
             />
-            {t("analysis.avgLegend", { tps: meanTps.toFixed(1) })}
+            <span className="font-medium text-ink-2">
+              {t("analysis.avgLegend", { tps: meanTps.toFixed(1) })}
+            </span>
           </span>
         )}
       </div>
@@ -1402,106 +1707,360 @@ function CfopDetailsSection({ metrics }: { metrics: SolveMetrics }) {
         />
         <DetailTile label={t("analysis.f2lPairs")} value={`${cfop.f2lPairs.length}`} />
       </div>
-
-      {/* F2L pair breakdown */}
-      {cfop.f2lPairs.length > 0 && <F2LPairs pairs={cfop.f2lPairs} />}
     </div>
   );
 }
 
-// ─── F2L slot color mapping (derived from face letters) ────────────────────
+// ─── Detection Table (Standalone Panel, matching reconstructions) ──────────
 
-/**
- * Derive two face colors from an edge slotId (e.g. "FR" → ["#22C55E", "#EF4444"]).
- * Fallback only — the unified pipeline now provides `pair.colors` directly.
- */
-function slotFaceColors(slotId: string): [string, string] | null {
-  if (slotId.length < 2) return null;
-  const a = FACE_HEX[slotId[0]];
-  const b = FACE_HEX[slotId[1]];
-  if (!a || !b) return null;
-  return [a, b];
-}
+const CASE_GRID_CONTAINER =
+  "grid min-w-[36rem] grid-cols-[5.5rem_minmax(6.5rem,max-content)_minmax(0,1fr)_4.25rem_3.25rem_2.25rem] sm:grid-cols-[6.5rem_minmax(7.5rem,max-content)_minmax(0,1fr)_4.75rem_3.5rem_2.5rem]";
+const CASE_ROW_GRID = "grid grid-cols-subgrid col-span-6";
 
-function F2LPairs({ pairs }: { pairs: F2LPairMetrics[] }) {
+function DetectionSection({
+  metrics,
+  solve,
+  onSeekToMove,
+}: {
+  metrics: SolveMetrics;
+  solve: Solve;
+  onSeekToMove?: (moveIndex: number) => void;
+}) {
   const { t } = useTranslation("insights");
-  const slowest = Math.max(...pairs.map((p) => p.timeMs));
-  return (
-    <div className="mt-3">
-      <span className="text-[0.58rem] uppercase tracking-[0.15em] text-ink-3 font-medium">
-        {t("analysis.f2lPairBreakdown")}
-      </span>
-      <div className="mt-1.5 space-y-0">
-        {pairs.map((pair) => {
-          const isSlowest = pair.timeMs === slowest;
-          // Unified pipeline colors are canonical FACE LETTERS (e.g. ["F","R"]),
-          // not CSS colors — map them to hex before painting. Unknown letters
-          // (or missing colors in older persisted data) fall back to the
-          // slot-derived colors.
-          const rawColors =
-            pair.colors && pair.colors.length === 2 ? pair.colors : null;
-          const colors: [string, string] | null =
-            rawColors && FACE_HEX[rawColors[0]] && FACE_HEX[rawColors[1]]
-              ? [FACE_HEX[rawColors[0]], FACE_HEX[rawColors[1]]]
-              : pair.slotId
-                ? slotFaceColors(pair.slotId)
-                : null;
-          const auf = pair.auf ?? [];
+  const cfop = metrics.cfop!;
+  const report = metrics.detectionReport;
+  const crossColor = report?.crossColor;
+  const crossType = report?.crossType;
+  const skips = report?.skips ?? [];
+  const warnings = report?.warnings ?? [];
+  const crossPhase = metrics.phases.find((p) => p.phaseName === "Cross");
+  const ollPhase = metrics.phases.find((p) => p.phaseName === "OLL");
+  const pllPhase = metrics.phases.find((p) => p.phaseName === "PLL");
 
-          return (
-            <div
-              key={pair.pairNumber}
-              className={cn(
-                "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1.5 text-xs border-t border-line/30 first:border-0",
-                isSlowest && "bg-caution/5",
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-ink-2 font-medium">{t("analysis.pair", { number: pair.pairNumber })}</span>
-                {isSlowest && (
-                  <span className="text-[0.6rem] uppercase tracking-wider text-caution font-medium">
-                    {t("analysis.slowest")}
+  const casesByNumber = useMemo(() => {
+    const m = new Map<string, AlgorithmCase>();
+    for (const c of getSeedData().cases) {
+      if (!m.has(c.caseNumber)) m.set(c.caseNumber, c);
+      if (c.name && !m.has(c.name)) m.set(c.name, c);
+    }
+    return m;
+  }, []);
+
+  // ── Notation from the recorded move stream ────────────────────────────
+  const notationOf = useCallback(
+    (from: number, to: number): string[] | null => {
+      const src = solve.moves ?? [];
+      if (from < 0 || to < from || to >= src.length) return null;
+      return src.slice(from, to + 1).map((mv) => {
+        const suffix = mv.direction === 2 ? "2" : mv.direction === -1 ? "'" : "";
+        return `${mv.face}${suffix}`;
+      });
+    },
+    [solve.moves],
+  );
+
+  // Cumulative move windows (entry indices) across the solve.
+  const crossTo = cfop.crossMoves - 1;
+  const crossNotation = notationOf(0, crossTo);
+  const pairs = cfop.f2lPairs.map((p) => {
+    const completion = p.completionIndex ?? -1;
+    const from =
+      completion >= 0 ? completion - Math.max(0, p.moves) + 1 : -1;
+    return { pair: p, from, notation: notationOf(from, completion) };
+  });
+  const lastPairEnd =
+    pairs.length > 0
+      ? Math.max(...pairs.map((x) => x.pair.completionIndex ?? -1))
+      : crossTo;
+  const ollStart = lastPairEnd + 1;
+  const ollTo = ollStart + (ollPhase?.moveCount ?? 0) - 1;
+  const ollNotation = notationOf(ollStart, ollTo);
+  const pllStart = ollTo + 1;
+  const pllTo = pllStart + (pllPhase?.moveCount ?? 0) - 1;
+  const pllNotation = notationOf(pllStart, pllTo);
+
+  const f2lMoves = pairs.reduce((n, x) => n + x.pair.moves, 0);
+  const f2lAvg = pairs.length > 0 ? (f2lMoves / pairs.length).toFixed(1) : null;
+  const slowest = Math.max(...cfop.f2lPairs.map((p) => p.timeMs));
+
+  // Clicking a row seeks the 3D replay to the state right BEFORE that
+  // phase's first move (same convention as the reconstruction table).
+  const seekRowProps = (moveIndex: number) =>
+    onSeekToMove
+      ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick: () => onSeekToMove(moveIndex),
+        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSeekToMove(moveIndex);
+          }
+        },
+      }
+      : {};
+  const seekCls = onSeekToMove ? "cursor-pointer" : "";
+
+  return (
+    <div className="rounded-lg border border-line bg-surface overflow-hidden">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3 sm:py-3.5">
+        <SectionHeader
+          title={t("analysis.detectionTitle", { defaultValue: "Detection" })}
+          eyebrow={t("analysis.detectionEyebrow", { defaultValue: "CFOP" })}
+        />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <CfopMiniBar
+            crossMoves={cfop.crossMoves}
+            f2lMoves={f2lMoves}
+            ollMoves={ollPhase?.moveCount ?? 0}
+            pllMoves={pllPhase?.moveCount ?? 0}
+            totalMoves={metrics.totalMoves}
+          />
+          <WarningsBadge warnings={warnings} />
+          <CoherenceBadge coherent={report?.finalStateSolved ?? true} />
+          <span className="nums text-xs text-ink-3">
+            {metrics.totalMoves} moves
+          </span>
+        </div>
+      </div>
+
+      {/* ── Outer 5-Column Table Grid with horizontal scroll guard ── */}
+      <div className="overflow-x-auto overflow-y-hidden min-w-0 scrollbar-thin">
+        <div className={CASE_GRID_CONTAINER}>
+          {/* Column headers */}
+          <div
+            className={cn(
+              CASE_ROW_GRID,
+              "items-center gap-2 border-b border-line bg-surface-2/60 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[0.56rem] sm:text-[0.58rem] font-semibold uppercase tracking-wider text-ink-3",
+            )}
+          >
+            <span className="whitespace-nowrap">{t("analysis.colPhase")}</span>
+            <span className="whitespace-nowrap">{t("analysis.colCase")}</span>
+            <span className="whitespace-nowrap">{t("analysis.colMoves")}</span>
+            <span className="text-right whitespace-nowrap">{t("analysis.colTime")}</span>
+            <span className="text-right whitespace-nowrap">TPS</span>
+            <span className="text-right whitespace-nowrap">#</span>
+          </div>
+
+          {/* ── Cross row ── */}
+          <div className={cn(CASE_ROW_GRID, ROW, ROW_LINE, seekCls)} {...seekRowProps(-1)}>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[0.74rem] font-medium text-ink">Cross</span>
+              <span className="mt-0.5 flex items-center gap-1.5">
+                {crossType && crossType !== "plain" && (
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide",
+                      crossType !== "xcross"
+                        ? "border border-caution/40 bg-caution/10 text-caution"
+                        : "border border-phase-violet/40 bg-phase-violet/10 text-phase-violet",
+                    )}
+                  >
+                    {crossType}
                   </span>
                 )}
-              </div>
-              <div className="flex items-center gap-3 nums text-ink-3">
-                {colors && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="flex items-center gap-1">
-                        <span
-                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
-                          style={{ background: colors[0] }}
-                        />
-                        <span
-                          className="inline-block size-2.5 rounded-sm ring-1 ring-black/30"
-                          style={{ background: colors[1] }}
-                        />
+                {crossColor && <FaceChip face={crossColor} />}
+              </span>
+            </span>
+            <span className="text-[0.64rem] text-ink-3/50">—</span>
+            <MovesSeq tokens={crossNotation} />
+            <span className="nums text-right text-xs text-ink-3">
+              {crossPhase ? formatTime(crossPhase.durationMs) : "—"}
+            </span>
+            <span className="nums text-right text-xs font-medium text-ink">
+              {cfop.crossTPS.toFixed(1)}
+            </span>
+            <CountCell count={crossNotation?.length ?? 0} />
+          </div>
+
+          {/* ── F2L pair rows ── */}
+          {pairs.map(({ pair, from, notation }) => {
+            const isSlowest = pair.timeMs === slowest;
+            const [leftColor, rightColor] =
+              pair.colors && pair.colors.length === 2
+                ? orderPairColors(pair.colors[0], pair.colors[1], crossColor ?? undefined)
+                : [undefined, undefined];
+            const stickerColors =
+              crossColor && leftColor && rightColor
+                ? pairStickerColors(crossColor, leftColor, rightColor)
+                : null;
+            const auf =
+              pair.auf && pair.auf.length > 0
+                ? pair.auf
+                : leadingU(notation ?? []);
+            const seekIdx = from > 0 ? from - 1 : -1;
+
+            return (
+              <div
+                key={pair.pairNumber}
+                className={cn(
+                  CASE_ROW_GRID,
+                  ROW,
+                  ROW_LINE,
+                  seekCls,
+                  isSlowest && "bg-caution/5",
+                )}
+                {...seekRowProps(seekIdx)}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[0.74rem] font-medium text-ink">
+                      {t("analysis.pair", { number: pair.pairNumber })}
+                    </span>
+                    {isSlowest && (
+                      <span className="text-[0.56rem] uppercase tracking-wider text-caution font-medium">
+                        {t("analysis.slowest")}
                       </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {pair.slotId ?? rawColors?.join(" ") ?? "—"}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                {/* Leading U moves (AUF-style) before the insertion. */}
-                {auf.length > 0 && (
-                  <span className="rounded border border-line bg-surface-2 px-1 py-0.5 font-mono text-[0.54rem] text-ink-3">
-                    auf {auf.join(" ")}
+                    )}
                   </span>
-                )}
-                <span>{pair.moves}m</span>
-                <span>{formatTime(pair.timeMs)}</span>
-                <span className="font-medium text-ink">{pair.tps.toFixed(1)} tps</span>
-                {pair.pauseBeforeMs > 50 && (
-                  <span className="text-caution/70">
-                    +{formatTime(pair.pauseBeforeMs)}
+                  <span className="mt-0.5 flex items-center gap-1.5">
+                    {pair.slotId ? (
+                      <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.56rem] font-medium text-ink-2">
+                        {pair.slotId}
+                      </span>
+                    ) : (
+                      <span className="text-[0.64rem] text-ink-3">
+                        {t("analysis.noPairSegmentation")}
+                      </span>
+                    )}
+                    {leftColor && <FaceChip face={leftColor} />}
+                    {rightColor && <FaceChip face={rightColor} />}
                   </span>
-                )}
+                </span>
+
+                <span className="flex min-w-0 items-center gap-2">
+                  {pair.detectedCase &&
+                    (() => {
+                      const caseData =
+                        casesByNumber.get(pair.detectedCase!.caseNumber) ??
+                        casesByNumber.get(pair.detectedCase!.caseName);
+                      if (!caseData) return null;
+                      return (
+                        <>
+                          <CaseMiniCube
+                            caseData={caseData}
+                            slotIndex={0}
+                            stickerColors={stickerColors}
+                            alt={pair.detectedCase!.caseName}
+                          />
+                          <span className="flex min-w-0 flex-col">
+                            <span className="text-[0.74rem] font-medium text-ink truncate">
+                              {pair.detectedCase!.caseName}
+                            </span>
+                            <span className="mt-0.5 text-[0.56rem] text-ink-3 font-mono">
+                              {pair.detectedCase!.caseNumber}
+                            </span>
+                          </span>
+                        </>
+                      );
+                    })()}
+                  {!pair.detectedCase && (
+                    <span className="text-[0.64rem] text-ink-3/50">—</span>
+                  )}
+                </span>
+
+                <MovesSeq
+                  tokens={notation}
+                  aufMoves={auf.length > 0 ? auf : undefined}
+                />
+                <span className="nums text-right text-xs text-ink-3">
+                  {formatTime(pair.timeMs)}
+                  {pair.pauseBeforeMs > 50 && (
+                    <span className="ml-1 text-caution/70">
+                      +{formatTime(pair.pauseBeforeMs)}
+                    </span>
+                  )}
+                </span>
+                <span className="nums text-right text-xs font-medium text-ink">
+                  {pair.tps.toFixed(1)}
+                </span>
+                <CountCell count={pair.moves} />
               </div>
+            );
+          })}
+
+          {/* ── OLL row ── */}
+          {(ollPhase || cfop.ollCase) && (
+            <div
+              className={cn(CASE_ROW_GRID, ROW, ROW_LINE, seekCls)}
+              {...seekRowProps(lastPairEnd)}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">OLL</span>
+                {skips.includes("oll") && <SkippedBadge className="mt-0.5 w-fit" />}
+              </span>
+              {cfop.ollCase ? (
+                <LastLayerCaseCell
+                  detectedCase={cfop.ollCase}
+                  casesByNumber={casesByNumber}
+                />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={ollNotation} />
+              <span className="nums text-right text-xs text-ink-3">
+                {ollPhase ? formatTime(ollPhase.durationMs) : "—"}
+              </span>
+              <span className="nums text-right text-xs font-medium text-ink">
+                {cfop.ollTPS.toFixed(1)}
+              </span>
+              <CountCell count={ollPhase?.moveCount ?? 0} />
             </div>
-          );
-        })}
+          )}
+
+          {/* ── PLL row ── */}
+          {(pllPhase || cfop.pllCase) && (
+            <div
+              className={cn(CASE_ROW_GRID, ROW, seekCls)}
+              {...seekRowProps(ollTo)}
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[0.74rem] font-medium text-ink">PLL</span>
+                {skips.includes("pll") && <SkippedBadge className="mt-0.5 w-fit" />}
+              </span>
+              {cfop.pllCase ? (
+                <LastLayerCaseCell
+                  detectedCase={cfop.pllCase}
+                  casesByNumber={casesByNumber}
+                />
+              ) : (
+                <span className="text-[0.64rem] text-ink-3/50">—</span>
+              )}
+              <MovesSeq tokens={pllNotation} />
+              <span className="nums text-right text-xs text-ink-3">
+                {pllPhase ? formatTime(pllPhase.durationMs) : "—"}
+              </span>
+              <span className="nums text-right text-xs font-medium text-ink">
+                {cfop.pllTPS.toFixed(1)}
+              </span>
+              <CountCell count={pllPhase?.moveCount ?? 0} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 bg-surface-2/60 px-3 py-1.5 text-[0.58rem] sm:text-[0.6rem] text-ink-3 border-t border-line/60">
+        <span className="flex items-center gap-2.5">
+          <CfopMiniBar
+            crossMoves={cfop.crossMoves}
+            f2lMoves={f2lMoves}
+            ollMoves={ollPhase?.moveCount ?? 0}
+            pllMoves={pllPhase?.moveCount ?? 0}
+            totalMoves={metrics.totalMoves}
+          />
+          {f2lAvg && (
+            <span className="nums text-ink-2 font-mono">
+              {t("analysis.f2lAvg", { avg: f2lAvg })}
+            </span>
+          )}
+        </span>
+        {onSeekToMove && (
+          <span className="text-[0.56rem] text-ink-3/70">
+            {t("analysis.seekHint")}
+          </span>
+        )}
       </div>
     </div>
   );

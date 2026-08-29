@@ -111,6 +111,94 @@ export function derivePauseCause(pause: PauseDetail, phases: PhaseMetrics[]): st
   return `${pause.phase} hesitation`;
 }
 
+// ─── derivePairSegments ──────────────────────────────────────────────────
+
+/**
+ * One F2L pair as a timeline sub-segment — lets the phase bar paint the F2L
+ * phase as 4 sub-bars (one per pair) and seek the replay to the pair's start.
+ */
+export interface PairSegment {
+  phaseName: "F2L";
+  pairNumber: number;
+  /** Slot name in the solver's cross frame ("FR", "FL", "BR", "BL"). */
+  slot: string | null;
+  /** Recognized Basic F2L case (41-case catalog), when matched. */
+  caseName?: string;
+  caseNumber?: string;
+  /** Milliseconds from the solve start to the pair's first move. */
+  startMs: number;
+  /** startMs + the pair's wall-clock duration. */
+  endMs: number;
+  /** Wall-clock duration of the pair's entries (timeMs from the pipeline). */
+  durationMs: number;
+  /** Timeline entry of the pair's FIRST move (for replay seek). */
+  moveStartIndex: number;
+  /** Timeline entry of the pair's LAST move (the completion). */
+  moveEndIndex: number;
+  /** Timeline entry where the pair completed. */
+  completionIndex: number;
+  /** Number of moves owned by the pair. */
+  moves: number;
+  tps: number;
+  /** Gap between the previous pair's end and this pair's start. */
+  pauseBeforeMs: number;
+}
+
+/**
+ * Derive one timeline sub-segment per F2L pair from an analysis.
+ *
+ * Pure + framework-agnostic. Move indices come from the shared
+ * `segmentF2LPairs` output (`completionIndex - moves + 1` = first entry,
+ * `completionIndex` = last), so the same boundaries the case table shows are
+ * the ones painted here. Milliseconds use the move timestamps when provided
+ * (same base as `deriveTimeline`); without moves they fall back to a
+ * sequential layout from each pair's `timeMs`.
+ */
+export function derivePairSegments(
+  analysis: SolveMetrics | undefined,
+  moves?: CubeMoveEvent[],
+): PairSegment[] {
+  const pairs = analysis?.cfop?.f2lPairs;
+  if (!pairs || pairs.length === 0) return [];
+
+  const baseTime = moves && moves.length > 0 ? moves[0].hostTimestamp : 0;
+  const offsetOf = (idx: number): number | null =>
+    moves && idx >= 0 && idx < moves.length
+      ? Math.max(0, moves[idx].hostTimestamp - baseTime)
+      : null;
+
+  const segments: PairSegment[] = [];
+  let accMs = 0;
+  for (let i = 0; i < pairs.length; i++) {
+    const p = pairs[i];
+    const moveCount = Math.max(0, p.moves ?? 0);
+    const completionIndex = p.completionIndex ?? -1;
+    const moveStartIndex =
+      completionIndex >= 0 ? completionIndex - moveCount + 1 : -1;
+    const durationMs = Math.max(0, p.timeMs ?? 0);
+    const startMs = offsetOf(moveStartIndex) ?? accMs;
+
+    segments.push({
+      phaseName: "F2L",
+      pairNumber: p.pairNumber,
+      slot: p.slotId ?? null,
+      caseName: p.detectedCase?.caseName,
+      caseNumber: p.detectedCase?.caseNumber,
+      startMs,
+      endMs: startMs + durationMs,
+      durationMs,
+      moveStartIndex,
+      moveEndIndex: completionIndex,
+      completionIndex,
+      moves: moveCount,
+      tps: p.tps ?? 0,
+      pauseBeforeMs: i > 0 ? Math.max(0, p.pauseBeforeMs ?? 0) : 0,
+    });
+    accMs = startMs + durationMs;
+  }
+  return segments;
+}
+
 // ─── deriveTimeline ──────────────────────────────────────────────────────
 
 function moveLabel(ev: CubeMoveEvent): string {

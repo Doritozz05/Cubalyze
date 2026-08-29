@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -115,10 +115,21 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     }
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    zoomCamera(e.deltaY);
-  };
+  // Wheel zoom must attach natively with { passive: false }: React registers
+  // onWheel as a passive root listener, so preventDefault() is ignored and the
+  // page scrolls while the cube zooms. Touch is unaffected — the canvas keeps
+  // `touch-none`, so pinch stays captured and mobile scroll outside the cube
+  // keeps working.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomCamera(e.deltaY);
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [zoomCamera, canvasRef]);
 
   return (
     <div className={cn("@container flex flex-1 h-full min-h-0 flex-col", className)}>
@@ -205,7 +216,6 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onDoubleClick={handleDoubleClick}
-          onWheel={handleWheel}
         />
 
         {/* Loading state overlay — pointer-events-none so the canvas can still

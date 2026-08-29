@@ -1,3 +1,4 @@
+import { recolorState } from '@cubeforge/algorithm-db';
 import type { CubeState, FaceLetter } from '@cubeforge/math-core';
 import {
   applyFrameRotation,
@@ -9,6 +10,7 @@ import {
   orderPairFaces,
 } from '@cubeforge/math-core';
 import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
+import { getF2LDetector } from '../cases/caseDetectors';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { pickSlotFrame } from './slotFrame';
 
@@ -147,6 +149,16 @@ export interface UnifiedF2LPair {
   tps: number;
   /** Gap between the previous pair's end and this pair's start. */
   pauseBeforeMs: number;
+  /**
+   * The recognized Basic F2L algorithmic case (41-case catalog), when the
+   * SHARED detector matched. Same detection the reconstruction text route
+   * reports, so smart/virtual and text never diverge for the same solve.
+   */
+  detectedCase?: {
+    caseNumber: string;
+    caseName: string;
+    confidence: 'exact' | 'unknown';
+  };
 }
 
 /**
@@ -588,6 +600,36 @@ export function segmentF2LPairs(
         : 0;
     p.pauseBeforeMs = p === pairs[0] ? 0 : Math.max(0, startTs - prevPairEndTs);
     prevPairEndTs = endTs;
+  }
+
+  // ── Modular case detection (Basic F2L — 41 cases) ──────────────────────
+  // SHARED with the reconstruction text route: the state at the pair's exact
+  // CUT (the frame just before its first move). It uses the SAME
+  // `completionIndex - moves.length + 1` cut the text route's buildPairs
+  // used — and `moves` already reflects the trailing fold of the last pair,
+  // so the cut matches the reference 1:1. The frame/scheme are the winning
+  // solver-frame choices from the DP above (the same sweep that detected the
+  // pair), so the case answers are identical for identical timelines on both
+  // routes. Detection is defensive: it must never break segmentation.
+  for (const p of pairs) {
+    if (!p.slot || p.slot.startsWith('SLOT-')) continue;
+    const startIdx = p.completionIndex - p.moves.length + 1;
+    const cut = startIdx - 1;
+    const state = frameStateAt(cut);
+    if (!state) continue;
+    const canon = recolorState(state, schemeToUse);
+    try {
+      const result = getF2LDetector().detect(canon, crossFace, p.slot);
+      if (result.entry && result.confidence === 'exact') {
+        p.detectedCase = {
+          caseNumber: result.entry.caseNumber,
+          caseName: result.entry.caseName,
+          confidence: result.confidence,
+        };
+      }
+    } catch {
+      // Case detection must never break pair segmentation.
+    }
   }
 
   return pairs.map(({ segStart: _seg, ...pair }) => pair);
