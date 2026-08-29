@@ -38,15 +38,15 @@ export function PuzzlePiece({
         size="sm"
         className={
           variant === "tray"
-            ? "h-8 gap-2 rounded-full border-transparent bg-transparent pl-2.5 pr-2 py-0 text-xs font-medium leading-none text-ink-2 shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
+            ? "h-8 gap-2 rounded-full border-transparent bg-transparent pl-2.5 pr-2 py-0 text-xs font-medium leading-normal text-ink-2 shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
             : variant === "center"
-              ? "relative h-11 justify-center rounded-xl border-transparent bg-transparent px-5 py-0 text-sm font-semibold leading-none text-ink shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 dark:bg-transparent dark:hover:bg-surface-2 [&>svg]:absolute [&>svg]:right-1 [&>svg]:top-1/2 [&>svg]:-translate-y-1/2"
+              ? "relative h-11 justify-center rounded-xl border-transparent bg-transparent px-5 py-0 text-sm font-semibold leading-normal text-ink shadow-none focus:ring-1 focus:ring-ink hover:bg-surface-2 dark:bg-transparent dark:hover:bg-surface-2 [&>svg]:absolute [&>svg]:right-1 [&>svg]:top-1/2 [&>svg]:-translate-y-1/2"
               : "w-30 max-lg:w-24 max-lg:min-h-8! gap-2 rounded-md border border-line bg-surface text-xs text-ink-2 focus:ring-1 focus:ring-ink dark:bg-surface dark:hover:bg-surface-2"
         }
         aria-label={t("puzzleCategory")}
       >
         {variant === "center" ? (
-          <span className="flex flex-col items-center gap-1 leading-none">
+          <span className="flex flex-col items-center gap-1 leading-normal">
             <SelectValue />
             {caption ? (
               <span className="max-w-36 truncate text-[0.62rem] font-medium text-ink-3">
