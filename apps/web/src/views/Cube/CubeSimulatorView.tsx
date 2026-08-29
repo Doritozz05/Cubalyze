@@ -187,6 +187,22 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
+
+  // Wheel zoom must attach natively with { passive: false }: React registers
+  // onWheel as a passive root listener, so preventDefault() is ignored and the
+  // page scrolls while the cube zooms. Touch is unaffected — the canvas keeps
+  // `touch-none`, so pinch stays captured and mobile scroll outside the cube
+  // keeps working.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoomCamera(e.deltaY);
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [zoomCamera, canvasRef]);
   // The virtual cube's accumulated whole-cube rotation (x/y/z) — the
   // equivalent of the physical cube's gyro orientation. Composed with
   // OrientationTable (the same verified math the timer's dynamic notation
@@ -669,10 +685,6 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
           onPointerCancel={(e) => {
             setIsDragging(false);
             pointerHandlers.onPointerCancel(e);
-          }}
-          onWheel={(e) => {
-            e.preventDefault();
-            zoomCamera(e.deltaY);
           }}
         />
 

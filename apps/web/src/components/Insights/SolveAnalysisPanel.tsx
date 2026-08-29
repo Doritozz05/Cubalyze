@@ -88,6 +88,14 @@ const EMPTY_EFFICIENCY: EfficiencyMetrics = {
   forwardDrift: 0,
 };
 
+// Emerald gradient used to sub-divide the F2L phase bar into per-pair slices
+// (P1 lightest → P4 darkest). Stable at module scope so timeline memos keep
+// stable identities.
+const PAIR_COLORS = ["#10B981", "#059669", "#047857", "#065F46"];
+function pairColor(pairNumber: number): string {
+  return PAIR_COLORS[(pairNumber - 1) % PAIR_COLORS.length];
+}
+
 // ─── Main component ────────────────────────────────────────────────────────
 
 export function SolveAnalysisPanel({
@@ -583,9 +591,6 @@ function TimelineSection({
 
   // ── 2. F2L pairs sub-divide the F2L phase bar (High-contrast emerald gradient) ───
   const hasPairs = (pairSegments?.length ?? 0) > 0;
-  const PAIR_COLORS = ["#10B981", "#059669", "#047857", "#065F46"];
-  const pairColor = (pairNumber: number) =>
-    PAIR_COLORS[(pairNumber - 1) % PAIR_COLORS.length];
 
   const continuousPairs = useMemo(() => {
     if (!hasPairs || !pairSegments || pairSegments.length === 0) return [];

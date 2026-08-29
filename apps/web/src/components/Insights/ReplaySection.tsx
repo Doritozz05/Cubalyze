@@ -149,6 +149,23 @@ function ReplaySection({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Wheel zoom must attach natively with { passive: false }: React registers
+  // onWheel as a passive root listener, so preventDefault() inside it is
+  // ignored and the page keeps scrolling while the cube zooms. Touch is
+  // unaffected — the canvas keeps `touch-none`, so pinch/drag stay captured
+  // and mobile scrolling outside the cube keeps working. Re-attached whenever
+  // the canvas remounts (canvasKey).
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      workerProxyRef.current?.zoomCamera(e.deltaY).catch(console.error);
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [canvasKey]);
+
   // Refs for the mini-cube worker
   const workerRef = useRef<Worker | null>(null);
   /** Comlink.Remote<EngineWorkerAPI> but typed loosely due to dynamic import. */
@@ -782,10 +799,6 @@ function ReplaySection({
                   }}
                   onDoubleClick={() => {
                     workerProxyRef.current?.setIsometricView(true).catch(console.error);
-                  }}
-                  onWheel={(e) => {
-                    e.preventDefault();
-                    workerProxyRef.current?.zoomCamera(e.deltaY).catch(console.error);
                   }}
                 />
 

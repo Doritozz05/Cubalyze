@@ -228,50 +228,6 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
         </div>
       )}
 
-      {/* ── Phase trends (rolling mean) ────────────────────────────────── */}
-      {trendSeries.length >= 5 && (
-        <div className={CARD}>
-          <SectionHeader title={t("overview.techTrend")} eyebrow={t("overview.techTrendEyebrow")} />
-          <div className="mt-3 h-32 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendSeries} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                <XAxis dataKey="idx" tick={false} axisLine={{ stroke: "var(--line)", strokeOpacity: 0.25 }} tickLine={false} />
-                <YAxis
-                  width={36}
-                  tickFormatter={(v: number) => formatTime(v)}
-                  tick={{ fontSize: 9, fill: "var(--ink-3)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[0, "dataMax + 200"]}
-                />
-                <Tooltip
-                  cursor={{ stroke: "var(--line-2)", strokeWidth: 1 }}
-                  contentStyle={TOOLTIP_STYLE}
-                  itemStyle={{ color: "var(--ink)" }}
-                  labelFormatter={(_, payload) => {
-                    const pt = payload?.[0]?.payload as { idx?: number } | undefined;
-                    return pt?.idx != null ? t("overview.solveNumber", { number: pt.idx + 1 }) : "";
-                  }}
-                  formatter={(v: unknown, name: unknown) => [formatTime(Number(v ?? 0)), String(name)]}
-                />
-                {phasesInData.map((name, i) => (
-                  <Line
-                    key={name}
-                    type="monotone"
-                    dataKey={name}
-                    stroke={phaseColorHex(name, i)}
-                    strokeWidth={1.5}
-                    dot={false}
-                    connectNulls
-                    isAnimationActive={false}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
       {/* ── Face usage + fingerprint ───────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className={cn(CARD, "max-lg:px-4 max-lg:py-3")}>
@@ -295,7 +251,14 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
                     />
                     <Bar dataKey="value" isAnimationActive={false} radius={[2, 2, 0, 0]}>
                       {faceUsage.rows.map((r) => (
-                        <Cell key={r.face} fill={FACE_HEX[r.face] ?? "#6b7280"} />
+                        <Cell
+                          key={r.face}
+                          fill={FACE_HEX[r.face] ?? "#6b7280"}
+                          // Subtle outline so light faces (white U, yellow D)
+                          // stay visible on the light surface.
+                          stroke="var(--line-2)"
+                          strokeWidth={1}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -347,6 +310,51 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
           )}
         </div>
       </div>
+
+      {/* ── Phase trends (rolling mean) ────────────────────────────────── */}
+      {trendSeries.length >= 5 && (
+        <div className={CARD}>
+          <SectionHeader title={t("overview.techTrend")} eyebrow={t("overview.techTrendEyebrow")} />
+          <div className="mt-3 h-32 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendSeries} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <XAxis dataKey="idx" tick={false} axisLine={{ stroke: "var(--line)", strokeOpacity: 0.25 }} tickLine={false} />
+                <YAxis
+                  width={36}
+                  tickFormatter={(v: number) => formatTime(v)}
+                  tick={{ fontSize: 9, fill: "var(--ink-3)" }}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[0, "dataMax + 200"]}
+                />
+                <Tooltip
+                  cursor={{ stroke: "var(--line-2)", strokeWidth: 1 }}
+                  contentStyle={TOOLTIP_STYLE}
+                  itemStyle={{ color: "var(--ink)" }}
+                  labelFormatter={(_, payload) => {
+                    const pt = payload?.[0]?.payload as { idx?: number } | undefined;
+                    return pt?.idx != null ? t("overview.solveNumber", { number: pt.idx + 1 }) : "";
+                  }}
+                  formatter={(v: unknown, name: unknown) => [formatTime(Number(v ?? 0)), String(name)]}
+                />
+                {phasesInData.map((name, i) => (
+                  <Line
+                    key={name}
+                    type="monotone"
+                    dataKey={name}
+                    stroke={phaseColorHex(name, i)}
+                    strokeWidth={1.5}
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
