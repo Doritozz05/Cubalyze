@@ -27,19 +27,9 @@ import {
   getOrientationAtIndex,
   OrientationTable,
   f2lSlotNames,
-  applyFrameRotation,
-  bestFrameRotationSequence,
-  type CubeState,
   type FaceLetter,
   type F2LSlotInfo,
 } from '@cubeforge/math-core';
-import {
-  CaseDetector,
-  createBasicF2LDetector,
-  createCFOPDetector,
-  recolorState,
-  type DetectionResult,
-} from '@cubeforge/algorithm-db';
 import type {
   CubeFace,
   CubeMoveDirection,
@@ -51,6 +41,7 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { buildAnnotatedTimeline } from '../pipeline/analyzeSolve';
 import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
+import { detectLastLayerCase } from '../cases/lastLayerCases';
 
 // ─── Input / output types ───────────────────────────────────────────────────
 
@@ -571,72 +562,17 @@ export function analyzeSolveText(input: SolveTextInput): AnalyzeSolveTextResult 
   };
 
   // ── State-based last-layer case detection (OLL + PLL) ────────────────
-  // The SAME modular detector the F2L pairs use, wired for the last-layer
-  // probes. The state is read at the phase's completion — the exact frame
-  // the solver held, with the solver's AUF applied — so the detected case
-  // carries the AUF face (see LastLayerDetectedCase.aufFace) that lets the
-  // renderer show the case from the solver's exact angle.
-  const llDetector = createCFOPDetector();
-  const llStateAt = (index: number | undefined): CubeState | null => {
-    if (index === undefined || index < 0 || index >= timeline.entries.length) {
-      return null;
-    }
-    // Read the POST-P2 timeline entries, NOT solverFrameStates: the
-    // crossFace from the detection report is measured on these entries, and
-    // the probe must see the state in the same frame as its crossFace.
-    // solverFrameStates can be rotated relative to the entries (P2 recovery
-    // vs the solver-grip rotation), so probing them with the report's
-    // crossFace feeds a state whose cross sits on a DIFFERENT face — the
-    // reconz-3008/4996/2463 B-cross PLL misses (Ja/Ua states rejected while
-    // the entries state detects cleanly).
-    const snap = timeline.entries[index]?.state;
-    if (!snap) return null;
-    return TimelineBuilder.fromSnapshot(snap);
-  };
-  // The state at the phase's start (the last entry BEFORE its first move)
-  // is the case the solver faced. `startIndex - 1` is the previous phase's
-  // completion — exactly the frame with the solver's AUF applied.
-  const llCaseStateAt = (phase: PhaseDetectionReport['phases'][number] | undefined): CubeState | null => {
-    const start = phase?.startIndex;
-    return llStateAt(start !== undefined ? start - 1 : undefined);
-  };
+  // Delegates to the SHARED detectLastLayerCase (../cases/lastLayerCases) —
+  // the same function the smart/virtual route consumes via
+  // CFOPMetricsCalculator — so both routes report the exact same OLL/PLL
+  // cases for the same solve. The state is read from the POST-P2 entries
+  // and never recolored (the probe + multi-crossFace catalog read the
+  // physical state directly; see the module for the rationale).
   const detectLL = (
     phase: PhaseDetectionReport['phases'][number] | undefined,
     probe: 'last-layer-orientation' | 'last-layer-permutation',
-  ): LastLayerDetectedCase | undefined => {
-    if (!phase || phase.skipped) return undefined;
-    // The CASE is the state the solver FACED at the phase's start — the
-    // last entry before the first move of the phase (startIndex - 1). The
-    // completion index is where the phase's mask matches (already
-    // oriented / solved), so detecting there would always see the solved
-    // pattern, never the case.
-    const state = llCaseStateAt(phase);
-    if (!state) return undefined;
-    // NOTE: do NOT recolorState() here. The probe + native multi-crossFace
-    // catalog detect the PHYSICAL state directly for all 6 cross faces (see
-    // pll-crossface-24.test.ts: 24 rotations x 6 faces, 0 misses). Recoloring
-    // with a rotation-type scheme (cross on F/B/R/L) corrupts the piece
-    // permutation (the recolored state's cross pieces land on no single
-    // face), which is why side-cross PLLs like reconz-9679 (Ja) were missed
-    // while the un-recolored state detects cleanly. The aufFace is then
-    // relative to the physical frame; the D-cross identity scheme is a
-    // no-op, so canonical solves are unaffected.
-    const canon = state;
-    try {
-      const result = llDetector.detectWith(canon, { probe, crossFace });
-      if (result.entry && result.confidence === 'exact') {
-        return {
-          caseNumber: result.entry.caseNumber,
-          caseName: result.entry.caseName,
-          confidence: result.confidence,
-          aufFace: result.aufFace,
-        };
-      }
-    } catch {
-      // Detection must never break the reconstruction.
-    }
-    return undefined;
-  };
+  ): LastLayerDetectedCase | undefined =>
+    detectLastLayerCase(timeline, phase, probe, crossFace);
 
   const reconstruction: SolveReconstruction = {
     method: 'CFOP',
@@ -714,45 +650,6 @@ function buildCross(
   };
 }
 
-/**
- * Build the state at a pair's CUT index — the frame just before the pair's
- * first move — in the same solver frame the pair scan used.
- *
- * Mirrors the frame measurement in segmentF2LPairs: solverFrameStates +
- * bestFrameRotationSequence (the D/E frame DP). The pair's start index is
- * `completionIndex - moves.length + 1` (the completion entry minus the
- * owned moves, in ENTRY space).
- */
-function pairCutState(
-  timeline: SolveTimeline,
-  crossFace: string,
-  scheme: Record<string, string> | null,
-  start: number,
-  end: number,
-  cut: number,
-): CubeState | null {
-  if (cut < 0) return null;
-  const spanStart = Math.max(0, start - 1);
-  const spanStates: CubeState[] = [];
-  for (let i = spanStart; i <= end; i++) {
-    const snap = timeline.solverFrameStates?.[i] ?? timeline.entries[i]?.state;
-    if (!snap) return null;
-    spanStates.push(TimelineBuilder.fromSnapshot(snap));
-  }
-  const frames = bestFrameRotationSequence(
-    spanStates,
-    0,
-    spanStates.length - 1,
-    crossFace,
-    scheme ?? IDENTITY_SCHEME,
-  );
-  const j = cut - spanStart;
-  if (j < 0 || j >= frames.length) return null;
-  const snap = timeline.solverFrameStates?.[cut] ?? timeline.entries[cut]?.state;
-  if (!snap) return null;
-  return applyFrameRotation(TimelineBuilder.fromSnapshot(snap), frames[j], crossFace);
-}
-
 function buildPairs(
   timeline: SolveTimeline,
   crossFace: string,
@@ -776,73 +673,22 @@ function buildPairs(
     relaxedCross,
   });
 
-  // ── Modular case detection (Basic F2L — 41 cases) ────────────────────
-  // The detector is created lazily per call: the catalog build reads the
-  // 41 seed setups and computes ~164 signatures, which is cheap but not
-  // free, and most reconstructions have 4 pairs. The detector itself is
-  // stateless after construction, so it could be hoisted to module scope
-  // if hot-path profiling ever demands it.
-  const f2l = timeline.detectionReport?.phases.find(
-    (p) => p.phaseName === 'F2L',
-  );
-  const cross = timeline.detectionReport?.phases.find(
-    (p) => p.phaseName === 'Cross',
-  );
-  const f2lStart = f2l?.startIndex ?? 0;
-  const f2lEnd = f2l?.endIndex ?? timeline.entries.length - 1;
-  const pairScanStart = (cross?.endIndex ?? f2lStart - 1) + 1;
-  let detector: CaseDetector | null = null;
-
-  return pairs.map((p) => {
-    const base: F2LPairResult = {
-      slot: p.slot,
-      colors: p.colors as [FaceLetter, FaceLetter],
-      leftColor: p.leftColor,
-      rightColor: p.rightColor,
-      renderSlotIndex: p.renderSlotIndex,
-      moves: p.moves,
-      completionIndex: p.completionIndex,
-      auf: p.auf,
-    };
-
-    // Detection only applies to real F2L pairs (non-empty slots).
-    if (!p.slot || p.slot.startsWith('SLOT-')) return base;
-
-    if (!detector) {
-      detector = createBasicF2LDetector();
-    }
-
-    try {
-      const startIdx = p.completionIndex - p.moves.length + 1;
-      const cut = startIdx - 1;
-      const state = pairCutState(
-        timeline,
-        crossFace,
-        scheme ?? null,
-        pairScanStart,
-        f2lEnd,
-        cut,
-      );
-      if (!state) return base;
-
-      const canon = scheme
-        ? recolorState(state, scheme)
-        : state;
-
-      const result: DetectionResult = detector.detect(canon, crossFace, p.slot);
-      if (result.entry && result.confidence === 'exact') {
-        base.detectedCase = {
-          caseNumber: result.entry.caseNumber,
-          caseName: result.entry.caseName,
-          confidence: result.confidence,
-        };
-      }
-    } catch {
-      // Detection must never break the reconstruction.
-    }
-
-    return base;
-  });
+  // ── Basic F2L case detection (41 cases) ──────────────────────────────
+  // Detected by the SHARED segmentF2LPairs (same cut, same solver-frame
+  // scheme) that the smart/virtual route consumes via CFOPMetricsCalculator,
+  // so the reconstruction reports the exact same pair cases as a smart solve
+  // of the same physical solve. Nothing is recomputed here.
+  return pairs.map((p) => ({
+    slot: p.slot,
+    colors: p.colors as [FaceLetter, FaceLetter],
+    leftColor: p.leftColor,
+    rightColor: p.rightColor,
+    renderSlotIndex: p.renderSlotIndex,
+    moves: p.moves,
+    completionIndex: p.completionIndex,
+    auf: p.auf,
+    detectedCase: p.detectedCase,
+  }));
 }
 
 function buildLLPhase(

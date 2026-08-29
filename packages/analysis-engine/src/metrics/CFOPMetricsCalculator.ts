@@ -1,5 +1,12 @@
-import type { SolveTimeline, CFOPMetrics, F2LPairMetrics } from '@cubeforge/types';
+import type {
+  SolveTimeline,
+  CFOPMetrics,
+  F2LPairMetrics,
+} from '@cubeforge/types';
+import { ColorPhaseDetector } from '@cubeforge/math-core';
 import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
+import { detectLastLayerCase } from '../cases/lastLayerCases';
+import { TimelineBuilder } from '../timeline/TimelineBuilder';
 
 /**
  * Computes CFOP-specific metrics from a solve timeline.
@@ -35,6 +42,43 @@ export class CFOPMetricsCalculator {
 
     if (entries.length === 0) return defaultResult;
 
+    // ─── Solver-frame crossFace/scheme (shared with reconstruction) ──────
+    // Derived the SAME way the reconstruction text route derives it
+    // (ColorPhaseDetector re-detect over the timeline entries). The
+    // smart/virtual route has no written text and no P2 frame recovery, so
+    // the physical entries ARE the solver frame — the case detection below
+    // must answer the exact cases a reconstruction of the same solve would.
+    const report = timeline.detectionReport;
+    const reportPhases = report?.phases ?? phases;
+    let crossFace = (report?.crossFace ?? 'D') as string;
+    let scheme: Record<string, string> | undefined;
+    try {
+      const states = entries.map((e) => TimelineBuilder.fromSnapshot(e.state));
+      const detection = ColorPhaseDetector.detect(states, undefined, {});
+      if (detection && (detection.completions?.[0] ?? -1) >= 0) {
+        if (detection.crossFace) crossFace = detection.crossFace as string;
+        scheme = detection.scheme as Record<string, string> | undefined;
+      }
+    } catch {
+      // Fall back to the report's crossFace + identity scheme.
+    }
+
+    // ─── Shared last-layer case detection (OLL + PLL) ──────────────────
+    // Same function the reconstruction text route uses, so a smart/virtual
+    // solve reports the exact OLL/PLL cases a reconstruction would.
+    defaultResult.ollCase = detectLastLayerCase(
+      timeline,
+      reportPhases.find((p) => p.phaseName === 'OLL'),
+      'last-layer-orientation',
+      crossFace,
+    );
+    defaultResult.pllCase = detectLastLayerCase(
+      timeline,
+      reportPhases.find((p) => p.phaseName === 'PLL'),
+      'last-layer-permutation',
+      crossFace,
+    );
+
     // ─── Cross metrics ──────────────────────────────────────────────────
     const crossPhase = phases.find((p) => p.phaseName === 'Cross');
     if (crossPhase) {
@@ -62,7 +106,7 @@ export class CFOPMetricsCalculator {
     // ─── F2L pair analysis (UNIFIED segmentF2LPairs) ─────────────────────
     const f2lPhase = phases.find((p) => p.phaseName === 'F2L');
     if (f2lPhase) {
-      defaultResult.f2lPairs = segmentF2LPairs(timeline).map((p) => ({
+      defaultResult.f2lPairs = segmentF2LPairs(timeline, { crossFace, scheme }).map((p) => ({
         pairNumber: p.pairNumber,
         slotId: p.slot,
         timeMs: p.timeMs,
@@ -73,6 +117,9 @@ export class CFOPMetricsCalculator {
         auf: p.auf,
         movesNotation: p.moves,
         completionIndex: p.completionIndex,
+        // Basic F2L case (41-case catalog) — shared with the reconstruction
+        // text route, so smart/virtual reports the same pair cases.
+        detectedCase: p.detectedCase,
       }));
       defaultResult.f2lLookaheadScore = CFOPMetricsCalculator.computeLookaheadScore(defaultResult.f2lPairs);
     }
