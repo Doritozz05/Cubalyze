@@ -184,3 +184,30 @@ export function computeBpaWpa(solves: StatSolve[], n: number): BpaWpaResult | nu
   return { bpa, wpa, targetN: n };
 }
 
+// ─── Session TECHNICAL stats ────────────────────────────────────────────────
+
+export {
+  derivePhaseTimeStats,
+  deriveEconomyStats,
+  deriveRotationStats,
+  deriveLookaheadStats,
+  deriveCrossStats,
+  deriveRecognitionCosts,
+  deriveSessionTechnicalStats,
+  deriveMoveMetrics,
+  deriveCaseIntelligence,
+} from "./technical";
+export type {
+  TechnicalSolveInput,
+  PhaseTechnicalStats,
+  EconomyTechnicalStats,
+  RotationTechnicalStats,
+  LookaheadTechnicalStats,
+  CrossTechnicalStats,
+  RecognitionCost,
+  SessionTechnicalStats,
+  MoveMetrics,
+  CaseIntelligence,
+  CaseIntelligencePhase,
+} from "./technical";
+

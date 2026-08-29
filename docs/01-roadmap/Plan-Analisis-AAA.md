@@ -1,114 +1,121 @@
-# Plan — Análisis de solves a nivel profesional (UI + persistencia)
+# Plan — Análisis de solves profesional: exprimir smart + virtual (datos, gráficas, tablas, dibujos)
 
-> Estado: **aprobado en diseño** (2026-08-29). Rama de trabajo: `feat/analysis-case-table-shared`.
-> Contexto: la detección de casos CFOP (F2L 41 + OLL + PLL) ya es **compartida**
-> entre la ruta de reconstrucción y la ruta smart/virtual (commit 8e732c4a).
-> Este plan lleva esa tabla de casos a la UI de solves reales, divide el F2L
-> en sub-segmentos de la línea temporal y abre las puertas a la *case
-> intelligence* de sesión y la comparación con el óptimo por fase.
+> Estado: **en ejecución** (2026-08-29). Rama: `feat/analysis-case-table-shared`.
+> Este documento es la fuente de la parte de análisis de solves (smart +
+> virtual). Sin conexión con SkillTree ni Training.
+> Nota: la capa de **estadísticas de sesión** actual (`packages/statistics`)
+> solo calcula **tiempos** (Ao5/12/Ao100, media, desviación). Todo el dato
+> técnico vive por solve; falta agregarlo y visualizarlo.
 
 ---
 
+## 0. Lo que ya está DONE (para no repetir)
+
+- **Detección de casos compartida**: F2L (41), OLL y PLL idéntica en texto y
+  smart/virtual ({f2lPairs[].detectedCase, ollCase, pllCase}). Test de paridad.
+- **`derivePairSegments`** puro (pares como sub-segmentos del timeline) + tests.
+- **Componentes de casos compartidos** `components/Cases/*` (mini-cubo 3D,
+  diagrama 2D LL, MovesSeq, CfopMiniBar, helpers).
+- **Timeline rediseñado (Insights)**: barra de fases continua con **F2L
+  dividido en 4 slices** (verde claro→oscuro), pause-lane, hover con info del
+  par y click-to-seek. Widget del timeline alineado.
+- **`DetectionSection` standalone** en Insights: la tabla de casos AAA con
+  mini-cubos, OLL/PLL rotadas al AUF, notación real, 5 columnas, click-to-seek.
+
 ## 1. Decisiones tomadas
 
-1. **Superficie (N1): botón de modo detalle en Insights.** En vez de dos
-   superficies, un toggle en `InsightsDashboard` que conmuta el layout:
-   - **Modo normal**: el de hoy — `SolveListPanel` + `SolveAnalysisPanel`
-     (con su `ReplaySection`) lado a lado.
-   - **Modo detalle**: layout estilo `ReconstructionDetailView` — **replay 3D
-     anclado a la izquierda en grande (~2/3)** y columna derecha scrolleable
-     con el resto (scramble, tiles de stats, la tabla de casos compartida),
-     **ocultando el `SolveListPanel`**. El botón vuelve al modo normal.
-   Los componentes de casos son compartidos, así que el modo detalle es
-   básicamente el layout de reconstrucciones con el solve real como fuente
-   (mismo patrón `ReconstructionDetailView`).
-2. **Prioridad post-N1: timeline con F2L dividido** (pares como sub-barras).
-3. **Cruz en smart: se mantiene estricta** (`relaxedCross` OFF), documentada
-   como divergencia conocida respecto a reconstrucción (que usa relajada con
-   pista escrita). Activarla en smart solo tras un estudio de validación con
-   solves reales.
+1. Una superficie, sin duplicar vistas (componentes compartidos). El **botón
+   "modo detalle"** en Insights (replay anclado a la izquierda en grande,
+   ocultando la lista de solves) sigue pendiente.
+2. **Cruz en smart: estricta** (`relaxedCross` OFF), divergencia conocida vs
+   reconstrucción.
+3. **Nada de SkillTree/Training**: el análisis se queda en análisis.
 
-## 2. Qué mostramos HOY (inventario)
+## 2. Catálogo de entregables por tipo
 
-- **Por solve (Insights → SolveAnalysisPanel):** anillos TPS/pausas/eficiencia;
-  desglose de fases; detalles CFOP (tipo de cruz, eficiencia de cruz,
-  transición, recognition/ejecución/TPS de OLL/PLL, lookahead, lista de pares
-  F2L en texto plano); Roux (FB/SB/CMLL/LSE); rotaciones + eficiencia; replay 3D.
-- **Por sesión (widgets):** timeline de fases (FloatingPhaseTimeline), balance
-  de fases, serie TPS, distribución de tiempos, heatmap de actividad,
-  PB/medias, times-log.
-- **Reconstrucciones (OurDetectionPanel):** la tabla de casos AAA — orientación,
-  cruz con badge xcross, pares con mini-cubo 3D del caso + caseName/caseNumber,
-  OLL/PLL con diagrama 2D rotado al AUF, movimientos con copiar, click-to-seek
-  al replay, footer con rotaciones/TPS/media F2L.
-- **Persistencia:** `solve.analysis` guarda `SolveMetrics` como JSON → la tabla
-  de casos se persistirá sola para solves nuevos; los viejos necesitan
-  re-análisis (`reanalyzeSolve` ya existe).
+### 2.1 Datos nuevos (derivaciones headless, testeables)
 
-## 3. Datos que ya tenemos y no explotamos
+- **`deriveSessionTechnicalStats(solves)`** en `packages/statistics`
+  (ampliar su contrato a `SolveMetrics`):
+  - Por fase: media/P25/P50/P75 de **tiempo, movs y TPS**.
+  - **% de tiempo por fase** (mediana) y su **tendencia**.
+  - Economía: media de movs totales, ratio de eficiencia medio, tasa de
+    redundancia (cancellations/overturns) acumulada por sesión.
+  - Rotaciones: media por solve y por **par F2L**, % solves sin rotación,
+    **rotaciones redundantes** acumuladas.
+  - Lookahead: media de pausas, pause-ratio, media de `cross→F2L`, serie del
+    lookahead score.
+  - Ritmo: media de `tps.peakInstantaneous`, **std del intervalo entre
+    movimientos** (consistencia del pacing).
+- **`deriveMoveMetrics(moves)`**: por solve — frecuencia de **cada cara** (%
+    R/U/F…), % de dobles (→2), % de slices/wide, secuencia de caras
+    consecutivas (hábitos: U-R-U-R vs U-U).
+- **`deriveCostRatios(phases)`**: coste de **reconocimiento vs ejecución**
+  por LL (ratio) — cuánto del tiempo de OLL/PLL es pensar.
 
-| Dato | Fuente | Qué podemos sacar |
-|---|---|---|
-| Timestamps por move | `moves[].hostTimestamp` | heatmap inter-move, micro-pausas, "dónde se frenó" |
-| Estado en cada entrada | `timeline.entries[].state` | óptimo por fase, "desperdicio" |
-| Orientación por move | `orientationTimeline` | regrips por fase, rotaciones por par, hábitos AUF |
-| Movimientos crudos | `moves` | distribución de caras, % wide/slice, dobles |
-| Reporte de detección | `detectionReport` | cross color %, tasa xcross, skip rate |
-| Casos (nuevo) | `cfop.f2lPairs[].detectedCase`, `ollCase`, `pllCase` | case intelligence de sesión + enlace a training |
-| Eficiencia global | `efficiency` | óptimo por fase, replay óptimo lado a lado |
+### 2.2 Gráficas (sesión y por solve)
 
-## 4. F2L dividido en el timeline (prioridad 1 tras N1)
+- **Radar de ejes técnicos**: cruz · F2L · last-layer · lookahead · economía ·
+  rotaciones, en una sola vista de puntos fuertes/débiles.
+- **Área apilada**: % del tiempo por fase, solve a solve (tendencia).
+- **Histogramas por fase** (tiempo y movs) con marcas de media y PB.
+- **Tendencias de fase**: media móvil de cada fase vs tiempo total.
+- **Heatmap de pausas**: causa × fase por solve (dónde se para la sesión).
+- **Mini-mapa TPS** bajo el replay (sparkline por movimiento, con scrub).
+- **Sparkline en cada fila de la tabla de casos**: el ritmo intra-par (su
+  propio mini-heatmap de gaps entre movs).
+- **Serie de cruces**: `crossType` (plain/xcross/xxcross) en el tiempo.
 
-`segmentF2LPairs` ya devuelve `startIndex/endIndex/completionIndex/timeMs/
-pauseBeforeMs` por par. Se añade una función pura `derivePairSegments(analysis)`
-en `derived/timeline.ts` (testeada) y el `FloatingPhaseTimeline` + desglose de
-fases pintan **F2L como 4 sub-barras** (color por par, slot + caso en tooltip),
-con click-to-seek al inicio del par (mismo patrón que OurDetectionPanel).
+### 2.3 Tablas nuevas
 
-## 5. Refactors previos (no repetir)
+- **Tabla de case intelligence de sesión** (F2L + OLL + PLL): por caso →
+  frecuencia, tiempo medio, movs medios, TPS, **desviación**; ranking con el
+  **caso más lento / menos eficiente** resaltado. Sin enlace a Training.
+- **Tabla de movimientos económicos**: repaso de los peores en eficiencia por
+  fase con el óptimo al lado (solo cruz/pares que tengan óptimo calculable).
 
-1. **Componentes compartidos de casos**: extraer `CaseMiniCube`,
-   `LastLayerCaseCell`, `MovesSeq`, `CfopMiniBar` y helpers de colores de
-   `OurDetectionPanel` → `components/Cases/*`. Reconstrucciones e Insights
-   consumen los mismos; así "ambas superficies" salen baratas y el toggle no
-   hace falta.
-2. **Derivación pura de pares** en `derived/` (testeada), no recalculada en
-   cada widget.
-3. **Backfill**: acción "re-analizar sesión" con `reanalyzeSolve`.
-4. **Bump de `analysis_engine_version`** para distinguir solves con/sin tabla.
-5. i18n (es/en) reutilizando el namespace de reconstrucciones.
+### 2.4 Dibujos / visualizaciones creativas
 
-## 6. Mejoras profesionales (con la tabla o antes)
+- **Fingerprint del solve**: una fila de celdas, una por movimiento, coloreada
+  por **cara** (R/F/U/D/L/B) y con intensidad según **velocidad** → el "código
+  de barras" del solve. Comparar fingerprints de dos solves lado a lado.
+- **Face radar / barras de uso de caras**: cuánto (y con qué TPS) usas cada
+  cara — detecta hábitos (ej. sobreuso de F, D casi nunca).
+- **Mapa del solve con rotaciones**: sobre la barra temporal, marcadores de
+  rotación/regrip y un **snapshot 3D del estado** en hover (mini-cubo en el
+  punto que apuntas) con click-to-seek.
+- **Cruz real vs óptima (N4)**: dos secuencias dibujadas lado a lado +
+  desperdicio por fase (rotaciones evitables, movs de más).
+- **Eficiencia visual en el replay**: resaltar movs redundantes/overturns en
+  el replay (color distinto) para "ver" el desperdicio.
 
-- **Cruz estricta en smart**: documentada (decisión 3). Validar `relaxedCross`
-  solo con estudio sobre solves reales.
-- **Skips/xcross ya existen** en smart; el salto es **agregar la tasa** (%
-  xcross, % skips, cross color) en Insights de sesión.
-- **Óptimo por fase**: `EfficiencyCalculator` usa Min2Phase global; añadir
-  comparación por fase (cross óptimo, par óptimo) — diferenciador real.
+## 3. Qué falta de lo ya aprobado (dependencias)
 
-## 7. Visión AAA por niveles
+- **Botón modo detalle** en Insights (replay grande a la izquierda).
+- **Backfill** de solves antiguos + bump de `analysis_engine_version`.
+- **N4 óptimo por fase** (requiere Min2Phase por fase).
 
-- **N1 — Tabla de casos en el solve real** (objetivo inmediato): integrar la
-  tabla en `SolveAnalysisPanel` para smart/virtual **y** un botón de modo
-  detalle en Insights que conmuta al layout estilo reconstrucción (replay
-  izquierda en grande, sin lista de solves, resto igual que en
-  reconstrucciones), sobre componentes compartidos.
-- **N2 — Timeline rico**: fases + pares F2L como sub-barras, pausas con causa,
-  marcadores de rotación/regrip, scrub sobre el replay 3D, moves coloreados
-  por fase.
-- **N3 — Case Intelligence de sesión**: distribuciones OLL/PLL/F2L (frecuencia,
-  media de tiempo/movimientos por caso), "tu caso más lento" con
-  "Practice this case" → Training.
-- **N4 — Comparación con el óptimo**: replay lado a lado, desperdicio por fase,
-  sugerencias (rotaciones evitables, pares ineficientes).
+## 4. Orden de ejecución recomendado
 
-## 8. Orden de ejecución
+1. **Capa `deriveSessionTechnicalStats`** (+ tests) en `packages/statistics`
+   — base de las gráficas.
+2. **`deriveMoveMetrics` (fingerprint/faces/ritmo)** + **`deriveCostRatios`**.
+3. En Insights: **mini-mapa TPS** + **case intelligence** (tabla sesión).
+4. **Botón modo detalle**.
+5. **Vista de sesión** (radar + área apilada + histogramas + heatmap de pausas
+   + tendencias + fingerprint + face bars).
+6. **Backfill + bump de versión.**
+7. **N4 óptimo por fase.**
 
-1. Refactor: componentes compartidos de casos (sin cambio visual).
-2. `derivePairSegments` + tests (F2L dividido).
-3. N1: tabla en `SolveAnalysisPanel` + botón de modo detalle en Insights
-   (layout estilo ReconstructionDetailView, sin `SolveListPanel`).
-4. N2: timeline con pares + scrub (parcial en el paso 2).
-5. Backfill + bump de versión.
-6. N3 y N4 como fases siguientes.
+## 5. Riesgos / notas
+
+- **Smart cube no registra rotaciones físicas**: `rotation.*` para smart es lo
+  inferible de los movimientos; en virtual hay orientación real. Documentar
+  qué fuente alimenta cada métrica de rotación.
+- Los agregados deben ser **puros y headless** (`packages/statistics`,
+  `analysis-engine`), no calcularse en la UI.
+- `packages/statistics` solo conoce tiempos → ampliar su entrada a
+  `SolveMetrics` sin acoplarlo a la UI.
+- La **case intelligence** y el **fingerprint** deben funcionar también con
+  solves antiguos (sin re-análisis) cuando el dato lo permita, y degradar
+  suavemente si falta.

@@ -21,6 +21,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
+  "dependencies": {
+    "@cubeforge/types": "workspace:*"
+  },
   "devDependencies": {
     "@cubeforge/config-typescript": "workspace:*",
     "tsup": "^8.3.6",

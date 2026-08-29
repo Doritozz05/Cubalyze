@@ -26,3 +26,27 @@ export type {
   TimelineData,
   PairSegment,
 } from "@cubeforge/analysis-engine";
+
+// Session TECHNICAL statistics (headless @cubeforge/statistics).
+export {
+  deriveSessionTechnicalStats,
+  derivePhaseTimeStats,
+  deriveEconomyStats,
+  deriveRotationStats,
+  deriveLookaheadStats,
+  deriveCrossStats,
+  deriveRecognitionCosts,
+  deriveMoveMetrics,
+  deriveCaseIntelligence,
+} from "@cubeforge/statistics";
+export type {
+  SessionTechnicalStats,
+  PhaseTechnicalStats,
+  EconomyTechnicalStats,
+  RotationTechnicalStats,
+  LookaheadTechnicalStats,
+  CrossTechnicalStats,
+  RecognitionCost,
+  MoveMetrics,
+  CaseIntelligence,
+} from "@cubeforge/statistics";

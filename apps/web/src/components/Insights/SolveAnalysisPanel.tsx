@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw, Columns2, Rows2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import {
@@ -59,6 +59,11 @@ export interface SolveAnalysisPanelProps {
   /** Open the "Move to another session" dialog for this solve. */
   onMoveSolve?: () => void;
   onBackToOverview: () => void;
+  /** Reconstruction-style detail layout: replay pinned large on the left,
+      content in a scrollable right column. */
+  detailMode?: boolean;
+  /** Toggle detail mode (renders the toggle button when provided). */
+  onToggleDetailMode?: () => void;
   className?: string;
 }
 
@@ -94,6 +99,8 @@ export function SolveAnalysisPanel({
   onDeleteSolve,
   onMoveSolve,
   onBackToOverview,
+  detailMode,
+  onToggleDetailMode,
   className,
 }: SolveAnalysisPanelProps) {
   const { t } = useTranslation("insights");
@@ -166,8 +173,10 @@ export function SolveAnalysisPanel({
     [solve, m],
   );
 
-  return (
-    <div className={cn("flex flex-col gap-4 px-1 pb-4 bg-canvas", className)}>
+  // topSections keeps the leading blocks shared by both layouts; only the
+  // replay is repositioned between normal and detail mode.
+  const topSections = (
+    <>
       {/* Back to overview — desktop only; the touch overlay provides its
           own sticky header with a back button. */}
       <button
@@ -227,6 +236,18 @@ export function SolveAnalysisPanel({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1">
+          {onToggleDetailMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleDetailMode}
+              className="h-7 gap-1 px-2 text-xs text-ink-2 hover:text-ink hidden lg:inline-flex"
+              title={detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
+            >
+              {detailMode ? <Rows2 className="size-3.5" /> : <Columns2 className="size-3.5" />}
+              {detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
+            </Button>
+          )}
           {canReanalyze && (
             <Button
               variant="ghost"
@@ -362,37 +383,31 @@ export function SolveAnalysisPanel({
         )}
       </div>
 
-      {/* ── Replay (always visible, even without analysis, as long as there are moves) ── */}
-      <ReplaySection
-        ref={replayRef}
-        solve={replaySolve}
-        onReplayPosition={(ms, moveIndex) => {
-          setReplayPosMs(ms);
-          setReplayMoveIdx(moveIndex);
-          setReplaying(true);
-        }}
-        onReplayComplete={() => {
-          setReplayPosMs(null);
-          setReplayMoveIdx(null);
-          setReplaying(false);
-        }}
-      />
+    </>
+  );
 
-      {/* Analysis sections or empty banner */}
-      {!m ? (
-        <EmptyState
-          title={t("analysis.noAnalysisTitle")}
-          description={
-            solve.source === "smart"
-              ? t("analysis.noAnalysisSmart")
-              : solve.source === "virtual"
-                ? t("analysis.noAnalysisVirtual")
-                : t("analysis.noAnalysisManual")
-          }
-          className="py-12"
-        />
-      ) : (
-        <>
+  // The replay lives in both layouts, positioned differently: in normal mode
+  // it flows in the single column (topSections → replay → analysisSections);
+  // in detail mode it becomes the pinned large left column.
+  const replay = (
+    <ReplaySection
+      ref={replayRef}
+      solve={replaySolve}
+      onReplayPosition={(ms, moveIndex) => {
+        setReplayPosMs(ms);
+        setReplayMoveIdx(moveIndex);
+        setReplaying(true);
+      }}
+      onReplayComplete={() => {
+        setReplayPosMs(null);
+        setReplayMoveIdx(null);
+        setReplaying(false);
+      }}
+    />
+  );
+
+  const analysisSections = m ? (
+    <>
           {/* ── Interactive timeline ────────────────────────────────────── */}
           <TimelineSection
             timeline={timeline}
@@ -434,6 +449,73 @@ export function SolveAnalysisPanel({
 
           {/* ── Rotations & efficiency ──────────────────────────────────── */}
           <RotEfficiencySection metrics={m} />
+    </>
+  ) : (
+    <EmptyState
+      title={t("analysis.noAnalysisTitle")}
+      description={
+        solve.source === "smart"
+          ? t("analysis.noAnalysisSmart")
+          : solve.source === "virtual"
+            ? t("analysis.noAnalysisVirtual")
+            : t("analysis.noAnalysisManual")
+      }
+      className="py-12"
+    />
+  );
+
+  // ── Layouts ─────────────────────────────────────────────────────────────
+  // Normal  : single column  topSections → replay → analysisSections.
+  // Detail  : replay pinned large & sticky on the left; scrollable right
+  //           column with the rest of the content (reconstruction-style).
+  return (
+    <div
+      className={cn(
+        detailMode
+          ? "flex min-h-0 flex-col gap-4 bg-canvas lg:h-full lg:flex-row lg:overflow-hidden lg:px-1 lg:pb-4"
+          : "flex flex-col gap-4 px-1 pb-4 bg-canvas",
+        className,
+      )}
+    >
+      {detailMode ? (
+        <>
+          {/* Left — replay pinned large & sticky, like reconstructions */}
+          <div className="flex min-h-75 w-full shrink-0 flex-col sm:min-h-95 lg:min-h-0 lg:w-7/12 lg:max-w-200 lg:flex-none">
+            <div className="flex flex-col rounded-xl border border-line bg-surface p-3 shadow-xs sm:p-4 lg:min-h-0 lg:flex-1 lg:rounded-none lg:border-0 lg:border-r lg:border-line/60 lg:bg-transparent lg:shadow-none">
+              <ReplaySection
+                ref={replayRef}
+                solve={replaySolve}
+                size="large"
+                collapsible={false}
+                showHeader={false}
+                onReplayPosition={(ms, moveIndex) => {
+                  setReplayPosMs(ms);
+                  setReplayMoveIdx(moveIndex);
+                  setReplaying(true);
+                }}
+                onReplayComplete={() => {
+                  setReplayPosMs(null);
+                  setReplayMoveIdx(null);
+                  setReplaying(false);
+                }}
+                className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
+              />
+            </div>
+          </div>
+
+          {/* Right — scrollable content column */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full lg:overflow-y-auto">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-1 pb-4">
+              {topSections}
+              {analysisSections}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {topSections}
+          {replay}
+          {analysisSections}
         </>
       )}
     </div>
@@ -638,6 +720,36 @@ function TimelineSection({
   );
   const meanPauseMs = pauseMarks.length > 0 ? totalPauseMs / pauseMarks.length : 0;
 
+  // ── Per-move velocity mini-map ─────────────────────────────────────────
+  // One cell per move, colored by its instantaneous speed (inverse of the
+  // gap to the next move). Read as a TPS "heat strip" synced to the replay
+  // playhead (which sweeps this container).
+  const perMoveTps = useMemo(() => {
+    if (moveTicks.length < 2) return [] as number[];
+    const out: number[] = [];
+    for (let i = 0; i < moveTicks.length; i++) {
+      const cur = moveVisualMs[i] ?? 0;
+      const next = moveVisualMs[i + 1] ?? (moveVisualMs.length > 1 ? moveVisualMs[moveVisualMs.length - 1] + (moveVisualMs[moveVisualMs.length - 1] - moveVisualMs[moveVisualMs.length - 2]) : cur + 100);
+      const gapMs = Math.max(1, next - cur);
+      out.push(1000 / gapMs);
+    }
+    return out;
+  }, [moveTicks, moveVisualMs]);
+  const perMoveMax = useMemo(() => {
+    const m = Math.max(...perMoveTps, 0);
+    return m > 0 ? m : 5;
+  }, [perMoveTps]);
+  const tpsHeat = useCallback(
+    (tps: number): string => {
+      const r = Math.max(0, Math.min(1, tps / perMoveMax));
+      if (r < 0.4) return "#EF4444"; // slow
+      if (r < 0.7) return "#F59E0B"; // medium
+      return "#22C55E"; // fast
+    },
+    [perMoveMax],
+  );
+  const hasMiniMap = moveTicks.length >= 2 && perMoveTps.length === moveTicks.length;
+
   const xTickFracs = [0, 0.25, 0.5, 0.75, 1];
   const meanTpsY = TPS_HEIGHT - (Math.min(meanTps, maxTps) / maxTps) * (TPS_HEIGHT - 4) - 2;
 
@@ -750,6 +862,14 @@ function TimelineSection({
                 PAUSE
               </span>
             </div>
+            {/* Row 4: Velocity mini-map label */}
+            {hasMiniMap && (
+              <div className="flex h-[10px] items-center justify-end pr-1">
+                <span className="text-[0.46rem] font-bold tracking-wider text-ink-3/40 leading-none">
+                  VEL
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Main timeline track container */}
@@ -1108,6 +1228,20 @@ function TimelineSection({
                 );
               })}
             </div>
+
+            {/* 3.5 Velocity mini-map — per-move TPS heat strip */}
+            {hasMiniMap && (
+              <div className="relative h-[10px] w-full flex overflow-hidden rounded-sm bg-surface-2/60 border border-line/40">
+                {perMoveTps.map((t, i) => (
+                  <div
+                    key={`vel-${i}`}
+                    className="h-full transition-colors"
+                    style={{ width: `${100 / moveTicks.length}%`, backgroundColor: tpsHeat(t) }}
+                    title={`${moveTicks[i]?.label ?? ""} · ${t.toFixed(1)} TPS`}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* 4. Playhead and Hover Scrubber Vertical Lines */}
             {hoverPct !== null && (

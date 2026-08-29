@@ -348,8 +348,14 @@ export function InsightsDashboard({
     [moveIds, onMoveSolves, handleExitSelection],
   );
 
+  // ── Detail mode (desktop only): reconstruction-style split — replay
+  //     pinned large on the left, the solve list hidden.
+  const [detailMode, setDetailMode] = useState(false);
+  const toggleDetailMode = useCallback(() => setDetailMode((v) => !v), []);
+
   const handleBackToOverview = useCallback(() => {
     setSelectedId(null);
+    setDetailMode(false);
   }, []);
 
   return (
@@ -508,6 +514,8 @@ export function InsightsDashboard({
           onDeleteSolve={handleDeleteSolveRow}
           className={cn(
             "lg:w-85 lg:shrink-0",
+            // Detail mode hides the list so the replay gets the full width.
+            detailMode && "hidden",
             // Touch: the list is the master page (hidden while in Stats).
             isTouch && touchSection === "stats" && "hidden",
           )}
@@ -530,6 +538,8 @@ export function InsightsDashboard({
                 onDeleteSolve={handleDeleteRequest}
                 onMoveSolve={() => handleMoveRequest([selected.id])}
                 onBackToOverview={handleBackToOverview}
+                detailMode={detailMode}
+                onToggleDetailMode={toggleDetailMode}
               />
             ) : (
               <OverviewPanel solves={filtered} pb={pb} />
