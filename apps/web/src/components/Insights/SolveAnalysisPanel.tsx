@@ -848,7 +848,7 @@ function TimelineSection({
           {/* Left Y-axis labels perfectly aligned with each track */}
           <div className="flex shrink-0 flex-col gap-1.5 select-none text-right font-mono" style={{ width: 38 }}>
             {/* Row 1: TPS */}
-            <div className="flex h-[32px] flex-col justify-between py-0.5 pr-1">
+            <div className="flex h-8 flex-col justify-between py-0.5 pr-1">
               <span className="text-[0.52rem] font-bold text-ink-3/70 leading-none">
                 TPS {maxTps.toFixed(0)}
               </span>
@@ -857,20 +857,20 @@ function TimelineSection({
               </span>
             </div>
             {/* Row 2: Phase bar label */}
-            <div className="flex h-[26px] items-center justify-end pr-1">
+            <div className="flex h-6.5 items-center justify-end pr-1">
               <span className="text-[0.52rem] font-bold tracking-wider text-ink-3/60">
                 PHASE
               </span>
             </div>
             {/* Row 3: Pause lane label */}
-            <div className="flex h-[8px] items-center justify-end pr-1">
+            <div className="flex h-2 items-center justify-end pr-1">
               <span className="text-[0.48rem] font-bold tracking-wider text-ink-3/60 leading-none">
                 PAUSE
               </span>
             </div>
             {/* Row 4: Velocity mini-map label */}
             {hasMiniMap && (
-              <div className="flex h-[10px] items-center justify-end pr-1">
+              <div className="flex h-2.5 items-center justify-end pr-1">
                 <span className="text-[0.46rem] font-bold tracking-wider text-ink-3/40 leading-none">
                   VEL
                 </span>
@@ -887,7 +887,7 @@ function TimelineSection({
             onClick={handleClick}
           >
             {/* 1. TPS Chart Area (SVG only for curves/lines, zero text) */}
-            <div className="relative h-[32px] w-full overflow-hidden border-b border-line/40">
+            <div className="relative h-8 w-full overflow-hidden border-b border-line/40">
               <svg
                 width="100%"
                 height="100%"
@@ -951,7 +951,7 @@ function TimelineSection({
                 return (
                   <div
                     key={moveTicks[i]?.index ?? i}
-                    className="absolute bottom-0 w-[1px] h-[3px] bg-ink-3/40 pointer-events-none"
+                    className="absolute bottom-0 w-px h-0.75 bg-ink-3/40 pointer-events-none"
                     style={{ left: `${leftPct}%` }}
                   />
                 );
@@ -959,7 +959,7 @@ function TimelineSection({
             </div>
 
             {/* 2. Main Phase Bar (Pure HTML Flex, Sharp Square Rectangles, Crisp Proportional Typography) */}
-            <div className="relative h-[26px] w-full flex overflow-hidden border border-line/70 bg-surface-2">
+            <div className="relative h-6.5 w-full flex overflow-hidden border border-line/70 bg-surface-2">
               {continuousPhases.map((phase, pIdx) => {
                 const isF2LDivided = phase.phaseName === "F2L" && hasPairs;
                 const phaseWidthPct = totalMs > 0 ? (phase.durationMs / totalMs) * 100 : 0;
@@ -1141,7 +1141,7 @@ function TimelineSection({
             </div>
 
             {/* 3. Pause Lane (HTML, Sleek Minimalist Track, Flat Square Blocks) */}
-            <div className="relative h-[8px] w-full bg-surface-2/60 border border-line/40 overflow-hidden">
+            <div className="relative h-2 w-full bg-surface-2/60 border border-line/40 overflow-hidden">
               {pauseMarks.map((pm, i) => {
                 const leftPct = totalMs > 0 ? (pm.startMs / totalMs) * 100 : 0;
                 const widthPct = totalMs > 0 ? (pm.durationMs / totalMs) * 100 : 0;
@@ -1237,7 +1237,7 @@ function TimelineSection({
 
             {/* 3.5 Velocity mini-map — per-move TPS heat strip */}
             {hasMiniMap && (
-              <div className="relative h-[10px] w-full flex overflow-hidden rounded-sm bg-surface-2/60 border border-line/40">
+              <div className="relative h-2.5 w-full flex overflow-hidden rounded-sm bg-surface-2/60 border border-line/40">
                 {perMoveTps.map((t, i) => (
                   <div
                     key={`vel-${i}`}
@@ -1252,13 +1252,13 @@ function TimelineSection({
             {/* 4. Playhead and Hover Scrubber Vertical Lines */}
             {hoverPct !== null && (
               <div
-                className="absolute top-0 bottom-0 w-[1px] bg-ink pointer-events-none opacity-60 z-20"
+                className="absolute top-0 bottom-0 w-px bg-ink pointer-events-none opacity-60 z-20"
                 style={{ left: `${hoverPct}%` }}
               />
             )}
             {replayPct !== null && (
               <div
-                className="absolute top-0 bottom-0 w-[2px] bg-blue-500 pointer-events-none z-20 shadow-[0_0_4px_rgba(59,130,246,0.8)]"
+                className="absolute top-0 bottom-0 w-0.5 bg-blue-500 pointer-events-none z-20 shadow-[0_0_4px_rgba(59,130,246,0.8)]"
                 style={{ left: `${replayPct}%` }}
               />
             )}
