@@ -27,7 +27,8 @@ const CUBE_MIN_WIDTH = 280;
 const CUBE_MAX_WIDTH = 800;
 const CUBE_RESIZE_MIN_WIDTH = 220; // Minimum width when user resizes to the right
 // Viewport line between the "large tablet" regime (panel opens at ¼ of the
-// available width) and the desktop regime (⅓). Matches Tailwind `xl` (1280px).
+// available width) and the desktop regime (½ — the user can resize from there).
+// Matches Tailwind `xl` (1280px).
 const DESKTOP_REGIME_MIN_WIDTH = 1280;
 
 /** Padding applied around the cube canvas. Lives on the inner wrapper (NOT on
@@ -168,7 +169,7 @@ export function MainLayout({
         CUBE_MIN_WIDTH,
         Math.min(
           CUBE_MAX_WIDTH,
-          (vw - LEFT_NAV_WIDTH) * (vw < DESKTOP_REGIME_MIN_WIDTH ? 0.25 : 1 / 3),
+          (vw - LEFT_NAV_WIDTH) * (vw < DESKTOP_REGIME_MIN_WIDTH ? 0.25 : 0.5),
         ),
       )
     : 0;
