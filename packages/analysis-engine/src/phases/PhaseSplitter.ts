@@ -152,8 +152,10 @@ function isOneMoveFromSolved(state: CubeState): boolean {
  * Phase masks describe completion states, not recognition timestamps. A
  * segment therefore owns the moves since the previous completion, while
  * `completionIndex` records the exact move at which its mask matched.
- * Recognition time is deliberately not guessed here; only measurable gaps
- * between phase completions are exposed as `transitionMs`.
+ * Recognition time is NOT guessed: it is the measurable gap between the
+ * previous phase's completion move and this phase's first move — exposed
+ * as `recognitionMs` (with `transitionMs` kept as a legacy alias of the
+ * same measurement, per the professional recognition/execution model).
  */
 export class PhaseSplitter {
   static split(
@@ -404,6 +406,11 @@ export class PhaseSplitter {
             startTimestamp,
           )
         : 0;
+      // Recognition time = the boundary gap before this phase's first move
+      // (the same measurable gap exposed as transitionMs, which is kept as a
+      // legacy alias). Zero for the first phase (inspection is not captured)
+      // and for skipped phases (no moves to recognize).
+      const recognitionMs = transitionMs;
 
       phases.push({
         phaseName,
@@ -414,7 +421,7 @@ export class PhaseSplitter {
         endTimestamp,
         durationMs,
         executionMs: durationMs,
-        recognitionMs: 0,
+        recognitionMs,
         transitionMs,
         skipped,
         moveCount: skipped ? 0 : endIndex - startIndex + 1,

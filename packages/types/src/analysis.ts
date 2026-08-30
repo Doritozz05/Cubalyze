@@ -396,11 +396,25 @@ export interface PauseDetail {
   /** Duration in ms. */
   durationMs: number;
 
-  /** Phase where this pause occurred. */
+  /**
+   * Phase the pause is attributed to. For `recognition` pauses this is the
+   * NEXT phase (the one being recognized); for internal pauses it is the
+   * phase the pause occurred in.
+   */
   phase: string;
 
-  /** Position: "mid-phase", "pre-algorithm", "transition". */
-  category: 'mid-phase' | 'pre-algorithm' | 'transition';
+  /**
+   * Position:
+   *   - "recognition": gap between the previous phase's last move and this
+   *     phase's first move — the recognition/reaction time of the phase it
+   *     is attributed to. The same measurement exposed per phase as
+   *     `PhaseMetrics.recognitionMs`.
+   *   - "mid-algorithm": hesitation INSIDE a last-layer algorithm
+   *     (OLL/PLL/CMLL) — recalling the algorithm, not recognizing it.
+   *   - "mid-phase": hesitation inside a phase (F2L pair search, cross
+   *     piece search, block building).
+   */
+  category: 'recognition' | 'mid-algorithm' | 'mid-phase';
 }
 
 // ─── Fluidity Metrics ────────────────────────────────────────────────────────

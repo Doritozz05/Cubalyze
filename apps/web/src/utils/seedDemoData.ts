@@ -262,13 +262,20 @@ function generateMetrics(
     else if (ratio < ollEnd) phase = "OLL";
     else phase = "PLL";
 
-    let category: "mid-phase" | "pre-algorithm" | "transition" = "mid-phase";
-    // Classify: near phase boundaries → transition, near OLL/PLL → pre-algorithm
+    let category: "mid-phase" | "recognition" | "mid-algorithm" = "mid-phase";
+    // Classify: near a phase boundary → recognition of the NEXT phase;
+    // inside a last-layer algorithm → mid-algorithm hesitation.
     const nearCrossF2L = Math.abs(g.startIndex - crossMoves) <= 2;
     const nearF2lOll = Math.abs(g.startIndex - (crossMoves + f2lMoves)) <= 2;
     const nearOllPll = Math.abs(g.startIndex - (crossMoves + f2lMoves + ollMoves)) <= 2;
-    if (nearCrossF2L || nearF2lOll || nearOllPll) category = "transition";
-    else if (phase === "OLL" || phase === "PLL") category = "pre-algorithm";
+    if (nearCrossF2L || nearF2lOll || nearOllPll) {
+      category = "recognition";
+      if (nearCrossF2L) phase = "F2L";
+      else if (nearF2lOll) phase = "OLL";
+      else phase = "PLL";
+    } else if (phase === "OLL" || phase === "PLL") {
+      category = "mid-algorithm";
+    }
 
     return {
       startIndex: g.startIndex,
@@ -282,11 +289,16 @@ function generateMetrics(
   const totalPauseTimeMs = realPauses.reduce((s, p) => s + p.durationMs, 0);
   const pauseRatio = totalTimeMs > 0 ? totalPauseTimeMs / totalTimeMs : 0;
 
+  // Per-phase pause time only counts INTERNAL pauses (mid-phase /
+  // mid-algorithm) — boundary gaps are the next phase's recognition.
+  const phasePauses = (name: string) =>
+    realPauses.filter((p) => p.phase === name && p.category !== "recognition");
+
   const phases = [
-    { phaseName: "Cross", durationMs: crossMs, moveCount: crossMoves, tps: crossTps, pauseCount: realPauses.filter(p => p.phase === "Cross").length, pauseTimeMs: realPauses.filter(p => p.phase === "Cross").reduce((s, p) => s + p.durationMs, 0) },
-    { phaseName: "F2L", durationMs: f2lMs, moveCount: f2lMoves, tps: f2lTps, pauseCount: realPauses.filter(p => p.phase === "F2L").length, pauseTimeMs: realPauses.filter(p => p.phase === "F2L").reduce((s, p) => s + p.durationMs, 0) },
-    { phaseName: "OLL", durationMs: ollMs, moveCount: ollMoves, tps: ollTps, pauseCount: realPauses.filter(p => p.phase === "OLL").length, pauseTimeMs: realPauses.filter(p => p.phase === "OLL").reduce((s, p) => s + p.durationMs, 0) },
-    { phaseName: "PLL", durationMs: pllMs, moveCount: pllMoves, tps: pllTps, pauseCount: realPauses.filter(p => p.phase === "PLL").length, pauseTimeMs: realPauses.filter(p => p.phase === "PLL").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "Cross", durationMs: crossMs, moveCount: crossMoves, tps: crossTps, pauseCount: phasePauses("Cross").length, pauseTimeMs: phasePauses("Cross").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "F2L", durationMs: f2lMs, moveCount: f2lMoves, tps: f2lTps, pauseCount: phasePauses("F2L").length, pauseTimeMs: phasePauses("F2L").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "OLL", durationMs: ollMs, moveCount: ollMoves, tps: ollTps, pauseCount: phasePauses("OLL").length, pauseTimeMs: phasePauses("OLL").reduce((s, p) => s + p.durationMs, 0) },
+    { phaseName: "PLL", durationMs: pllMs, moveCount: pllMoves, tps: pllTps, pauseCount: phasePauses("PLL").length, pauseTimeMs: phasePauses("PLL").reduce((s, p) => s + p.durationMs, 0) },
   ];
 
   const pauses = {
@@ -294,7 +306,10 @@ function generateMetrics(
     maxDurationMs: pauseCount > 0 ? Math.max(...realPauses.map(p => p.durationMs)) : 0,
     avgDurationMs: pauseCount > 0 ? Math.round(totalPauseTimeMs / pauseCount) : 0,
     byPhase: Object.fromEntries(
-      phases.filter(p => p.pauseCount > 0).map(p => [p.phaseName, { count: p.pauseCount, avgMs: p.pauseCount > 0 ? Math.round(p.pauseTimeMs / p.pauseCount) : 0 }])
+      [...new Set(realPauses.map(p => p.phase))].map((phaseName) => {
+        const list = realPauses.filter(p => p.phase === phaseName);
+        return [phaseName, { count: list.length, avgMs: Math.round(list.reduce((s, p) => s + p.durationMs, 0) / list.length) }];
+      })
     ),
     totalPauseTimeMs,
     pauseRatio,
@@ -337,6 +352,10 @@ function generateMetrics(
     const endTimestamp = phaseTimestamp + phase.durationMs;
     phaseIndex += phase.moveCount;
     phaseTimestamp = endTimestamp;
+    // Recognition = the boundary gap before this phase's first move.
+    // Cross recognition happens during inspection (not captured) → 0.
+    const recognitionMs =
+      phase.phaseName === "Cross" ? 0 : Math.round(120 + Math.random() * 380);
     return {
       phaseName: phase.phaseName,
       startIndex,
@@ -345,9 +364,9 @@ function generateMetrics(
       startTimestamp,
       endTimestamp,
       durationMs: phase.durationMs,
-      executionMs: phase.durationMs,
-      recognitionMs: 0,
-      transitionMs: 0,
+      executionMs: Math.max(0, phase.durationMs - (phase.pauseTimeMs ?? 0)),
+      recognitionMs,
+      transitionMs: recognitionMs,
       skipped: false,
       moveCount: phase.moveCount,
     };

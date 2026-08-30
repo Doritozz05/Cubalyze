@@ -256,15 +256,14 @@ describe("derivePauseCause", () => {
     { phaseName: "PLL", durationMs: 2500, moveCount: 13, tps: 5.2, pauseCount: 0, pauseTimeMs: 0 },
   ];
 
-  it("recognizes transition pauses", () => {
-    const p: PauseDetail = { startIndex: 7, endIndex: 8, durationMs: 200, phase: "Cross", category: "transition" };
-    expect(derivePauseCause(p, phases)).toContain("transition");
-    expect(derivePauseCause(p, phases)).toContain("F2L");
+  it("attributes recognition pauses to the next phase", () => {
+    const p: PauseDetail = { startIndex: 7, endIndex: 8, durationMs: 200, phase: "F2L", category: "recognition" };
+    expect(derivePauseCause(p, phases)).toBe("F2L pair recognition");
   });
 
-  it("recognizes OLL pre-algorithm recognition", () => {
-    const p: PauseDetail = { startIndex: 35, endIndex: 36, durationMs: 300, phase: "OLL", category: "pre-algorithm" };
-    expect(derivePauseCause(p, phases)).toBe("OLL recognition");
+  it("labels mid-algorithm pauses as hesitation", () => {
+    const p: PauseDetail = { startIndex: 35, endIndex: 36, durationMs: 300, phase: "OLL", category: "mid-algorithm" };
+    expect(derivePauseCause(p, phases)).toBe("OLL hesitation");
   });
 
   it("recognizes F2L mid-phase pair search", () => {
@@ -350,7 +349,7 @@ describe("deriveTimeline", () => {
         totalPauseTimeMs: 300,
         pauseRatio: 0.025,
         pauses: [
-          { startIndex: 35, endIndex: 36, durationMs: 300, phase: "OLL", category: "pre-algorithm" },
+          { startIndex: 35, endIndex: 36, durationMs: 300, phase: "OLL", category: "recognition" },
         ],
       },
     });
@@ -415,7 +414,7 @@ describe("deriveTimeline", () => {
     expect(tl.segments[tl.segments.length - 1].endMs).toBe(tl.totalMs);
   });
 
-  it("transition pause tracked in pauseMarks, gap absorbed in proportional segments", () => {
+  it("recognition pause tracked in pauseMarks, gap absorbed in proportional segments", () => {
     // The proportional distribution absorbs the inter-phase pause gap
     // into the phase exec block. The pause metadata is still available
     // via `pauseMarks` (the separate pause annotation array).
@@ -428,7 +427,7 @@ describe("deriveTimeline", () => {
         totalPauseTimeMs: 200,
         pauseRatio: 0.02,
         pauses: [
-          { startIndex: 7, endIndex: 8, durationMs: 200, phase: "Cross", category: "transition" },
+          { startIndex: 7, endIndex: 8, durationMs: 200, phase: "Cross", category: "recognition" },
         ],
       },
     });
@@ -440,7 +439,7 @@ describe("deriveTimeline", () => {
 
     // The pause is tracked in pauseMarks with correct metadata.
     expect(tl.pauseMarks).toHaveLength(1);
-    expect(tl.pauseMarks[0].category).toBe("transition");
+    expect(tl.pauseMarks[0].category).toBe("recognition");
     expect(tl.pauseMarks[0].startIndex).toBe(7);
     expect(tl.pauseMarks[0].endIndex).toBe(8);
     expect(tl.pauseMarks[0].phase).toBe("Cross");

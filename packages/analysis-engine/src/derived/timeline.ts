@@ -88,22 +88,26 @@ export function derivePauseCause(pause: PauseDetail, phases: PhaseMetrics[]): st
   const phase = pause.phase.toLowerCase();
   const cat = pause.category;
 
-  if (cat === "transition") {
-    const idx = phases.findIndex((x) => x.phaseName === pause.phase);
-    const next = idx >= 0 ? phases[idx + 1] : undefined;
-    return next
-      ? `${pause.phase} → ${next.phaseName} transition`
-      : `${pause.phase} transition`;
-  }
-
-  if (cat === "pre-algorithm") {
+  // Recognition pauses are attributed to the phase being recognized.
+  if (cat === "recognition") {
     if (phase.includes("oll")) return "OLL recognition";
     if (phase.includes("pll")) return "PLL recognition";
     if (phase.includes("cmll")) return "CMLL recognition";
     if (phase.includes("lse") || phase.includes("lr")) return "LSE recognition";
-    return `${pause.phase} algorithm recognition`;
+    if (phase.includes("f2l")) return "F2L pair recognition";
+    if (phase.includes("cross")) return "Cross planning";
+    if (phase.includes("block")) return "Block building search";
+    if (phase.includes("eoline") || phase.includes("eole")) return "Edge orientation";
+    return `${pause.phase} recognition`;
   }
 
+  // Pause INSIDE a last-layer algorithm — recalling/hesitating, not
+  // recognizing the case.
+  if (cat === "mid-algorithm") {
+    return `${pause.phase} hesitation`;
+  }
+
+  // mid-phase: search/recognition pauses within a phase.
   if (phase.includes("f2l")) return "F2L pair recognition";
   if (phase.includes("cross")) return "Cross piece search";
   if (phase.includes("block")) return "Block building search";

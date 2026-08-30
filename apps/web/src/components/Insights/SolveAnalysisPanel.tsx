@@ -766,13 +766,14 @@ function TimelineSection({
 
   const categoryLabel = (cat: string): string => {
     switch (cat) {
-      case "transition":
-        return t("analysis.pauseCatTransition");
-      case "pre-algorithm":
-        return t("analysis.pauseCatPreAlgorithm");
+      case "recognition":
+        return t("analysis.pauseCatRecognition");
+      case "mid-algorithm":
+        return t("analysis.pauseCatMidAlgorithm");
       case "mid-phase":
         return t("analysis.pauseCatMidPhase");
       default:
+        // Legacy persisted categories (pre-0.3.0): "transition" / "pre-algorithm".
         return cat;
     }
   };
@@ -797,26 +798,14 @@ function TimelineSection({
       case "Edge orientation":
         return t("analysis.pauseCauseEdgeOrientation");
       default: {
-        const transition = cause.match(/^(.*) → (.*) transition$/);
-        if (transition) {
-          return t("analysis.pauseCauseTransition", {
-            from: transition[1],
-            to: transition[2],
-          });
-        }
-        if (cause.endsWith(" transition")) {
-          return t("analysis.pauseCauseTransitionSingle", {
-            phase: cause.slice(0, -" transition".length),
-          });
-        }
-        if (cause.endsWith(" algorithm recognition")) {
-          return t("analysis.pauseCauseAlgRecog", {
-            phase: cause.slice(0, -" algorithm recognition".length),
-          });
-        }
         if (cause.endsWith(" hesitation")) {
           return t("analysis.pauseCauseHesitation", {
             phase: cause.slice(0, -" hesitation".length),
+          });
+        }
+        if (cause.endsWith(" recognition")) {
+          return t("analysis.pauseCauseRecognition", {
+            phase: cause.slice(0, -" recognition".length),
           });
         }
         return cause || `${pm.phase ?? "Solve"} pause`;
@@ -1145,7 +1134,7 @@ function TimelineSection({
               {pauseMarks.map((pm, i) => {
                 const leftPct = totalMs > 0 ? (pm.startMs / totalMs) * 100 : 0;
                 const widthPct = totalMs > 0 ? (pm.durationMs / totalMs) * 100 : 0;
-                const isRecog = pm.category === "pre-algorithm" || pm.category === "transition";
+                const isRecog = pm.category === "recognition";
                 const catColor = isRecog ? "#8B5CF6" : "#F59E0B";
                 const isLong = pm.durationMs >= 500;
                 const vsMean =
@@ -1326,7 +1315,7 @@ function TimelineSection({
         {pauseMarks.length > 0 && (
           <span className="flex items-center gap-1.5">
             <span className="flex gap-0.5">
-              <span className="inline-block size-2 bg-[#8B5CF6]" title="Recognition / Transition" />
+              <span className="inline-block size-2 bg-[#8B5CF6]" title="Recognition" />
               <span className="inline-block size-2 bg-[#F59E0B]" title="Hesitation / Search" />
             </span>
             <span className="font-medium text-ink-2">

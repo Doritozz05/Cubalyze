@@ -101,7 +101,7 @@ describe('PauseDetector', () => {
     expect(pauses.totalCount).toBeGreaterThanOrEqual(1);
     // All pauses should have a valid category
     for (const p of pauses.pauses) {
-      expect(['mid-phase', 'pre-algorithm', 'transition']).toContain(p.category);
+      expect(['mid-phase', 'mid-algorithm', 'recognition']).toContain(p.category);
     }
   });
 

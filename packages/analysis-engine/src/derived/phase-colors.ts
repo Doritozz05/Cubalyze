@@ -7,8 +7,14 @@
  * Consumed by the derived visualization module and by UI components.
  */
 
-/** Pause position category. */
-export type PauseCategory = "transition" | "pre-algorithm" | "mid-phase";
+/**
+ * Pause position category.
+ *   - "recognition": boundary gap before a phase — the phase's recognition
+ *     time (violet).
+ *   - "mid-algorithm": hesitation inside a last-layer algorithm.
+ *   - "mid-phase": hesitation inside a phase (pair search, piece search).
+ */
+export type PauseCategory = "recognition" | "mid-algorithm" | "mid-phase";
 
 /**
  * Maps a phase name → hex color, grouped by ROLE across methods:
@@ -53,8 +59,8 @@ const FALLBACK_PHASE_COLORS = [
  * with phase colors (blue/green/amber/red).
  */
 export const PAUSE_COLOR_BY_CATEGORY: Record<PauseCategory, string> = {
-  transition: "#8B5CF6",
-  "pre-algorithm": "#A78BFA",
+  recognition: "#8B5CF6",
+  "mid-algorithm": "#A78BFA",
   "mid-phase": "#6D28D9",
 };
 

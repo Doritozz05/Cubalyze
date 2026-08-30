@@ -82,11 +82,21 @@ export class MetricsAggregator {
 
     // ─── Update phase-level pause counts ────────────────────────────────
     for (const p of pauses.pauses) {
+      // Boundary "recognition" gaps are accounted in each phase's
+      // recognitionMs, not as internal pause time.
+      if (p.category === 'recognition') continue;
       const phaseMetric = phasesMetrics.find((pm) => pm.phaseName === p.phase);
       if (phaseMetric) {
         phaseMetric.pauseCount++;
         phaseMetric.pauseTimeMs += p.durationMs;
       }
+    }
+
+    // Pure execution = phase duration minus internal pauses (recognition
+    // gaps live outside the phase's own span, in recognitionMs).
+    for (const pm of phasesMetrics) {
+      if (pm.skipped) continue;
+      pm.executionMs = Math.max(0, pm.durationMs - pm.pauseTimeMs);
     }
 
     // ─── Method-specific metrics ────────────────────────────────────────
@@ -157,11 +167,21 @@ export class MetricsAggregator {
       }));
 
     for (const p of pauses.pauses) {
+      // Boundary "recognition" gaps are accounted in each phase's
+      // recognitionMs, not as internal pause time.
+      if (p.category === 'recognition') continue;
       const phaseMetric = phasesMetrics.find((pm) => pm.phaseName === p.phase);
       if (phaseMetric) {
         phaseMetric.pauseCount++;
         phaseMetric.pauseTimeMs += p.durationMs;
       }
+    }
+
+    // Pure execution = phase duration minus internal pauses (recognition
+    // gaps live outside the phase's own span, in recognitionMs).
+    for (const pm of phasesMetrics) {
+      if (pm.skipped) continue;
+      pm.executionMs = Math.max(0, pm.durationMs - pm.pauseTimeMs);
     }
 
     return {

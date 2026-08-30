@@ -9,9 +9,15 @@ import type {
  *
  * A pause is a gap between consecutive moves that exceeds a configurable
  * threshold. Pauses are classified into three categories:
- *   - mid-phase: pause within a single phase
- *   - pre-algorithm: pause just before the last layer (OLL/PLL or CMLL)
- *   - transition: pause between two different phases
+ *   - recognition: gap between two different phases — the recognition /
+ *     reaction time of the NEXT phase (attributed to that phase).
+ *   - mid-algorithm: pause INSIDE a last-layer algorithm (OLL/PLL or CMLL)
+ *     — recalling the algorithm, not recognizing the case.
+ *   - mid-phase: pause within a single phase (pair search, piece search).
+ *
+ * The same boundary gaps are exposed without any threshold as each phase's
+ * `recognitionMs` (see PhaseSplitter); this detector only surfaces the long
+ * ones as timeline markers.
  */
 export class PauseDetector {
   /** Default pause threshold in milliseconds. */
@@ -88,7 +94,13 @@ export class PauseDetector {
           startIndex: i,
           endIndex: i + 1,
           durationMs: Math.round(effectiveGapMs),
-          phase: current.phaseName || 'unknown',
+          // Recognition pauses are the NEXT phase's recognition time, so
+          // they are attributed to the phase being recognized, not to the
+          // phase whose last move preceded the gap.
+          phase:
+            category === 'recognition'
+              ? next.phaseName || current.phaseName || 'unknown'
+              : current.phaseName || 'unknown',
           category,
         };
 
@@ -138,26 +150,28 @@ export class PauseDetector {
    * Classify a pause based on its position in the solve.
    *
    * Categories:
-   *   - 'pre-algorithm': pause just before OLL, PLL, or CMLL (last layer)
-   *   - 'transition': pause at a phase boundary
-   *   - 'mid-phase': pause within the same phase
+   *   - 'recognition': the gap crosses a phase boundary — it is the next
+   *     phase's recognition/reaction time.
+   *   - 'mid-algorithm': both entries are inside a last-layer algorithm
+   *     (OLL, PLL, CMLL) — a hesitation while recalling/executing the alg.
+   *   - 'mid-phase': pause within the same non-last-layer phase.
    */
   private static classifyPause(
     current: SolveTimeline['entries'][number],
     next: SolveTimeline['entries'][number],
     phases: SolveTimeline['phases'],
   ): PauseDetail['category'] {
-    // If the next entry starts a new phase, it's a transition pause
+    // Gap crossing a phase boundary = recognition of the NEXT phase.
     if (
       current.phaseId !== undefined &&
       next.phaseId !== undefined &&
       current.phaseId !== next.phaseId
     ) {
-      return 'transition';
+      return 'recognition';
     }
 
-    // If the next phase is a last-layer phase (OLL, PLL, CMLL, LL),
-    // it's a pre-algorithm pause
+    // Same phase, next entry already inside a last-layer algorithm
+    // (OLL, PLL, CMLL, LL) → hesitation mid-algorithm, not recognition.
     const nextPhaseName = next.phaseName?.toLowerCase() || '';
     if (
       nextPhaseName === 'oll' ||
@@ -165,7 +179,7 @@ export class PauseDetector {
       nextPhaseName === 'cmll' ||
       nextPhaseName === 'll'
     ) {
-      return 'pre-algorithm';
+      return 'mid-algorithm';
     }
 
     return 'mid-phase';
