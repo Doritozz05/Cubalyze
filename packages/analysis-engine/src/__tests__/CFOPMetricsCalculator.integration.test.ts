@@ -34,6 +34,39 @@ describe('CFOPMetricsCalculator — Integration', () => {
     expect(metrics.crossTPS).toBeGreaterThanOrEqual(0);
   });
 
+  it('crossEfficiency is 1.0 when the cross is solved optimally (real optimal, not the 8 heuristic)', () => {
+    // Real scramble whose D-cross optimal is 6 moves (verified). A sub-8
+    // optimal used to score 6/8 = 0.75 with the old "distance from 8"
+    // heuristic; with the real optimal it must be 1.0 (optimal / actual = 6/6).
+    const scramble = "F L2 R2 F L2 B F D2 R2 F' R2 F L D2 R' D' B R U2 B2 R'";
+    const crossMoves = makeMoves("F' L2 D B' R' D");
+    const timeline = TimelineBuilder.build(crossMoves, 'CFOP', undefined, scramble);
+    PhaseSplitter.splitAndAnnotate(timeline, CFOPDefinition);
+    const metrics = CFOPMetricsCalculator.compute(timeline, { scramble });
+
+    expect(metrics.crossMoves).toBe(6);
+    expect(metrics.crossEfficiency).toBe(1);
+  });
+
+  it('crossEfficiency is optimal/actual when the cross wastes moves', () => {
+    const scramble = "F L2 R2 F L2 B F D2 R2 F' R2 F L D2 R' D' B R U2 B2 R'";
+    const optimalMoves = makeMoves("F' L2 D B' R' D");
+    // Insert a redundant R R' pair mid-cross: the cross still completes at
+    // the same point, but the phase now owns 2 extra moves (6 optimal + 2).
+    const redundantMoves = [
+      ...optimalMoves.slice(0, 2),
+      makeMoves('R')[0],
+      makeMoves("R'")[0],
+      ...optimalMoves.slice(2),
+    ];
+    const timeline = TimelineBuilder.build(redundantMoves, 'CFOP', undefined, scramble);
+    PhaseSplitter.splitAndAnnotate(timeline, CFOPDefinition);
+    const metrics = CFOPMetricsCalculator.compute(timeline, { scramble });
+
+    expect(metrics.crossMoves).toBe(8);
+    expect(metrics.crossEfficiency).toBe(0.75);
+  });
+
   it('crossEfficiency ≤ 1.0 for efficient solves', () => {
     // Using the exact inverse of a scramble as the solve should be efficient
     const scramble = "R U R' U'";

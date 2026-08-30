@@ -74,7 +74,7 @@ export class MetricsAggregator {
     let roux: RouxMetrics | undefined;
 
     if (method === 'cfop') {
-      cfop = CFOPMetricsCalculator.compute(timeline);
+      cfop = CFOPMetricsCalculator.compute(timeline, { scramble });
     } else if (method === 'roux') {
       roux = RouxMetricsCalculator.compute(timeline);
     }

@@ -3,7 +3,8 @@ import type {
   CFOPMetrics,
   F2LPairMetrics,
 } from '@cubeforge/types';
-import { ColorPhaseDetector } from '@cubeforge/math-core';
+import { ColorPhaseDetector, CubeState } from '@cubeforge/math-core';
+import { solveCross } from '@cubeforge/solver-engine';
 import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
 import { detectLastLayerCase } from '../cases/lastLayerCases';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
@@ -21,8 +22,15 @@ import { TimelineBuilder } from '../timeline/TimelineBuilder';
 export class CFOPMetricsCalculator {
   /**
    * Compute all CFOP-specific metrics.
+   *
+   * @param opts.scramble - The original scramble. When present (plus a
+   *   detected cross color) the cross efficiency is the REAL optimal-based
+   *   ratio (solveCross / actual moves) instead of the legacy heuristic.
    */
-  static compute(timeline: SolveTimeline): CFOPMetrics {
+  static compute(
+    timeline: SolveTimeline,
+    opts?: { scramble?: string },
+  ): CFOPMetrics {
     const { entries, phases } = timeline;
 
     const defaultResult: CFOPMetrics = {
@@ -82,11 +90,23 @@ export class CFOPMetricsCalculator {
     // ─── Cross metrics ──────────────────────────────────────────────────
     const crossPhase = phases.find((p) => p.phaseName === 'Cross');
     if (crossPhase) {
-      // Cross efficiency: optimal cross is always ≤ 8 moves
       defaultResult.crossMoves = crossPhase.moveCount;
-      defaultResult.crossEfficiency = crossPhase.moveCount <= 8
-        ? Math.round((crossPhase.moveCount / 8) * 100) / 100
-        : Math.round((8 / crossPhase.moveCount) * 100) / 100;
+      const completionIdx = crossPhase.completionIndex;
+      const completionState =
+        completionIdx !== undefined && completionIdx < entries.length
+          ? TimelineBuilder.fromSnapshot(entries[completionIdx].state)
+          : undefined;
+      const preCompletionState =
+        completionIdx !== undefined && completionIdx > 0 && completionIdx < entries.length
+          ? TimelineBuilder.fromSnapshot(entries[completionIdx - 1].state)
+          : undefined;
+      defaultResult.crossEfficiency = CFOPMetricsCalculator.computeCrossEfficiency(
+        crossPhase.moveCount,
+        opts?.scramble,
+        report?.crossColor,
+        completionState,
+        preCompletionState,
+      );
       defaultResult.crossTPS = crossPhase.durationMs > 0
         ? Math.round((crossPhase.moveCount / (crossPhase.durationMs / 1000)) * 100) / 100
         : 0;
@@ -183,6 +203,77 @@ export class CFOPMetricsCalculator {
     }
 
     return defaultResult;
+  }
+
+  /**
+   * Real cross efficiency: optimal cross move count (solveCross over the
+   * solver's ACTUAL cross color) divided by the moves the solver used.
+   * 1.0 = the cross was built optimally, whatever the optimal length is
+   * (3, 5, 8…). Falls back to the legacy "distance from 8" heuristic when
+   * the optimal cannot be computed (no scramble, no detected cross color,
+   * or the solver returns no solution).
+   */
+  private static computeCrossEfficiency(
+    actualMoves: number,
+    scramble?: string,
+    reportCrossColor?: string,
+    completionState?: CubeState,
+    preCompletionState?: CubeState,
+  ): number {
+    if (actualMoves <= 0) return 0;
+    try {
+      if (scramble) {
+        const state = new CubeState();
+        CubeState.initTables();
+        state.applySequence(scramble);
+        const crossColor =
+          reportCrossColor ??
+          CFOPMetricsCalculator.solverCrossColorAt(completionState, preCompletionState);
+        if (crossColor) {
+          const solutions = solveCross(state, crossColor, { maxDepth: 8 });
+          const optimal = solutions.length > 0 ? solutions[0].moveCount : 0;
+          if (optimal > 0) {
+            return Math.min(1, Math.round((optimal / actualMoves) * 100) / 100);
+          }
+        }
+      }
+    } catch {
+      // Fall back to the heuristic below.
+    }
+    // Legacy heuristic: any cross can be solved in ≤ 8 face turns, so 8 was
+    // used as the reference length.
+    return actualMoves <= 8
+      ? Math.round((actualMoves / 8) * 100) / 100
+      : Math.round((8 / actualMoves) * 100) / 100;
+  }
+
+  /**
+   * Deterministic cross-color lookup: the solver's cross is the one that
+   * COMPLETES on the final cross move — complete at the detected completion
+   * state but not at the previous entry. A depth-0 solveCross is a pure mask
+   * match (no search), so this is cheap. Avoids the ColorPhaseDetector
+   * "longest-stable" heuristic, which can pick a different color on
+   * degenerate timelines where another color's cross is coincidentally
+   * complete too.
+   */
+  private static solverCrossColorAt(
+    state?: CubeState,
+    prevState?: CubeState,
+  ): string | undefined {
+    if (!state) return undefined;
+    const faces = ['U', 'L', 'F', 'R', 'B', 'D'] as const;
+    for (const face of faces) {
+      const completeNow = solveCross(state, face, { maxDepth: 0 }).length > 0;
+      const completeBefore = prevState
+        ? solveCross(prevState, face, { maxDepth: 0 }).length > 0
+        : false;
+      if (completeNow && !completeBefore) return face;
+    }
+    // No cross "just completed" (degenerate): accept any complete cross.
+    for (const face of faces) {
+      if (solveCross(state, face, { maxDepth: 0 }).length > 0) return face;
+    }
+    return undefined;
   }
 
   /**
