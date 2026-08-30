@@ -901,7 +901,11 @@
       "techGap": "mean interval",
       "techFingerprint": "Solve fingerprint",
       "techFingerprintEyebrow": "latest solve",
-      "techFingerprintHint": "Top: one cell per move, color = face. Bottom: speed (darker = slower)."
+      "techFingerprintHint": "Top: one cell per move, color = face. Bottom: speed (darker = slower).",
+      "pauseByCause": "Where the pauses go",
+      "pauseByCauseEyebrow": "{{total}} in pauses this session",
+      "pauseByCauseEmpty": "No pauses detected in this session yet. Solve with a Smart Cube or the Virtual Cube to accumulate pause data.",
+      "pauseTime": "Pause time"
     },      "caseIntelligence": {
       "title": "Case intelligence",
       "bestOfEach": "slowest & fastest per phase",
@@ -918,6 +922,18 @@
       "colTime": "Time",
       "colMoves": "Moves",
       "slowestHint": "Slowest: {{seen}} appearances. Your biggest time sink."
+    },
+    "caseRecognition": {
+      "title": "Recognition vs execution",
+      "eyebrow": "slowest 5 per axis",
+      "slowestRecognize": "Slowest to recognize",
+      "recognizeHint": "The gap before the case is executed — your recognition cost.",
+      "slowestExecute": "Slowest to execute",
+      "executeHint": "The actual turning time of the case once you've recognized it.",
+      "noCases": "Not enough recognized cases in this session yet.",
+      "timesX_one": "x{{count}} appearance",
+      "timesX_other": "x{{count}} appearances",
+      "empty": "No recognized cases with split recognition data yet. Solve with a Smart Cube or the Virtual Cube to accumulate data."
     },
     "list": {
       "sortNewest": "Newest",

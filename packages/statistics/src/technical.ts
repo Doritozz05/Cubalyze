@@ -546,11 +546,21 @@ export interface CaseIntelligence {
   avgMoves: number | null;
   avgTps: number | null;
   p75TimeMs: number | null;
+  /**
+   * Average RECOGNITION time for this case — the gap before the pair/OLL/PLL
+   * is executed (per occurrence). Splitting rec vs exec is what separates
+   * "I'm slow because I mis-recognize" from "I'm slow because I execute the
+   * moves slowly" — the two diagnostic axes pros care most about.
+   */
+  avgRecognitionMs: number | null;
+  /** Average EXECUTION time for this case (the actual turning/driving time). */
+  avgExecutionMs: number | null;
 }
 
 interface CaseBucket {
   key: CaseIntelligencePhase;
-  nums: number[]; // per occurrence: time, moves, tps
+  /** Per occurrence. Columns: 0=recognitionMs, 1=executionMs, 2=moves, 3=tps. */
+  nums: number[];
   name: string;
 }
 
@@ -570,7 +580,8 @@ export function deriveCaseIntelligence(
     const cfop = a?.cfop;
     if (!cfop) continue;
 
-    // F2L pairs — time/moves/tps are per pair.
+    // F2L pairs — time/moves/tps are per pair; recognition = the gap before
+    // the pair's first move, execution = the pair's own turning time.
     for (const p of cfop.f2lPairs) {
       const c = p.detectedCase;
       if (!c?.caseNumber) continue;
@@ -580,10 +591,11 @@ export function deriveCaseIntelligence(
         b = { key: "F2L", nums: [], name: c.caseName ?? c.caseNumber };
         buckets.set(id, b);
       }
-      b.nums.push(p.timeMs, p.moves || 0, p.tps || 0);
+      b.nums.push(p.recognitionMs || 0, p.timeMs, p.moves || 0, p.tps || 0);
     }
 
-    // Last layer — time = recognition + execution, moves = phase moveCount.
+    // Last layer — recognition and execution are already split by the
+    // analysis pipeline (ollRecognitionMs / ollExecutionMs).
     const phases = a?.phases ?? [];
     const ollPhase = phases.find((p) => p.phaseName === "OLL");
     const pllPhase = phases.find((p) => p.phaseName === "PLL");
@@ -594,7 +606,7 @@ export function deriveCaseIntelligence(
         b = { key: "OLL", nums: [], name: cfop.ollCase.caseName ?? cfop.ollCase.caseNumber };
         buckets.set(id, b);
       }
-      b.nums.push(cfop.ollRecognitionMs + cfop.ollExecutionMs, ollPhase?.moveCount ?? 0, cfop.ollTPS || 0);
+      b.nums.push(cfop.ollRecognitionMs || 0, cfop.ollExecutionMs || 0, ollPhase?.moveCount ?? 0, cfop.ollTPS || 0);
     }
     if (cfop.pllCase?.caseNumber) {
       const id = key("PLL", cfop.pllCase.caseNumber);
@@ -603,21 +615,24 @@ export function deriveCaseIntelligence(
         b = { key: "PLL", nums: [], name: cfop.pllCase.caseName ?? cfop.pllCase.caseNumber };
         buckets.set(id, b);
       }
-      b.nums.push(cfop.pllRecognitionMs + cfop.pllExecutionMs, pllPhase?.moveCount ?? 0, cfop.pllTPS || 0);
+      b.nums.push(cfop.pllRecognitionMs || 0, cfop.pllExecutionMs || 0, pllPhase?.moveCount ?? 0, cfop.pllTPS || 0);
     }
   }
 
   const out: CaseIntelligence[] = [];
   for (const [id, b] of buckets) {
-    const times: number[] = [];
+    const rec: number[] = [];
+    const exec: number[] = [];
     const moves: number[] = [];
     const tps: number[] = [];
-    for (let i = 0; i < b.nums.length; i += 3) {
-      if (Number.isFinite(b.nums[i])) times.push(b.nums[i]);
-      if (Number.isFinite(b.nums[i + 1])) moves.push(b.nums[i + 1]);
-      if (Number.isFinite(b.nums[i + 2]) && b.nums[i + 2] > 0) tps.push(b.nums[i + 2]);
+    for (let i = 0; i < b.nums.length; i += 4) {
+      if (Number.isFinite(b.nums[i])) rec.push(b.nums[i]);
+      if (Number.isFinite(b.nums[i + 1])) exec.push(b.nums[i + 1]);
+      if (Number.isFinite(b.nums[i + 2])) moves.push(b.nums[i + 2]);
+      if (Number.isFinite(b.nums[i + 3]) && b.nums[i + 3] > 0) tps.push(b.nums[i + 3]);
     }
-    const count = times.length;
+    const times = rec.map((r, i) => r + (exec[i] ?? 0));
+    const count = exec.length;
     out.push({
       caseNumber: id.slice(id.indexOf(":") + 1),
       caseName: b.name,
@@ -626,7 +641,9 @@ export function deriveCaseIntelligence(
       avgTimeMs: mean(times),
       avgMoves: mean(moves),
       avgTps: mean(tps),
-      p75TimeMs: percentile(times.sort((x, y) => x - y), 0.75),
+      p75TimeMs: percentile([...times].sort((x, y) => x - y), 0.75),
+      avgRecognitionMs: mean(rec),
+      avgExecutionMs: mean(exec),
     });
   }
   return out.sort((a, b) => b.count - a.count || a.phase.localeCompare(b.phase));

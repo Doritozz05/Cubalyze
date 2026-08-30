@@ -21,6 +21,8 @@ import { useIsTouch } from "@/hooks/use-mobile";
 import { Tooltip as UiTooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { computeStats, formatTime, formatDuration, statLabel } from "@/utils/formatTime";
 import { CaseIntelligenceSection } from "./CaseIntelligenceSection";
+import { CaseRecognitionSection } from "./CaseRecognitionSection";
+import { PauseCauseSection } from "./PauseCauseSection";
 import { TechnicalSection } from "./TechnicalSection";
 import {
   deriveTpsSeries,
@@ -387,6 +389,12 @@ export const OverviewPanel = memo(function OverviewPanel({ solves, pb, className
 
       {/* ── Case intelligence (session) ──────────────────────────────── */}
       <CaseIntelligenceSection solves={solves} />
+
+      {/* ── Recognition vs execution per case ────────────────────────── */}
+      <CaseRecognitionSection solves={solves} />
+
+      {/* ── Pauses by cause (session aggregate) ──────────────────────── */}
+      <PauseCauseSection solves={solves} />
 
       {/* ── Technical session analytics ──────────────────────────────── */}
       <TechnicalSection solves={solves} />

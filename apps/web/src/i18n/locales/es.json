@@ -901,7 +901,11 @@
       "techGap": "intervalo medio",
       "techFingerprint": "Huella del solve",
       "techFingerprintEyebrow": "último solve",
-      "techFingerprintHint": "Arriba: cada celda es un movimiento, color = cara. Abajo: velocidad (más oscuro = más lento)."
+      "techFingerprintHint": "Arriba: cada celda es un movimiento, color = cara. Abajo: velocidad (más oscuro = más lento).",
+      "pauseByCause": "Dónde se pierde el tiempo en pausas",
+      "pauseByCauseEyebrow": "{{total}} en pausas esta sesión",
+      "pauseByCauseEmpty": "Aún no hay pausas detectadas en esta sesión. Resuelve con un Smart Cube o el Cubo Virtual para acumular datos de pausas.",
+      "pauseTime": "Tiempo de pausa"
     },      "caseIntelligence": {
       "title": "Inteligencia de casos",
       "bestOfEach": "más lento y más rápido por fase",
@@ -918,6 +922,18 @@
       "colTime": "Tiempo",
       "colMoves": "Movs",
       "slowestHint": "Más lento: {{seen}} apariciones. Tu mayor pérdida de tiempo."
+    },
+    "caseRecognition": {
+      "title": "Reconocimiento vs ejecución",
+      "eyebrow": "los 5 más lentos por eje",
+      "slowestRecognize": "Más lentos de reconocer",
+      "recognizeHint": "El hueco antes de ejecutar el caso: tu coste de reconocimiento.",
+      "slowestExecute": "Más lentos de ejecutar",
+      "executeHint": "El tiempo real de giro del caso una vez reconocido.",
+      "noCases": "Todavía no hay suficientes casos reconocidos en esta sesión.",
+      "timesX_one": "{{count}} aparición",
+      "timesX_other": "{{count}} apariciones",
+      "empty": "Aún no hay casos con reconocimiento desglosado en esta sesión. Resuelve con un Smart Cube o el Cubo Virtual para acumular datos."
     },
     "list": {
       "sortNewest": "Más recientes",

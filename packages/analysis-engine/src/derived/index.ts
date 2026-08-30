@@ -43,3 +43,14 @@ export type { TpsPoint, PhaseShare, SeriesSolve } from './series';
 
 // ─── Aggregates ──────────────────────────────────────────────────────────
 export { deriveAvgTime } from './aggregates';
+
+// ─── Pause aggregation (session-level) ───────────────────────────────────
+export {
+  derivePauseCauseSums,
+  flattenPauseCauses,
+} from './pause-aggregates';
+export type {
+  PauseAggSolveInput,
+  CausePauseRow,
+  PauseCauseSum,
+} from './pause-aggregates';

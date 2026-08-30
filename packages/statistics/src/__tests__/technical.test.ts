@@ -346,4 +346,36 @@ describe("deriveCaseIntelligence", () => {
     const out = deriveCaseIntelligence([a]);
     expect(out.some((c) => c.phase === "F2L" && c.count > 0)).toBe(false);
   });
+
+  it("splits recognition vs execution per case (F2L and LL)", () => {
+    const a = metrics();
+    // F2L: two occurrences of F2L 39 with different recognition/execution.
+    a.cfop!.f2lPairs = [
+      { pairNumber: 1, slotId: "FR", timeMs: 1000, moves: 6, tps: 6, recognitionMs: 0, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
+      { pairNumber: 2, slotId: "FL", timeMs: 1400, moves: 7, tps: 5.8, recognitionMs: 400, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
+    ];
+    // OLL: recognition 600, execution 900 (from the fixture).
+    a.cfop!.ollCase = { caseNumber: "OLL 24", caseName: "oc", confidence: "exact" };
+    a.cfop!.ollRecognitionMs = 600;
+    a.cfop!.ollExecutionMs = 900;
+    // PLL: recognition 950, execution 1050 (fixture).
+    a.cfop!.pllCase = { caseNumber: "Ta", caseName: "Ta", confidence: "exact" };
+    a.cfop!.pllRecognitionMs = 950;
+    a.cfop!.pllExecutionMs = 1050;
+
+    const out = deriveCaseIntelligence([a]);
+
+    const pj = out.find((c) => c.caseName === "Pj");
+    expect(pj!.avgRecognitionMs).toBe(200); // (0 + 400) / 2
+    expect(pj!.avgExecutionMs).toBe(1200); // (1000 + 1400) / 2
+    expect(pj!.avgTimeMs).toBe(1400); // rec + exec per occurrence
+
+    const oll = out.find((c) => c.phase === "OLL");
+    expect(oll!.avgRecognitionMs).toBe(600);
+    expect(oll!.avgExecutionMs).toBe(900);
+
+    const pll = out.find((c) => c.phase === "PLL" && c.caseName === "Ta");
+    expect(pll!.avgRecognitionMs).toBe(950);
+    expect(pll!.avgExecutionMs).toBe(1050);
+  });
 });

@@ -17,6 +17,8 @@ export {
   derivePhaseDistribution,
   isComparablePhaseAnalysis,
   derivePauseCause,
+  derivePauseCauseSums,
+  flattenPauseCauses,
   deriveAvgTime,
   derivePairSegments,
 } from "@cubeforge/analysis-engine";
@@ -25,6 +27,7 @@ export type {
   TimelineSegment,
   TimelineData,
   PairSegment,
+  PauseCauseSum,
 } from "@cubeforge/analysis-engine";
 
 // Session TECHNICAL statistics (headless @cubeforge/statistics).
