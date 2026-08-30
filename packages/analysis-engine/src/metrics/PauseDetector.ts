@@ -43,11 +43,16 @@ export class PauseDetector {
    *
    * @param timeline - The annotated SolveTimeline.
    * @param thresholdMs - Minimum gap to classify as a pause (default 500ms).
+   * @param options - Optional pair boundaries: when the entry AFTER a gap is
+   *   the first move of an F2L pair, the gap is classified as pair
+   *   `recognition` (not mid-phase hesitation), consistent with the phase
+   *   boundary gaps.
    * @returns PauseMetrics with all detected pauses.
    */
   static detect(
     timeline: SolveTimeline,
     thresholdMs = PauseDetector.DEFAULT_THRESHOLD_MS,
+    options?: { pairStarts?: ReadonlySet<number> },
   ): PauseMetrics {
     const { entries, phases } = timeline;
 
@@ -88,6 +93,8 @@ export class PauseDetector {
           current,
           next,
           phases,
+          i + 1,
+          options?.pairStarts,
         );
 
         const pause: PauseDetail = {
@@ -150,8 +157,9 @@ export class PauseDetector {
    * Classify a pause based on its position in the solve.
    *
    * Categories:
-   *   - 'recognition': the gap crosses a phase boundary — it is the next
-   *     phase's recognition/reaction time.
+   *   - 'recognition': the gap crosses a phase boundary (recognition of the
+   *     NEXT phase) OR lands on the first move of an F2L pair (recognition
+   *     of the next pair, within the same F2L phase).
    *   - 'mid-algorithm': both entries are inside a last-layer algorithm
    *     (OLL, PLL, CMLL) — a hesitation while recalling/executing the alg.
    *   - 'mid-phase': pause within the same non-last-layer phase.
@@ -160,6 +168,8 @@ export class PauseDetector {
     current: SolveTimeline['entries'][number],
     next: SolveTimeline['entries'][number],
     phases: SolveTimeline['phases'],
+    nextIndex: number,
+    pairStarts?: ReadonlySet<number>,
   ): PauseDetail['category'] {
     // Gap crossing a phase boundary = recognition of the NEXT phase.
     if (
@@ -167,6 +177,12 @@ export class PauseDetector {
       next.phaseId !== undefined &&
       current.phaseId !== next.phaseId
     ) {
+      return 'recognition';
+    }
+
+    // Gap landing on the first move of an F2L pair (same phase) = pair
+    // recognition — lookahead between pairs, not a mid-phase hesitation.
+    if (pairStarts && pairStarts.has(nextIndex)) {
       return 'recognition';
     }
 

@@ -65,9 +65,38 @@ export class MetricsAggregator {
         pauseTimeMs: 0,
       }));
 
+    // ─── Method-specific metrics ────────────────────────────────────────
+    // Computed BEFORE the pauses: CFOP pair boundaries feed the pause
+    // classifier so inter-pair gaps are recognized as pair recognition
+    // instead of mid-phase hesitation.
+    const method = timeline.method.toLowerCase();
+    let cfop: CFOPMetrics | undefined;
+    let roux: RouxMetrics | undefined;
+
+    if (method === 'cfop') {
+      cfop = CFOPMetricsCalculator.compute(timeline);
+    } else if (method === 'roux') {
+      roux = RouxMetricsCalculator.compute(timeline);
+    }
+
+    // First-move index of every F2L pair: a gap landing on one of these is
+    // recognition of the next pair, not a mid-phase hesitation.
+    const pairStarts =
+      cfop && cfop.f2lPairs.length > 0
+        ? new Set(
+            cfop.f2lPairs
+              .map((p) => (p.completionIndex ?? -1) - Math.max(0, p.moves ?? 0) + 1)
+              .filter((i) => i >= 0),
+          )
+        : undefined;
+
     // ─── Core Metrics ───────────────────────────────────────────────────
     // Detect pauses first (TPS needs pauseTimeMs for effective TPS)
-    const pauses: PauseMetrics = PauseDetector.detect(timeline);
+    const pauses: PauseMetrics = PauseDetector.detect(
+      timeline,
+      PauseDetector.DEFAULT_THRESHOLD_MS,
+      pairStarts ? { pairStarts } : undefined,
+    );
 
     const tps: TPSMetrics = TPSCalculator.compute(timeline, pauses.totalPauseTimeMs);
     const fluidity: FluidityMetrics = FluidityCalculator.compute(timeline);
@@ -97,17 +126,6 @@ export class MetricsAggregator {
     for (const pm of phasesMetrics) {
       if (pm.skipped) continue;
       pm.executionMs = Math.max(0, pm.durationMs - pm.pauseTimeMs);
-    }
-
-    // ─── Method-specific metrics ────────────────────────────────────────
-    const method = timeline.method.toLowerCase();
-    let cfop: CFOPMetrics | undefined;
-    let roux: RouxMetrics | undefined;
-
-    if (method === 'cfop') {
-      cfop = CFOPMetricsCalculator.compute(timeline);
-    } else if (method === 'roux') {
-      roux = RouxMetricsCalculator.compute(timeline);
     }
 
     return {

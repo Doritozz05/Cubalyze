@@ -306,9 +306,9 @@ export function FloatingPhaseTimeline({
                                 </span>
                                 <span className="text-ink-2">{seg.tps.toFixed(1)} TPS</span>
                                 <span className="text-ink-3">{seg.moves}m</span>
-                                {seg.pauseBeforeMs > 50 && (
+                                {seg.recognitionMs > 50 && (
                                   <span className="text-caution/70">
-                                    +{formatTime(seg.pauseBeforeMs)}
+                                    +{formatTime(seg.recognitionMs)}
                                   </span>
                                 )}
                               </div>

@@ -1070,7 +1070,7 @@
       "colTime": "Tiempo",
       "colTps": "TPS",
       "pairSeekHint": "Clic para saltar el replay a este par",
-      "pauseBefore": "Pausa previa",
+      "pairRecognition": "Reconocimiento",
       "f2lAvg": "Media F2L {{avg}}m",
       "seekHint": "Clic en cualquier fila para saltar el replay",
       "noPairSegmentation": "(sin segmentación de pares)",

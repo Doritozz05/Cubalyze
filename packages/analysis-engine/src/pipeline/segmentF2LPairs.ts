@@ -147,8 +147,8 @@ export interface UnifiedF2LPair {
   timeMs: number;
   /** movesCount / (timeMs/1000). */
   tps: number;
-  /** Gap between the previous pair's end and this pair's start. */
-  pauseBeforeMs: number;
+  /** Recognition gap between the previous pair's end and this pair's start. */
+  recognitionMs: number;
   /**
    * The recognized Basic F2L algorithmic case (41-case catalog), when the
    * SHARED detector matched. Same detection the reconstruction text route
@@ -302,7 +302,7 @@ export function segmentF2LPairs(
         timeMs > 0 && moves.length > 0
           ? Math.round((moves.length / (timeMs / 1000)) * 100) / 100
           : 0,
-      pauseBeforeMs: 0,
+      recognitionMs: 0,
     }];
   }
 
@@ -553,7 +553,7 @@ export function segmentF2LPairs(
           endIndex: i,
           timeMs: 0,
           tps: 0,
-          pauseBeforeMs: 0,
+          recognitionMs: 0,
           segStart: segmentStart,
         });
         segmentStart = i + 1;
@@ -598,7 +598,7 @@ export function segmentF2LPairs(
       p.timeMs > 0 && p.movesCount > 0
         ? Math.round((p.movesCount / (p.timeMs / 1000)) * 100) / 100
         : 0;
-    p.pauseBeforeMs = p === pairs[0] ? 0 : Math.max(0, startTs - prevPairEndTs);
+    p.recognitionMs = p === pairs[0] ? 0 : Math.max(0, startTs - prevPairEndTs);
     prevPairEndTs = endTs;
   }
 

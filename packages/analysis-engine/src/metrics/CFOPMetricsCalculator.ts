@@ -112,7 +112,9 @@ export class CFOPMetricsCalculator {
         timeMs: p.timeMs,
         moves: p.movesCount,
         tps: p.tps,
-        pauseBeforeMs: p.pauseBeforeMs,
+        recognitionMs: p.recognitionMs,
+        // Legacy alias so pre-0.3.0 readers keep working.
+        pauseBeforeMs: p.recognitionMs,
         colors: p.colors,
         auf: p.auf,
         movesNotation: p.moves,

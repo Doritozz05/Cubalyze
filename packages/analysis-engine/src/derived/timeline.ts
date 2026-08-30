@@ -144,8 +144,8 @@ export interface PairSegment {
   /** Number of moves owned by the pair. */
   moves: number;
   tps: number;
-  /** Gap between the previous pair's end and this pair's start. */
-  pauseBeforeMs: number;
+  /** Recognition gap between the previous pair's end and this pair's start. */
+  recognitionMs: number;
 }
 
 /**
@@ -196,7 +196,7 @@ export function derivePairSegments(
       completionIndex,
       moves: moveCount,
       tps: p.tps ?? 0,
-      pauseBeforeMs: i > 0 ? Math.max(0, p.pauseBeforeMs ?? 0) : 0,
+      recognitionMs: i > 0 ? Math.max(0, p.recognitionMs ?? p.pauseBeforeMs ?? 0) : 0,
     });
     accMs = startMs + durationMs;
   }

@@ -1047,13 +1047,13 @@ function TimelineSection({
                                     {pair.tps.toFixed(1)}
                                   </span>
                                 </div>
-                                {pair.pauseBeforeMs > 50 && (
+                                {pair.recognitionMs > 50 && (
                                   <div className="flex flex-col">
                                     <span className="text-[0.58rem] uppercase tracking-wider text-caution">
-                                      {t("analysis.pauseBefore")}
+                                      {t("analysis.pairRecognition")}
                                     </span>
                                     <span className="nums text-sm font-semibold text-caution">
-                                      +{formatTime(pair.pauseBeforeMs)}
+                                      +{formatTime(pair.recognitionMs)}
                                     </span>
                                   </div>
                                 )}
@@ -1955,9 +1955,9 @@ function DetectionSection({
                 />
                 <span className="nums text-right text-xs text-ink-3">
                   {formatTime(pair.timeMs)}
-                  {pair.pauseBeforeMs > 50 && (
+                  {(pair.recognitionMs ?? pair.pauseBeforeMs ?? 0) > 50 && (
                     <span className="ml-1 text-caution/70">
-                      +{formatTime(pair.pauseBeforeMs)}
+                      +{formatTime(pair.recognitionMs ?? pair.pauseBeforeMs ?? 0)}
                     </span>
                   )}
                 </span>

@@ -325,16 +325,16 @@ function generateMetrics(
     timeMs: Math.round(f2lPairMs * (0.7 + Math.random() * 0.6)),
     moves: Math.round(f2lMoves / f2lPairCount),
     tps: +(f2lTps * (0.8 + Math.random() * 0.4)).toFixed(1),
-    pauseBeforeMs: i === 0 ? 0 : Math.round(80 + Math.random() * 400),
+    recognitionMs: i === 0 ? 0 : Math.round(80 + Math.random() * 400),
   }));
 
   // Scale pair times to match total F2L time
-  const pairTotal = f2lPairs.reduce((s, p) => s + p.timeMs + p.pauseBeforeMs, 0);
+  const pairTotal = f2lPairs.reduce((s, p) => s + p.timeMs + p.recognitionMs, 0);
   if (pairTotal > 0) {
     const scale = f2lMs / pairTotal;
     for (const p of f2lPairs) {
       p.timeMs = Math.round(p.timeMs * scale);
-      p.pauseBeforeMs = Math.round(p.pauseBeforeMs * scale);
+      p.recognitionMs = Math.round(p.recognitionMs * scale);
     }
   }
 

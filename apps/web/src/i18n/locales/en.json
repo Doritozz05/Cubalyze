@@ -1070,7 +1070,7 @@
       "colTime": "Time",
       "colTps": "TPS",
       "pairSeekHint": "Click to seek the replay to this pair",
-      "pauseBefore": "Pause before",
+      "pairRecognition": "Recognition",
       "f2lAvg": "F2L avg {{avg}}m",
       "seekHint": "Click any row to seek the replay",
       "noPairSegmentation": "(no pair segmentation)",

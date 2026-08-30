@@ -553,7 +553,14 @@ export interface F2LPairMetrics {
   timeMs: number;
   moves: number;
   tps: number;
-  pauseBeforeMs: number;
+  /**
+   * Recognition time before this pair's first move: the gap between the
+   * previous pair's completion and this pair's start (0 for pair 1 and for
+   * analyses without real timestamps).
+   */
+  recognitionMs: number;
+  /** @deprecated Legacy alias of `recognitionMs` (pre-0.3.0 analyses). */
+  pauseBeforeMs?: number;
 
   // ─── Unified pipeline fields (Fase 2 — shared segmentF2LPairs) ──────────
   // All optional so persisted/older JSON keeps parsing and the smart route

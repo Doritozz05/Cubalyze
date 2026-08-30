@@ -82,10 +82,10 @@ function metrics(config: {
       crossMoves: 7,
       crossTPS: 4.5,
       f2lPairs: [
-        { pairNumber: 1, slotId: "FR", timeMs: 1200, moves: 6, tps: 5, pauseBeforeMs: 0, completionIndex: 12 },
-        { pairNumber: 2, slotId: "FL", timeMs: 1300, moves: 7, tps: 5.4, pauseBeforeMs: 200, completionIndex: 20 },
-        { pairNumber: 3, slotId: "BR", timeMs: 1100, moves: 5, tps: 4.5, pauseBeforeMs: 100, completionIndex: 26 },
-        { pairNumber: 4, slotId: "BL", timeMs: 1400, moves: 7, tps: 5, pauseBeforeMs: 150, completionIndex: 34 },
+        { pairNumber: 1, slotId: "FR", timeMs: 1200, moves: 6, tps: 5, recognitionMs: 0, completionIndex: 12 },
+        { pairNumber: 2, slotId: "FL", timeMs: 1300, moves: 7, tps: 5.4, recognitionMs: 200, completionIndex: 20 },
+        { pairNumber: 3, slotId: "BR", timeMs: 1100, moves: 5, tps: 4.5, recognitionMs: 100, completionIndex: 26 },
+        { pairNumber: 4, slotId: "BL", timeMs: 1400, moves: 7, tps: 5, recognitionMs: 150, completionIndex: 34 },
       ],
       f2lLookaheadScore: 0.72,
       ollRecognitionMs: 600,
@@ -311,13 +311,13 @@ describe("deriveCaseIntelligence", () => {
     // Solve A: F2L cases Pj (x2) and Jm (x1). Solve B: Jm again.
     const a = metrics();
     a.cfop!.f2lPairs = [
-      { pairNumber: 1, slotId: "FR", timeMs: 1000, moves: 6, tps: 6, pauseBeforeMs: 0, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
-      { pairNumber: 2, slotId: "FL", timeMs: 1200, moves: 7, tps: 5.8, pauseBeforeMs: 0, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
-      { pairNumber: 3, slotId: "BR", timeMs: 800, moves: 5, tps: 6, pauseBeforeMs: 0, detectedCase: { caseNumber: "F2L 2", caseName: "Jm", confidence: "exact" } },
+      { pairNumber: 1, slotId: "FR", timeMs: 1000, moves: 6, tps: 6, recognitionMs: 0, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
+      { pairNumber: 2, slotId: "FL", timeMs: 1200, moves: 7, tps: 5.8, recognitionMs: 0, detectedCase: { caseNumber: "F2L 39", caseName: "Pj", confidence: "exact" } },
+      { pairNumber: 3, slotId: "BR", timeMs: 800, moves: 5, tps: 6, recognitionMs: 0, detectedCase: { caseNumber: "F2L 2", caseName: "Jm", confidence: "exact" } },
     ];
     const b = metrics();
     b.cfop!.f2lPairs = [
-      { pairNumber: 1, slotId: "FR", timeMs: 1100, moves: 6, tps: 5.5, pauseBeforeMs: 0, detectedCase: { caseNumber: "F2L 2", caseName: "Jm", confidence: "exact" } },
+      { pairNumber: 1, slotId: "FR", timeMs: 1100, moves: 6, tps: 5.5, recognitionMs: 0, detectedCase: { caseNumber: "F2L 2", caseName: "Jm", confidence: "exact" } },
     ];
 
     const out = deriveCaseIntelligence([a, b]);
@@ -341,7 +341,7 @@ describe("deriveCaseIntelligence", () => {
   it("ignores pairs with no recognized case", () => {
     const a = metrics();
     a.cfop!.f2lPairs = [
-      { pairNumber: 1, slotId: "FR", timeMs: 1000, moves: 6, tps: 6, pauseBeforeMs: 0 },
+      { pairNumber: 1, slotId: "FR", timeMs: 1000, moves: 6, tps: 6, recognitionMs: 0 },
     ];
     const out = deriveCaseIntelligence([a]);
     expect(out.some((c) => c.phase === "F2L" && c.count > 0)).toBe(false);

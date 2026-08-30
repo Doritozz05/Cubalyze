@@ -22,7 +22,7 @@ function makePair(overrides: Partial<F2LPairMetrics>): F2LPairMetrics {
     timeMs: 800,
     moves: 6,
     tps: 7.5,
-    pauseBeforeMs: 0,
+    recognitionMs: 0,
     completionIndex: 9,
     detectedCase: {
       caseNumber: 'F2L 39',
@@ -92,10 +92,10 @@ function makeMoves(count = 30): CubeMoveEvent[] {
 describe('derivePairSegments', () => {
   it('maps each F2L pair to a sub-segment with real move timestamps', () => {
     const analysis = makeAnalysis([
-      makePair({ pairNumber: 1, slotId: 'FR', timeMs: 800, moves: 6, tps: 7.5, completionIndex: 9, pauseBeforeMs: 0 }),
-      makePair({ pairNumber: 2, slotId: 'FL', timeMs: 1000, moves: 7, tps: 7, completionIndex: 17, pauseBeforeMs: 120, detectedCase: { caseNumber: 'F2L 2', caseName: 'Jm', confidence: 'exact' } }),
-      makePair({ pairNumber: 3, slotId: 'BR', timeMs: 900, moves: 6, tps: 6.67, completionIndex: 24, pauseBeforeMs: 60 }),
-      makePair({ pairNumber: 4, slotId: 'BL', timeMs: 700, moves: 5, tps: 7.14, completionIndex: 30, pauseBeforeMs: 40, detectedCase: undefined }),
+      makePair({ pairNumber: 1, slotId: 'FR', timeMs: 800, moves: 6, tps: 7.5, completionIndex: 9, recognitionMs: 0 }),
+      makePair({ pairNumber: 2, slotId: 'FL', timeMs: 1000, moves: 7, tps: 7, completionIndex: 17, recognitionMs: 120, detectedCase: { caseNumber: 'F2L 2', caseName: 'Jm', confidence: 'exact' } }),
+      makePair({ pairNumber: 3, slotId: 'BR', timeMs: 900, moves: 6, tps: 6.67, completionIndex: 24, recognitionMs: 60 }),
+      makePair({ pairNumber: 4, slotId: 'BL', timeMs: 700, moves: 5, tps: 7.14, completionIndex: 30, recognitionMs: 40, detectedCase: undefined }),
     ]);
     const moves = makeMoves();
 
@@ -113,7 +113,7 @@ describe('derivePairSegments', () => {
     expect(first.completionIndex).toBe(9);
     expect(first.moves).toBe(6);
     expect(first.tps).toBe(7.5);
-    expect(first.pauseBeforeMs).toBe(0);
+    expect(first.recognitionMs).toBe(0);
 
     // Milliseconds from the real move timestamps (base = moves[0]).
     expect(first.startMs).toBe(1000 + 4 * 100 - 1000); // 400
@@ -125,7 +125,7 @@ describe('derivePairSegments', () => {
     expect(first.caseNumber).toBe('F2L 39');
     expect(segments[1].caseName).toBe('Jm');
     expect(segments[1].slot).toBe('FL');
-    expect(segments[1].pauseBeforeMs).toBe(120);
+    expect(segments[1].recognitionMs).toBe(120);
     expect(segments[3].caseName).toBeUndefined();
   });
 

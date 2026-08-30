@@ -105,6 +105,26 @@ describe('PauseDetector', () => {
     }
   });
 
+  it('classifies inter-pair F2L gaps as recognition when pairStarts is provided', () => {
+    const moves = [
+      { face: 'R' as const, direction: 1 as const, cubeTimestamp: 1000, hostTimestamp: 1000 },
+      { face: 'U' as const, direction: 1 as const, cubeTimestamp: 2000, hostTimestamp: 2000 }, // 1000ms gap
+    ];
+    const timeline = TimelineBuilder.build(moves, 'CFOP');
+
+    // Gap lands on the first move of an F2L pair → pair recognition.
+    const pauses = PauseDetector.detect(timeline, PauseDetector.DEFAULT_THRESHOLD_MS, {
+      pairStarts: new Set([1]),
+    });
+    expect(pauses.totalCount).toBe(1);
+    expect(pauses.pauses[0].category).toBe('recognition');
+
+    // Same gap without pair boundaries → mid-phase hesitation.
+    const without = PauseDetector.detect(timeline);
+    expect(without.totalCount).toBe(1);
+    expect(without.pauses[0].category).toBe('mid-phase');
+  });
+
   it('longPauses filters pauses >= 1500ms', () => {
     const metrics = {
       totalCount: 3,
