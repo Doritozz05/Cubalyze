@@ -15,7 +15,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
 import { getEvent, type WcaEventCode } from "@cubeforge/events";
-import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
+import {
+  ReplayEngine,
+  PyraminxEngine,
+  PyraminxReplayEngine,
+  createPyraminxReplayDriver,
+  type ReplayState,
+  getSkinStyle,
+} from "@cubeforge/cube-3d-engine";
 import {
   MoveTransformer,
   OrientationTable,
@@ -59,19 +66,17 @@ const PUZZLE_TYPE_ALIASES: Record<string, string> = {
   "3x3oh": "333oh",
 };
 
-/**
- * Cube order the 3D engine can render for a solve's puzzleType (2 or 3),
- * or null when the puzzle has no 3D renderer today (pyraminx, skewb,
- * square-1, clock, megaminx, 4×4–7×7…). The events registry is the SSoT:
- * `cubeOrder` is null for every non-renderable event. The UI shows a
- * placeholder for those instead of a misleading 3×3 cube.
- */
-function resolveCubeOrder(puzzleType: string | undefined): number | null {
+/** Which renderer a solve's puzzleType needs — cube (with order) or pyraminx. */
+type PuzzleRender = { kind: "cube"; order: number } | { kind: "pyraminx" } | null;
+
+function resolvePuzzleRender(puzzleType: string | undefined): PuzzleRender {
   if (!puzzleType) return null;
   const code =
     PUZZLE_TYPE_ALIASES[puzzleType.trim().toLowerCase()] ??
     puzzleType.trim().toLowerCase();
-  return getEvent(code as WcaEventCode)?.cubeOrder ?? null;
+  if (code === "pyram") return { kind: "pyraminx" };
+  const order = getEvent(code as WcaEventCode)?.cubeOrder ?? null;
+  return order === null ? null : { kind: "cube", order };
 }
 
 // ─── Props ─────────────────────────────────────────────────────────────────
@@ -166,7 +171,11 @@ function ReplaySection({
   // (e.g., when switching solves or toggling the section).
   const [canvasKey, setCanvasKey] = useState(0);
 
-  const engineRef = useRef<ReplayEngine | null>(null);
+  const engineRef = useRef<ReplayEngine | PyraminxReplayEngine | null>(null);
+  /** Main-thread Pyraminx engine when the solve is a Pyraminx reconstruction
+   *  (the pyraminx family has no worker path — it renders on the main thread
+   *  like the live panel). Disposed together with the replay engine. */
+  const pyraminxEngineRef = useRef<PyraminxEngine | null>(null);
   /**
    * A phase-row seek requested while the engine was not ready (section
    * collapsed / worker still initializing) — applied once the engine exists.
@@ -186,7 +195,13 @@ function ReplaySection({
     if (!canvas) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      workerProxyRef.current?.zoomCamera(e.deltaY).catch(console.error);
+      // Pyraminx replays render on the main thread — zoom the pyraminx
+      // engine directly; cube replays go through the worker proxy.
+      if (pyraminxEngineRef.current) {
+        pyraminxEngineRef.current.zoomCamera(e.deltaY);
+      } else {
+        workerProxyRef.current?.zoomCamera(e.deltaY).catch(console.error);
+      }
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
@@ -233,10 +248,18 @@ function ReplaySection({
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
   const replayFloatingStickers = useStore(preferencesStore, (s) => s.replayFloatingStickers);
 
-  // Push skin and floating sticker changes to the replay worker
+  // Push skin and floating sticker changes to the active replay renderer
+  // (main-thread Pyraminx engine or the cube worker).
   useEffect(() => {
-    if (!workerProxyRef.current || !cubeReadyRef.current) return;
     const style = getSkinStyle(appearance3d);
+    if (pyraminxEngineRef.current) {
+      pyraminxEngineRef.current.updateStyle({
+        ...style,
+        floatingStickers: replayFloatingStickers,
+      });
+      return;
+    }
+    if (!workerProxyRef.current || !cubeReadyRef.current) return;
     workerProxyRef.current
       .updateStyle({
         ...style,
@@ -272,10 +295,11 @@ function ReplaySection({
   // to avoid recomputing on every prop-reference change.
   const moves = useMemo(() => solve.moves ?? [], [solve.moves]);
 
-  // Puzzles without a 3D cube renderer (pyraminx, skewb, sq1, clock, minx,
-  // 4×4+) show a placeholder instead of replaying on a misleading 3×3 cube.
-  const cubeOrder = useMemo(() => resolveCubeOrder(solve.puzzleType), [solve.puzzleType]);
-  const isRenderable = cubeOrder !== null;
+  // Puzzles without a 3D renderer (skewb, sq1, clock, minx, 4×4+) show a
+  // placeholder instead of replaying on a misleading 3×3 cube. The Pyraminx
+  // IS renderable — it replays on its own main-thread engine.
+  const puzzleRender = useMemo(() => resolvePuzzleRender(solve.puzzleType), [solve.puzzleType]);
+  const isRenderable = puzzleRender !== null;
 
   // MOVE-DRIVEN timeline: duration comes from the move count (each move
   // gets a fixed slot), NOT from solve.time. This guarantees every move
@@ -348,6 +372,8 @@ function ReplaySection({
   const teardownWorker = useCallback(() => {
     engineRef.current?.dispose();
     engineRef.current = null;
+    pyraminxEngineRef.current?.dispose();
+    pyraminxEngineRef.current = null;
     workerProxyRef.current = null;
     cubeReadyRef.current = false;
     if (workerRef.current) {
@@ -365,8 +391,15 @@ function ReplaySection({
     if (resizeRafRef.current == null) {
       resizeRafRef.current = requestAnimationFrame(() => {
         resizeRafRef.current = null;
-        if (!resizeRef.current || !workerProxyRef.current || !cubeReadyRef.current) return;
+        if (!resizeRef.current) return;
         const { w, h } = resizeRef.current;
+        // Pyraminx replays render on the main thread — resize the engine
+        // directly. Cube replays resize through the worker proxy.
+        if (pyraminxEngineRef.current) {
+          pyraminxEngineRef.current.resize(w, h);
+          return;
+        }
+        if (!workerProxyRef.current || !cubeReadyRef.current) return;
         workerProxyRef.current.resize(w, h).catch((err: unknown) => {
           console.warn("[Replay] resize failed", err);
         });
@@ -433,9 +466,95 @@ function ReplaySection({
 
     (async () => {
       try {
-        // Non-cube puzzle (no 3D renderer) — the placeholder is shown
-        // instead of the canvas, so there is nothing to initialize.
-        if (resolveCubeOrder(solveRef.current.puzzleType) === null) return;
+        // Puzzle without a 3D renderer — the placeholder is shown instead of
+        // the canvas, so there is nothing to initialize.
+        const render = resolvePuzzleRender(solveRef.current.puzzleType);
+        if (render === null) return;
+
+        // ── Pyraminx: main-thread engine (no worker path) ───────────────
+        if (render.kind === "pyraminx") {
+          const canvas = canvasRef.current;
+          const container = containerRef.current;
+          if (!canvas || cancelled) return;
+          const rect = container?.getBoundingClientRect();
+          const initW = rect && rect.width > 0 ? Math.round(rect.width) : (canvas.clientWidth || 300);
+          const initH = rect && rect.height > 0 ? Math.round(rect.height) : (canvas.clientHeight || 300);
+
+          const pyraminxEngine = new PyraminxEngine({
+            canvas,
+            width: initW,
+            height: initH,
+            pixelRatio: window.devicePixelRatio || 1,
+          });
+          pyraminxEngineRef.current = pyraminxEngine;
+          cubeReadyRef.current = true;
+
+          const currentSkin = getSkinStyle(preferencesStore.getState().appearance3d);
+          pyraminxEngine.updateStyle({
+            ...currentSkin,
+            floatingStickers: preferencesStore.getState().replayFloatingStickers,
+          });
+          await pyraminxEngine.setIsometricView();
+
+          const latest = solveRef.current;
+          const moves = latest.moves ?? [];
+          // Pyraminx solves carry their WCA token per move in displayNotation
+          // (the cube event fields are a carrier — face/direction are unused).
+          const tokens = moves
+            .map((m) => m.displayNotation)
+            .filter((t): t is string => Boolean(t));
+          if (tokens.length >= 2) {
+            const engine = new PyraminxReplayEngine(
+              tokens,
+              tokens.length * REPLAY_MOVE_SPACING_MS,
+              createPyraminxReplayDriver(pyraminxEngine),
+            );
+            engine.moveAnimationDurationMs = 350;
+            engine.moveSpacingMs = REPLAY_MOVE_SPACING_MS;
+            engineRef.current = engine;
+
+            if (latest.scramble) {
+              try {
+                await engine.applyInitialScramble(latest.scramble);
+              } catch (e) {
+                console.warn("[Replay] Pyraminx scramble apply failed:", e);
+              }
+            }
+
+            engine.onPosition = (pos, idx) => {
+              if (!cancelled) {
+                setPositionMs(pos);
+                setCurrentMoveIdx(idx);
+                onReplayPosition?.(pos, idx);
+              }
+            };
+            engine.onMove = () => cubeTurnSounds.play();
+            cubeTurnSounds.preload();
+            engine.onComplete = () => {
+              if (!cancelled) {
+                setReplayState("complete");
+                onReplayComplete?.();
+              }
+            };
+            engine.onStateChange = (state) => {
+              if (!cancelled) setReplayState(state);
+            };
+            setReplayState("idle");
+
+            if (pendingSeekRef.current != null) {
+              const target = pendingSeekRef.current;
+              pendingSeekRef.current = null;
+              if (target < 0) {
+                void engine.seek(0);
+              } else {
+                const clamped = Math.min(target, tokens.length - 1);
+                const targetMs = (clamped + 1) * REPLAY_MOVE_SPACING_MS - 1;
+                void engine.seek(targetMs);
+              }
+            }
+          }
+          return;
+        }
 
         // Dynamic import — Vite treats ?worker suffix as a Web Worker entry
         const mod = await import(
@@ -463,8 +582,8 @@ function ReplaySection({
         // 2×2 solves render a 2×2 mini cube (order=2); 3×3/OH are 3×3.
         // Cube3DEngine/CubeModel already support order 2 — same FACE_ROTATION_MAP
         // layerValues (±1) apply unchanged, so the replay moves work as-is.
-        // (The renderable check above guarantees a non-null order here.)
-        const puzzleOrder = resolveCubeOrder(solveRef.current.puzzleType) ?? 3;
+        // (The renderable check above guarantees a cube render with an order.)
+        const puzzleOrder = render.order;
 
         const container = containerRef.current;
         const rect = container?.getBoundingClientRect();
@@ -792,18 +911,29 @@ function ReplaySection({
                     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
                     if (pointersRef.current.size >= 2) {
                       const dist = currentPinchDistance();
-                      if (pinchDistRef.current > 0 && dist > 0 && workerProxyRef.current) {
+                      if (pinchDistRef.current > 0 && dist > 0) {
                         const ratio = dist / pinchDistRef.current;
-                        workerProxyRef.current.zoomCamera((1 - ratio) * 600).catch(console.error);
+                        // Main-thread pyraminx engine or the cube worker.
+                        if (pyraminxEngineRef.current) {
+                          pyraminxEngineRef.current.zoomCamera((1 - ratio) * 600);
+                        } else {
+                          workerProxyRef.current
+                            ?.zoomCamera((1 - ratio) * 600)
+                            .catch(console.error);
+                        }
                         pinchDistRef.current = dist;
                       }
                       return;
                     }
-                    if (!isDraggingRef.current || !workerProxyRef.current) return;
+                    if (!isDraggingRef.current) return;
                     const dx = e.clientX - lastPointerRef.current.x;
                     const dy = e.clientY - lastPointerRef.current.y;
                     lastPointerRef.current = { x: e.clientX, y: e.clientY };
-                    workerProxyRef.current.rotateCamera(dx, dy).catch(console.error);
+                    if (pyraminxEngineRef.current) {
+                      pyraminxEngineRef.current.rotateCamera(dx, dy);
+                    } else {
+                      workerProxyRef.current?.rotateCamera(dx, dy).catch(console.error);
+                    }
                   }}
                   onPointerUp={(e) => {
                     pointersRef.current.delete(e.pointerId);

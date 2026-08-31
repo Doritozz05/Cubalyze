@@ -336,6 +336,11 @@ export function AppShell(props: AppShellProps) {
               <Cube3DPanel
                 onClose={handleCloseCube}
                 order={puzzleCategoryToOrder(puzzle)}
+                puzzle={
+                  puzzle === "Pyraminx"
+                    ? { kind: "pyraminx" }
+                    : undefined
+                }
                 scramble={currentScramble}
               />
             </Suspense>

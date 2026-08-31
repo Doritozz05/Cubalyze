@@ -1,0 +1,150 @@
+/**
+ * PyraminxScrambleTracker — pure verification + state mirror tests.
+ *
+ * The virtual pyraminx session's logic lives here (the React hook only wires
+ * the TimerEngine around it), so the full solve lifecycle is testable without
+ * any rendering harness:
+ *   • performing the WCA scramble advances progress token by token
+ *   • wrong moves count as mistakes and can trigger needsReset
+ *   • the Scramble button reaches the scrambled state in one step
+ *   • the first solve move is collected; the solved move stops the solve
+ *   • post-solve moves are ignored
+ */
+import { describe, expect, it } from "vitest";
+import {
+  MAX_CONSECUTIVE_MISTAKES,
+  PyraminxScrambleTracker,
+} from "../pyraminxSessionCore";
+import { isPyraminxSolved } from "@cubeforge/solver-engine/pyraminx";
+
+const SCRAMBLE = "U L' B R' u l'";
+
+describe("PyraminxScrambleTracker — scramble verification", () => {
+  it("starts physically solved, unscrambled, with the right token count", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    expect(t.totalTokens).toBe(6);
+    expect(t.isScrambled).toBe(false);
+    expect(t.progressCount).toBe(0);
+    // `isSolved` is the "solve completed" flag — false until the solve ends.
+    expect(t.isSolved).toBe(false);
+    expect(isPyraminxSolved(t.currentState)).toBe(true);
+  });
+
+  it("advances progress when the user performs the scramble correctly", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    for (const token of SCRAMBLE.split(" ")) {
+      const r = t.applyMove(token);
+      expect(r.kind.startsWith("scramble-")).toBe(true);
+    }
+    expect(t.isScrambled).toBe(true);
+    expect(t.progressCount).toBe(6);
+    expect(t.mistakeCount).toBe(0);
+    // The scramble state is NOT solved (a real scramble).
+    expect(isPyraminxSolved(t.currentState)).toBe(false);
+  });
+
+  it("the final scramble move reports scramble-complete", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    for (const token of SCRAMBLE.split(" ").slice(0, 5)) t.applyMove(token);
+    const r = t.applyMove(SCRAMBLE.split(" ")[5]);
+    expect(r).toEqual({ kind: "scramble-complete" });
+  });
+
+  it("a wrong move is a mistake and does not advance progress", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyMove("U");
+    const r = t.applyMove("U"); // expected L' — wrong
+    expect(r).toEqual({ kind: "scramble-mistake" });
+    expect(t.progressCount).toBe(1);
+    expect(t.mistakeCount).toBe(1);
+  });
+
+  it("recovers progress after a wrong move (self-correcting catch-up)", () => {
+    const t = new PyraminxScrambleTracker("U L'");
+    t.applyMove("U"); // progress 1
+    t.applyMove("L"); // wrong (expected L') → mistake
+    expect(t.progressCount).toBe(1);
+    // Undoing the wrong move returns to expected[0] (already counted).
+    t.applyMove("L'");
+    expect(t.progressCount).toBe(1);
+    expect(t.mistakeCount).toBe(2);
+    // Repeating the correct move now advances past expected[1].
+    t.applyMove("L'");
+    expect(t.progressCount).toBe(2);
+    expect(t.mistakeCount).toBe(0); // mistakes reset on progress
+  });
+
+  it("too many consecutive mistakes sets needsReset", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyMove("U"); // progress 1
+    for (let i = 0; i < MAX_CONSECUTIVE_MISTAKES; i++) {
+      t.applyMove("B");
+    }
+    expect(t.needsResetState).toBe(true);
+    expect(t.isScrambled).toBe(false);
+  });
+
+  it("applyScrambleNow reaches the scrambled state in one step", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyScrambleNow();
+    expect(t.isScrambled).toBe(true);
+    expect(t.progressCount).toBe(6);
+    expect(t.mistakeCount).toBe(0);
+    expect(isPyraminxSolved(t.currentState)).toBe(false);
+  });
+
+  it("reset returns to solved and clears mistakes", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyScrambleNow();
+    for (let i = 0; i < MAX_CONSECUTIVE_MISTAKES; i++) t.applyMove("B");
+    t.reset();
+    expect(isPyraminxSolved(t.currentState)).toBe(true);
+    expect(t.isScrambled).toBe(false);
+    expect(t.needsResetState).toBe(false);
+    expect(t.progressCount).toBe(0);
+  });
+});
+
+describe("PyraminxScrambleTracker — solve phase", () => {
+  function solvedTracker(): PyraminxScrambleTracker {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyScrambleNow();
+    return t;
+  }
+
+  it("collects solve moves after the scramble and detects the solved move", () => {
+    const t = solvedTracker();
+    // The inverse of the scramble solves it.
+    const inverse = SCRAMBLE.split(" ")
+      .reverse()
+      .map((tok) => (tok.endsWith("'") ? tok.slice(0, -1) : `${tok}'`));
+    let solvedMove: string | null = null;
+    for (const token of inverse) {
+      const r = t.applyMove(token);
+      if (r.kind === "solve-complete") solvedMove = token;
+      expect(r.kind === "solve-move" || r.kind === "solve-complete").toBe(true);
+    }
+    expect(solvedMove).toBe(inverse[inverse.length - 1]);
+    expect(t.isSolved).toBe(true);
+  });
+
+  it("ignores moves after the solve is complete", () => {
+    const t = solvedTracker();
+    const inverse = SCRAMBLE.split(" ")
+      .reverse()
+      .map((tok) => (tok.endsWith("'") ? tok.slice(0, -1) : `${tok}'`));
+    for (const token of inverse) t.applyMove(token);
+    expect(t.isSolved).toBe(true);
+    expect(t.applyMove("U")).toEqual({ kind: "ignored" });
+  });
+
+  it("solving with the exact scramble reverse ends solved (round trip)", () => {
+    const t = solvedTracker();
+    const inverse = SCRAMBLE.split(" ")
+      .reverse()
+      .map((tok) => (tok.endsWith("'") ? tok.slice(0, -1) : `${tok}'`));
+    for (const token of inverse) t.applyMove(token);
+    expect(isPyraminxSolved(t.currentState)).toBe(true);
+    expect(t.isSolved).toBe(true);
+  });
+});

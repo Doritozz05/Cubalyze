@@ -23,9 +23,16 @@ function assertValidScramble(
 }
 
 describe("scramble providers — verified output", () => {
-  it("generates and validates 1000 3×3 scrambles", () => {
-    for (let i = 0; i < 1000; i++) assertValidScramble("3x3");
-  });
+  // Min2Phase is WASM + table-build heavy: 1000 random-state scrambles takes
+  // ~5.8s in isolation and flirts with the 5s default budget when the suite
+  // runs in parallel — give it an explicit allowance.
+  it(
+    "generates and validates 1000 3×3 scrambles",
+    () => {
+      for (let i = 0; i < 1000; i++) assertValidScramble("3x3");
+    },
+    20_000,
+  );
 
   it("generates and validates 1000 2×2 scrambles", () => {
     for (let i = 0; i < 1000; i++) assertValidScramble("2x2");
