@@ -28,3 +28,8 @@ export type { EngineWorkerAPI } from './workers/EngineWorker';
 
 // Replay Engine
 export { ReplayEngine, type ReplayCallbacks, type ReplayState, type RotationParams } from './replay/ReplayEngine';
+
+// Puzzle registry (multi-puzzle terrain)
+export * from './puzzle/types';
+export * from './puzzle/registry';
+export * from './puzzle/nxn';

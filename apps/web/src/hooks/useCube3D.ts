@@ -5,9 +5,11 @@ import { useDebouncedCallback } from "use-debounce";
 import { useStore } from "zustand";
 import {
   Cube3DEngine,
+  createPuzzle3DEngine,
   FACE_ROTATION_MAP,
   getSkinStyle,
   scrambleMoveDurationMs,
+  type Puzzle3DSpec,
 } from "@cubeforge/cube-3d-engine";
 import type { Subscription } from "rxjs";
 
@@ -29,6 +31,13 @@ export interface UseCube3DOptions {
   maxRecentMoves?: number;
   /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
   order?: number;
+  /**
+   * Puzzle to build via the puzzle registry (multi-puzzle terrain). When
+   * provided it wins over `order`; when absent the legacy order path runs
+   * (identical behavior to before). Only kinds with a registered builder are
+   * constructible (nxn-cube today — others throw a clear error).
+   */
+  puzzle?: Puzzle3DSpec;
   /** Optional active scramble sequence. */
   scramble?: string;
   /**
@@ -91,7 +100,7 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15, order = 3, connectSmartCube = false } = options;
+  const { maxRecentMoves = 15, order = 3, connectSmartCube = false, puzzle } = options;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,21 +161,34 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       if (engineRef.current || initFailedRef.current || w <= 0 || h <= 0) return;
 
       try {
-        const engine = new Cube3DEngine({
-          canvas,
-          width: w,
-          height: h,
-          pixelRatio: window.devicePixelRatio || 1,
-          gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
-          order,
-          // Surface context eviction (iOS Safari context limit) so the panel
-          // can show a graceful fallback instead of a frozen canvas.
-          onContextEvicted: () => {
-            setContextEvicted(true);
-            setIsReady(false);
-            initFailedRef.current = true;
-          },
-        });
+        const onContextEvicted = () => {
+          setContextEvicted(true);
+          setIsReady(false);
+          initFailedRef.current = true;
+        };
+
+        // Puzzle-registry path (multi-puzzle terrain): a spec makes the
+        // registry build the right engine for the kind (nxn-cube wraps the
+        // very same Cube3DEngine with the spec's order). Otherwise the
+        // legacy order path runs — identical to the previous behavior.
+        const engine = puzzle
+          ? createPuzzle3DEngine(puzzle, {
+              canvas,
+              width: w,
+              height: h,
+              pixelRatio: window.devicePixelRatio || 1,
+              gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
+              onContextEvicted,
+            })
+          : new Cube3DEngine({
+              canvas,
+              width: w,
+              height: h,
+              pixelRatio: window.devicePixelRatio || 1,
+              gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
+              order,
+              onContextEvicted,
+            });
 
         // The engine may have been evicted immediately on registration (budget
         // exhausted with no evictable victims). Treat it as init failure and
@@ -325,7 +347,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       setInitFailed(false);
       setContextEvicted(false);
     };
-  }, [appendRecentMove, order, debouncedResize, connectSmartCube]);
+  }, [appendRecentMove, order, puzzle, debouncedResize, connectSmartCube]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {
