@@ -213,7 +213,18 @@ function methodGroup(method: string | undefined, names: string[]): "CFOP" | "Rou
   if (method && /roux/i.test(method)) return "Roux";
   if (method && /cfop/i.test(method)) return "CFOP";
   if (isCfopIsh(names)) return "CFOP";
-  if (names.some((n) => /fb|cmll|lse|ss|sp/i.test(n))) return "Roux";
+  // Roux phase tokens (FB / CMLL / LSE / SS / SP) only count when they are
+  // STANDALONE words — without \b, "Inspection" matched /sp/ and "Cross"
+  // matched /ss/, so any solve with an inspection phase was mislabeled Roux.
+  // Roux-family compounds that concatenate a token (EOFB, CMLLEO, CPFB,
+  // FBSS, …) are matched as whole labels so partial Roux reconstructions
+  // (e.g. CPFB solves) keep their classification.
+  if (
+    names.some((n) =>
+      /\b(fb|cmll|lse|ss|sp)\b|^(eofb|eofbb|cmll.?eo|cpfb|fbss|fbsq|fblp|fbdr)$/i.test(n),
+    )
+  )
+    return "Roux";
   return "Other";
 }
 

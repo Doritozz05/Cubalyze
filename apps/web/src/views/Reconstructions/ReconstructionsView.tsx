@@ -107,7 +107,7 @@ export function getSortDate(e: ReconIndexEntry): string {
  *  solver and competition so column positions align with 100% precision across
  *  every row regardless of tag count or text lengths. */
 const ROW_GRID =
-  "grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_5.25rem] xl:grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_5.25rem_6.25rem]";
+  "grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_4.5rem_5.25rem] xl:grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_4.5rem_5.25rem_6.25rem]";
 
 /** Method chip, coloured per family with the design-system phase palette. */
 function methodBadgeClass(entry: ReconIndexEntry): string {
@@ -150,6 +150,18 @@ function MethodBadge({ entry }: { entry: ReconIndexEntry }) {
       title={entry.method}
     >
       <span className="truncate">{entry.method}</span>
+    </span>
+  );
+}
+
+/** Subtle badge showing which puzzle a row belongs to ("2x2", "pyraminx", …). */
+function PuzzleBadge({ puzzle }: { puzzle: string }) {
+  return (
+    <span
+      className="inline-flex w-fit max-w-full shrink-0 items-center justify-center rounded border border-line/60 bg-surface-2/60 px-1.5 py-0.5 text-[0.6rem] font-medium whitespace-nowrap text-ink-2"
+      title={puzzle}
+    >
+      <span className="truncate">{puzzle}</span>
     </span>
   );
 }
@@ -202,6 +214,10 @@ function ReconRow({
         </span>
 
         <div className="flex min-w-0 items-center justify-start">
+          <PuzzleBadge puzzle={entry.puzzle} />
+        </div>
+
+        <div className="flex min-w-0 items-center justify-start">
           <MethodBadge entry={entry} />
         </div>
 
@@ -236,8 +252,9 @@ function ReconRow({
           <span className="block truncate text-[0.8rem] font-medium text-ink">
             {entry.solver}
           </span>
-          <span className="block truncate text-[0.62rem] text-ink-3">
-            {entry.competition || "—"}
+          <span className="flex items-center gap-1 text-[0.62rem] text-ink-3">
+            <span className="truncate">{entry.competition || "—"}</span>
+            <PuzzleBadge puzzle={entry.puzzle} />
           </span>
         </span>
 
@@ -574,6 +591,7 @@ export function ReconstructionsView() {
             <span className="text-right">{t("list.colTime")}</span>
             <span>{t("list.colDate")}</span>
             <span>{t("list.colCompetition")}</span>
+            <span>{t("list.colPuzzle")}</span>
             <span>{t("list.colMethod")}</span>
             <span className="text-right hidden xl:block">{t("list.colTech")}</span>
           </div>

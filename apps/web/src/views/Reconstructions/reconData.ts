@@ -27,6 +27,27 @@ import {
   tokenize,
 } from "@cubeforge/math-core";
 
+/**
+ * Recon dataset puzzle label → canonical WCA event code (ADR-002), so the
+ * 3D replay knows which puzzle a record is: "222"/"333" render a real cube,
+ * everything else (pyraminx, skewb, square-1, clock, megaminx, 4×4–7×7) has
+ * no renderer and shows the "not renderable" placeholder instead of a
+ * misleading 3×3 cube.
+ */
+const RECON_PUZZLE_TO_WCA: Record<string, string> = {
+  "2x2": "222",
+  "3x3": "333",
+  "4x4": "444",
+  "5x5": "555",
+  "6x6": "666",
+  "7x7": "777",
+  pyraminx: "pyram",
+  skewb: "skewb",
+  "square-1": "sq1",
+  clock: "clock",
+  megaminx: "minx",
+};
+
 // ─── Types (mirror of the build script output) ──────────────────────────────
 
 export type ReconSource = "cuberoot" | "reconz";
@@ -593,13 +614,10 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     // so the cube solves AND follows the solver's perspective, and the
     // per-event display overrides show the raw written notation.
     replayMovesConjugated: true,
-    // So 2×2 reconstructions replay on a 2×2 cube (not a 3×3).
-    puzzleType:
-      record.puzzle === "2x2"
-        ? "222"
-        : record.puzzle === "3x3"
-          ? "333"
-          : undefined,
+    // Canonical WCA code (ADR-002) — 2×2 replays on a 2×2 cube, 3×3 on a
+    // 3×3; non-cube puzzles (pyraminx, skewb, …) resolve to "no renderer"
+    // in ReplaySection instead of silently falling back to a 3×3.
+    puzzleType: RECON_PUZZLE_TO_WCA[record.puzzle],
     analysis: { phases } as unknown as SolveMetrics,
   };
 }

@@ -14,12 +14,14 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
+import { getEvent, type WcaEventCode } from "@cubeforge/events";
 import { ReplayEngine, type ReplayState, getSkinStyle } from "@cubeforge/cube-3d-engine";
 import {
   MoveTransformer,
   OrientationTable,
   getOrientationAtIndex,
 } from "@cubeforge/math-core";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
@@ -47,6 +49,30 @@ const SPEEDS = [0.25, 0.5, 1, 2] as const;
  * cutting off after a few. Must match ReplayEngine.moveSpacingMs.
  */
 const REPLAY_MOVE_SPACING_MS = 500;
+
+/** Legacy/UI puzzle spellings → canonical WCA event code (ADR-002). */
+const PUZZLE_TYPE_ALIASES: Record<string, string> = {
+  "2x2": "222",
+  "2x2x2": "222",
+  "3x3": "333",
+  "3x3x3": "333",
+  "3x3oh": "333oh",
+};
+
+/**
+ * Cube order the 3D engine can render for a solve's puzzleType (2 or 3),
+ * or null when the puzzle has no 3D renderer today (pyraminx, skewb,
+ * square-1, clock, megaminx, 4×4–7×7…). The events registry is the SSoT:
+ * `cubeOrder` is null for every non-renderable event. The UI shows a
+ * placeholder for those instead of a misleading 3×3 cube.
+ */
+function resolveCubeOrder(puzzleType: string | undefined): number | null {
+  if (!puzzleType) return null;
+  const code =
+    PUZZLE_TYPE_ALIASES[puzzleType.trim().toLowerCase()] ??
+    puzzleType.trim().toLowerCase();
+  return getEvent(code as WcaEventCode)?.cubeOrder ?? null;
+}
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
@@ -246,6 +272,11 @@ function ReplaySection({
   // to avoid recomputing on every prop-reference change.
   const moves = useMemo(() => solve.moves ?? [], [solve.moves]);
 
+  // Puzzles without a 3D cube renderer (pyraminx, skewb, sq1, clock, minx,
+  // 4×4+) show a placeholder instead of replaying on a misleading 3×3 cube.
+  const cubeOrder = useMemo(() => resolveCubeOrder(solve.puzzleType), [solve.puzzleType]);
+  const isRenderable = cubeOrder !== null;
+
   // MOVE-DRIVEN timeline: duration comes from the move count (each move
   // gets a fixed slot), NOT from solve.time. This guarantees every move
   // plays back no matter how fast the solve was.
@@ -402,6 +433,10 @@ function ReplaySection({
 
     (async () => {
       try {
+        // Non-cube puzzle (no 3D renderer) — the placeholder is shown
+        // instead of the canvas, so there is nothing to initialize.
+        if (resolveCubeOrder(solveRef.current.puzzleType) === null) return;
+
         // Dynamic import — Vite treats ?worker suffix as a Web Worker entry
         const mod = await import(
           "@cubeforge/cube-3d-engine/worker?worker"
@@ -425,14 +460,11 @@ function ReplaySection({
         if (!canvas || cancelled) return;
 
         const offscreen = canvas.transferControlToOffscreen();
-        // 2×2 solves render a 2×2 mini cube (order=2); everything else is 3×3.
+        // 2×2 solves render a 2×2 mini cube (order=2); 3×3/OH are 3×3.
         // Cube3DEngine/CubeModel already support order 2 — same FACE_ROTATION_MAP
         // layerValues (±1) apply unchanged, so the replay moves work as-is.
-        const puzzleOrder =
-          solveRef.current.puzzleType === "222" ||
-          solveRef.current.puzzleType === "2x2"
-            ? 2
-            : 3;
+        // (The renderable check above guarantees a non-null order here.)
+        const puzzleOrder = resolveCubeOrder(solveRef.current.puzzleType) ?? 3;
 
         const container = containerRef.current;
         const rect = container?.getBoundingClientRect();
@@ -706,7 +738,15 @@ function ReplaySection({
       {/* Content */}
       {isExpanded && (
         <div className={cn(size === "large" || isFullscreen ? "flex-1 min-h-0 flex flex-col w-full" : "mt-3")}>
-          {!hasMoves ? (
+          {!isRenderable ? (
+            <div className="flex flex-1 items-center justify-center py-6 text-center text-[0.72rem] text-ink-3">
+              {solve.puzzleType
+                ? t("replay.puzzleNotRenderableNamed", {
+                    puzzle: puzzleTypeLabel(solve.puzzleType),
+                  })
+                : t("replay.puzzleNotRenderable")}
+            </div>
+          ) : !hasMoves ? (
             <div className="flex flex-1 items-center justify-center py-6 text-center text-[0.72rem] text-ink-3">
               {t("replay.noMoveData")}{" "}
               {solve.source === "manual"
