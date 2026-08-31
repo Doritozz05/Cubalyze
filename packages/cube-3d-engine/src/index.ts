@@ -34,3 +34,7 @@ export { ReplayEngine, type ReplayCallbacks, type ReplayState, type RotationPara
 export * from './puzzle/types';
 export * from './puzzle/registry';
 export * from './puzzle/nxn';
+
+// Puzzle families
+// (nxn-cube registers itself on import; each family adds its own folder here)
+export * from './pyraminx';

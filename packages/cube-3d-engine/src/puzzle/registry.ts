@@ -1,5 +1,4 @@
-import type { Cube3DEngine } from '../core/Cube3DEngine';
-import type { Puzzle3DBuildOptions, Puzzle3DEngineFactory, Puzzle3DKind, Puzzle3DSpec } from './types';
+import type { Puzzle3DBuildOptions, Puzzle3DEngine, Puzzle3DEngineFactory, Puzzle3DKind, Puzzle3DSpec } from './types';
 
 /**
  * Multi-puzzle 3D registry — maps a {@link Puzzle3DKind} to the factory that
@@ -38,7 +37,7 @@ export function listPuzzle3DKinds(): Puzzle3DKind[] {
 export function createPuzzle3DEngine(
   spec: Puzzle3DSpec,
   options: Puzzle3DBuildOptions,
-): Cube3DEngine {
+): Puzzle3DEngine {
   const factory = builders.get(spec.kind);
   if (!factory) {
     throw new Error(`Puzzle3D "${spec.kind}" has no registered 3D builder yet`);

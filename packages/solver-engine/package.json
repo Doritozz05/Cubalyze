@@ -12,6 +12,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./pyraminx": {
+      "types": "./dist/pyraminx.d.ts",
+      "import": "./dist/pyraminx.js",
+      "require": "./dist/pyraminx.cjs"
     }
   },
   "scripts": {

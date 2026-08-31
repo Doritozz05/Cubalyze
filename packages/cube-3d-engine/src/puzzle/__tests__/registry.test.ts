@@ -35,7 +35,9 @@ describe('Puzzle3D registry', () => {
   });
 
   it('declared-but-unimplemented kinds throw an honest error', () => {
-    const spec: Puzzle3DSpec = { kind: 'pyraminx' };
+    // 'skewb' is declared in Puzzle3DKind but has no builder yet (pyraminx
+    // now has one) — the registry must refuse it, never silently fall back.
+    const spec: Puzzle3DSpec = { kind: 'skewb' };
     expect(() =>
       createPuzzle3DEngine(spec, {} as Puzzle3DBuildOptions),
     ).toThrow(/no registered 3D builder/);

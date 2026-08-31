@@ -1,6 +1,24 @@
 import type { Cube3DEngine, Cube3DEngineOptions } from '../core/Cube3DEngine';
 
 /**
+ * The common surface every puzzle engine exposes — camera, lifecycle and
+ * render scheduling. Puzzle-specific move APIs stay on the concrete engine
+ * classes (e.g. `Cube3DEngine.rotateLayers`, `PyraminxEngine.rotateVertex`);
+ * the registry and the panel seam only depend on this shared contract.
+ */
+export interface Puzzle3DEngine {
+  resize(width: number, height: number): void;
+  dispose(): void;
+  requestRender(): void;
+  isContextEvicted(): boolean;
+  rotateCamera(dx: number, dy: number): void;
+  zoomCamera(deltaY: number): void;
+  resetCamera(smooth?: boolean): Promise<void> | void;
+  setIsometricView(smooth?: boolean): Promise<void> | void;
+  setCameraDragActive(active: boolean): void;
+}
+
+/**
  * Families of twisty puzzles the 3D engine can render. Only kinds with a
  * registered builder are constructible — the same honesty rule as the WCA
  * event registry (declared ≠ implemented): 'nxn-cube' today, the rest are
@@ -43,5 +61,5 @@ export type Puzzle3DBuildOptions = Omit<Cube3DEngineOptions, 'order'>;
 export interface Puzzle3DEngineFactory {
   readonly kind: Puzzle3DKind;
   /** Construct the engine for this kind. Must throw on a mismatched spec. */
-  build(spec: Puzzle3DSpec, options: Puzzle3DBuildOptions): Cube3DEngine;
+  build(spec: Puzzle3DSpec, options: Puzzle3DBuildOptions): Puzzle3DEngine;
 }
