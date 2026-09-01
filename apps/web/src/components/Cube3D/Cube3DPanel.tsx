@@ -7,17 +7,23 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
+import type { Puzzle3DSpec } from "@cubeforge/cube-3d-engine";
 
 export interface Cube3DPanelProps {
   className?: string;
   onClose?: () => void;
   /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
   order?: number;
+  /**
+   * Puzzle to build via the puzzle registry (multi-puzzle terrain). When
+   * provided it wins over `order`; when absent the legacy order path runs.
+   */
+  puzzle?: Puzzle3DSpec;
   /** Active scramble sequence to apply to 3D cube. */
   scramble?: string;
 }
 
-export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, scramble }: Cube3DPanelProps) {
+export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, puzzle, scramble }: Cube3DPanelProps) {
   const { t } = useTranslation("timer");
   const {
     canvasRef,
@@ -33,7 +39,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     setIsometricView,
     zoomCamera,
     engineRef,
-  } = useCube3D({ maxRecentMoves: 15, order, scramble, connectSmartCube: true });
+  } = useCube3D({ maxRecentMoves: 15, order, puzzle, scramble, connectSmartCube: true });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });

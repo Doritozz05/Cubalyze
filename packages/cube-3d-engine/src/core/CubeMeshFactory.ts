@@ -73,7 +73,10 @@ export const DEFAULT_STYLE: CubeStyleOptions = {
 };
 
 /**
- * Manages geometry and material pooling for the 27 cubies.
+ * Manages geometry and material pooling for the cubies of any N×N×N order
+ * (8 for 2×2, 26 for 3×3, 64 for 4×4, …). Sticker placement derives from each
+ * cubie's own grid coordinates (the max |coord| is the outer face bound), so
+ * the factory is fully order-agnostic.
  *
  * ## Architecture
  *
@@ -127,9 +130,12 @@ export class CubeMeshFactory {
   /** Track all core meshes so we can update material/scale/visibility at runtime */
   private coreMeshes: { mesh: Mesh; x: number; y: number; z: number }[] = [];
   private style: CubeStyleOptions;
+  /** Outer layer grid coordinate: 1 for 2×2/3×3, 1.5 for 4×4, 2 for 5×5, … */
+  private outerBound = 1;
 
-  constructor(style: CubeStyleOptions = DEFAULT_STYLE) {
+  constructor(style: CubeStyleOptions = DEFAULT_STYLE, order: number = 3) {
     this.style = { ...style };
+    this.setOrder(order);
 
     // Core 1.0 = unit size. Gaps are created via mesh.scale for stickerless.
     this.coreGeometry = new RoundedBoxGeometry(
@@ -259,14 +265,16 @@ export class CubeMeshFactory {
       return this.coreMaterial;
     }
 
-    // stickerless: per-face colored plastic (unlit, flat color)
+    // stickerless: per-face colored plastic (unlit, flat color). Only faces at
+    // the order's outer bound are exposed; interior faces get the seam color.
+    const outer = this.outerBound;
     return [
-      x === 1 ? this.stickerlessFaceMaterials['R'] : this.seamMaterial, //  0: +x (Right)
-      x === -1 ? this.stickerlessFaceMaterials['L'] : this.seamMaterial, // 1: -x (Left)
-      y === 1 ? this.stickerlessFaceMaterials['U'] : this.seamMaterial, //  2: +y (Up)
-      y === -1 ? this.stickerlessFaceMaterials['D'] : this.seamMaterial, // 3: -y (Down)
-      z === 1 ? this.stickerlessFaceMaterials['F'] : this.seamMaterial, //  4: +z (Front)
-      z === -1 ? this.stickerlessFaceMaterials['B'] : this.seamMaterial, // 5: -z (Back)
+      x === outer ? this.stickerlessFaceMaterials['R'] : this.seamMaterial, //  0: +x (Right)
+      x === -outer ? this.stickerlessFaceMaterials['L'] : this.seamMaterial, // 1: -x (Left)
+      y === outer ? this.stickerlessFaceMaterials['U'] : this.seamMaterial, //  2: +y (Up)
+      y === -outer ? this.stickerlessFaceMaterials['D'] : this.seamMaterial, // 3: -y (Down)
+      z === outer ? this.stickerlessFaceMaterials['F'] : this.seamMaterial, //  4: +z (Front)
+      z === -outer ? this.stickerlessFaceMaterials['B'] : this.seamMaterial, // 5: -z (Back)
     ];
   }
 
@@ -286,16 +294,31 @@ export class CubeMeshFactory {
   // ───────────────────────────────────────────────────────────────────────
 
   /**
+   * Adopt the cube order, which fixes the outer-layer grid coordinate used
+   * for sticker placement. Called by the CubeModel constructor (the factory
+   * is created before the model in Cube3DEngine), so `new CubeMeshFactory()`
+   * still defaults to order 3 for direct/test usage.
+   *
+   * 2×2 shares the 3×3 ±1 grid convention (outer 1); higher orders extend to
+   * (N-1)/2: 4×4 → 1.5, 5×5 → 2, … Interior cubies (e.g. 4×4 (0.5, 0.5, 0.5))
+   * never match the bound, so they get no stickers.
+   */
+  public setOrder(order: number): void {
+    this.outerBound = order === 2 ? 1 : (order - 1) / 2;
+  }
+
+  /**
    * Creates a Group representing a single cubie (core + exposed-face stickers).
    *
-   * @param x grid coordinate (-1, 0, or 1)
-   * @param y grid coordinate (-1, 0, or 1)
-   * @param z grid coordinate (-1, 0, or 1)
+   * @param x grid coordinate (any order N: ±(N-1)/2 … e.g. -1, 0, 1 for 3×3)
+   * @param y grid coordinate
+   * @param z grid coordinate
    */
   public createCubieGroup(x: number, y: number, z: number): Group {
     const group = new Group();
     const skinType = this.style.skinType ?? 'stickered';
     const cubieSize = this.style.cubieSize ?? 0.97;
+    const outer = this.outerBound;
 
     // ── 1. Core mesh ──────────────────────────────────────────────────
     const coreMaterials = this.getCoreMaterialArray(x, y, z);
@@ -353,27 +376,27 @@ export class CubeMeshFactory {
       this.floatingStickerMeshes.push({ mesh: sticker, face });
     };
 
-    if (x === 1) {
+    if (x === outer) {
       addSticker('R', offset, 0, 0, undefined, Math.PI / 2);
       addFloatingSticker('R', floatingOffset, 0, 0, undefined, -Math.PI / 2);
     }
-    if (x === -1) {
+    if (x === -outer) {
       addSticker('L', -offset, 0, 0, undefined, -Math.PI / 2);
       addFloatingSticker('L', -floatingOffset, 0, 0, undefined, Math.PI / 2);
     }
-    if (y === 1) {
+    if (y === outer) {
       addSticker('U', 0, offset, 0, -Math.PI / 2);
       addFloatingSticker('U', 0, floatingOffset, 0, Math.PI / 2);
     }
-    if (y === -1) {
+    if (y === -outer) {
       addSticker('D', 0, -offset, 0, Math.PI / 2);
       addFloatingSticker('D', 0, -floatingOffset, 0, -Math.PI / 2);
     }
-    if (z === 1) {
+    if (z === outer) {
       addSticker('F', 0, 0, offset);
       addFloatingSticker('F', 0, 0, floatingOffset, undefined, Math.PI);
     }
-    if (z === -1) {
+    if (z === -outer) {
       addSticker('B', 0, 0, -offset, undefined, Math.PI);
       addFloatingSticker('B', 0, 0, -floatingOffset);
     }

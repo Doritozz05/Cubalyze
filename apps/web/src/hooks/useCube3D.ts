@@ -5,9 +5,12 @@ import { useDebouncedCallback } from "use-debounce";
 import { useStore } from "zustand";
 import {
   Cube3DEngine,
+  createPuzzle3DEngine,
   FACE_ROTATION_MAP,
   getSkinStyle,
   scrambleMoveDurationMs,
+  type Puzzle3DSpec,
+  type PyraminxEngine as PyraminxEngineT,
 } from "@cubeforge/cube-3d-engine";
 import type { Subscription } from "rxjs";
 
@@ -29,6 +32,13 @@ export interface UseCube3DOptions {
   maxRecentMoves?: number;
   /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
   order?: number;
+  /**
+   * Puzzle to build via the puzzle registry (multi-puzzle terrain). When
+   * provided it wins over `order`; when absent the legacy order path runs
+   * (identical behavior to before). Only kinds with a registered builder are
+   * constructible (nxn-cube today — others throw a clear error).
+   */
+  puzzle?: Puzzle3DSpec;
   /** Optional active scramble sequence. */
   scramble?: string;
   /**
@@ -91,7 +101,31 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15, order = 3, connectSmartCube = false } = options;
+  const { maxRecentMoves = 15, order = 3, connectSmartCube = false, puzzle } = options;
+
+  /**
+   * Whether this instance builds the Pyraminx family. The Pyraminx engine has
+   * its own move API (rotateVertex / applyMove), its own move-event hook for
+   * the moves strip, and no smart-cube hardware path — every cube-specific
+   * call below branches on this flag. Only Cube3DPanel passes `puzzle` today,
+   * so the cube consumers of engineRef never see a Pyraminx.
+   */
+  const isPyraminx = puzzle?.kind === "pyraminx";
+
+  /**
+   * STABLE key for the init effect. Callers pass `puzzle` specs as inline
+   * object literals (`{ kind: "pyraminx" }`), so the spec REFERENCE changes
+   * on every render of the host — using it directly as an effect dep would
+   * dispose and recreate the WebGL engine on every keystroke/tick (moves
+   * would appear to "not work" — only the turn sound plays). The key is a
+   * primitive derived from every field that can change the built engine, so
+   * the effect only re-runs when the puzzle ACTUALLY changes.
+   */
+  const puzzleKey = puzzle
+    ? puzzle.kind === "nxn-cube"
+      ? `nxn-cube:${puzzle.order}`
+      : puzzle.kind
+    : null;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,21 +186,37 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       if (engineRef.current || initFailedRef.current || w <= 0 || h <= 0) return;
 
       try {
-        const engine = new Cube3DEngine({
-          canvas,
-          width: w,
-          height: h,
-          pixelRatio: window.devicePixelRatio || 1,
-          gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
-          order,
-          // Surface context eviction (iOS Safari context limit) so the panel
-          // can show a graceful fallback instead of a frozen canvas.
-          onContextEvicted: () => {
-            setContextEvicted(true);
-            setIsReady(false);
-            initFailedRef.current = true;
-          },
-        });
+        const onContextEvicted = () => {
+          setContextEvicted(true);
+          setIsReady(false);
+          initFailedRef.current = true;
+        };
+
+        // Puzzle-registry path (multi-puzzle terrain): a spec makes the
+        // registry build the right engine for the kind (nxn-cube wraps the
+        // very same Cube3DEngine with the spec's order; pyraminx builds a
+        // PyraminxEngine). Otherwise the legacy order path runs — identical
+        // to the previous behavior. The registry returns the common
+        // `Puzzle3DEngine` surface; cube-specific calls below branch on
+        // `isPyraminx` and route to each engine's own API.
+        const engine = puzzle
+          ? (createPuzzle3DEngine(puzzle, {
+              canvas,
+              width: w,
+              height: h,
+              pixelRatio: window.devicePixelRatio || 1,
+              gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
+              onContextEvicted,
+            }) as Cube3DEngine)
+          : new Cube3DEngine({
+              canvas,
+              width: w,
+              height: h,
+              pixelRatio: window.devicePixelRatio || 1,
+              gyroSupported: connectSmartCube ? globalCubeAdapter.gyroSupported : false,
+              order,
+              onContextEvicted,
+            });
 
         // The engine may have been evicted immediately on registration (budget
         // exhausted with no evictable victims). Treat it as init failure and
@@ -184,13 +234,23 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
         const skin = getSkinStyle(preferencesStore.getState().appearance3d);
         engine.updateStyle(skin);
 
-        engine.onRotationEvent((e: RotationEvent) => {
-          const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
-          appendRecentMove(notation);
-        });
+        // Recent-moves strip: the cube fires RotationEvents; the Pyraminx has
+        // its own committed-turn hook with WCA tokens (U, U', l, …).
+        if (isPyraminx) {
+          (engine as unknown as PyraminxEngineT).onMoveEvent((notation) => {
+            appendRecentMove(notation);
+          });
+        } else {
+          engine.onRotationEvent((e: RotationEvent) => {
+            const notation = MoveTransformer.rotationToNotation(e.axis, e.direction);
+            appendRecentMove(notation);
+          });
+        }
 
-        // Bind Bluetooth / Hardware streams ONLY when explicitly connected to Smart Cube
-        if (connectSmartCube) {
+        // Bind Bluetooth / Hardware streams ONLY when explicitly connected to
+        // Smart Cube — and only for the cube family (the Pyraminx has no
+        // smart-cube hardware path today).
+        if (connectSmartCube && !isPyraminx) {
           // NOTE: the cube's PHYSICAL orientation is tracked headlessly by
           // services/orientationTracking (started in CubeConnector) — it is
           // the single writer of orientationStore, so it works even with no
@@ -325,21 +385,27 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       setInitFailed(false);
       setContextEvicted(false);
     };
-  }, [appendRecentMove, order, debouncedResize, connectSmartCube]);
+  }, [appendRecentMove, order, puzzleKey, debouncedResize, connectSmartCube]);
 
   // ── Controls ─────────────────────────────────────────────────────────────
   const calibrate = useCallback(() => {
     // Re-reference the visual (GyroFusion) AND the headless tracker that
-    // feeds the store, so the replay / dynamic notation share the same
-    // calibration reference as the on-screen cube.
+    // feeds the store, so the replay / dynamic notation shares the same
+    // calibration reference as the on-screen cube. The Pyraminx has no gyro
+    // path — calibration is a cube/smart-cube concern.
+    if (isPyraminx) return;
     engineRef.current?.calibrateGyro();
     calibrateOrientationTracking();
-  }, []);
+  }, [isPyraminx]);
 
   const reset = useCallback(() => {
-    engineRef.current?.resetCube();
+    if (isPyraminx) {
+      (engineRef.current as unknown as PyraminxEngineT | null)?.reset();
+    } else {
+      engineRef.current?.resetCube();
+    }
     setRecentMoves([]);
-  }, []);
+  }, [isPyraminx]);
 
   const applyScramble = useCallback(async (scrambleString?: string) => {
     const targetScramble = scrambleString || options.scramble;
@@ -352,7 +418,9 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     // per angle) for a premium feel. Falls back to instant facelet sync when
     // the scramble has unsupported tokens (wide moves, rotations) or errors.
     try {
-      const animated = await engine.applyScrambleAnimated(trimmed);
+      const animated = isPyraminx
+        ? await (engine as unknown as PyraminxEngineT).applyScrambleAnimated(trimmed)
+        : await engine.applyScrambleAnimated(trimmed);
       if (animated) {
         setRecentMoves([]);
         return;
@@ -360,6 +428,10 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     } catch (e) {
       console.warn("[useCube3D] Animated scramble failed, falling back:", e);
     }
+
+    // The Pyraminx has no facelet encoding — the animated path is its only
+    // one (an invalid token simply returns false above).
+    if (isPyraminx) return;
 
     try {
       if (order === 2) {
@@ -377,7 +449,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     } catch (e) {
       console.warn("[useCube3D] Error applying scramble to 3D cube:", e);
     }
-  }, [order, options.scramble]);
+  }, [order, options.scramble, isPyraminx]);
 
   const rotateCamera = useCallback((dx: number, dy: number) => {
     engineRef.current?.rotateCamera(dx, dy);

@@ -15,6 +15,7 @@ export * from './styles/cubeSkins';
 
 // Animation
 export * from './animation/RotationEngine';
+export * from './animation/RotationDriver3D';
 export * from './animation/Easing';
 export * from './animation/ScrambleAnimator';
 
@@ -28,3 +29,12 @@ export type { EngineWorkerAPI } from './workers/EngineWorker';
 
 // Replay Engine
 export { ReplayEngine, type ReplayCallbacks, type ReplayState, type RotationParams } from './replay/ReplayEngine';
+
+// Puzzle registry (multi-puzzle terrain)
+export * from './puzzle/types';
+export * from './puzzle/registry';
+export * from './puzzle/nxn';
+
+// Puzzle families
+// (nxn-cube registers itself on import; each family adds its own folder here)
+export * from './pyraminx';

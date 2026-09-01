@@ -62,6 +62,8 @@
     "gestureHint": "Swipe a face to turn the layer · drag the background to rotate the cube 90° · pinch to zoom",
     "initializing": "Initializing 3D cube…",
     "unavailable": "3D view unavailable — too many 3D views are open on this device. Close another 3D view and reopen.",
+    "pyraminxKeysHint": "Keyboard: J/F = U/U' · I/K = R/R' · D/E = L/L' · W/O = B/B' · U/M = u/u' · H/G = r/r' · R/V = l/l' · C/, = b/b' · arrows or drag the background to rotate the pyramid",
+    "pyraminxKeysSubtitle": "csTimer-style layout: index fingers rest on U. Uppercase = layers, lowercase = tips. Clockwise and counterclockwise are separate keys.",
     "scramble": "Scramble",
     "scrambleTooltip": "Scramble the cube instantly",
     "keys": {

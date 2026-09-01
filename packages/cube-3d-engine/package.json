@@ -38,6 +38,7 @@
     "three-stdlib": "^2.28.0"
   },
   "devDependencies": {
+    "@cubeforge/solver-engine": "workspace:*",
     "@types/three": "^0.185.1",
     "tsup": "^8.0.1",
     "typescript": "~6.0.2",

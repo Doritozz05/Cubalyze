@@ -288,6 +288,41 @@ function reindexTimelineToRawEventSpace(
 }
 
 /**
+ * Pyraminx-specific normalization — the cube conjugation pipeline would
+ * CORRUPT pyraminx notation: the cube tokenizer expands lowercase tips as
+ * cube wides (l → "L M", r' → "R' M") and `conjugatePhaseStream` re-cases
+ * them, so a perfectly valid scramble "… R l r" becomes "… R L M R M'" —
+ * which the Pyraminx engine rejects (M is not a pyraminx move) and the
+ * replay silently starts from SOLVED. Pyraminx tokens are single-step WCA
+ * moves (U/L/R/B + u/l/r/b, optionally primed) — carry them verbatim.
+ */
+function normalizePyraminxRecord(record: ReconFullRecord): void {
+  record.phases.forEach((p) => {
+    const displayTokens = tokenize(p.moves, { expandWide: false });
+    p.moves = displayTokens.join(" ");
+    p.moveCount = displayTokens.length;
+    // Replay tokens: the clean single-step WCA tokens, verbatim (tips keep
+    // their lowercase — the replay engine reads displayNotation exactly).
+    const clean = displayTokens.filter((t) => PYRAMINX_MOVE_RE.test(t));
+    p.replayMoves = clean.join(" ");
+    p.replayMoveCount = clean.length;
+    p.replayWide = clean.map(() => false);
+    p.replayDisplay = clean.map((t) => t);
+  });
+  // Pyraminx has no cube-frame orientation timeline (no fixed centers /
+  // grip rotations in the replay — the vertex axes are the only frame).
+  record.rotationCount = 0;
+  record.orientationTimeline = [];
+  // Keep the scramble verbatim too: never run it through the cube tokenizer
+  // (which would expand the trailing tip tokens into invalid M/E moves).
+  record.scramble = tokenize(record.scramble, { expandWide: false })
+    .filter((t) => PYRAMINX_MOVE_RE.test(t))
+    .join(" ");
+
+  deriveReconStats(record);
+}
+
+/**
  * Normalize a record's phase moves at load time, once.
  *
  * TWO representations are kept apart:
@@ -312,6 +347,12 @@ function reindexTimelineToRawEventSpace(
  * The raw `text` is left untouched for copy.
  */
 function normalizeReconMoves(record: ReconFullRecord): void {
+  // Pyraminx records skip the whole cube pipeline (see normalizePyraminxRecord
+  // above — the cube tokenizer/conjugator would corrupt their tips).
+  if (RECON_PUZZLE_TO_WCA[record.puzzle] === "pyram") {
+    normalizePyraminxRecord(record);
+    return;
+  }
   // Conjugated base-frame stream per phase (rotations folded in; wides
   // expanded by tokenize before conjugation). The ENGINE consumes this; the
   // raw tokens only drive display + the orientation timeline.
@@ -509,6 +550,40 @@ function deriveReconStats(record: ReconFullRecord): void {
  * Events are spaced at a fixed 550ms so the replay timeline is proportional
  * to moves.
  */
+/**
+ * Pyraminx tokens — single-step WCA moves: layer turns U/L/R/B and tips
+ * u/l/r/b, each optionally primed. No 180° moves exist on a Pyraminx.
+ */
+const PYRAMINX_MOVE_RE = /^[ULRBulrb]'?$/;
+
+/**
+ * Turn a Pyraminx reconstruction's notation into the replay event array.
+ *
+ * The cube's {@link notationToReplayMoves} cannot be reused: it treats
+ * lowercase letters as CUBE wides and re-cases them, which would corrupt
+ * pyraminx tip turns (a `u` tip is NOT a wide U). Each pyraminx token is
+ * therefore carried verbatim in `displayNotation` (the replay engine reads
+ * exactly that) — `face`/`direction` are inert carriers for the shared
+ * `CubeMoveEvent` shape.
+ */
+export function pyraminxNotationToReplayMoves(notation: string): CubeMoveEvent[] {
+  const tokens = tokenize(notation, { expandWide: false });
+  const events: CubeMoveEvent[] = [];
+  let ts = 0;
+  for (const token of tokens) {
+    if (!PYRAMINX_MOVE_RE.test(token)) continue; // rotations / garbage can't play
+    events.push({
+      face: "U",
+      direction: 1,
+      displayNotation: token,
+      cubeTimestamp: ts,
+      hostTimestamp: ts,
+    });
+    ts += 550;
+  }
+  return events;
+}
+
 export function notationToReplayMoves(
   notation: string,
   options?: { wide?: boolean[]; display?: (string | null)[]; start?: number },
@@ -571,10 +646,15 @@ export function reconToSolve(record: ReconFullRecord): Solve {
     allWide.push(...(p.replayWide ?? tokens.map(() => false)));
     allDisplay.push(...(p.replayDisplay ?? tokens.map(() => null)));
   }
-  const moves = notationToReplayMoves(allTokens.join(" "), {
-    wide: allWide,
-    display: allDisplay,
-  });
+  const isPyraminx = RECON_PUZZLE_TO_WCA[record.puzzle] === "pyram";
+  // Pyraminx records replay on their own engine with verbatim WCA tokens;
+  // cube records use the conjugated-frame converter.
+  const moves = isPyraminx
+    ? pyraminxNotationToReplayMoves(allTokens.join(" "))
+    : notationToReplayMoves(allTokens.join(" "), {
+        wide: allWide,
+        display: allDisplay,
+      });
 
   // The synthetic orientation timeline rotates the 3D cube's root to the
   // solver's perspective during replay (inspection pre-roll + mid-solve

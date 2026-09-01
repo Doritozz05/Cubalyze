@@ -4,7 +4,7 @@ import { parseFaceletsToCubies } from '@cubeforge/math-core';
 import { parseFaceletsToCubies2x2 } from './FaceletParser2x2';
 
 /**
- * Logical state of one cubie in the 3x3x3 grid.
+ * Logical state of one cubie in the N×N×N grid (any order: 2×2, 3×3, 4×4, …).
  * This is INDEPENDENT of the scene graph and cannot be corrupted by
  * floating-point errors in rendering — exactly like SebLague's CubeState.
  */
@@ -24,11 +24,12 @@ export class CubeModel {
   public root: Group;
   private cubies: CubieLogicalState[] = [];
   private factory: CubeMeshFactory;
-  /** Cube order: 2 (2×2×2) or 3 (3×3×3). Default 3. */
+  /** Cube order: 2 (2×2×2), 3 (3×3×3), … any N×N×N. Default 3. */
   public readonly order: number;
-  /** Grid coordinate bounds. Both 2×2 and 3×3 use [-1, 1] — the 2×2 simply
-   *  omits the middle layer (0). The 2×2 root group is scaled to 2/3 size
-   *  for visual proportion. */
+  /** Grid coordinate bounds (outer layer coordinates).
+   *  2×2 and 3×3 use [-1, 1] (legacy convention); higher orders extend
+   *  outward by half a cubie per extra layer: 4×4 → ±1.5, 5×5 → ±2, …
+   *  The 2×2 root group is scaled to 2/3 size for visual proportion. */
   public readonly gridMin: number;
   public readonly gridMax: number;
   public readonly gridStep: number;
@@ -37,13 +38,12 @@ export class CubeModel {
     this.root = new Group();
     this.factory = factory;
     this.order = order;
-    // Both 2×2 and 3×3 use ±1 for outer faces. The 2×2 simply skips the
-    // middle layer (0). This keeps CubeMeshFactory sticker logic (which
-    // checks x===±1, y===±1, z===±1) and FACE_ROTATION_MAP (layerValue ±1)
-    // working unchanged for both orders.
-    // For visual size, the 2×2 root group is scaled down proportionally.
-    this.gridMin = -1;
-    this.gridMax = 1;
+    // 2×2 and 3×3 share the ±1 outer convention (the 2×2 simply skips the
+    // middle layer 0); from 4×4 up the outer coordinate is (order-1)/2.
+    // The factory must know the order too (it decides where stickers go).
+    factory.setOrder(order);
+    this.gridMin = this.order === 2 ? -1 : -(this.order - 1) / 2;
+    this.gridMax = this.order === 2 ? 1 : (this.order - 1) / 2;
     this.gridStep = 1.0;
     this.buildCubies();
   }
@@ -52,23 +52,29 @@ export class CubeModel {
     // Distance between adjacent cubie centers:
     // For 3×3: 1.0 (centers at -1, 0, +1 → cubies size 1.0 touch seamlessly)
     // For 2×2: 0.5 (centers at -0.5, +0.5 → cubies size 1.0 touch seamlessly at 0)
+    // For N≥3: 1.0 (centers from -(N-1)/2 to +(N-1)/2, cubies size 1.0)
     const spacing = this.order === 2 ? 0.5 : 1.0;
 
-    // Generate grid coordinates based on order.
-    // For 3×3: [-1, 0, 1] — outer layers at ±1, middle at 0
-    // For 2×2: [-1, 1] — only outer layers, no middle (same ±1 as 3×3)
+    // Generate grid coordinates centered on the origin:
+    //   2×2: [-1, 1]                (legacy: same ±1 as 3×3, spacing 0.5)
+    //   3×3: [-1, 0, 1]
+    //   4×4: [-1.5, -0.5, 0.5, 1.5]
+    //   5×5: [-2, -1, 0, 1, 2]
+    //   N×N: step 1 from -(N-1)/2 to +(N-1)/2
     const coords: number[] = [];
     if (this.order === 2) {
       coords.push(-1, 1);
     } else {
-      coords.push(-1, 0, 1);
+      const half = (this.order - 1) / 2;
+      for (let v = -half; v <= half + 1e-9; v += 1) coords.push(v);
     }
 
     for (const x of coords) {
       for (const y of coords) {
         for (const z of coords) {
-          // Skip the core (only exists in 3×3, never visible)
-          if (this.order === 3 && x === 0 && y === 0 && z === 0) continue;
+          // Skip the core — the single (0,0,0) position, which only exists on
+          // odd orders (3×3, 5×5, …) and is never visible.
+          if (this.order % 2 === 1 && x === 0 && y === 0 && z === 0) continue;
 
           const cubie = this.factory.createCubieGroup(x, y, z);
           cubie.position.set(x * spacing, y * spacing, z * spacing);
