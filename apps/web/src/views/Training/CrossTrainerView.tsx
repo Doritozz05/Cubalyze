@@ -42,6 +42,7 @@ import {
   Eye,
   EyeOff,
   Palette,
+  Compass,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -607,8 +608,9 @@ export function CrossTrainerView({
                   <button
                     onClick={calibrate}
                     disabled={!isReady}
-                    className="rounded-md px-2 py-1 text-[0.6rem] text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors disabled:opacity-30"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6rem] text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors disabled:opacity-30 cursor-pointer"
                   >
+                    <Compass className="size-3" />
                     {t("crossTrainer.calibrate")}
                   </button>
                   <button

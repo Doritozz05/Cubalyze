@@ -120,4 +120,39 @@ describe("infiniteF2lEngine", () => {
     const facelets = FaceletStringConverter.toFaceletString(state);
     expect(facelets.length).toBe(54);
   });
+
+  it("preserves exact positions of in-flight active pairs on respawn (lookahead preservation)", () => {
+    const { state, activePairs } = spawnInfiniteF2LState("yellow", ["FR", "BL"]);
+    
+    // Record where BL's pieces currently are
+    const blDef = CROSS_COLOR_CONFIGS.yellow.slots.BL;
+    const initialBlCornerPos = Array.from(state.cp).indexOf(blDef.cornerId);
+    const initialBlCornerOri = state.co[initialBlCornerPos];
+    const initialBlEdgePos = Array.from(state.ep).indexOf(blDef.edgeId);
+    const initialBlEdgeOri = state.eo[initialBlEdgePos];
+
+    // Artificially solve FR
+    const frDef = CROSS_COLOR_CONFIGS.yellow.slots.FR;
+    state.cp[frDef.cornerId] = frDef.cornerId;
+    state.co[frDef.cornerId] = 0;
+    state.ep[frDef.edgeId] = frDef.edgeId;
+    state.eo[frDef.edgeId] = 0;
+
+    // Respawn FR with a new pair
+    const { nextActivePairs } = respawnPair(
+      state,
+      "yellow",
+      activePairs,
+      "FR",
+      ["FR", "FL", "BL", "BR"],
+    );
+
+    expect(nextActivePairs.length).toBe(2);
+
+    // BL pieces must NOT have moved at all
+    expect(Array.from(state.cp).indexOf(blDef.cornerId)).toBe(initialBlCornerPos);
+    expect(state.co[initialBlCornerPos]).toBe(initialBlCornerOri);
+    expect(Array.from(state.ep).indexOf(blDef.edgeId)).toBe(initialBlEdgePos);
+    expect(state.eo[initialBlEdgePos]).toBe(initialBlEdgeOri);
+  });
 });

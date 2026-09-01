@@ -1,4 +1,4 @@
-import { Corner, Edge, CubeState, StringToMove, type PhaseMask } from "@cubeforge/math-core";
+import { Corner, Edge, CubeState, type PhaseMask } from "@cubeforge/math-core";
 
 export type CrossColor = "white" | "yellow" | "green" | "blue" | "red" | "orange";
 export type F2LSlotId = "FR" | "FL" | "BL" | "BR";
@@ -19,11 +19,14 @@ export interface CrossColorDef {
   nameKey: string;
   face: "D" | "U" | "F" | "B" | "R" | "L";
   crossEdges: Edge[];
+  oppositeLayerCorners: Corner[];
+  oppositeLayerEdges: Edge[];
   slots: Record<F2LSlotId, F2LSlotDef>;
 }
 
 /**
- * Standard slot definitions for D-face (White cross) and other cross colors.
+ * Standard slot definitions for all cross colors.
+ * Identifies the cross face, the 4 F2L slots, and the opposite layer.
  */
 export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
   white: {
@@ -32,6 +35,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.white",
     face: "U",
     crossEdges: [Edge.UF, Edge.UR, Edge.UB, Edge.UL],
+    oppositeLayerCorners: [Corner.DFR, Corner.DLF, Corner.DBL, Corner.DRB],
+    oppositeLayerEdges: [Edge.DF, Edge.DR, Edge.DB, Edge.DL],
     slots: {
       FR: {
         id: "FR",
@@ -77,6 +82,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.yellow",
     face: "D",
     crossEdges: [Edge.DF, Edge.DR, Edge.DB, Edge.DL],
+    oppositeLayerCorners: [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR],
+    oppositeLayerEdges: [Edge.UF, Edge.UR, Edge.UB, Edge.UL],
     slots: {
       FR: {
         id: "FR",
@@ -122,6 +129,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.green",
     face: "F",
     crossEdges: [Edge.UF, Edge.FR, Edge.DF, Edge.FL],
+    oppositeLayerCorners: [Corner.ULB, Corner.UBR, Corner.DBL, Corner.DRB],
+    oppositeLayerEdges: [Edge.UB, Edge.UR, Edge.DB, Edge.DL],
     slots: {
       FR: {
         id: "FR",
@@ -167,6 +176,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.blue",
     face: "B",
     crossEdges: [Edge.UB, Edge.BR, Edge.DB, Edge.BL],
+    oppositeLayerCorners: [Corner.URF, Corner.UFL, Corner.DFR, Corner.DLF],
+    oppositeLayerEdges: [Edge.UF, Edge.UR, Edge.DF, Edge.DL],
     slots: {
       FR: {
         id: "FR",
@@ -212,6 +223,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.red",
     face: "R",
     crossEdges: [Edge.UR, Edge.BR, Edge.DR, Edge.FR],
+    oppositeLayerCorners: [Corner.UFL, Corner.ULB, Corner.DLF, Corner.DBL],
+    oppositeLayerEdges: [Edge.UF, Edge.UL, Edge.DF, Edge.DL],
     slots: {
       FR: {
         id: "FR",
@@ -257,6 +270,8 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
     nameKey: "crossColor.orange",
     face: "L",
     crossEdges: [Edge.UL, Edge.FL, Edge.DL, Edge.BL],
+    oppositeLayerCorners: [Corner.URF, Corner.UBR, Corner.DFR, Corner.DRB],
+    oppositeLayerEdges: [Edge.UF, Edge.UR, Edge.DF, Edge.DR],
     slots: {
       FR: {
         id: "FR",
@@ -355,120 +370,101 @@ export function buildInfiniteF2LMask(
   return { name: "infinite-f2l", edges, corners };
 }
 
-/**
- * Canonical F2L setup algorithms (scramble algorithms) that preserve the cross.
- */
-export const F2L_CANONICAL_SETUPS: string[] = [
-  "F R' F' R",
-  "R' F R F'",
-  "U' R U' R' U2 R U' R'",
-  "R U' R'",
-  "U' R U R' U2 R U' R'",
-  "U' R U2 R' U2 R U' R'",
-  "U' R U2 R' U F' U' F",
-  "R U2 R' U' R U R'",
-  "U R U2 R' U R U' R'",
-  "U' R U R' U R U R'",
-  "R U R' U' R U R' U' R U R'",
-  "U' R U' R' U R U R'",
-  "R U' R' U R U' R'",
-  "R U R' U2 R U' R'",
-  "U R U2 R' U R U2 R'",
-  "R U' R' U2 R U R'",
-  "R U R' U R U' R'",
-  "U' R U' R' U2 R U R'",
-  "R U' R' U' R U R'",
-  "R U2 R' U R U' R'",
-  "R U' R' U R U2 R'",
-  "R U R' U' R U2 R' U' R U R'",
-  "R U R' U' R U' R' U2 R U' R'",
-  "R U' R' U R U R' U2 R U' R'",
-  "R U R' U2 R U R' U R U' R'",
-  "R U R' U' R U' R' U F' U' F",
-  "R U R' U2 R U' R' U R U' R'",
-  "R U R' U' R U R' U2 R U' R'",
-  "R U' R' U' R U2 R' U' R U R'",
-];
-
-const SLOT_MOVE_MAP: Record<F2LSlotId, Record<string, string>> = {
-  FR: { R: "R", L: "L", F: "F", B: "B", U: "U", D: "D" },
-  FL: { R: "F", F: "L", L: "B", B: "R", U: "U", D: "D" },
-  BL: { R: "L", L: "R", F: "B", B: "F", U: "U", D: "D" },
-  BR: { R: "B", B: "L", L: "F", F: "R", U: "U", D: "D" },
-};
-
-/**
- * Adapts a standard FR setup algorithm to any slot (FL, BL, BR) and cross orientation.
- */
-export function generateSlotScramble(slotId: F2LSlotId, crossColor: CrossColor = "white"): string[] {
-  const baseSetup = F2L_CANONICAL_SETUPS[Math.floor(Math.random() * F2L_CANONICAL_SETUPS.length)];
-
-  // For white cross (on U), the frame is inverted by x2 (F<->B, U<->D), so FR->BR, FL->BL, BL->FL, BR->FR
-  let targetSlot = slotId;
-  if (crossColor === "white") {
-    if (slotId === "FR") targetSlot = "BR";
-    else if (slotId === "FL") targetSlot = "BL";
-    else if (slotId === "BL") targetSlot = "FL";
-    else if (slotId === "BR") targetSlot = "FR";
+function findPieceIndex(arr: { [index: number]: number; length: number }, id: number): number {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === id) return i;
   }
-
-  const slotMap = SLOT_MOVE_MAP[targetSlot] ?? SLOT_MOVE_MAP.FR;
-  const rawMoves = baseSetup.trim().split(/\s+/);
-
-  const slotMoves = rawMoves.map((tok) => {
-    const face = tok[0];
-    const modifier = tok.slice(1);
-    const mappedFace = slotMap[face] ?? face;
-    return `${mappedFace}${modifier}`;
-  });
-
-  // Random AUF rotations
-  const aufOptions = ["", "U", "U'", "U2"];
-  const preAuf = aufOptions[Math.floor(Math.random() * aufOptions.length)];
-  const postAuf = aufOptions[Math.floor(Math.random() * aufOptions.length)];
-
-  const finalMoves: string[] = [];
-  if (preAuf) finalMoves.push(preAuf);
-  finalMoves.push(...slotMoves);
-  if (postAuf) finalMoves.push(postAuf);
-
-  // If cross is on U (White cross), map U<->D and F<->B (x2 inversion)
-  if (crossColor === "white") {
-    return finalMoves.map((tok) => {
-      let face = tok[0];
-      const modifier = tok.slice(1);
-      if (face === "U") face = "D";
-      else if (face === "D") face = "U";
-      else if (face === "F") face = "B";
-      else if (face === "B") face = "F";
-      return `${face}${modifier}`;
-    });
-  }
-
-  return finalMoves;
+  return -1;
 }
 
 /**
- * Applies move tokens to a CubeState.
+ * Direct piece injector: places a new pair's corner and edge into unoccupied
+ * slots on the current CubeState WITHOUT modifying or disrupting any other
+ * pieces (cross edges and in-flight active pairs remain 100% in place).
  */
-export function applyMovesToState(state: CubeState, moves: string[]): void {
-  for (const moveStr of moves) {
-    if (!moveStr) continue;
-    const moveEnum = StringToMove[moveStr.trim()];
-    if (moveEnum !== undefined) {
-      state.applyMove(moveEnum);
+export function injectPair(
+  state: CubeState,
+  pairDef: F2LSlotDef,
+  config: CrossColorDef,
+  occupiedCorners: Set<number>,
+  occupiedEdges: Set<number>,
+  allowTrapped: boolean = true,
+): { targetCorner: number; targetEdge: number } {
+  // 1. Determine eligible corner positions
+  const allCorners = [0, 1, 2, 3, 4, 5, 6, 7];
+  let eligibleCorners = allCorners.filter((c) => !occupiedCorners.has(c));
+
+  if (!allowTrapped) {
+    const oppCorners = config.oppositeLayerCorners.filter((c) => !occupiedCorners.has(c));
+    if (oppCorners.length > 0) {
+      eligibleCorners = oppCorners;
     }
   }
+
+  // Pick target corner
+  const targetCorner =
+    eligibleCorners.length > 0
+      ? eligibleCorners[Math.floor(Math.random() * eligibleCorners.length)]
+      : config.oppositeLayerCorners[0];
+
+  // 2. Determine eligible edge positions (cannot be cross edges or occupied)
+  const allEdges = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  let eligibleEdges = allEdges.filter((e) => !occupiedEdges.has(e));
+
+  if (!allowTrapped) {
+    const oppEdges = config.oppositeLayerEdges.filter((e) => !occupiedEdges.has(e));
+    if (oppEdges.length > 0) {
+      eligibleEdges = oppEdges;
+    }
+  }
+
+  // Pick target edge
+  const targetEdge =
+    eligibleEdges.length > 0
+      ? eligibleEdges[Math.floor(Math.random() * eligibleEdges.length)]
+      : eligibleEdges[0] ?? pairDef.edgeId;
+
+  // 3. Random orientations (0, 1, 2 for corner; 0, 1 for edge)
+  let co = Math.floor(Math.random() * 3);
+  const eo = Math.floor(Math.random() * 2);
+
+  // Guard: Avoid spawning already 100% solved in its own slot
+  if (targetCorner === pairDef.cornerId && co === 0 && targetEdge === pairDef.edgeId && eo === 0) {
+    co = (co + 1) % 3;
+  }
+
+  // 4. Swap corner piece into targetCorner
+  const curCornerPos = findPieceIndex(state.cp, pairDef.cornerId);
+  if (curCornerPos !== -1 && curCornerPos !== targetCorner) {
+    const occupant = state.cp[targetCorner];
+    state.cp[targetCorner] = pairDef.cornerId;
+    state.cp[curCornerPos] = occupant;
+  }
+  state.co[targetCorner] = co;
+
+  // 5. Swap edge piece into targetEdge
+  const curEdgePos = findPieceIndex(state.ep, pairDef.edgeId);
+  if (curEdgePos !== -1 && curEdgePos !== targetEdge) {
+    const occupant = state.ep[targetEdge];
+    state.ep[targetEdge] = pairDef.edgeId;
+    state.ep[curEdgePos] = occupant;
+  }
+  state.eo[targetEdge] = eo;
+
+  occupiedCorners.add(targetCorner);
+  occupiedEdges.add(targetEdge);
+
+  return { targetCorner, targetEdge };
 }
 
 /**
- * Scramble setup generator: creates a CubeState with the cross solved and
- * active pairs placed in non-solved positions.
+ * Spawns an initial Infinite F2L state: cross is solved, and N initial pairs
+ * are directly injected into random unoccupied positions on the cube.
  */
 export function spawnInfiniteF2LState(
   crossColor: CrossColor = "white",
   activeSlots: F2LSlotId[] = ["FR", "BL"],
-  _allowTrapped: boolean = true,
+  allowTrapped: boolean = true,
 ): { state: CubeState; activePairs: ActivePairState[] } {
   const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
   const state = new CubeState(); // Starts fully solved
@@ -479,26 +475,18 @@ export function spawnInfiniteF2LState(
     spawnTime: Date.now(),
   }));
 
-  // Apply a cross-preserving scramble for each active slot
+  const occupiedCorners = new Set<number>();
+  const occupiedEdges = new Set<number>(config.crossEdges);
+
   for (const pair of activePairs) {
-    let attempts = 0;
-    while (attempts < 10) {
-      attempts++;
-      const moves = generateSlotScramble(pair.slotId, crossColor);
-      applyMovesToState(state, moves);
-      // Ensure the pair is not accidentally solved
-      if (!isF2LSlotSolved(state, pair.def)) {
-        break;
-      }
-    }
+    injectPair(state, pair.def, config, occupiedCorners, occupiedEdges, allowTrapped);
   }
 
   return { state, activePairs };
 }
 
 /**
- * Check a move for any solved pairs among the active pairs.
- * Returns array of solved slot IDs in order.
+ * Check if any currently active pair is solved on the logical state.
  */
 export function checkSolvedPairs(
   cubeState: CubeState,
@@ -514,7 +502,9 @@ export function checkSolvedPairs(
 }
 
 /**
- * Replace a solved pair with a new random pair, placing it in an available slot.
+ * Replaces a solved pair by injecting a NEW pair into an unoccupied location
+ * on the current state. Existing active pairs stay EXACTLY where they are,
+ * ensuring continuous and undisturbed lookahead.
  */
 export function respawnPair(
   state: CubeState,
@@ -525,10 +515,21 @@ export function respawnPair(
 ): { nextActivePairs: ActivePairState[]; newPair: ActivePairState } {
   const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
 
-  // Filter remaining active
+  // 1. Keep remaining active pairs exactly where they are
   const remaining = currentActive.filter((p) => p.slotId !== solvedSlotId);
 
-  // Pick a new slot from allowed slots
+  // 2. Mark positions of cross edges and existing in-flight pairs as occupied
+  const occupiedCorners = new Set<number>();
+  const occupiedEdges = new Set<number>(config.crossEdges);
+
+  for (const p of remaining) {
+    const cpPos = findPieceIndex(state.cp, p.def.cornerId);
+    if (cpPos !== -1) occupiedCorners.add(cpPos);
+    const epPos = findPieceIndex(state.ep, p.def.edgeId);
+    if (epPos !== -1) occupiedEdges.add(epPos);
+  }
+
+  // 3. Choose a new slot
   const usedSlots = new Set(remaining.map((p) => p.slotId));
   const availableSlots = allowedSlots.filter((s) => !usedSlots.has(s));
 
@@ -544,16 +545,8 @@ export function respawnPair(
     spawnTime: Date.now(),
   };
 
-  // Scramble the new pair into position
-  let attempts = 0;
-  while (attempts < 10) {
-    attempts++;
-    const moves = generateSlotScramble(nextSlotId, crossColor);
-    applyMovesToState(state, moves);
-    if (!isF2LSlotSolved(state, newPairDef)) {
-      break;
-    }
-  }
+  // 4. Inject the new pair into an unoccupied slot
+  injectPair(state, newPairDef, config, occupiedCorners, occupiedEdges, true);
 
   return {
     nextActivePairs: [...remaining, newPair],

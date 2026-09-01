@@ -605,7 +605,7 @@ function PhaseRow({
       {/* Visible actions — all quiet outlines; Full Solve in the banner is
           the single filled control in the workspace */}
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-        {(phase.id === "f2l" || phase.id === "af2l") && onInfiniteF2L && (
+        {phase.id === "f2l" && onInfiniteF2L && (
           <ActionChip onClick={onInfiniteF2L}>
             <InfinityIcon className="size-3" /> {t("infiniteF2l.chip")}
           </ActionChip>
