@@ -21,6 +21,7 @@ import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
 import type { Penalty } from "@/types";
 import type { PyraminxEngine as PyraminxEngineT } from "@cubeforge/cube-3d-engine";
+import { isPyraminxSolvedAnyOrientation } from "@cubeforge/solver-engine/pyraminx";
 
 /** Base animation duration (ms) per turn speed. `instant` disables animation. */
 const TURN_SPEED_BASE_MS: Record<"slow" | "normal" | "fast" | "instant", number> = {
@@ -75,6 +76,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
       reset();
       const engine = engineRef.current as unknown as PyraminxEngineT | null;
       engine?.reset();
+      engine?.resetPuzzleOrientation();
       engine?.setIsometricView();
       setScramble(generateScrambleFor(puzzle));
     };
@@ -95,7 +97,28 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
       },
     );
   });
-  const { phase, time, lastTime, validation, performMove, applyScrambleNow, reset } = session;
+  const {
+    phase,
+    time,
+    lastTime,
+    validation,
+    performMove,
+    applyScrambleNow,
+    reset,
+    notifySolved,
+  } = session;
+
+  // Fallback regeneration when standalone (without outer completion handler):
+  const lastTimeRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (onVirtualSolveComplete) return;
+    const prev = lastTimeRef.current;
+    lastTimeRef.current = lastTime;
+    if (lastTime !== null && prev === null) {
+      const t = setTimeout(() => regenerateRef.current(), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [lastTime, onVirtualSolveComplete]);
 
   const {
     canvasRef,
@@ -118,10 +141,15 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     (token: string) => {
       cubeTurnSounds.play();
       performMove(token);
+      const eng = engineRef.current as unknown as PyraminxEngineT | null;
       const duration = TURN_SPEED_BASE_MS[cubeTurnSpeed];
-      void (engineRef.current as unknown as PyraminxEngineT | null)?.applyMove(token, duration);
+      void eng?.applyMove(token, duration).then(() => {
+        if (eng && isPyraminxSolvedAnyOrientation(eng.getState())) {
+          notifySolved();
+        }
+      });
     },
-    [performMove, cubeTurnSpeed, engineRef],
+    [performMove, cubeTurnSpeed, engineRef, notifySolved],
   );
 
   // ── Piece drags → FIXED ±120° turns; background drags → discrete
@@ -191,13 +219,16 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
   }, [handleTurn, engineRef]);
 
   // ── Scramble / reset ───────────────────────────────────────────────────
+  // Parity with 2x2/3x3: clean reset to solved first, then apply the scramble
+  // INSTANTLY to the engine (duration 0) and seed the session tracker.
   const handleScrambleNow = useCallback(() => {
+    const engine = engineRef.current as unknown as PyraminxEngineT | null;
+    engine?.reset();
+    engine?.resetPuzzleOrientation();
+    engine?.setIsometricView();
+    void engine?.applyScrambleAnimated(scramble, 0);
     applyScrambleNow();
-    void (engineRef.current as unknown as PyraminxEngineT | null)?.applyScrambleAnimated(
-      scramble,
-      TURN_SPEED_BASE_MS[cubeTurnSpeed],
-    );
-  }, [applyScrambleNow, scramble, cubeTurnSpeed, engineRef]);
+  }, [applyScrambleNow, scramble, engineRef]);
 
   const handleReset = useCallback(() => {
     reset();
@@ -268,7 +299,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
           currentIndex={validation.progress}
           isScrambled={validation.isScrambled}
           needsReset={validation.needsReset}
-          awaitingSolve={phase === "ready_for_move"}
+          awaitingSolve={false}
           onRegenerate={handleRegenerate}
         />
       </div>

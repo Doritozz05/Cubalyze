@@ -45,6 +45,8 @@ export interface UsePyraminxVirtualSessionResult {
   applyScrambleNow: () => void;
   /** Reset the timer + logical state to solved. */
   reset: () => void;
+  /** Force-check or notify that the puzzle is solved. */
+  notifySolved: () => void;
 }
 
 /**
@@ -234,6 +236,12 @@ export function usePyraminxVirtualSession(
     syncValidation();
   }, [engine, syncValidation]);
 
+  const notifySolved = useCallback(() => {
+    if (engine.getState() === EngineState.RUNNING) {
+      engine.handleSmartCubeStop();
+    }
+  }, [engine]);
+
   return {
     phase,
     time,
@@ -242,5 +250,6 @@ export function usePyraminxVirtualSession(
     performMove,
     applyScrambleNow,
     reset,
+    notifySolved,
   };
 }
