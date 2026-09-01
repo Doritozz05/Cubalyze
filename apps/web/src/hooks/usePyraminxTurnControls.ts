@@ -304,6 +304,7 @@ export function usePyraminxTurnControls({
       const scale = engine.model?.root.scale.x ?? 1;
       const vertexWorld = (v: "U" | "L" | "R" | "B") =>
         engine.getWorldAxis(v).multiplyScalar(scale);
+      const rect = canvas.getBoundingClientRect();
       const move = resolvePyraminxDragMove({
         dx: drag.lastX - drag.startX,
         dy: drag.lastY - drag.startY,
@@ -321,6 +322,9 @@ export function usePyraminxTurnControls({
           R: vertexWorld("R"),
           B: vertexWorld("B"),
         },
+        camera: cam,
+        viewWidth: rect.width > 0 ? rect.width : 400,
+        viewHeight: rect.height > 0 ? rect.height : 400,
         cameraRight: { x: m[0], y: m[1], z: m[2] },
         cameraUp: { x: m[4], y: m[5], z: m[6] },
       });

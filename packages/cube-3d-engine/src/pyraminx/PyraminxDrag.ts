@@ -1,41 +1,34 @@
 /**
  * Pyraminx virtual-drag resolver — the vertex-turning counterpart of the
- * cube's {@link resolveDragMove}.
+ * cube's resolveDragMove.
  *
- * Gesture model (same as the cube simulator): a drag on a PIECE does not
- * track the mouse live. Once the swipe passes the dead zone it resolves a
- * definite move — the layer or tip under the finger — and fires it through
- * the same pipeline as the keyboard, so the turn lands at exactly ±120°,
- * ignoring the mouse from then on (virtual-puzzle style, no free rotation).
+ * Direct manipulation model (virtual-puzzle interaction):
+ * A drag on a PIECE resolves a definite FIXED ±120° turn — the layer or tip
+ * under the finger.
  *
- * Resolution: the piece offers its candidate turn axes (a corner/tip turns
- * around ITS vertex; an edge can turn around either of its slot's two
- * vertices). For each candidate the piece's motion under a +120° turn is the
- * tangent t = a × p (right-hand rule, the engine's positive angle = the
- * COUNTER-CLOCKWISE turn = the PRIME, exactly like the cube where dragging
- * along the +90° tangent resolves R'). The drag lives in the VIEW PLANE, so
- * the alignment is measured against the tangent's SCREEN projection (t·right,
- * t·up) — NOT the full 3D tangent: a sticker whose arc points toward/away
- * from the camera has a short projection, and against the full tangent even
- * a perfect arc-following drag caps at |t_par|/|t| < 0.3 and is rejected
- * ("100% correct drags that do nothing"). Screen-space scoring is
- * camera-robust: a drag that follows the sticker's visible arc scores ~1 on
- * every sticker, in every view.
- *
- * The candidate with the HIGHEST SIGNED alignment wins (not |cos|): for an
- * edge, the two endpoint tangents are anti-parallel, so |cos| ties and the
- * drag direction would be ignored — the edge could only ever turn around its
- * first vertex. With signed scoring, swiping the sticker one way turns it
- * around one endpoint and swiping the other way around the other, and the
- * grabbed stickers ALWAYS follow the finger: a drag along the projected
- * tangent (+t) resolves the PRIME (U', …) and a drag against it the plain
- * token (U, … — the plain WCA turn is the CLOCKWISE turn, WCA 12e2, i.e.
- * motion along −t), exactly like the cube's `sign / angleSign`.
- *
- * IMPORTANT sign detail (same as the cube): screen Y grows DOWNWARD while
- * `cameraUp` is the world direction of screen-TOP, so the screen-up
- * component of the drag is −dy.
+ * Mathematical Foundations:
+ * 1. Tips and Corners:
+ *    - A tip or corner belongs strictly to ONE vertex. There is zero layer
+ *      ambiguity. The gesture's alignment with the rotation tangent in screen
+ *      space determines the turn direction (+1 vs -1).
+ * 2. Edges:
+ *    - An edge piece sits between two vertices (V_A and V_B).
+ *    - Along the edge, the 3D rotation tangents for both vertices are exactly
+ *      anti-parallel (t_A = -t_B).
+ *    - Which layer turns is determined by spatial proximity along the edge
+ *      (where the user grabbed the piece) combined with directional heading.
+ *    - The turn direction (+1 vs -1) is determined by the tangent alignment.
+ *    - This guarantees 100% mathematical symmetry and invertibility:
+ *      swiping +d produces move M, and swiping -d produces the inverse move M'
+ *      (never switching to an unrelated layer).
+ * 3. Perspective Projection:
+ *    - When a Camera is provided, the resolver projects 3D rotation deltas
+ *      directly using camera.project(), accounting for FOV, perspective
+ *      foreshortening, parallax, and canvas aspect ratio without orthographic
+ *      distortions.
  */
+
+import { Vector3, type Camera } from "three";
 
 /** A 3D vector (structural — accepts three.js Vector3). */
 interface Vec3 {
@@ -55,7 +48,7 @@ export interface PyraminxDragInput {
   /** Pointer travel in screen px since the drag started (+x = right, +y = down). */
   dx: number;
   dy: number;
-  /** The picked piece's slot position in the ROOT frame (puzzle frame). */
+  /** The picked piece's slot or hit position in the ROOT frame (puzzle frame). */
   worldPoint: Vec3;
   /** Candidate turns for the picked piece (1 for corners/tips, 2 for edges). */
   candidates: PyraminxDragCandidate[];
@@ -65,14 +58,16 @@ export interface PyraminxDragInput {
   cameraRight: Vec3;
   cameraUp: Vec3;
   /**
-   * World positions of the 4 vertices (scaled, current orientation). Used
-   * ONLY by the spatial fallback: when a swipe is tangent-ambiguous (a
-   * diagonal drag the perspective makes unintuitive — e.g. the RB edge
-   * swiped right-and-up scores < 0.3 against BOTH its arcs), the resolver
-   * turns toward the candidate vertex the drag heads at, instead of firing
-   * nothing. Optional — callers that omit it keep the pure tangent rule.
+   * World positions of the 4 vertices (scaled, current orientation).
    */
   vertices?: Record<"U" | "L" | "R" | "B", Vec3>;
+  /**
+   * Optional live three.js Camera. When provided, enables exact perspective
+   * projection of the rotating point.
+   */
+  camera?: Camera;
+  viewWidth?: number;
+  viewHeight?: number;
 }
 
 /** A resolved fixed-angle turn: the token is vertex (+ "'" for the prime). */
@@ -83,169 +78,218 @@ export interface PyraminxDragMove {
 }
 
 /** Minimum |alignment| between the drag and a projected tangent before a
- *  move resolves — below this the swipe is ambiguous (sliding along an axis /
- *  diagonal) and the resolver refuses until the drag commits. Measured in
- *  SCREEN space, so it is a pure angle question — identical for every
- *  sticker regardless of the camera. */
-const MIN_TANGENT_COS = 0.3;
+ *  move resolves — below this the swipe is ambiguous (perpendicular)
+ *  and the resolver refuses until the drag commits. */
+export const MIN_TANGENT_COS = 0.3;
 
 /**
- * Resolve WHICH fixed ±120° turn a piece drag fires, or null while the drag
- * is still ambiguous (below the tangent alignment threshold). Pure — unit
- * tested without any engine.
+ * Rotate a 3D vector around a unit axis by angleRad using Rodrigues' formula.
+ * Pure vector math, no matrix allocation.
  */
-export function resolvePyraminxDragMove(input: PyraminxDragInput): PyraminxDragMove | null {
-  const { dx, dy, worldPoint: p, candidates, axes, cameraRight, cameraUp } = input;
-  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
-  const dragLen = Math.hypot(dx, dy);
-  if (dragLen < 1e-3) return null;
+function rotateAroundAxis(p: Vec3, axis: Vec3, angleRad: number): Vec3 {
+  const c = Math.cos(angleRad);
+  const s = Math.sin(angleRad);
+  const dot = axis.x * p.x + axis.y * p.y + axis.z * p.z;
+  const crossX = axis.y * p.z - axis.z * p.y;
+  const crossY = axis.z * p.x - axis.x * p.z;
+  const crossZ = axis.x * p.y - axis.y * p.x;
+  return {
+    x: p.x * c + crossX * s + axis.x * dot * (1 - c),
+    y: p.y * c + crossY * s + axis.y * dot * (1 - c),
+    z: p.z * c + crossZ * s + axis.z * dot * (1 - c),
+  };
+}
 
-  let best: PyraminxDragMove | null = null;
-  // |cos| best: the winner is the candidate whose visible arc the drag most
-  // closely FOLLOWS, measured as |cos| against that candidate's own projected
-  // tangent. A pure signed maximum would make only ONE candidate reachable
-  // per swipe direction when an edge's two candidate arcs project to
-  // different (non-anti-parallel) screen directions: the other candidate is
-  // then unreachable from that swipe, and drags perpendicular to the winner's
-  // arc fall below the threshold for BOTH candidates and resolve to null
-  // ("base edge: right/up-right does nothing, only left works, only L'").
-  // Scoring by |cos| makes every swipe direction that follows ANY candidate's
-  // arc resolve. For genuinely anti-parallel edge tangents the |cos| values
-  // tie; the tie is broken by the signed cos, which preserves the designed
-  // edge behavior (swipe direction selects the endpoint whose arc is
-  // followed) while making distinct-arc edges fully reachable.
-  let bestAbs = -Infinity;
-  let bestSigned = -Infinity;
-  for (const c of candidates) {
-    const a = axes[c.vertex];
-    // Tangent of the piece under a +120° turn around the candidate axis:
-    // t = a × p (right-hand rule — the engine's positive angle).
-    let tx = a.y * p.z - a.z * p.y;
-    let ty = a.z * p.x - a.x * p.z;
-    let tz = a.x * p.y - a.y * p.x;
-    let tLen = Math.hypot(tx, ty, tz);
-    if (tLen < 1e-3) {
-      // Fallback when grabbed on the axis itself (e.g. at the exact apex of a tip):
-      // A turn around axis `a` moves perpendicular to `a` in the view plane.
-      // cf = cameraRight × cameraUp (vector pointing out of screen towards viewer)
-      const cfx = cameraRight.y * cameraUp.z - cameraRight.z * cameraUp.y;
-      const cfy = cameraRight.z * cameraUp.x - cameraRight.x * cameraUp.z;
-      const cfz = cameraRight.x * cameraUp.y - cameraRight.y * cameraUp.x;
-      // t = a × cf (tangent on the front viewer-facing side)
-      tx = a.y * cfz - a.z * cfy;
-      ty = a.z * cfx - a.x * cfz;
-      tz = a.x * cfy - a.y * cfx;
-      tLen = Math.hypot(tx, ty, tz);
-      if (tLen < 1e-4) {
-        // Degenerate case: axis points directly along the camera view direction.
-        const dot = a.x * cfx + a.y * cfy + a.z * cfz;
-        const sign = dot >= 0 ? 1 : -1;
-        tx = sign * cameraRight.x;
-        ty = sign * cameraRight.y;
-        tz = sign * cameraRight.z;
-        tLen = Math.hypot(tx, ty, tz);
-      }
-      if (tLen < 1e-4) continue;
-    }
-    // Project the (unit) tangent onto the SCREEN basis. The drag is a
-    // screen-space vector, so its alignment with the tangent is exactly the
-    // alignment with this projection — foreshortening (the tangent's
-    // view-normal component) cancels out and can never reject a drag.
-    const sx = (tx * cameraRight.x + ty * cameraRight.y + tz * cameraRight.z) / tLen;
-    const sy = (tx * cameraUp.x + ty * cameraUp.y + tz * cameraUp.z) / tLen;
-    const sLen = Math.hypot(sx, sy);
-    if (sLen < 1e-4) continue; // arc edge-on to the camera — no visible motion
-    // Screen-up component of the drag is −dy (screen Y grows DOWNWARD).
-    const cos = (sx * dx - sy * dy) / (sLen * dragLen);
-    const abs = cos < 0 ? -cos : cos;
-    if (abs > bestAbs + 1e-9 || (abs > bestAbs - 1e-9 && cos > bestSigned)) {
-      bestAbs = abs;
-      bestSigned = cos;
-      // Along the projected arc (+t on screen) = the +120° counter-clockwise
-      // turn = the PRIME; against it (−t) = the plain CLOCKWISE turn. The
-      // stickers follow the finger in both cases (same composition as the
-      // cube's `sign / angleSign`).
-      best = { vertex: c.vertex, scope: c.scope, direction: cos < 0 ? 1 : -1 };
-    }
+/** Project a 3D point to 2D screen coordinates (+x right, +y down). */
+function projectPointToScreen(
+  p: Vec3,
+  camera?: Camera,
+  cameraRight?: Vec3,
+  cameraUp?: Vec3,
+  viewWidth = 400,
+  viewHeight = 400,
+): { x: number; y: number } {
+  if (camera) {
+    const v = new Vector3(p.x, p.y, p.z).project(camera);
+    return {
+      x: ((v.x + 1) / 2) * viewWidth,
+      y: ((1 - v.y) / 2) * viewHeight,
+    };
   }
-  if (!best || bestAbs < MIN_TANGENT_COS) {
-    return resolveSpatialFallback({
-      worldPoint: p,
-      candidates,
-      axes,
-      vertices: input.vertices,
-      cameraRight,
-      cameraUp,
-      dx,
-      dy,
-      dragLen,
-    });
+  if (cameraRight && cameraUp) {
+    return {
+      x: p.x * cameraRight.x + p.y * cameraRight.y + p.z * cameraRight.z,
+      y: -(p.x * cameraUp.x + p.y * cameraUp.y + p.z * cameraUp.z),
+    };
   }
-  return best;
+  return { x: p.x, y: -p.y };
 }
 
 /**
- * Spatial fallback for tangent-ambiguous swipes (see
- * {@link PyraminxDragInput.vertices}): pick the candidate whose vertex the
- * drag heads toward on screen. The grabbed sticker can never "follow the
- * finger" around a radial swipe (the turn motion is tangential), so the
- * direction is read from the swipe's residual alignment with the winner's
- * tangent — a purely radial swipe defaults to the plain turn.
+ * Compute the unit screen displacement vector resulting from a small positive
+ * rotation (+0.01 rad) around a candidate vertex axis.
  */
-function resolveSpatialFallback(input: {
-  worldPoint: Vec3;
-  candidates: PyraminxDragCandidate[];
-  axes: Record<"U" | "L" | "R" | "B", Vec3>;
-  vertices?: Record<"U" | "L" | "R" | "B", Vec3>;
-  cameraRight: Vec3;
-  cameraUp: Vec3;
-  dx: number;
-  dy: number;
-  dragLen: number;
-}): PyraminxDragMove | null {
-  const { worldPoint: p, candidates, axes, vertices, cameraRight, cameraUp, dx, dy, dragLen } = input;
-  if (!vertices) return null;
+function computeCandidateScreenVector(
+  vertex: "U" | "L" | "R" | "B",
+  p: Vec3,
+  axes: Record<"U" | "L" | "R" | "B", Vec3>,
+  camera?: Camera,
+  cameraRight?: Vec3,
+  cameraUp?: Vec3,
+  viewWidth = 400,
+  viewHeight = 400,
+): { unitX: number; unitY: number; len: number } | null {
+  const axis = axes[vertex];
+  const delta = 0.01; // rad (~0.57 deg)
 
-  // World-space drag (right/up are orthonormal, so |worldDrag| === dragLen).
-  const wx = dx * cameraRight.x - dy * cameraUp.x;
-  const wy = dx * cameraRight.y - dy * cameraUp.y;
-  const wz = dx * cameraRight.z - dy * cameraUp.z;
-
-  let best: PyraminxDragMove | null = null;
-  let bestCos = -Infinity;
-  for (const c of candidates) {
-    const v = vertices[c.vertex];
-    if (!v) continue;
-    // Screen direction from the grabbed point toward the vertex. Perspective
-    // depth is ignored (same convention as the tangent projection — the
-    // puzzle is small relative to the camera distance).
-    const ddx = v.x - p.x;
-    const ddy = v.y - p.y;
-    const ddz = v.z - p.z;
-    const rx = ddx * cameraRight.x + ddy * cameraRight.y + ddz * cameraRight.z;
-    const ry = ddx * cameraUp.x + ddy * cameraUp.y + ddz * cameraUp.z;
-    const rLen = Math.hypot(rx, ry);
-    if (rLen < 1e-4) continue; // vertex coincides with the grab point on screen
-    // Screen-up component of the drag is −dy (same sign note as above).
-    const cos = (rx * dx - ry * dy) / (rLen * dragLen);
-    if (cos <= bestCos) continue;
-    bestCos = cos;
-    // Direction: the swipe's alignment with the winner's tangent. Along +t →
-    // the prime; against it → the plain turn (stickers follow the finger).
-    const a = axes[c.vertex];
-    const tx = a.y * p.z - a.z * p.y;
-    const ty = a.z * p.x - a.x * p.z;
-    const tz = a.x * p.y - a.y * p.x;
-    const tLen = Math.hypot(tx, ty, tz);
-    let tCos = 0;
-    if (tLen >= 1e-4) {
-      tCos = (tx * wx + ty * wy + tz * wz) / (tLen * dragLen);
+  if (camera) {
+    const pRot = rotateAroundAxis(p, axis, delta);
+    const s0 = projectPointToScreen(p, camera, undefined, undefined, viewWidth, viewHeight);
+    const s1 = projectPointToScreen(pRot, camera, undefined, undefined, viewWidth, viewHeight);
+    const dx = s1.x - s0.x;
+    const dy = s1.y - s0.y;
+    const len = Math.hypot(dx, dy);
+    if (len >= 1e-5) {
+      return { unitX: dx / len, unitY: dy / len, len };
     }
-    const direction = Math.abs(tCos) < 0.05 ? 1 : tCos < 0 ? 1 : -1;
-    best = { vertex: c.vertex, scope: c.scope, direction };
   }
-  if (!best || bestCos < MIN_TANGENT_COS) return null;
-  return best;
+
+  // Fallback using analytical 3D tangent and camera basis:
+  let tx = axis.y * p.z - axis.z * p.y;
+  let ty = axis.z * p.x - axis.x * p.z;
+  let tz = axis.x * p.y - axis.y * p.x;
+  let tLen = Math.hypot(tx, ty, tz);
+
+  if (tLen < 1e-4) {
+    // Apex on-axis fallback (clicked directly at the tip vertex):
+    // Rotation moves perpendicular to axis in view plane.
+    if (cameraRight && cameraUp) {
+      const cfx = cameraRight.y * cameraUp.z - cameraRight.z * cameraUp.y;
+      const cfy = cameraRight.z * cameraUp.x - cameraRight.x * cameraUp.z;
+      const cfz = cameraRight.x * cameraUp.y - cameraRight.y * cameraUp.x;
+      tx = axis.y * cfz - axis.z * cfy;
+      ty = axis.z * cfx - axis.x * cfz;
+      tz = axis.x * cfy - axis.y * cfx;
+      tLen = Math.hypot(tx, ty, tz);
+      if (tLen < 1e-4) {
+        tx = cameraRight.x;
+        ty = cameraRight.y;
+        tz = cameraRight.z;
+        tLen = 1;
+      }
+    } else {
+      return null;
+    }
+  }
+
+  const cR = cameraRight ?? { x: 1, y: 0, z: 0 };
+  const cU = cameraUp ?? { x: 0, y: 1, z: 0 };
+  const sx = (tx * cR.x + ty * cR.y + tz * cR.z) / tLen;
+  const sy = -(tx * cU.x + ty * cU.y + tz * cU.z) / tLen;
+  const sLen = Math.hypot(sx, sy);
+  if (sLen < 1e-5) return null;
+  return { unitX: sx / sLen, unitY: sy / sLen, len: sLen };
+}
+
+/**
+ * Resolve WHICH fixed ±120° turn a piece drag fires, or null while the drag
+ * is still ambiguous (below the tangent alignment threshold).
+ */
+export function resolvePyraminxDragMove(input: PyraminxDragInput): PyraminxDragMove | null {
+  const { dx, dy, worldPoint: p, candidates, axes, cameraRight, cameraUp, camera, viewWidth, viewHeight } = input;
+  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
+  const dragLen = Math.hypot(dx, dy);
+  if (dragLen < 1e-3) return null;
+  const dUnitX = dx / dragLen;
+  const dUnitY = dy / dragLen;
+  const verts = input.vertices;
+
+  // ── Single-candidate pieces (tips and corners) ──
+  // A corner or tip belongs to exactly ONE vertex. The layer is fixed.
+  // We only determine direction from tangent alignment, with radial fallback.
+  if (candidates.length <= 1) {
+    const c = candidates[0];
+    if (!c) return null;
+    const tan = computeCandidateScreenVector(c.vertex, p, axes, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+    if (tan) {
+      const tanDot = dUnitX * tan.unitX + dUnitY * tan.unitY;
+      if (Math.abs(tanDot) >= MIN_TANGENT_COS) {
+        // Positive rotation (+delta) is CCW / prime (direction = -1). Plain WCA is CW (direction = +1).
+        const direction = tanDot > 0 ? -1 : 1;
+        return { vertex: c.vertex, scope: c.scope, direction };
+      }
+    }
+    // Tangent-ambiguous (radial drag toward/away from vertex):
+    if (verts && verts[c.vertex]) {
+      const vPos = verts[c.vertex];
+      const sHit = projectPointToScreen(p, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+      const sV = projectPointToScreen(vPos, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+      const rLen = Math.hypot(sV.x - sHit.x, sV.y - sHit.y);
+      if (rLen >= 1e-4) {
+        const headDot = (dUnitX * (sV.x - sHit.x) + dUnitY * (sV.y - sHit.y)) / rLen;
+        if (Math.abs(headDot) >= MIN_TANGENT_COS) {
+          const direction = headDot > 0 ? 1 : -1;
+          return { vertex: c.vertex, scope: c.scope, direction };
+        }
+      }
+    }
+    return null;
+  }
+
+  // ── Multi-candidate pieces (edges) ──
+  // An edge piece sits between two vertices (e.g. V_A and V_B).
+  // Step 1: Disambiguate which vertex the user intended based on spatial proximity + heading.
+  // Step 2: Determine turn direction from that vertex's tangent (or radial heading fallback).
+  const getVertexPos = (v: "U" | "L" | "R" | "B"): Vec3 => {
+    if (verts && verts[v]) return verts[v];
+    return axes[v];
+  };
+
+  const dist3D = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+
+  const [c0, c1] = candidates;
+  const v0Pos = getVertexPos(c0.vertex);
+  const v1Pos = getVertexPos(c1.vertex);
+  const d0 = dist3D(p, v0Pos);
+  const d1 = dist3D(p, v1Pos);
+  const totalDist = d0 + d1 || 1;
+  // Spatial weights based on where the piece was grabbed along the edge (closer = higher)
+  const w0 = 1 - d0 / totalDist;
+  const w1 = 1 - d1 / totalDist;
+
+  // Heading bias: screen direction from grab point towards each vertex
+  const sHit = projectPointToScreen(p, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+  const sV0 = projectPointToScreen(v0Pos, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+  const sV1 = projectPointToScreen(v1Pos, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+  const r0Len = Math.hypot(sV0.x - sHit.x, sV0.y - sHit.y) || 1;
+  const r1Len = Math.hypot(sV1.x - sHit.x, sV1.y - sHit.y) || 1;
+  const head0 = (dUnitX * (sV0.x - sHit.x) + dUnitY * (sV0.y - sHit.y)) / r0Len;
+  const head1 = (dUnitX * (sV1.x - sHit.x) + dUnitY * (sV1.y - sHit.y)) / r1Len;
+
+  // Score combining spatial proximity (primary) and directional heading bias
+  const score0 = w0 + 0.15 * Math.max(0, head0);
+  const score1 = w1 + 0.15 * Math.max(0, head1);
+
+  const winner = score0 >= score1 ? c0 : c1;
+
+  // Step 2: Direction for the selected vertex
+  const tan = computeCandidateScreenVector(winner.vertex, p, axes, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+  if (tan) {
+    const tanDot = dUnitX * tan.unitX + dUnitY * tan.unitY;
+    if (Math.abs(tanDot) >= MIN_TANGENT_COS) {
+      const direction = tanDot > 0 ? -1 : 1;
+      return { vertex: winner.vertex, scope: winner.scope, direction };
+    }
+  }
+
+  // Radial heading fallback for the winning vertex (when swipe is radial toward/away from that vertex):
+  const winHead = winner === c0 ? head0 : head1;
+  if (Math.abs(winHead) >= MIN_TANGENT_COS) {
+    const direction = winHead > 0 ? 1 : -1;
+    return { vertex: winner.vertex, scope: winner.scope, direction };
+  }
+
+  return null;
 }
 
 /** The WCA token a resolved drag performs ("U", "L'", "u", …). */

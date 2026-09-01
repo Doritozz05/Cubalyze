@@ -63,6 +63,10 @@ export interface PyraminxPick {
   /** Piece slot position in the WORLD frame. */
   position: Vector3;
   candidates: PyraminxPickCandidate[];
+  /** The face of the pyraminx hit (if known). */
+  face?: PyraminxVertex;
+  /** World-space outward normal of the hit face. */
+  normal?: Vector3;
 }
 
 /**
@@ -389,15 +393,45 @@ export class PyraminxEngine {
     });
     const hits = raycaster.intersectObjects(meshes, false);
     if (hits.length === 0) return null;
+
+    const rayDir = raycaster.ray.direction.clone().normalize();
+    let hit: (typeof hits)[0] | null = null;
+    let fallbackHit: (typeof hits)[0] | null = null;
+
+    for (const h of hits) {
+      if (!h.face) continue;
+      const worldNormal = new Vector3(h.face.normal.x, h.face.normal.y, h.face.normal.z);
+      h.object.updateWorldMatrix(true, false);
+      worldNormal.transformDirection(h.object.matrixWorld);
+      // Front-facing: normal points toward the camera (against the ray direction)
+      if (worldNormal.dot(rayDir) >= -0.01) continue;
+
+      const isSticker = Boolean(h.object.userData?.pyraminxSticker);
+      if (isSticker) {
+        hit = h;
+        break;
+      }
+      if (!fallbackHit) fallbackHit = h;
+    }
+    if (!hit) hit = fallbackHit;
+    if (!hit) return null;
+
     // Walk up from the hit mesh to its piece Group (a direct child of root).
-    let node: Object3D | null = hits[0].object;
+    let node: Object3D | null = hit.object;
     while (node && node.parent !== this.model.root) node = node.parent;
     if (!node) return null;
     const piece = this.model.pieces.find((p) => p.mesh === node);
     if (!piece) return null;
 
     // Use the exact 3D surface point clicked on the piece
-    const hitPoint = hits[0].point.clone();
+    const hitPoint = hit.point.clone();
+    const hitFace = hit.object.userData?.face as PyraminxVertex | undefined;
+    let hitNormal: Vector3 | undefined;
+    if (hit.face) {
+      hitNormal = new Vector3(hit.face.normal.x, hit.face.normal.y, hit.face.normal.z);
+      hitNormal.transformDirection(hit.object.matrixWorld).normalize();
+    }
+
     if (piece.kind === 'edge') {
       const def = PYRAMINX_EDGE_SLOTS[piece.current];
       return {
@@ -407,6 +441,8 @@ export class PyraminxEngine {
           { vertex: def.vertices[0], scope: 'layer' },
           { vertex: def.vertices[1], scope: 'layer' },
         ],
+        face: hitFace,
+        normal: hitNormal,
       };
     }
     const vertex = PYRAMINX_VERTICES_ORDER[piece.current];
@@ -416,6 +452,8 @@ export class PyraminxEngine {
       candidates: [
         { vertex, scope: piece.kind === 'tip' ? 'tip' : 'layer' },
       ],
+      face: hitFace,
+      normal: hitNormal,
     };
   }
 

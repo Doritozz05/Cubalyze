@@ -137,37 +137,64 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
     ).toBeNull();
   });
 
-  it("an edge's endpoint tangents are anti-parallel — the swipe picks WHICH endpoint turns", () => {
-    // Real UL edge slot position (slot 1): p = (a_U + a_L)/3, so tU = a_U×p
-    // and tL = a_L×p are EXACTLY anti-parallel. |cos| would tie and only the
-    // first candidate could ever fire (the sticker felt like it could only
-    // go one way); the SIGNED screen alignment breaks the tie with the swipe
-    // direction, so the grabbed stickers always follow the finger and BOTH
-    // endpoints of an edge are reachable by drag.
-    const p = {
-      x: -Math.SQRT2 / 9,
-      y: Math.SQRT2 / (3 * Math.sqrt(3)),
-      z: 2 / 9,
+  it("an edge resolves bidirectionally and picks the layer closer to the grip", () => {
+    // An edge between U and L has two halves.
+    // The U half (closer to U) turns layer U bidirectionally (+tU -> U', -tU -> U).
+    // The L half (closer to L) turns layer L bidirectionally (-tU -> L', +tU -> L).
+    const pNearU = {
+      x: (-Math.SQRT2 / 9) * 0.7,
+      y: (Math.SQRT2 / (3 * Math.sqrt(3))) * 0.7,
+      z: 0.5, // closer to U at z=1
+    };
+    const pNearL = {
+      x: -Math.SQRT2 / 3 * 0.8,
+      y: Math.SQRT2 / Math.sqrt(3) * 0.8,
+      z: -0.2, // closer to L
     };
     const candidates: PyraminxDragCandidate[] = [
       { vertex: "U", scope: "layer" },
       { vertex: "L", scope: "layer" },
     ];
-    const tU = norm(tangent(AXES.U, p));
+    const vertices = {
+      U: { x: AXES.U.x, y: AXES.U.y, z: AXES.U.z },
+      L: { x: AXES.L.x, y: AXES.L.y, z: AXES.L.z },
+      R: { x: AXES.R.x, y: AXES.R.y, z: AXES.R.z },
+      B: { x: AXES.B.x, y: AXES.B.y, z: AXES.B.z },
+    };
+    const tU = norm(tangent(AXES.U, pNearU));
 
-    // Drag along U's projected tangent (worldDrag = dx·right − dy·up) = the
-    // +120° counter-clockwise motion of the U turn → U prime.
-    const dragU = resolve({ dx: tU.x * 50, dy: -tU.y * 50, p, candidates });
+    // Dragging near U:
+    // Along +tU -> U prime
+    const dragU = resolvePyraminxDragMove({
+      dx: tU.x * 50, dy: -tU.y * 50, worldPoint: pNearU, candidates, axes: AXES, vertices, ...CAM,
+    });
     expect(dragU?.vertex).toBe("U");
     expect(dragU?.direction).toBe(-1);
     expect(pyraminxDragToken(dragU!)).toBe("U'");
 
-    // The same swipe line the other way is the +120° motion of the L turn
-    // (tL = −tU) → the sticker follows the finger around the OTHER endpoint.
-    const dragUInv = resolve({ dx: -tU.x * 50, dy: tU.y * 50, p, candidates });
-    expect(dragUInv?.vertex).toBe("L");
-    expect(dragUInv?.direction).toBe(-1);
-    expect(pyraminxDragToken(dragUInv!)).toBe("L'");
+    // Along -tU -> U plain (exact inverse swipe produces inverse move!)
+    const dragUInv = resolvePyraminxDragMove({
+      dx: -tU.x * 50, dy: tU.y * 50, worldPoint: pNearU, candidates, axes: AXES, vertices, ...CAM,
+    });
+    expect(dragUInv?.vertex).toBe("U");
+    expect(dragUInv?.direction).toBe(1);
+    expect(pyraminxDragToken(dragUInv!)).toBe("U");
+
+    // Dragging near L:
+    const tL = norm(tangent(AXES.L, pNearL));
+    const dragL = resolvePyraminxDragMove({
+      dx: tL.x * 50, dy: -tL.y * 50, worldPoint: pNearL, candidates, axes: AXES, vertices, ...CAM,
+    });
+    expect(dragL?.vertex).toBe("L");
+    expect(dragL?.direction).toBe(-1);
+    expect(pyraminxDragToken(dragL!)).toBe("L'");
+
+    const dragLInv = resolvePyraminxDragMove({
+      dx: -tL.x * 50, dy: tL.y * 50, worldPoint: pNearL, candidates, axes: AXES, vertices, ...CAM,
+    });
+    expect(dragLInv?.vertex).toBe("L");
+    expect(dragLInv?.direction).toBe(1);
+    expect(pyraminxDragToken(dragLInv!)).toBe("L");
   });
 
   it("fires an arc-following drag even when the camera foreshortens the tangent", () => {
