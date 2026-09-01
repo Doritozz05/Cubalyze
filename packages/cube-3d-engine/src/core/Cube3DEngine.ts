@@ -34,6 +34,19 @@ export interface Cube3DEngineOptions {
   onContextEvicted?: () => void;
 }
 
+export type ActiveStickeringState =
+  | { type: 'phase'; mask: PhaseMask; grayColor: string }
+  | { type: 'f2l'; grayColor: string; pair?: { homeC: number; homeE: number } | null }
+  | { type: 'layer'; axis: 'x' | 'y' | 'z'; layerValue: number; grayColor: string }
+  | null;
+
+export interface GrayedStickerRecord {
+  mesh: Mesh;
+  /** -1 for single-material mesh (stickers), or >= 0 for multi-material array index (stickerless faces) */
+  materialIndex: number;
+  originalMat: Material;
+}
+
 export class Cube3DEngine {
   public sceneManager!: SceneManager;
   public factory!: CubeMeshFactory;
@@ -99,8 +112,10 @@ export class Cube3DEngine {
   /** Exponential decay per ~16.7ms frame — ~12% velocity loss per frame. */
   private readonly cameraMomentumDecay = 0.88;
 
-  /** Track grayed-out sticker meshes so we can restore + dispose them. */
-  private grayedStickers: { mesh: Mesh; originalMat: Material }[] = [];
+  /** Track grayed-out sticker meshes & multi-material faces so we can restore + dispose them. */
+  private grayedStickers: GrayedStickerRecord[] = [];
+  /** Active stickering state to automatically preserve and re-apply upon skin/style updates. */
+  private activeStickeringState: ActiveStickeringState = null;
 
   constructor(options: Cube3DEngineOptions) {
     const {
@@ -817,6 +832,11 @@ export class Cube3DEngine {
   }
 
   public updateStyle(newStyle: Partial<CubeStyleOptions>): void {
+    const hasActiveStickering = this.activeStickeringState !== null;
+    if (hasActiveStickering) {
+      this.clearLayerGray(true);
+    }
+
     if (this.factory) {
       this.factory.updateStyle(newStyle);
     }
@@ -825,15 +845,22 @@ export class Cube3DEngine {
       const scale = newStyle.floatingStickers ? 0.78 : 1.0;
       this.model.root.scale.setScalar(scale);
     }
+
+    // Automatically re-apply the active stickering mask to the new skin/materials
+    if (hasActiveStickering) {
+      this.applyCurrentStickeringState();
+    }
+
     this.requestRender();
   }
 
   // ── Stickering system ──────────────────────────────────────────────────
   //
-  // Unified, reusable visualization masking. Three public entry points share
+  // Unified, reusable visualization masking for all skin types (stickered,
+  // stickerless, coreless, translucent). Three public entry points share
   // ONE private helper (`grayCubieGroup`) and ONE restore path
-  // (`clearLayerGray`), so there is a single source of truth for sticker
-  // graying across OLL / PLL / F2L / Cross / XCross / EOCross visualizations:
+  // (`clearLayerGray`), and automatically preserve active masks across
+  // runtime skin / style updates:
   //
   //   setLayerStickerGray(axis, value)   — gray a whole face layer (U-layer)
   //   setF2LMaskGray(grayColor, pair)    — gray U-layer except the case pair
@@ -842,16 +869,36 @@ export class Cube3DEngine {
   // All three push into `grayedStickers` and are restored by `clearLayerGray`.
 
   /**
-   * Restore all previously-grayed sticker materials to their original
+   * Restore all previously-grayed sticker & face materials to their original
    * colors and dispose the cloned gray materials.
+   *
+   * @param keepActiveState When true, preserves the recorded activeStickeringState
+   *   so it can be re-applied after a style/skin rebuild.
    */
-  public clearLayerGray(): void {
-    for (const { mesh, originalMat } of this.grayedStickers) {
-      const current = mesh.material;
-      mesh.material = originalMat;
-      // Dispose the cloned gray material to avoid GPU memory leak
-      if (current !== originalMat && !Array.isArray(current)) {
-        current.dispose();
+  public clearLayerGray(keepActiveState = false): void {
+    if (!keepActiveState) {
+      this.activeStickeringState = null;
+    }
+
+    for (const { mesh, materialIndex, originalMat } of this.grayedStickers) {
+      if (materialIndex === -1) {
+        const current = mesh.material;
+        mesh.material = originalMat;
+        // Dispose the cloned gray material to avoid GPU memory leak
+        if (current !== originalMat && !Array.isArray(current)) {
+          current.dispose();
+        }
+      } else {
+        // Multi-material array (stickerless core mesh: [R, L, U, D, F, B])
+        const currentArray = mesh.material;
+        if (Array.isArray(currentArray)) {
+          const currentMat = currentArray[materialIndex];
+          currentArray[materialIndex] = originalMat;
+          mesh.material = [...currentArray];
+          if (currentMat && currentMat !== originalMat) {
+            currentMat.dispose();
+          }
+        }
       }
     }
     this.grayedStickers = [];
@@ -859,36 +906,69 @@ export class Cube3DEngine {
   }
 
   /**
-   * Gray out all sticker meshes of a single cubie Group.
+   * Gray out all sticker/exposed-face materials of a single cubie Group.
    *
-   * This is the shared primitive for the stickering system: it clones each
-   * sticker material, sets it to `grayColor`, records the original for later
-   * restoration via {@link clearLayerGray}, and skips non-sticker meshes
-   * (cores use multi-material / non-MeshBasicMaterial). Kept private so the
-   * three public entry points remain the single, documented API.
+   * Supports:
+   * - Stickered / Coreless / Translucent: grays child sticker meshes (MeshBasicMaterial).
+   * - Stickerless: grays exposed colored face materials in the core mesh's 6-material array
+   *   while preserving dark internal seam materials.
    */
   private grayCubieGroup(cubieGroup: Group, grayColor: string): void {
     cubieGroup.children.forEach((child) => {
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
       const mat = mesh.material;
-      if (Array.isArray(mat)) return; // skip multi-material cores
-      if (!(mat as MeshBasicMaterial).isMeshBasicMaterial) return; // only stickers
-      this.grayedStickers.push({ mesh, originalMat: mat });
-      mesh.material = (mat as MeshBasicMaterial).clone();
-      (mesh.material as MeshBasicMaterial).color.set(grayColor);
+
+      // Multi-material array (e.g. stickerless core mesh with 6 face materials)
+      if (Array.isArray(mat)) {
+        const matArray = [...mat];
+        let changed = false;
+
+        matArray.forEach((subMat, index) => {
+          if (!subMat) return;
+          // In stickerless mode, exposed outer faces have MeshBasicMaterial (colored)
+          // while interior faces have seamMaterial (MeshStandardMaterial).
+          // We gray the exposed colored faces and leave dark seams intact.
+          if ((subMat as MeshBasicMaterial).isMeshBasicMaterial) {
+            this.grayedStickers.push({ mesh, materialIndex: index, originalMat: subMat });
+            const cloned = (subMat as MeshBasicMaterial).clone();
+            cloned.color.set(grayColor);
+            matArray[index] = cloned;
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          mesh.material = matArray;
+        }
+        return;
+      }
+
+      // Single material (sticker panels in stickered/coreless/translucent skins)
+      if ((mat as MeshBasicMaterial).isMeshBasicMaterial) {
+        this.grayedStickers.push({ mesh, materialIndex: -1, originalMat: mat });
+        const cloned = (mat as MeshBasicMaterial).clone();
+        cloned.color.set(grayColor);
+        mesh.material = cloned;
+      }
     });
+  }
+
+  private applyCurrentStickeringState(): void {
+    if (!this.activeStickeringState) return;
+    if (this.activeStickeringState.type === 'phase') {
+      this.applyPhaseStickeringDirect(this.activeStickeringState.mask, this.activeStickeringState.grayColor);
+    } else if (this.activeStickeringState.type === 'f2l') {
+      this.applyF2LMaskGrayDirect(this.activeStickeringState.grayColor, this.activeStickeringState.pair);
+    } else if (this.activeStickeringState.type === 'layer') {
+      this.applyLayerStickerGrayDirect(this.activeStickeringState.axis, this.activeStickeringState.layerValue, this.activeStickeringState.grayColor);
+    }
   }
 
   /**
    * Gray out all sticker meshes on cubies belonging to a specific
    * layer (face + value). Used for F2L visualization where the
    * U (yellow) layer should appear gray to focus on the first two layers.
-   *
-   * NOTE: Prior to the stickering-system unification, this method cloned the
-   * sticker material but never applied `grayColor` (a no-op bug). It now grays
-   * correctly via the shared `grayCubieGroup` helper. No callers relied
-   * on the old no-op behavior.
    *
    * Call `clearLayerGray()` before re-syncing facelets to restore
    * original colors.
@@ -901,6 +981,16 @@ export class Cube3DEngine {
     axis: 'x' | 'y' | 'z',
     layerValue: number,
     grayColor: string = '#505050',
+  ): void {
+    this.clearLayerGray(true);
+    this.activeStickeringState = { type: 'layer', axis, layerValue, grayColor };
+    this.applyLayerStickerGrayDirect(axis, layerValue, grayColor);
+  }
+
+  private applyLayerStickerGrayDirect(
+    axis: 'x' | 'y' | 'z',
+    layerValue: number,
+    grayColor: string,
   ): void {
     if (!this.model || !this.factory) return;
     const cubies = this.model.getCubiesByFace(axis, layerValue);
@@ -920,18 +1010,21 @@ export class Cube3DEngine {
    *   - grayed: the whole U layer except the pair, and any F2L piece that is
    *     out of place (e.g. the displaced corner of a trapped-slot case).
    *
-   * A cubie is part of the pair when its home grid position (initialGridX/Y/Z)
-   * matches the home position of `pair.homeC` (corner) or `pair.homeE` (edge).
-   * A cubie is "in its place" when its current grid position (gridX/Y/Z)
-   * equals its home position. When no pair is given (or the case is 2×2), the
-   * whole U layer is grayed (legacy behavior).
-   *
    * @param grayColor CSS color string (default '#505050')
    * @param pair The case pair piece IDs ({@link CORNER_HOME_POSITION} / {@link EDGE_HOME_POSITION}
    *   indices) — the canonical F2L pair (see casePresentation.F2L_CASE_PAIR).
    */
   public setF2LMaskGray(
     grayColor: string = '#505050',
+    pair?: { homeC: number; homeE: number } | null,
+  ): void {
+    this.clearLayerGray(true);
+    this.activeStickeringState = { type: 'f2l', grayColor, pair };
+    this.applyF2LMaskGrayDirect(grayColor, pair);
+  }
+
+  private applyF2LMaskGrayDirect(
+    grayColor: string,
     pair?: { homeC: number; homeE: number } | null,
   ): void {
     if (!this.model || !this.factory) return;
@@ -995,11 +1088,15 @@ export class Cube3DEngine {
    * @param grayColor CSS color string (default '#505050').
    */
   public setPhaseStickering(mask: PhaseMask, grayColor: string = '#505050'): void {
+    this.clearLayerGray(true);
+    this.activeStickeringState = { type: 'phase', mask, grayColor };
+    this.applyPhaseStickeringDirect(mask, grayColor);
+  }
+
+  private applyPhaseStickeringDirect(mask: PhaseMask, grayColor: string): void {
     if (!this.model || !this.factory) return;
 
     // Collect the home grid positions of every target piece in the mask.
-    // A cubie's initialGridX/Y/Z identifies which piece it permanently holds;
-    // even after scrambling the cubie still carries that piece.
     const targetKeys = new Set<string>();
     if (mask.edges) {
       for (const rule of mask.edges) {
