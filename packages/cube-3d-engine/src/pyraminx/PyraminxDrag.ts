@@ -109,12 +109,16 @@ function projectPointToScreen(
   viewWidth = 400,
   viewHeight = 400,
 ): { x: number; y: number } {
-  if (camera) {
-    const v = new Vector3(p.x, p.y, p.z).project(camera);
-    return {
-      x: ((v.x + 1) / 2) * viewWidth,
-      y: ((1 - v.y) / 2) * viewHeight,
-    };
+  if (camera && (camera as unknown as { matrixWorldInverse?: { elements?: number[] } }).matrixWorldInverse?.elements) {
+    try {
+      const v = new Vector3(p.x, p.y, p.z).project(camera);
+      return {
+        x: ((v.x + 1) / 2) * viewWidth,
+        y: ((1 - v.y) / 2) * viewHeight,
+      };
+    } catch {
+      // Fallback below
+    }
   }
   if (cameraRight && cameraUp) {
     return {
@@ -142,15 +146,19 @@ function computeCandidateScreenVector(
   const axis = axes[vertex];
   const delta = 0.01; // rad (~0.57 deg)
 
-  if (camera) {
-    const pRot = rotateAroundAxis(p, axis, delta);
-    const s0 = projectPointToScreen(p, camera, undefined, undefined, viewWidth, viewHeight);
-    const s1 = projectPointToScreen(pRot, camera, undefined, undefined, viewWidth, viewHeight);
-    const dx = s1.x - s0.x;
-    const dy = s1.y - s0.y;
-    const len = Math.hypot(dx, dy);
-    if (len >= 1e-5) {
-      return { unitX: dx / len, unitY: dy / len, len };
+  if (camera && (camera as unknown as { matrixWorldInverse?: { elements?: number[] } }).matrixWorldInverse?.elements) {
+    try {
+      const pRot = rotateAroundAxis(p, axis, delta);
+      const s0 = projectPointToScreen(p, camera, undefined, undefined, viewWidth, viewHeight);
+      const s1 = projectPointToScreen(pRot, camera, undefined, undefined, viewWidth, viewHeight);
+      const dx = s1.x - s0.x;
+      const dy = s1.y - s0.y;
+      const len = Math.hypot(dx, dy);
+      if (len >= 1e-5) {
+        return { unitX: dx / len, unitY: dy / len, len };
+      }
+    } catch {
+      // Fallback below
     }
   }
 
@@ -266,20 +274,27 @@ export function resolvePyraminxDragMove(input: PyraminxDragInput): PyraminxDragM
   const head0 = (dUnitX * (sV0.x - sHit.x) + dUnitY * (sV0.y - sHit.y)) / r0Len;
   const head1 = (dUnitX * (sV1.x - sHit.x) + dUnitY * (sV1.y - sHit.y)) / r1Len;
 
-  // Score combining spatial proximity (primary) and directional heading bias
-  const score0 = w0 + 0.15 * Math.max(0, head0);
-  const score1 = w1 + 0.15 * Math.max(0, head1);
+  // Compute rotation tangents for BOTH candidate layers:
+  const tan0 = computeCandidateScreenVector(c0.vertex, p, axes, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+  const tan1 = computeCandidateScreenVector(c1.vertex, p, axes, camera, cameraRight, cameraUp, viewWidth, viewHeight);
+
+  const tanDot0 = tan0 ? dUnitX * tan0.unitX + dUnitY * tan0.unitY : 0;
+  const tanDot1 = tan1 ? dUnitX * tan1.unitX + dUnitY * tan1.unitY : 0;
+
+  const align0 = Math.abs(tanDot0);
+  const align1 = Math.abs(tanDot1);
+
+  // Composite score: tangential alignment (primary intention) + spatial position along the edge
+  // Using |tanDot| guarantees strict invertibility: reversing drag vector (-dx, -dy) produces the exact same score.
+  const score0 = align0 + 0.35 * (w0 - 0.5);
+  const score1 = align1 + 0.35 * (w1 - 0.5);
 
   const winner = score0 >= score1 ? c0 : c1;
+  const winDot = winner === c0 ? tanDot0 : tanDot1;
 
-  // Step 2: Direction for the selected vertex
-  const tan = computeCandidateScreenVector(winner.vertex, p, axes, camera, cameraRight, cameraUp, viewWidth, viewHeight);
-  if (tan) {
-    const tanDot = dUnitX * tan.unitX + dUnitY * tan.unitY;
-    if (Math.abs(tanDot) >= MIN_TANGENT_COS) {
-      const direction = tanDot > 0 ? -1 : 1;
-      return { vertex: winner.vertex, scope: winner.scope, direction };
-    }
+  if (Math.abs(winDot) >= MIN_TANGENT_COS) {
+    const direction = winDot > 0 ? -1 : 1;
+    return { vertex: winner.vertex, scope: winner.scope, direction };
   }
 
   // Radial heading fallback for the winning vertex (when swipe is radial toward/away from that vertex):

@@ -354,11 +354,8 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
   // consumed); remap them to the current view frame for display, exactly
   // like the cube's displayErrorMoves.
   const displayErrorMoves = useMemo(
-    () =>
-      scrambleFollowsCube
-        ? validation.errorMoves.map((m) => displayPyraminxTokenThroughGrip(m, grip))
-        : validation.errorMoves,
-    [validation.errorMoves, grip, scrambleFollowsCube],
+    () => validation.errorMoves.map((m) => displayPyraminxTokenThroughGrip(m, grip)),
+    [validation.errorMoves, grip],
   );
 
   const unavailable = initFailed || contextEvicted;
