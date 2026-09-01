@@ -30,6 +30,37 @@ export interface InfiniteF2LViewProps {
   onBack: () => void;
 }
 
+const STORAGE_KEY = "cubeforge:infinite-f2l:options";
+
+const DEFAULT_OPTIONS: Required<InfiniteF2LOptions> = {
+  crossColor: "white",
+  concurrentPairs: 2,
+  allowedSlots: ["FR", "FL", "BL", "BR"],
+  allowTrapped: true,
+  enableSound: false,
+};
+
+function loadStoredOptions(): Required<InfiniteF2LOptions> {
+  if (typeof window === "undefined") return DEFAULT_OPTIONS;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_OPTIONS;
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_OPTIONS, ...parsed };
+  } catch {
+    return DEFAULT_OPTIONS;
+  }
+}
+
+function saveStoredOptions(opts: Required<InfiniteF2LOptions>): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(opts));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
 export function InfiniteF2LView({
   phaseName,
   onBack,
@@ -37,14 +68,8 @@ export function InfiniteF2LView({
   const { t } = useTranslation("training");
   const isConnected = useStore(connectionStore, (s) => s.status === "connected");
 
-  // Setup options
-  const [options, setOptions] = useState<Required<InfiniteF2LOptions>>({
-    crossColor: "white",
-    concurrentPairs: 2,
-    allowedSlots: ["FR", "FL", "BL", "BR"],
-    allowTrapped: true,
-    enableSound: false,
-  });
+  // Setup options initialized from persistent localStorage
+  const [options, setOptions] = useState<Required<InfiniteF2LOptions>>(loadStoredOptions);
 
   const [isStarted, setIsStarted] = useState(false);
 
@@ -89,6 +114,7 @@ export function InfiniteF2LView({
 
   const handleStartOptions = useCallback((newOptions: Required<InfiniteF2LOptions>) => {
     setOptions(newOptions);
+    saveStoredOptions(newOptions);
     setIsStarted(true);
     restart(newOptions);
   }, [restart]);
