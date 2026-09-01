@@ -590,10 +590,9 @@ export class PyraminxEngine {
 
   /**
    * Smooth tilt rotation downward/upward:
-   * Uses the tetrahedral group symmetry C2 rotation (180° around the symmetry axis
-   * (0, 1/√3, -√(2/3))), which swaps the top apex with the rear base vertex and
-   * preserves the canonical upright pose (flat horizontal base at y = -1/3,
-   * apex at (0, 1, 0), and straight horizontal front edge parallel to the screen).
+   * Rotates 180° around the horizontal X axis (PYRAMINX_TILT_AXIS = (1, 0, 0)),
+   * cleanly inverting the Pyraminx so the base is on top (y = +1/3) and the apex
+   * points down (y = -1), giving a direct, canonical view of the bottom face.
    */
   public rotatePuzzleX(direction: 1 | -1, durationMs = 220): Promise<void> {
     const rot = new Quaternion().setFromAxisAngle(PYRAMINX_TILT_AXIS, direction * Math.PI);

@@ -267,30 +267,25 @@ export const PYRAMINX_CANONICAL_QUAT = new Quaternion(
 export const TETRAHEDRAL_TILT_ANGLE = Math.acos(-1 / 3);
 
 /**
- * Canonical C2 symmetry tilt axis in the vertical X=0 plane connecting the
- * midpoint of the top-to-rear edge and the midpoint of the front horizontal edge.
- * A 180° rotation around this axis swaps the apex with the rear base vertex,
- * preserving the canonical upright pose (flat horizontal base at y = -1/3,
- * apex at (0, 1, 0), and straight horizontal front edge).
+ * Canonical tilt axis: horizontal X axis (1, 0, 0).
+ * A 180° rotation around this axis inverts the Pyraminx downward so the apex
+ * points down (y = -1) and the flat base sits on top (y = +1/3), clearly
+ * exposing the bottom face to the camera in a clean, canonical orientation.
  */
-export const PYRAMINX_TILT_AXIS = new Vector3(
-  0,
-  1 / Math.sqrt(3),
-  -Math.sqrt(2 / 3),
-).normalize();
+export const PYRAMINX_TILT_AXIS = new Vector3(1, 0, 0);
 
 /**
- * Compute the 12 canonical pose quaternions of the Pyraminx corresponding to
- * the A₄ rotational symmetry group of the regular tetrahedron.
+ * Compute the 6 canonical pose quaternions of the Pyraminx corresponding to
+ * the 3 upright poses (apex on top, base flat at y = -1/3) and 3 inverted poses
+ * (base on top at y = +1/3, apex pointing down at y = -1).
  *
- * Poses 0..5 correspond directly to the 6 UI poses:
+ * Poses:
  *   - Pose 0: Canonical upright (apex U on top, base flat)
  *   - Pose 1: rotatePuzzleY(1) (120° drone rotation around Y)
  *   - Pose 2: rotatePuzzleY(2) (240° drone rotation around Y)
- *   - Pose 3: rotatePuzzleX(1) from Pose 0 (180° C2 tilt: apex B on top)
- *   - Pose 4: rotatePuzzleX(1) from Pose 1 (180° C2 tilt)
- *   - Pose 5: rotatePuzzleX(1) from Pose 2 (180° C2 tilt)
- * Poses 6..11 complete the 12-element orbit (poses with apex L or R on top).
+ *   - Pose 3: rotatePuzzleX(1) from Pose 0 (180° X tilt: base on top, apex down)
+ *   - Pose 4: rotatePuzzleY(1) from Pose 3 (120° drone rotation around Y)
+ *   - Pose 5: rotatePuzzleY(2) from Pose 3 (240° drone rotation around Y)
  */
 export function computePyraminxGripQuaternions(): Quaternion[] {
   const qY = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (120 * Math.PI) / 180);
@@ -300,8 +295,8 @@ export function computePyraminxGripQuaternions(): Quaternion[] {
   const p1 = qY.clone().multiply(p0).normalize();
   const p2 = qY.clone().multiply(p1).normalize();
   const p3 = qX.clone().multiply(p0).normalize();
-  const p4 = qX.clone().multiply(p1).normalize();
-  const p5 = qX.clone().multiply(p2).normalize();
+  const p4 = qY.clone().multiply(p3).normalize();
+  const p5 = qY.clone().multiply(p4).normalize();
 
   const poses = [p0, p1, p2, p3, p4, p5];
 
@@ -421,18 +416,33 @@ export function computePyraminxGripMaps(): Record<PyraminxVertex, PyraminxVertex
       v,
       p: world(v),
     }));
-    const top = tips.reduce((a, b) => (sU(a.p) > sU(b.p) ? a : b)).v;
-    const base = tips.filter((t) => t.v !== top);
-    const back = base.reduce((a, b) => (depth(a.p) > depth(b.p) ? a : b)).v;
-    const front = base.filter((t) => t.v !== back);
-    const left = front.reduce((a, b) => (sR(a.p) < sR(b.p) ? a : b)).v;
-    const rightVertex = front.reduce((a, b) => (sR(a.p) > sR(b.p) ? a : b)).v;
-    return { U: top, L: left, R: rightVertex, B: back };
+
+    const topByY = tips.reduce((a, b) => (a.p.y > b.p.y ? a : b));
+    const isUpright = topByY.p.y > 0.5;
+
+    if (isUpright) {
+      const top = topByY.v;
+      const base = tips.filter((t) => t.v !== top);
+      const back = base.reduce((a, b) => (depth(a.p) > depth(b.p) ? a : b)).v;
+      const front = base.filter((t) => t.v !== back);
+      const left = front.reduce((a, b) => (sR(a.p) < sR(b.p) ? a : b)).v;
+      const rightVertex = front.reduce((a, b) => (sR(a.p) > sR(b.p) ? a : b)).v;
+      return { U: top, L: left, R: rightVertex, B: back };
+    } else {
+      // Inverted pose: apex is at the bottom (y ≈ -1), base is on top (y ≈ +1/3)
+      const bottom = tips.reduce((a, b) => (a.p.y < b.p.y ? a : b)).v;
+      const topBase = tips.filter((t) => t.v !== bottom);
+      const back = topBase.reduce((a, b) => (depth(a.p) > depth(b.p) ? a : b)).v;
+      const front = topBase.filter((t) => t.v !== back);
+      const left = front.reduce((a, b) => (sR(a.p) < sR(b.p) ? a : b)).v;
+      const rightVertex = front.reduce((a, b) => (sR(a.p) > sR(b.p) ? a : b)).v;
+      return { U: bottom, L: left, R: rightVertex, B: back };
+    }
   });
 }
 
 /**
- * The 12 visual grip maps (see {@link computePyraminxGripMaps}) — computed
+ * The 6 visual grip maps (see {@link computePyraminxGripMaps}) — computed
  * once at module load from the pose quaternions and the canonical camera.
  */
 export const PYRAMINX_GRIP_MAPS: readonly Record<PyraminxVertex, PyraminxVertex>[] =

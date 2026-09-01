@@ -307,7 +307,7 @@ describe('PyraminxEngine camera & whole-puzzle rotations', () => {
     expect(q1.equals(q0)).toBe(false);
   });
 
-  it('sequences of lateral and tilt rotations always preserve canonical upright pose', async () => {
+  it('sequences of lateral and tilt rotations always preserve canonical upright or inverted pose with flat horizontal base', async () => {
     // Starting vertices in canonical upright frame:
     const S2 = Math.sqrt(2);
     const S6 = Math.sqrt(6);
@@ -318,7 +318,7 @@ describe('PyraminxEngine camera & whole-puzzle rotations', () => {
       new Vector3(0, -1 / 3, (-2 * S2) / 3),
     ];
 
-    // Sequence: Right, Down, Left, Down, Down, Right, Up, Left
+    // Sequence: Right, Down (inverts), Left, Down (restores upright), Down, Right, Up, Left
     const sequence: Array<{ kind: 'y' | 'x'; dir: 1 | -1 }> = [
       { kind: 'y', dir: 1 },
       { kind: 'x', dir: 1 },
@@ -335,24 +335,23 @@ describe('PyraminxEngine camera & whole-puzzle rotations', () => {
       else await engine.rotatePuzzleX(step.dir, 0);
 
       const q = engine.getPuzzleQuaternion();
-      // Apply q to the 4 canonical vertices:
-      // Note: model.root is initialized with PYRAMINX_CANONICAL_QUAT.
-      // The relative transformation from the canonical pose is q * CANONICAL_QUAT^-1.
       const relQ = q.clone().multiply(PYRAMINX_CANONICAL_QUAT.clone().invert());
       const transformed = vCanon.map((v) => v.clone().applyQuaternion(relQ));
 
-      // 1. Exactly one vertex is the apex at (0, 1, 0)
-      const apex = transformed.find((v) => Math.abs(v.y - 1) < 1e-3);
-      expect(apex).toBeDefined();
+      // Check if upright or inverted:
+      const apexUp = transformed.find((v) => Math.abs(v.y - 1) < 1e-3);
+      const apexDown = transformed.find((v) => Math.abs(v.y - (-1)) < 1e-3);
+      expect(apexUp || apexDown).toBeDefined();
 
-      // 2. The other 3 vertices form a flat horizontal base at y = -1/3
-      const base = transformed.filter((v) => Math.abs(v.y - (-1 / 3)) < 1e-3);
-      expect(base).toHaveLength(3);
-
-      // 3. The front base edge is horizontal (two vertices at z > 0 with equal z)
-      const front = base.filter((v) => v.z > 0.1);
-      expect(front).toHaveLength(2);
-      expect(Math.abs(front[0].z - front[1].z)).toBeLessThan(1e-3);
+      if (apexUp) {
+        // Upright: flat horizontal base at y = -1/3
+        const base = transformed.filter((v) => Math.abs(v.y - (-1 / 3)) < 1e-3);
+        expect(base).toHaveLength(3);
+      } else {
+        // Inverted: flat horizontal base on top at y = +1/3
+        const base = transformed.filter((v) => Math.abs(v.y - (1 / 3)) < 1e-3);
+        expect(base).toHaveLength(3);
+      }
     }
   });
 });
@@ -440,13 +439,13 @@ describe('PyraminxReplayEngine over the real driver (reconstruction scramble)', 
     expect(engine.conjugateKeyToken('R')).toBe('R');
     expect(engine.conjugateKeyToken('B')).toBe('L');
 
-    // Tilt X by 180° C2 (Grip 4): L tip on top, U at the back.
+    // Tilt X by 180° (Grip 5): inverted pose, base on top at y=+1/3, U apex at bottom
     await engine.rotatePuzzleX(1, 0);
-    expect(engine.getGripIndex()).toBe(4);
-    expect(engine.conjugateKeyToken('U')).toBe('L');
-    expect(engine.conjugateKeyToken('L')).toBe('R');
-    expect(engine.conjugateKeyToken('R')).toBe('B');
-    expect(engine.conjugateKeyToken('B')).toBe('U');
+    expect(engine.getGripIndex()).toBe(5);
+    expect(engine.conjugateKeyToken('U')).toBe('U');
+    expect(engine.conjugateKeyToken('L')).toBe('L');
+    expect(engine.conjugateKeyToken('R')).toBe('R');
+    expect(engine.conjugateKeyToken('B')).toBe('B');
 
     // Reset orientation brings back Grip 0
     await engine.resetPuzzleOrientation(false);

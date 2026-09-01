@@ -96,7 +96,7 @@ describe("pyraminx drag → display WYSIWYG (no mirror)", () => {
 
   it("every grip: whatever drags resolve, the display matches the screen position", () => {
     const neg = (v: V3): V3 => ({ x: -v.x, y: -v.y, z: -v.z });
-    for (let grip = 0; grip < 12; grip++) {
+    for (let grip = 0; grip < PYRAMINX_GRIP_QUATERNIONS.length; grip++) {
       for (const [pos, re] of [
         ["R", /^R'?$/],
         ["L", /^L'?$/],
@@ -116,17 +116,17 @@ describe("pyraminx drag → display WYSIWYG (no mirror)", () => {
   });
 
   it("every grip: the display letter of a canonical token is its screen position", () => {
-    // display(canonical) must name the position where that canonical vertex
-    // actually projects — otherwise the scramble text would disagree with
-    // what the user sees.
-    for (let grip = 0; grip < 12; grip++) {
+    for (let grip = 0; grip < PYRAMINX_GRIP_QUATERNIONS.length; grip++) {
       const gq = PYRAMINX_GRIP_QUATERNIONS[grip];
+      const isUpright = grip < 3;
       for (const v of ["U", "L", "R", "B"] as const) {
         const s = screenPos(qmul(gq, PYRAMINX_VERTEX_POSITIONS[v]));
         const shown = displayPyraminxTokenThroughGrip(v, grip);
         // The displayed letter must match the region the vertex sits in.
-        if (shown === "U") expect(s.u).toBeGreaterThan(0.6);
-        else if (shown === "B") {
+        if (shown === "U") {
+          if (isUpright) expect(s.u).toBeGreaterThan(0.6);
+          else expect(s.u).toBeLessThan(-0.6);
+        } else if (shown === "B") {
           // Back = farthest from the camera (max depth along forward).
           const d = qmul(gq, PYRAMINX_VERTEX_POSITIONS[v]);
           const depth = d.x * forward.x + d.y * forward.y + d.z * forward.z;
