@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trophy, Sparkles, RotateCcw, Sliders, Zap, Clock, Hash, Activity } from "lucide-react";
+import { Trophy, Sparkles, RotateCcw, Sliders, Zap, Clock, Hash, Activity, List } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import type { FinalSessionStats } from "./useInfiniteF2LSession";
+import { PairHistoryDialog } from "./PairHistoryDialog";
 
 export interface InfiniteF2LSummaryDialogProps {
   open: boolean;
@@ -49,6 +51,7 @@ export function InfiniteF2LSummaryDialog({
 }: InfiniteF2LSummaryDialogProps) {
   const { t } = useTranslation("training");
   const isTouch = useIsTouch();
+  const [isPairHistoryOpen, setIsPairHistoryOpen] = useState(false);
 
   if (!stats) return null;
 
@@ -134,6 +137,15 @@ export function InfiniteF2LSummaryDialog({
         <Button
           type="button"
           variant="outline"
+          onClick={() => setIsPairHistoryOpen(true)}
+          className="w-full sm:w-auto h-11 gap-2 rounded-xl border-line bg-surface text-ink text-sm hover:bg-surface-2 transition-colors cursor-pointer"
+        >
+          <List className="size-4" />
+          {t("infiniteF2l.pairHistory.button")} ({stats.pairRecords.length})
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
           onClick={onOpenSettings}
           className="w-full sm:w-auto h-11 gap-2 rounded-xl border-line bg-surface text-ink text-sm hover:bg-surface-2 transition-colors cursor-pointer"
         >
@@ -142,6 +154,13 @@ export function InfiniteF2LSummaryDialog({
         </Button>
 
       </div>
+
+      {/* Pair History Dialog (nested, dismissable) */}
+      <PairHistoryDialog
+        open={isPairHistoryOpen}
+        onOpenChange={setIsPairHistoryOpen}
+        records={stats.pairRecords}
+      />
     </div>
   );
 

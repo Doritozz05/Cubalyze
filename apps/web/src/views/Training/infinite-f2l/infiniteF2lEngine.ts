@@ -1,4 +1,4 @@
-import { Corner, Edge, CubeState, type PhaseMask } from "@cubeforge/math-core";
+import { Corner, Edge, CubeState, FaceletStringConverter, type PhaseMask } from "@cubeforge/math-core";
 
 export type CrossColor = "white" | "yellow" | "green" | "blue" | "red" | "orange";
 export type F2LSlotId = "FR" | "FL" | "BL" | "BR";
@@ -326,6 +326,8 @@ export interface ActivePairState {
   slotId: F2LSlotId;
   def: F2LSlotDef;
   spawnTime: number;
+  /** Facelet string (54 chars) of the cube state immediately after this pair was injected. */
+  startFacelets: string;
 }
 
 /**
@@ -470,18 +472,19 @@ export function spawnInfiniteF2LState(
   const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
   const state = new CubeState(); // Starts fully solved
 
-  const activePairs: ActivePairState[] = activeSlots.map((slotId) => ({
-    slotId,
-    def: config.slots[slotId],
-    spawnTime: Date.now(),
-  }));
-
   const occupiedCorners = new Set<number>();
   const occupiedEdges = new Set<number>(config.crossEdges);
 
-  for (const pair of activePairs) {
-    injectPair(state, pair.def, config, occupiedCorners, occupiedEdges, allowTrapped);
-  }
+  const activePairs: ActivePairState[] = activeSlots.map((slotId) => {
+    const def = config.slots[slotId];
+    injectPair(state, def, config, occupiedCorners, occupiedEdges, allowTrapped);
+    return {
+      slotId,
+      def,
+      spawnTime: Date.now(),
+      startFacelets: FaceletStringConverter.toFaceletString(state),
+    };
+  });
 
   return { state, activePairs };
 }
@@ -540,14 +543,16 @@ export function respawnPair(
       : solvedSlotId;
 
   const newPairDef = config.slots[nextSlotId];
+
+  // 4. Inject the new pair into an unoccupied slot
+  injectPair(state, newPairDef, config, occupiedCorners, occupiedEdges, true);
+
   const newPair: ActivePairState = {
     slotId: nextSlotId,
     def: newPairDef,
     spawnTime: Date.now(),
+    startFacelets: FaceletStringConverter.toFaceletString(state),
   };
-
-  // 4. Inject the new pair into an unoccupied slot
-  injectPair(state, newPairDef, config, occupiedCorners, occupiedEdges, true);
 
   return {
     nextActivePairs: [...remaining, newPair],

@@ -1320,6 +1320,12 @@
         "retry": "Repetir",
         "exit": "Salir"
       },
+      "pairHistory": {
+        "button": "Ver Pares",
+        "title": "Historial de Pares",
+        "subtitle": "Estado inicial, giros y tiempo de cada par resuelto",
+        "empty": "No hay pares registrados en esta sesión."
+      },
       "crossColors": {
         "white": "Blanco",
         "yellow": "Amarillo",

@@ -1320,6 +1320,12 @@
         "retry": "Retry",
         "exit": "Exit"
       },
+      "pairHistory": {
+        "button": "View Pairs",
+        "title": "Pair History",
+        "subtitle": "Start state, moves and time for each solved pair",
+        "empty": "No pairs recorded for this session."
+      },
       "crossColors": {
         "white": "White",
         "yellow": "Yellow",

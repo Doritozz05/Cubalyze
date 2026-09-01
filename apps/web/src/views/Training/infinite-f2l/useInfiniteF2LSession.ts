@@ -8,6 +8,7 @@ import {
   type InfiniteF2LOptions,
   type ActivePairState,
   type F2LSlotId,
+  type F2LSlotDef,
   type CrossColor,
   spawnInfiniteF2LState,
   checkSolvedPairs,
@@ -23,6 +24,21 @@ export interface UseInfiniteF2LSessionProps {
   isStarted: boolean;
 }
 
+export interface PairRecord {
+  /** 1-based index in this session (first pair = 1) */
+  index: number;
+  slotId: F2LSlotId;
+  colorDef: F2LSlotDef;
+  /** Facelet string at the moment this pair was injected */
+  startFacelets: string;
+  /** Facelet string at the moment this pair was resolved */
+  endFacelets: string;
+  /** All moves made between injection and resolution (may overlap concurrent pairs) */
+  moves: string[];
+  /** Duration in milliseconds */
+  timeMs: number;
+}
+
 export interface FinalSessionStats {
   totalTimeMs: number;
   solvedCount: number;
@@ -30,6 +46,7 @@ export interface FinalSessionStats {
   avgTps: number;
   peakTps: number;
   paceSecPerPair: number;
+  pairRecords: PairRecord[];
 }
 
 export function useInfiniteF2LSession({
@@ -51,7 +68,6 @@ export function useInfiniteF2LSession({
   const [isFinished, setIsFinished] = useState(false);
   const [finalStats, setFinalStats] = useState<FinalSessionStats | null>(null);
 
-  // Internal logical cube state
   const logicalStateRef = useRef<CubeState>(new CubeState());
   const activePairsRef = useRef<ActivePairState[]>([]);
   const solvedCountRef = useRef(0);
@@ -60,6 +76,10 @@ export function useInfiniteF2LSession({
   const peakTpsRef = useRef(0);
   const isFinishedRef = useRef(false);
   const startTimeRef = useRef(Date.now());
+  /** Per-slot move buffer: records every move notation while that slot is active */
+  const slotMovesRef = useRef<Map<F2LSlotId, string[]>>(new Map());
+  /** Accumulated pair records for the current session */
+  const pairRecordsRef = useRef<PairRecord[]>([]);
 
   // Apply stickering mask helper
   const applyStickeringMask = useCallback((crossColor: CrossColor, pairs: ActivePairState[]) => {
@@ -69,7 +89,6 @@ export function useInfiniteF2LSession({
     engineRef.current.setPhaseStickering(mask, "#3a3a3a");
   }, [engineRef]);
 
-  // Finish session calculation
   const finishSession = useCallback(() => {
     if (isFinishedRef.current) return;
     isFinishedRef.current = true;
@@ -91,6 +110,7 @@ export function useInfiniteF2LSession({
       avgTps,
       peakTps: peakTpsRef.current,
       paceSecPerPair,
+      pairRecords: [...pairRecordsRef.current],
     });
   }, []);
 
@@ -119,6 +139,11 @@ export function useInfiniteF2LSession({
       moveTimestampsRef.current = [];
       peakTpsRef.current = 0;
       isFinishedRef.current = false;
+      pairRecordsRef.current = [];
+      // Initialise per-slot move buffers for the spawned pairs
+      const initMoves = new Map<F2LSlotId, string[]>();
+      for (const p of spawnedPairs) initMoves.set(p.slotId, []);
+      slotMovesRef.current = initMoves;
       const now = Date.now();
       startTimeRef.current = now;
 
@@ -163,6 +188,13 @@ export function useInfiniteF2LSession({
       totalMovesRef.current += 1;
       setTotalMoves(totalMovesRef.current);
 
+      // Record move for every currently active slot
+      for (const pair of activePairsRef.current) {
+        const buf = slotMovesRef.current.get(pair.slotId);
+        if (buf) buf.push(moveNotation);
+        else slotMovesRef.current.set(pair.slotId, [moveNotation]);
+      }
+
       // Apply to logical state
       logicalStateRef.current.applyMove(moveEnum);
 
@@ -174,11 +206,27 @@ export function useInfiniteF2LSession({
 
       if (solvedSlots.length > 0) {
         let currentActive = activePairsRef.current;
+        const endFacelets = FaceletStringConverter.toFaceletString(logicalStateRef.current);
 
         for (const solvedSlotId of solvedSlots) {
           solvedCountRef.current += 1;
           setSolvedCount(solvedCountRef.current);
           setRecentSolved(solvedSlotId);
+
+          // Build PairRecord for the resolved pair
+          const solvedPair = currentActive.find((p) => p.slotId === solvedSlotId);
+          if (solvedPair) {
+            const pairMoves = slotMovesRef.current.get(solvedSlotId) ?? [];
+            pairRecordsRef.current.push({
+              index: solvedCountRef.current,
+              slotId: solvedSlotId,
+              colorDef: solvedPair.def,
+              startFacelets: solvedPair.startFacelets,
+              endFacelets,
+              moves: [...pairMoves],
+              timeMs: Date.now() - solvedPair.spawnTime,
+            });
+          }
 
           // If target pairs reached, finish immediately!
           if (targetPairs > 0 && solvedCountRef.current >= targetPairs) {
@@ -186,13 +234,16 @@ export function useInfiniteF2LSession({
             return;
           }
 
-          const { nextActivePairs } = respawnPair(
+          const { nextActivePairs, newPair } = respawnPair(
             logicalStateRef.current,
             crossColor,
             currentActive,
             solvedSlotId,
             allowedSlots,
           );
+
+          // Reset move buffer for the new pair's slot
+          slotMovesRef.current.set(newPair.slotId, []);
 
           currentActive = nextActivePairs;
         }
