@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { CubeState, StringToMove } from "@cubeforge/math-core";
 import type { CubeMoveEvent } from "@cubeforge/types";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
@@ -37,12 +37,16 @@ export function useInfiniteF2LSession({
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [elapsedMs, setElapsedMs] = useState(0);
   const [totalMoves, setTotalMoves] = useState(0);
+  const [liveTps, setLiveTps] = useState(0);
+  const [peakTps, setPeakTps] = useState(0);
 
   // Internal logical cube state
   const logicalStateRef = useRef<CubeState>(new CubeState());
   const activePairsRef = useRef<ActivePairState[]>([]);
   const solvedCountRef = useRef(0);
   const totalMovesRef = useRef(0);
+  const moveTimestampsRef = useRef<number[]>([]);
+  const peakTpsRef = useRef(0);
 
   // Apply stickering mask helper
   const applyStickeringMask = useCallback((crossColor: CrossColor, pairs: ActivePairState[]) => {
@@ -52,7 +56,7 @@ export function useInfiniteF2LSession({
     engineRef.current.setPhaseStickering(mask, "#3a3a3a");
   }, [engineRef]);
 
-  // Restart / Initialize session immediately (supports explicit options override)
+  // Restart / Initialize session immediately
   const startSession = useCallback(
     (overrideOptions?: InfiniteF2LOptions) => {
       const opts = overrideOptions ?? optionsRef.current;
@@ -74,6 +78,8 @@ export function useInfiniteF2LSession({
       activePairsRef.current = spawnedPairs;
       solvedCountRef.current = 0;
       totalMovesRef.current = 0;
+      moveTimestampsRef.current = [];
+      peakTpsRef.current = 0;
 
       setActivePairs(spawnedPairs);
       setSolvedCount(0);
@@ -81,6 +87,8 @@ export function useInfiniteF2LSession({
       setStartTime(Date.now());
       setElapsedMs(0);
       setRecentSolved(null);
+      setLiveTps(0);
+      setPeakTps(0);
 
       // Apply stickering mask to 3D cube
       applyStickeringMask(crossColor, spawnedPairs);
@@ -94,6 +102,9 @@ export function useInfiniteF2LSession({
       if (!isStarted) return;
       const moveEnum = StringToMove[moveNotation.trim()];
       if (moveEnum === undefined) return;
+
+      const now = performance.now();
+      moveTimestampsRef.current.push(now);
 
       const opts = optionsRef.current;
       const crossColor: CrossColor = opts.crossColor ?? "white";
@@ -138,12 +149,54 @@ export function useInfiniteF2LSession({
     [isStarted, applyStickeringMask],
   );
 
-  // Timer tick effect
+  // High-precision Live TPS & Timer Loop (100ms interval = 10Hz)
   useEffect(() => {
     if (!isStarted) return;
+
     const interval = setInterval(() => {
+      const nowPerf = performance.now();
       setElapsedMs(Date.now() - startTime);
-    }, 250);
+
+      // Prune timestamps older than 1500ms
+      const windowMs = 1500;
+      const cutoff = nowPerf - windowMs;
+      const recent = moveTimestampsRef.current.filter((t) => t >= cutoff);
+      moveTimestampsRef.current = recent;
+
+      if (recent.length < 2) {
+        // If no turns in the last 700ms, live TPS is 0
+        const lastMove = recent[recent.length - 1];
+        if (!lastMove || nowPerf - lastMove > 700) {
+          setLiveTps(0);
+        }
+        return;
+      }
+
+      const lastMove = recent[recent.length - 1];
+      const timeSinceLastMove = nowPerf - lastMove;
+
+      // If user paused for > 700ms, live TPS immediately drops to 0
+      if (timeSinceLastMove > 700) {
+        setLiveTps(0);
+        return;
+      }
+
+      // Time between first and last move in the rolling window
+      const firstMove = recent[0];
+      const dtSeconds = (lastMove - firstMove) / 1000;
+
+      if (dtSeconds > 0.05) {
+        const movesInSpan = recent.length - 1;
+        const currentLive = Number((movesInSpan / dtSeconds).toFixed(1));
+        setLiveTps(currentLive);
+
+        if (currentLive > peakTpsRef.current) {
+          peakTpsRef.current = currentLive;
+          setPeakTps(currentLive);
+        }
+      }
+    }, 100);
+
     return () => clearInterval(interval);
   }, [isStarted, startTime]);
 
@@ -168,14 +221,11 @@ export function useInfiniteF2LSession({
     }
   }, [isStarted, startSession]);
 
-  // TPS computation
-  const tps = useMemo(() => {
-    const seconds = elapsedMs / 1000;
-    if (seconds < 1) return 0;
-    return Number((totalMoves / seconds).toFixed(1));
-  }, [totalMoves, elapsedMs]);
-
   const crossColor = userOptions.crossColor ?? "white";
+
+  // Overall session average TPS
+  const sessionSeconds = elapsedMs / 1000;
+  const avgTps = sessionSeconds >= 1 ? Number((totalMoves / sessionSeconds).toFixed(1)) : 0;
 
   return {
     solvedCount,
@@ -183,7 +233,9 @@ export function useInfiniteF2LSession({
     recentSolved,
     elapsedMs,
     totalMoves,
-    tps,
+    liveTps,
+    avgTps,
+    peakTps,
     processMove,
     restart: (overrideOpts?: InfiniteF2LOptions) => startSession(overrideOpts),
     crossColorConfig: CROSS_COLOR_CONFIGS[crossColor],

@@ -77,7 +77,8 @@ export function InfiniteF2LView({
     solvedCount,
     activePairs,
     elapsedMs,
-    tps,
+    liveTps,
+    avgTps,
     restart,
   } = useInfiniteF2LSession({
     options,
@@ -185,9 +186,15 @@ export function InfiniteF2LView({
             <div className="flex items-center gap-3 rounded-full border border-line bg-surface/90 backdrop-blur-md px-4 py-1.5 shadow-sm text-xs text-ink-2 font-medium">
               <span className="nums">{formatTime(elapsedMs)}</span>
               <span className="h-3 w-px bg-line" />
-              <span className="nums flex items-center gap-1">
-                <Zap className="size-3 text-ink-3" />
-                {tps} TPS
+              <span className="nums flex items-center gap-1.5">
+                <Zap className={`size-3 transition-colors ${liveTps > 0 ? "text-amber-500 animate-pulse" : "text-ink-3"}`} />
+                <span className="font-semibold text-ink">{liveTps.toFixed(1)}</span>
+                <span className="text-[0.68rem] text-ink-3">TPS</span>
+                {avgTps > 0 && (
+                  <span className="text-[0.62rem] text-ink-3/80 font-normal">
+                    (avg {avgTps.toFixed(1)})
+                  </span>
+                )}
               </span>
             </div>
 
@@ -212,7 +219,7 @@ export function InfiniteF2LView({
         {/* 3D Cube Canvas Area — balanced, compact sizing */}
         <div
           ref={containerRef as React.RefObject<HTMLDivElement>}
-          className="relative w-full max-w-[380px] sm:max-w-[420px] aspect-square max-h-[55vh] flex items-center justify-center touch-none my-auto"
+          className="relative w-full max-w-95 sm:max-w-105 aspect-square max-h-[55vh] flex items-center justify-center touch-none my-auto"
         >
           <canvas
             ref={canvasRef as React.RefObject<HTMLCanvasElement>}
