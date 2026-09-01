@@ -365,20 +365,30 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
 
   return (
     <div className="relative flex h-full w-full min-h-0 flex-col">
-      {/* Top bar: scramble display with per-move verification */}
-      <div className="flex w-full items-start justify-between gap-3 border-b border-line/60 px-3 py-2">
-        <ScrambleDisplay
-          scramble={scramble}
-          displayScramble={displayScramble}
-          verificationActive
-          states={scrambleStates}
-          currentIndex={validation.progress}
-          errorMoves={displayErrorMoves}
-          isScrambled={validation.isScrambled}
-          needsReset={validation.needsReset}
-          awaitingSolve={false}
-          onRegenerate={handleRegenerate}
-        />
+      {/* Top bar: scramble display with per-move verification.
+
+          FIXED HEIGHT (same as the cube simulator) — the canvas below is
+          flex-1, so any change in the scramble's wrapped row count (different
+          scramble lengths, error moves, "too many mistakes") used to resize
+          the canvas, and the 3D engine's FOV-fit then rescales the puzzle —
+          the whole panel jumped. Reserving 3 rows on touch / 2 on desktop
+          keeps the canvas (and the puzzle) pixel-stable; the content is
+          top-aligned, so short scrambles leave clean space below. */}
+      <div className="flex h-32 shrink-0 items-start overflow-hidden border-b border-line/60 px-4 pt-3 sm:px-6 lg:h-24">
+        <div className="min-w-0 flex-1">
+          <ScrambleDisplay
+            scramble={scramble}
+            displayScramble={displayScramble}
+            verificationActive
+            states={scrambleStates}
+            currentIndex={validation.progress}
+            errorMoves={displayErrorMoves}
+            isScrambled={validation.isScrambled}
+            needsReset={validation.needsReset}
+            awaitingSolve={false}
+            onRegenerate={handleRegenerate}
+          />
+        </div>
       </div>
 
       {/* Canvas */}
