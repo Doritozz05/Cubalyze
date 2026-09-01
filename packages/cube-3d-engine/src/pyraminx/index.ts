@@ -2,6 +2,7 @@ import { registerPuzzle3D } from '../puzzle/registry';
 import type { Puzzle3DEngineFactory, Puzzle3DSpec } from '../puzzle/types';
 import { PyraminxEngine } from './PyraminxEngine';
 
+export * from './PyraminxDrag';
 export * from './PyraminxGeometry';
 export * from './PyraminxMeshFactory';
 export * from './PyraminxModel';

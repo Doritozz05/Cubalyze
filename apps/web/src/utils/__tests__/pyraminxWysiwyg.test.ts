@@ -4,8 +4,6 @@ import {
   resolvePyraminxDragMove,
   pyraminxDragToken,
   type PyraminxDragCandidate,
-} from "../pyraminxDrag";
-import {
   PYRAMINX_GRIP_QUATERNIONS,
   PYRAMINX_GRIP_MAPS,
   PYRAMINX_VERTEX_POSITIONS,
