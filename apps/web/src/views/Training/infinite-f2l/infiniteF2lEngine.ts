@@ -1,6 +1,90 @@
-import { Corner, Edge, CubeState, FaceletStringConverter, type PhaseMask } from "@cubeforge/math-core";
+import {
+  Corner,
+  Edge,
+  CubeState,
+  FaceletStringConverter,
+  cornerFacelet,
+  orderPairFaces,
+  type FaceLetter,
+  type PhaseMask,
+} from "@cubeforge/math-core";
+import {
+  createBasicF2LDetector,
+  type CaseDetector,
+} from "@cubeforge/algorithm-db";
 
 export type CrossColor = "white" | "yellow" | "green" | "blue" | "red" | "orange";
+
+/**
+ * The algorithm-db F2L probe names the 4 slots of a side cross differently
+ * from the white-cross names this engine uses: for a green (F) or blue (B)
+ * cross the slots are UR/UL/DR/DL, and for red (R)/orange (L) they are
+ * UF/UB/DF/DB. White and yellow crosses keep FR/FL/BL/BR.
+ */
+const SLOT_TO_DETECTOR_SLOT: Record<CrossColor, Record<F2LSlotId, string>> = {
+  white: { FR: "FR", FL: "FL", BL: "BL", BR: "BR" },
+  yellow: { FR: "FR", FL: "FL", BL: "BL", BR: "BR" },
+  green: { FR: "UR", FL: "UL", BL: "DL", BR: "DR" },
+  blue: { FR: "UR", FL: "UL", BL: "DL", BR: "DR" },
+  red: { FR: "UF", FL: "UB", BL: "DB", BR: "DF" },
+  orange: { FR: "UF", FL: "UB", BL: "DB", BR: "DF" },
+};
+
+let f2lDetector: CaseDetector | undefined;
+
+/** Lazy shared Basic F2L detector (catalog is built once, like the analysis engine). */
+function getF2LDetector(): CaseDetector {
+  return (f2lDetector ??= createBasicF2LDetector());
+}
+
+/**
+ * Recognize the Basic F2L case of an injected pair from the CURRENT logical
+ * state (the pair's pieces settle wherever they were injected). The state is
+ * already in the standard canonical colors, so no recolor step is needed.
+ * Returns undefined when the injected configuration (e.g. a pair trapped in
+ * two different non-home slots) falls outside the 41-case catalog — detection
+ * must never break spawning.
+ */
+export function detectPairCase(
+  state: CubeState,
+  crossColor: CrossColor,
+  slotId: F2LSlotId,
+): DetectedPairCase | undefined {
+  const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
+  const detectorSlot =
+    SLOT_TO_DETECTOR_SLOT[crossColor]?.[slotId] ?? slotId;
+  try {
+    const result = getF2LDetector().detect(state, config.face, detectorSlot);
+    if (result.entry && result.confidence === "exact") {
+      return {
+        caseNumber: result.entry.caseNumber,
+        caseName: result.entry.caseName,
+      };
+    }
+  } catch {
+    // Detection must never break pair spawning.
+  }
+  return undefined;
+}
+
+/**
+ * The pair's two side colors in the order the canonical FR mini-case renders
+ * them (left goes on the render's F face, right on its R face) — same
+ * convention as the analysis engine's per-pair mini cases.
+ */
+export function pairSideFaceColors(
+  crossColor: CrossColor,
+  slotId: F2LSlotId,
+): { left: FaceLetter; right: FaceLetter } {
+  const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
+  const def = config.slots[slotId];
+  const faces = cornerFacelet[def.cornerId].map((i) =>
+    ("URFDLB"[Math.floor(i / 9)] as FaceLetter),
+  );
+  const side = faces.filter((f) => f !== config.face);
+  const [left, right] = orderPairFaces(config.face, side[0], side[1]);
+  return { left, right };
+}
 export type F2LSlotId = "FR" | "FL" | "BL" | "BR";
 
 export interface F2LSlotDef {
@@ -322,12 +406,22 @@ export interface InfiniteF2LOptions {
   enableSound?: boolean;
 }
 
+export interface DetectedPairCase {
+  caseNumber: string;
+  caseName: string;
+}
+
 export interface ActivePairState {
   slotId: F2LSlotId;
   def: F2LSlotDef;
   spawnTime: number;
   /** Facelet string (54 chars) of the cube state immediately after this pair was injected. */
   startFacelets: string;
+  /**
+   * Recognized Basic F2L case (41-case catalog) at injection time, when the
+   * injected configuration matches one of the catalog signatures.
+   */
+  detectedCase?: DetectedPairCase;
 }
 
 /**
@@ -486,6 +580,11 @@ export function spawnInfiniteF2LState(
     };
   });
 
+  // Recognize each pair's Basic F2L case on the FINAL spawned state.
+  for (const p of activePairs) {
+    p.detectedCase = detectPairCase(state, crossColor, p.slotId);
+  }
+
   return { state, activePairs };
 }
 
@@ -552,6 +651,7 @@ export function respawnPair(
     def: newPairDef,
     spawnTime: Date.now(),
     startFacelets: FaceletStringConverter.toFaceletString(state),
+    detectedCase: detectPairCase(state, crossColor, nextSlotId),
   };
 
   return {

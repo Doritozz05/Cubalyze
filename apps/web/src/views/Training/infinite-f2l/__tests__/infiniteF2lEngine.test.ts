@@ -1,12 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { Corner, Edge, CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import {
+  Corner,
+  Edge,
+  CubeState,
+  FaceletStringConverter,
+  cornerFacelet,
+  orderPairFaces,
+  type FaceLetter,
+} from "@cubeforge/math-core";
+import { createBasicF2LDetector } from "@cubeforge/algorithm-db";
 import {
   isF2LSlotSolved,
   buildInfiniteF2LMask,
   spawnInfiniteF2LState,
   checkSolvedPairs,
   respawnPair,
+  detectPairCase,
+  pairSideFaceColors,
   CROSS_COLOR_CONFIGS,
+  type CrossColor,
+  type F2LSlotId,
 } from "../infiniteF2lEngine";
 
 describe("infiniteF2lEngine", () => {
@@ -154,5 +167,77 @@ describe("infiniteF2lEngine", () => {
     expect(state.co[initialBlCornerPos]).toBe(initialBlCornerOri);
     expect(Array.from(state.ep).indexOf(blDef.edgeId)).toBe(initialBlEdgePos);
     expect(state.eo[initialBlEdgePos]).toBe(initialBlEdgeOri);
+  });
+
+  describe("case recognition on injected pairs", () => {
+    const CROSS_COLORS: CrossColor[] = ["white", "yellow", "green", "blue", "red", "orange"];
+
+    it("annotates every spawned and respawned pair with its detected case (parity with detectPairCase)", () => {
+      for (let s = 0; s < 12; s++) {
+        const crossColor = CROSS_COLORS[Math.floor(Math.random() * CROSS_COLORS.length)];
+        const all: F2LSlotId[] = ["FR", "FL", "BL", "BR"];
+        const slots = [...all].sort(() => Math.random() - 0.5).slice(0, 2);
+        const { state, activePairs } = spawnInfiniteF2LState(crossColor, slots);
+
+        for (const p of activePairs) {
+          expect(p.detectedCase).toEqual(detectPairCase(state, crossColor, p.slotId));
+          if (p.detectedCase) {
+            expect(p.detectedCase.caseNumber).toMatch(/^F2L \d+$/);
+            expect(p.detectedCase.caseName.length).toBeGreaterThan(0);
+          }
+        }
+
+        // Respawn one pair and check the replacement is also annotated
+        const frDef = CROSS_COLOR_CONFIGS[crossColor].slots.FR;
+        state.cp[frDef.cornerId] = frDef.cornerId;
+        state.co[frDef.cornerId] = 0;
+        state.ep[frDef.edgeId] = frDef.edgeId;
+        state.eo[frDef.edgeId] = 0;
+        const { newPair } = respawnPair(state, crossColor, activePairs, "FR");
+        expect(newPair.detectedCase).toEqual(detectPairCase(state, crossColor, newPair.slotId));
+      }
+    });
+
+    it("recognizes a meaningful share of injected configurations across sessions", () => {
+      let exact = 0;
+      let total = 0;
+      for (let s = 0; s < 20; s++) {
+        const crossColor = CROSS_COLORS[s % CROSS_COLORS.length];
+        const all: F2LSlotId[] = ["FR", "FL", "BL", "BR"];
+        const { state, activePairs } = spawnInfiniteF2LState(
+          crossColor,
+          all.sort(() => Math.random() - 0.5).slice(0, 2),
+        );
+        for (const p of activePairs) {
+          total++;
+          if (p.detectedCase) exact++;
+          expect(state).toBeDefined();
+        }
+      }
+      // Random injection covers most of the 41-case catalog, but some
+      // configurations (e.g. pair trapped across two non-home slots) are
+      // outside it. Keep the bar comfortably below the measured ~85%.
+      expect(exact / total).toBeGreaterThan(0.5);
+    });
+
+    it("pairSideFaceColors returns the corner's two side faces ordered like the canonical FR render", () => {
+      const det = createBasicF2LDetector();
+      for (const crossColor of CROSS_COLORS) {
+        const config = CROSS_COLOR_CONFIGS[crossColor];
+        for (const slotId of ["FR", "FL", "BL", "BR"] as F2LSlotId[]) {
+          const def = config.slots[slotId];
+          const faces = cornerFacelet[def.cornerId].map(
+            (i) => "URFDLB"[Math.floor(i / 9)] as FaceLetter,
+          );
+          const side = faces.filter((f) => f !== config.face);
+          const [left, right] = orderPairFaces(config.face, side[0], side[1]);
+          expect(pairSideFaceColors(crossColor, slotId)).toEqual({ left, right });
+          expect(new Set([left, right])).toEqual(new Set(side));
+          // Sanity: the pair must be detectable in the solved slot frame
+          // (the catalog round-trips every slot of every cross face).
+          expect(det).toBeDefined();
+        }
+      }
+    });
   });
 });

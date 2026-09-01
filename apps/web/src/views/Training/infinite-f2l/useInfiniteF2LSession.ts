@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { CubeState, StringToMove, FaceletStringConverter } from "@cubeforge/math-core";
+import {
+  CubeState,
+  StringToMove,
+  FaceletStringConverter,
+  type FaceLetter,
+} from "@cubeforge/math-core";
 import type { CubeMoveEvent } from "@cubeforge/types";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import {
@@ -10,10 +15,12 @@ import {
   type F2LSlotId,
   type F2LSlotDef,
   type CrossColor,
+  type DetectedPairCase,
   spawnInfiniteF2LState,
   checkSolvedPairs,
   respawnPair,
   buildInfiniteF2LMask,
+  pairSideFaceColors,
   CROSS_COLOR_CONFIGS,
 } from "./infiniteF2lEngine";
 import type { Cube3DEngine } from "@cubeforge/cube-3d-engine";
@@ -29,6 +36,12 @@ export interface PairRecord {
   index: number;
   slotId: F2LSlotId;
   colorDef: F2LSlotDef;
+  crossColor: CrossColor;
+  /** Pair side colors in canonical FR mini-case render order (left/right). */
+  leftColor: FaceLetter;
+  rightColor: FaceLetter;
+  /** Recognized Basic F2L case at injection time, when in the 41-case catalog. */
+  detectedCase?: DetectedPairCase;
   /** Facelet string at the moment this pair was injected */
   startFacelets: string;
   /** Facelet string at the moment this pair was resolved */
@@ -217,10 +230,15 @@ export function useInfiniteF2LSession({
           const solvedPair = currentActive.find((p) => p.slotId === solvedSlotId);
           if (solvedPair) {
             const pairMoves = slotMovesRef.current.get(solvedSlotId) ?? [];
+            const sideColors = pairSideFaceColors(crossColor, solvedSlotId);
             pairRecordsRef.current.push({
               index: solvedCountRef.current,
               slotId: solvedSlotId,
               colorDef: solvedPair.def,
+              crossColor,
+              leftColor: sideColors.left,
+              rightColor: sideColors.right,
+              detectedCase: solvedPair.detectedCase,
               startFacelets: solvedPair.startFacelets,
               endFacelets,
               moves: [...pairMoves],

@@ -2,7 +2,11 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, Hash, ChevronRight } from "lucide-react";
+import { Clock, Hash } from "lucide-react";
+import {
+  getSeedData,
+  type AlgorithmCase,
+} from "@cubeforge/algorithm-db";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +21,11 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
+import { CaseMiniCube } from "@/components/Cases/CaseMiniCube";
+import { pairStickerColors } from "@/components/Cases/caseHelpers";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { CROSS_COLOR_CONFIGS } from "./infiniteF2lEngine";
 import type { PairRecord } from "./useInfiniteF2LSession";
 
 // ─── Mini 2D cube net (extracted from Scramble2DNet internals) ────────────────
@@ -113,20 +120,55 @@ function formatMs(ms: number): string {
   return `${m}:${sec}`;
 }
 
+// Seed lookup shared with the analysis/recognition panels: caseNumber or caseName → AlgorithmCase.
+const CASES_BY_NUMBER: Map<string, AlgorithmCase> = (() => {
+  const m = new Map<string, AlgorithmCase>();
+  for (const c of getSeedData().cases) {
+    if (!m.has(c.caseNumber)) m.set(c.caseNumber, c);
+    if (c.name && !m.has(c.name)) m.set(c.name, c);
+  }
+  return m;
+})();
+
 // ─── Single pair card ─────────────────────────────────────────────────────────
 
 function PairCard({ record }: { record: PairRecord }) {
+  const caseData = record.detectedCase
+    ? CASES_BY_NUMBER.get(record.detectedCase.caseNumber) ??
+      CASES_BY_NUMBER.get(record.detectedCase.caseName)
+    : undefined;
+  const stickerColors =
+    caseData && record.detectedCase
+      ? pairStickerColors(
+          CROSS_COLOR_CONFIGS[record.crossColor]?.face ?? "U",
+          record.leftColor,
+          record.rightColor,
+        )
+      : null;
+
   return (
     <div className="flex gap-3 rounded-xl border border-line bg-surface p-3">
-      {/* Mini cube net */}
-      <div className="shrink-0 w-20 sm:w-24">
-        <MiniCubeNet facelets={record.startFacelets} />
-      </div>
+      {/* 3D mini case cube (falls back to the raw 2D net when the injected
+          configuration is outside the 41-case catalog) */}
+      {caseData && record.detectedCase ? (
+        <div className="flex items-center justify-center shrink-0 w-16 sm:w-20">
+          <CaseMiniCube
+            caseData={caseData}
+            slotIndex={0}
+            stickerColors={stickerColors}
+            alt={record.detectedCase.caseName}
+          />
+        </div>
+      ) : (
+        <div className="shrink-0 w-20 sm:w-24">
+          <MiniCubeNet facelets={record.startFacelets} />
+        </div>
+      )}
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1.5 min-w-0">
-        {/* Header row: pair number + slot badge */}
-        <div className="flex items-center gap-2">
+        {/* Header row: pair number + slot badge + recognized case */}
+        <div className="flex items-center gap-2 min-w-0">
           <span className="nums text-xs font-bold text-ink">#{record.index}</span>
           <span
             className="rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold text-surface"
@@ -134,7 +176,16 @@ function PairCard({ record }: { record: PairRecord }) {
           >
             {record.slotId}
           </span>
-          <ChevronRight className="size-3 text-ink-3 ml-auto" />
+          {record.detectedCase && caseData && (
+            <span className="ml-auto flex flex-col items-end min-w-0 text-right">
+              <span className="text-[0.66rem] font-semibold text-ink truncate">
+                {record.detectedCase.caseName}
+              </span>
+              <span className="nums text-[0.58rem] text-ink-3">
+                {record.detectedCase.caseNumber}
+              </span>
+            </span>
+          )}
         </div>
 
         {/* Stats row */}
