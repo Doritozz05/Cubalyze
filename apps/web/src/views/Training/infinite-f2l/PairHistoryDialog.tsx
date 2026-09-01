@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Clock, Hash, ChevronRight } from "lucide-react";
+import { Clock, Hash, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
