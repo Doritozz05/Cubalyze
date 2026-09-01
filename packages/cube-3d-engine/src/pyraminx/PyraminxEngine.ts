@@ -10,10 +10,15 @@ import {
 import type { EasingStrategy } from '../animation/Easing';
 import {
   PYRAMINX_AXES,
+  PYRAMINX_CANONICAL_QUAT,
   PYRAMINX_EDGE_SLOTS,
+  PYRAMINX_TILT_AXIS,
   PYRAMINX_VERTICES_ORDER,
+  TETRAHEDRAL_TILT_ANGLE,
   isValidPyraminxMoveString,
   resolvePyraminxMoveToken,
+  snapPyraminxGrip,
+  conjugatePyraminxToken,
   type PyraminxVertex,
 } from './PyraminxGeometry';
 import { PyraminxMeshFactory, type PyraminxStyleOptions } from './PyraminxMeshFactory';
@@ -76,33 +81,11 @@ function stepsFromAngle(angleInDegrees: number): number {
   return ((Math.round(angleInDegrees / 120) % 3) + 3) % 3;
 }
 
-/**
- * Canonical standing upright orientation for the Pyraminx:
- * Apex U points straight UP (+Y), base (L, R, B) is horizontal in y = -1/3,
- * and the front edge is horizontal parallel to the X axis ("base recta").
- */
-export const PYRAMINX_CANONICAL_QUAT = new Quaternion(
-  0.18301270189221933,
-  0.6830127018922193,
-  0.6830127018922193,
-  -0.18301270189221933,
-).normalize();
-
-/** Dihedral turning angle between faces of a regular tetrahedron (arccos(-1/3) ≈ 109.47°). */
-export const TETRAHEDRAL_TILT_ANGLE = Math.acos(-1 / 3);
-
-/**
- * Canonical C2 symmetry tilt axis in the vertical X=0 plane connecting the
- * midpoint of the top-to-rear edge and the midpoint of the front horizontal edge.
- * A 180° rotation around this axis swaps the apex with the rear base vertex,
- * preserving the canonical upright pose (flat horizontal base at y = -1/3,
- * apex at (0, 1, 0), and straight horizontal front edge).
- */
-export const PYRAMINX_TILT_AXIS = new Vector3(
-  0,
-  1 / Math.sqrt(3),
-  -Math.sqrt(2 / 3),
-).normalize();
+export {
+  PYRAMINX_CANONICAL_QUAT,
+  TETRAHEDRAL_TILT_ANGLE,
+  PYRAMINX_TILT_AXIS,
+};
 
 /**
  * The family-specific hooks that wire the generic {@link RotationDriver3D}
@@ -606,6 +589,22 @@ export class PyraminxEngine {
   /** Current whole-puzzle quaternion. */
   public getPuzzleQuaternion(): Quaternion {
     return this.puzzleQuat.clone();
+  }
+
+  /**
+   * Snap current puzzle quaternion to the closest A₄ grip index (0..11)
+   * using max-|dot| inner product.
+   */
+  public getGripIndex(): number {
+    return snapPyraminxGrip(this.puzzleQuat).grip;
+  }
+
+  /**
+   * Conjugate a view-relative keyboard token by the current grip orientation
+   * into a canonical physical move token.
+   */
+  public conjugateKeyToken(token: string): string {
+    return conjugatePyraminxToken(token, this.getGripIndex());
   }
 
   private animatePuzzleTo(targetQuat: Quaternion, durationMs: number): Promise<void> {

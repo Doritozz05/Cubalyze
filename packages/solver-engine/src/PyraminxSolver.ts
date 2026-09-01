@@ -176,6 +176,139 @@ function decodeBase3(code: number): number[] {
   return values;
 }
 
+// ── A₄ Rotational Symmetries & Multi-Orientation Solved States ──────────────
+
+/** The 12 even permutations of [0, 1, 2, 3] forming the tetrahedral rotation group A₄. */
+export const PYRAMINX_A4_PERMUTATIONS: readonly (readonly [number, number, number, number])[] = [
+  [0, 1, 2, 3], // 0: Identity
+  [0, 2, 3, 1], // 1: Rot +120° around U (L->R->B)
+  [0, 3, 1, 2], // 2: Rot -120° around U (L->B->R)
+  [1, 0, 3, 2], // 3: C2 swap (U<->L, R<->B)
+  [1, 2, 0, 3], // 4: Rot around B
+  [1, 3, 2, 0], // 5: Rot around R
+  [2, 0, 1, 3], // 6: Rot around B
+  [2, 1, 3, 0], // 7: Rot around L
+  [2, 3, 0, 1], // 8: C2 swap (U<->R, L<->B)
+  [3, 0, 2, 1], // 9: Rot around L
+  [3, 1, 0, 2], // 10: Rot around R
+  [3, 2, 1, 0], // 11: C2 swap (U<->B, L<->R) — UI tilt axis
+] as const;
+
+/** Edge slot vertex pairs: 0=LR, 1=UL, 2=LB, 3=UR, 4=RB, 5=UB. */
+const EDGE_VERTEX_PAIRS: readonly (readonly [number, number])[] = [
+  [1, 2], // 0: LR
+  [0, 1], // 1: UL
+  [1, 3], // 2: LB
+  [0, 2], // 3: UR
+  [2, 3], // 4: RB
+  [0, 3], // 5: UB
+];
+
+/** Edge slot face pairs (opposite vertex convention, lower index first). */
+const EDGE_FACE_PAIRS: readonly (readonly [number, number])[] = [
+  [0, 3], // 0: LR has faces U(0), B(3)
+  [2, 3], // 1: UL has faces R(2), B(3)
+  [0, 2], // 2: LB has faces U(0), R(2)
+  [1, 3], // 3: UR has faces L(1), B(3)
+  [0, 1], // 4: RB has faces U(0), L(1)
+  [1, 2], // 5: UB has faces L(1), R(2)
+];
+
+/** Cyclic order of neighbouring vertices around each vertex (clockwise from outside). */
+const VERTEX_CYCLIC_NEIGHBOURS: readonly (readonly [number, number, number])[] = [
+  [1, 3, 2], // Around 0(U): 1(L) -> 3(B) -> 2(R)
+  [2, 3, 0], // Around 1(L): 2(R) -> 3(B) -> 0(U)
+  [1, 0, 3], // Around 2(R): 1(L) -> 0(U) -> 3(B)
+  [1, 2, 0], // Around 3(B): 1(L) -> 2(R) -> 0(U)
+];
+
+function findEdgeSlotByVertices(u: number, v: number): number {
+  for (let i = 0; i < 6; i++) {
+    const [a, b] = EDGE_VERTEX_PAIRS[i];
+    if ((a === u && b === v) || (a === v && b === u)) return i;
+  }
+  return -1;
+}
+
+function getCornerTwistOffset(v: number, g: readonly [number, number, number, number]): number {
+  const vPrime = g[v];
+  const cyc = VERTEX_CYCLIC_NEIGHBOURS[v];
+  const mapped0 = g[cyc[0]];
+  const cycPrime = VERTEX_CYCLIC_NEIGHBOURS[vPrime];
+  return cycPrime.indexOf(mapped0);
+}
+
+/**
+ * Relabel a PyraminxState by an even vertex relabeling g ∈ A₄.
+ *
+ *   • edges: slot {g(u), g(v)} receives the piece from {u, v}
+ *   • corners / tips: slot g(v) receives piece from v
+ *   • flips / twists: transformed according to the 3D rotation g
+ */
+export function relabelPyraminxState(
+  state: PyraminxState,
+  g: readonly [number, number, number, number],
+): PyraminxState {
+  const oldHomes = unrankPermutation(state.edgePerm);
+  const oldOrients = decodeEdgeOrientations(state.edgeOrient);
+  const newHomes = new Array<number>(6);
+  const newOrients = new Array<number>(6);
+
+  for (let e = 0; e < 6; e++) {
+    const [u, v] = EDGE_VERTEX_PAIRS[e];
+    const ePrime = findEdgeSlotByVertices(g[u], g[v]);
+    const [fa, fb] = EDGE_FACE_PAIRS[e];
+    const faPrime = g[fa];
+    const fbPrime = g[fb];
+    const baseFlip = faPrime > fbPrime ? 1 : 0;
+
+    newHomes[ePrime] = oldHomes[e];
+    newOrients[ePrime] = oldOrients[e] ^ baseFlip;
+  }
+
+  const oldCorners = decodeBase3(state.cornerOrient);
+  const oldTips = decodeBase3(state.tips);
+  const newCorners = new Array<number>(4);
+  const newTips = new Array<number>(4);
+
+  for (let v = 0; v < 4; v++) {
+    const vPrime = g[v];
+    const twist = getCornerTwistOffset(v, g);
+    newCorners[vPrime] = (oldCorners[v] + twist) % 3;
+    newTips[vPrime] = (oldTips[v] + twist) % 3;
+  }
+
+  return {
+    edgePerm: rankPermutation(newHomes),
+    edgeOrient: encodeEdgeOrientations(newOrients.slice(0, 5)),
+    cornerOrient: encodeBase3(newCorners),
+    tips: encodeBase3(newTips),
+  };
+}
+
+/** Compute the 12 canonical solved states of the Pyraminx under A₄ rotations. */
+export function computePyraminxSolvedStates(): PyraminxState[] {
+  const solved = solvedPyraminx();
+  return PYRAMINX_A4_PERMUTATIONS.map((g) => relabelPyraminxState(solved, g));
+}
+
+/** The 12 canonical solved states (A₄ tetrahedral symmetries) precomputed once. */
+export const PYRAMINX_SOLVED_STATES: readonly PyraminxState[] = computePyraminxSolvedStates();
+
+/**
+ * Whether the state is solved in ANY of the 12 canonical A₄ orientations.
+ * Plain integer compares against the precomputed signatures (sub-microsecond).
+ */
+export function isPyraminxSolvedAnyOrientation(state: PyraminxState): boolean {
+  return PYRAMINX_SOLVED_STATES.some(
+    (s) =>
+      s.edgePerm === state.edgePerm &&
+      s.edgeOrient === state.edgeOrient &&
+      s.cornerOrient === state.cornerOrient &&
+      s.tips === state.tips,
+  );
+}
+
 // ── Move semantics (§3.3 — geometric facts) ─────────────────────────────────
 
 interface FaceTurn {

@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   PYRAMINX_MIN_DISTANCE,
   PYRAMINX_SCRAMBLE_LENGTH,
+  PYRAMINX_A4_PERMUTATIONS,
+  PYRAMINX_SOLVED_STATES,
   applyPyraminxMove,
   applyPyraminxSequence,
   applyPyraminxTip,
   generatePyraminxScramble,
   isPyraminxReachable,
   isPyraminxSolved,
+  isPyraminxSolvedAnyOrientation,
   isValidPyraminxScramble,
   pyraminxDistance,
   randomPyraminxState,
+  relabelPyraminxState,
   solvedPyraminx,
   type PyraminxState,
 } from "../PyraminxSolver";
@@ -198,4 +202,78 @@ describe("PyraminxSolver — scrambles", () => {
     },
     60_000,
   );
+});
+
+describe("PyraminxSolver — Phase 1: Solved-state mathematics (A₄ symmetries)", () => {
+  function invertPerm(
+    p: readonly [number, number, number, number],
+  ): [number, number, number, number] {
+    const inv = [0, 0, 0, 0] as [number, number, number, number];
+    for (let i = 0; i < 4; i++) inv[p[i]] = i;
+    return inv;
+  }
+
+  it("1. The 12 signatures are distinct, all reachable (isPyraminxReachable)", () => {
+    expect(PYRAMINX_SOLVED_STATES).toHaveLength(12);
+    const edgePerms = new Set(PYRAMINX_SOLVED_STATES.map((s) => s.edgePerm));
+    expect(edgePerms.size).toBe(12);
+
+    for (const state of PYRAMINX_SOLVED_STATES) {
+      expect(isPyraminxReachable(state)).toBe(true);
+    }
+  });
+
+  it("2. Each signature is detected by isPyraminxSolvedAnyOrientation; identity is signature #0", () => {
+    expect(PYRAMINX_SOLVED_STATES[0]).toEqual(solvedPyraminx());
+    expect(isPyraminxSolved(PYRAMINX_SOLVED_STATES[0])).toBe(true);
+
+    for (let i = 0; i < 12; i++) {
+      const s = PYRAMINX_SOLVED_STATES[i];
+      expect(isPyraminxSolvedAnyOrientation(s)).toBe(true);
+      if (i > 0) {
+        expect(isPyraminxSolved(s)).toBe(false);
+      }
+    }
+  });
+
+  it("3. Negative probes in every orientation (12 × 4 = 48 cases): single defect -> false", () => {
+    for (const s of PYRAMINX_SOLVED_STATES) {
+      // 3a. Single flipped edge
+      const flippedEdge = { ...s, edgeOrient: s.edgeOrient ^ 1 };
+      expect(isPyraminxSolvedAnyOrientation(flippedEdge)).toBe(false);
+
+      // 3b. Single twisted corner
+      const twistedCorner = { ...s, cornerOrient: (s.cornerOrient + 1) % 81 };
+      expect(isPyraminxSolvedAnyOrientation(twistedCorner)).toBe(false);
+
+      // 3c. Single twisted tip
+      const twistedTip = { ...s, tips: (s.tips + 1) % 81 };
+      expect(isPyraminxSolvedAnyOrientation(twistedTip)).toBe(false);
+
+      // 3d. Transposition / different permutation
+      const swappedEdges = { ...s, edgePerm: (s.edgePerm + 1) % 720 };
+      expect(isPyraminxSolvedAnyOrientation(swappedEdges)).toBe(false);
+    }
+  });
+
+  it("4. Relabeling round-trip: relabel(g⁻¹, relabel(g, s)) === s for all g", () => {
+    const testState = applyPyraminxSequence(solvedPyraminx(), "U L R' B u l'")!;
+    expect(testState).not.toBeNull();
+
+    for (const g of PYRAMINX_A4_PERMUTATIONS) {
+      const gInv = invertPerm(g);
+      const forward = relabelPyraminxState(testState, g);
+      const back = relabelPyraminxState(forward, gInv);
+      expect(back).toEqual(testState);
+    }
+  });
+
+  it("5. Closure: signatures closed under composition with the 6 UI-pose relabelings (and all of A₄)", () => {
+    for (const s of PYRAMINX_SOLVED_STATES) {
+      for (const g of PYRAMINX_A4_PERMUTATIONS) {
+        const next = relabelPyraminxState(s, g);
+        expect(isPyraminxSolvedAnyOrientation(next)).toBe(true);
+      }
+    }
+  });
 });

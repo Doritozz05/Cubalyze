@@ -48,7 +48,7 @@ export interface UsePyraminxTurnControlsOptions {
   onTurn?: (token: string) => void;
   /** Lateral drone rotation (120° steps around Y). -1 = right, 1 = left. */
   onRotateLateral?: (direction: 1 | -1) => void;
-  /** Tilt rotation (109.47° around horizontal X). 1 = down, -1 = up. */
+  /** Tilt rotation (180° C2 symmetry tilt around PYRAMINX_TILT_AXIS). 1 = down, -1 = up. */
   onRotateTilt?: (direction: 1 | -1) => void;
   /** Called once per background drag — the discrete camera step (fallback). */
   onOrbitStep?: (dx: number, dy: number) => void;

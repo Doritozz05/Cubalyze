@@ -15,7 +15,10 @@ import {
   MAX_CONSECUTIVE_MISTAKES,
   PyraminxScrambleTracker,
 } from "../pyraminxSessionCore";
-import { isPyraminxSolved } from "@cubeforge/solver-engine/pyraminx";
+import {
+  isPyraminxSolved,
+  PYRAMINX_SOLVED_STATES,
+} from "@cubeforge/solver-engine/pyraminx";
 
 const SCRAMBLE = "U L' B R' u l'";
 
@@ -147,4 +150,36 @@ describe("PyraminxScrambleTracker — solve phase", () => {
     expect(isPyraminxSolved(t.currentState)).toBe(true);
     expect(t.isSolved).toBe(true);
   });
+
+  it("Phase 3: solves while the puzzle is in ANY of the 12 A₄ states", () => {
+    for (let k = 0; k < 12; k++) {
+      const t = new PyraminxScrambleTracker(SCRAMBLE);
+      t.setStateForTesting(PYRAMINX_SOLVED_STATES[k]);
+      expect(t.isSolved).toBe(true);
+    }
+  });
+
+  it("Phase 3: a single defect in ANY of the 12 A₄ states keeps isSolved === false", () => {
+    for (let k = 0; k < 12; k++) {
+      const base = PYRAMINX_SOLVED_STATES[k];
+      const t = new PyraminxScrambleTracker(SCRAMBLE);
+
+      // Flipped edge defect:
+      t.setStateForTesting({ ...base, edgeOrient: base.edgeOrient ^ 1 });
+      expect(t.isSolved).toBe(false);
+
+      // Twisted corner defect:
+      t.setStateForTesting({ ...base, cornerOrient: (base.cornerOrient + 1) % 81 });
+      expect(t.isSolved).toBe(false);
+
+      // Twisted tip defect:
+      t.setStateForTesting({ ...base, tips: (base.tips + 1) % 81 });
+      expect(t.isSolved).toBe(false);
+
+      // Swapped edges defect:
+      t.setStateForTesting({ ...base, edgePerm: (base.edgePerm + 1) % 720 });
+      expect(t.isSolved).toBe(false);
+    }
+  });
 });
+

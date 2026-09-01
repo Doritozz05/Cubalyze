@@ -18,7 +18,7 @@
  */
 import {
   applyPyraminxSequence,
-  isPyraminxSolved,
+  isPyraminxSolvedAnyOrientation,
   solvedPyraminx,
   type PyraminxState,
 } from "@cubeforge/solver-engine/pyraminx";
@@ -125,8 +125,8 @@ export class PyraminxScrambleTracker {
       return p > this.progress ? { kind: "scramble-progress" } : { kind: "scramble-mistake" };
     }
 
-    // Solve phase.
-    if (isPyraminxSolved(this.state)) {
+    // Solve phase: match ANY of the 12 canonical A₄ solved orientations.
+    if (isPyraminxSolvedAnyOrientation(this.state)) {
       this.solved = true;
       return { kind: "solve-complete" };
     }
@@ -154,5 +154,12 @@ export class PyraminxScrambleTracker {
     this.needsReset = false;
     this.scrambled = false;
     this.solved = false;
+  }
+
+  /** Set internal state directly (testing hook). */
+  setStateForTesting(state: PyraminxState, scrambled = true): void {
+    this.state = state;
+    this.scrambled = scrambled;
+    this.solved = isPyraminxSolvedAnyOrientation(state);
   }
 }

@@ -417,4 +417,34 @@ describe('PyraminxReplayEngine over the real driver (reconstruction scramble)', 
     expect(bigState(state)).toBe('0/0/0');
     replay.dispose();
   });
+
+  it('tracks grip index and conjugates key tokens through whole-puzzle rotations', async () => {
+    expect(engine.getGripIndex()).toBe(0);
+    expect(engine.conjugateKeyToken('U')).toBe('U');
+    expect(engine.conjugateKeyToken('L')).toBe('L');
+    expect(engine.conjugateKeyToken("R'")).toBe("R'");
+    expect(engine.conjugateKeyToken('u')).toBe('u');
+
+    // Rotate lateral Y by 120° (Grip 1)
+    await engine.rotatePuzzleY(1, 0);
+    expect(engine.getGripIndex()).toBe(1);
+    expect(engine.conjugateKeyToken('U')).toBe('U');
+    expect(engine.conjugateKeyToken('L')).toBe('R');
+    expect(engine.conjugateKeyToken('R')).toBe('B');
+    expect(engine.conjugateKeyToken('B')).toBe('L');
+
+    // Tilt X by 180° C2 (Grip 4)
+    await engine.rotatePuzzleX(1, 0);
+    expect(engine.getGripIndex()).toBe(4);
+    expect(engine.conjugateKeyToken('U')).toBe('L');
+    expect(engine.conjugateKeyToken('L')).toBe('B');
+    expect(engine.conjugateKeyToken('R')).toBe('R');
+    expect(engine.conjugateKeyToken('B')).toBe('U');
+
+    // Reset orientation brings back Grip 0
+    await engine.resetPuzzleOrientation(false);
+    expect(engine.getGripIndex()).toBe(0);
+    expect(engine.conjugateKeyToken('U')).toBe('U');
+  });
 });
+

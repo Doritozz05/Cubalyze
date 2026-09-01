@@ -125,7 +125,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
   );
 
   // ── Piece drags → FIXED ±120° turns; background drags → discrete
-  //    drone lateral (120°) or tilt (109.47°) puzzle rotation. The camera
+  //    drone lateral (120°) or tilt (180° C2) puzzle rotation. The camera
   //    remains locked in canonical isometric view. ────────────────────────
   const { pointerHandlers } = usePyraminxTurnControls({
     engineRef: engineRef as unknown as React.RefObject<PyraminxEngineT | null>,
@@ -180,9 +180,10 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
         e.preventDefault();
         return void eng?.rotatePuzzleX(-1);
       }
-      const token = pyraminxKeyToToken(e.code);
-      if (!token) return;
+      const rawToken = pyraminxKeyToToken(e.code);
+      if (!rawToken) return;
       e.preventDefault();
+      const token = eng ? eng.conjugateKeyToken(rawToken) : rawToken;
       handleTurn(token);
     };
     window.addEventListener("keydown", onKeyDown);

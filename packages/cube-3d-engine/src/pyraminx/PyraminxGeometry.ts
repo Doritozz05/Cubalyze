@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { Vector3, Quaternion } from 'three';
 
 /**
  * Pyraminx canonical geometry — the single source of truth for the 3D model.
@@ -241,3 +241,172 @@ export const DEFAULT_PYRAMINX_STICKER_COLORS: Record<PyraminxVertex, string> = {
   R: '#3d7ce0', // blue
   B: '#eb4242', // red
 };
+
+// ── Whole-Puzzle Poses & A₄ Grip Conjugation Tables ─────────────────────────
+
+/**
+ * Canonical standing upright orientation for the Pyraminx:
+ * Apex U points straight UP (+Y), base (L, R, B) is horizontal in y = -1/3,
+ * and the front edge is horizontal parallel to the X axis ("base recta").
+ */
+export const PYRAMINX_CANONICAL_QUAT = new Quaternion(
+  0.18301270189221933,
+  0.6830127018922193,
+  0.6830127018922193,
+  -0.18301270189221933,
+).normalize();
+
+/** Dihedral turning angle between faces of a regular tetrahedron (arccos(-1/3) ≈ 109.47°). */
+export const TETRAHEDRAL_TILT_ANGLE = Math.acos(-1 / 3);
+
+/**
+ * Canonical C2 symmetry tilt axis in the vertical X=0 plane connecting the
+ * midpoint of the top-to-rear edge and the midpoint of the front horizontal edge.
+ * A 180° rotation around this axis swaps the apex with the rear base vertex,
+ * preserving the canonical upright pose (flat horizontal base at y = -1/3,
+ * apex at (0, 1, 0), and straight horizontal front edge).
+ */
+export const PYRAMINX_TILT_AXIS = new Vector3(
+  0,
+  1 / Math.sqrt(3),
+  -Math.sqrt(2 / 3),
+).normalize();
+
+/**
+ * Compute the 12 canonical pose quaternions of the Pyraminx corresponding to
+ * the A₄ rotational symmetry group of the regular tetrahedron.
+ *
+ * Poses 0..5 correspond directly to the 6 UI poses:
+ *   - Pose 0: Canonical upright (apex U on top, base flat)
+ *   - Pose 1: rotatePuzzleY(1) (120° drone rotation around Y)
+ *   - Pose 2: rotatePuzzleY(2) (240° drone rotation around Y)
+ *   - Pose 3: rotatePuzzleX(1) from Pose 0 (180° C2 tilt: apex B on top)
+ *   - Pose 4: rotatePuzzleX(1) from Pose 1 (180° C2 tilt)
+ *   - Pose 5: rotatePuzzleX(1) from Pose 2 (180° C2 tilt)
+ * Poses 6..11 complete the 12-element orbit (poses with apex L or R on top).
+ */
+export function computePyraminxGripQuaternions(): Quaternion[] {
+  const qY = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (120 * Math.PI) / 180);
+  const qX = new Quaternion().setFromAxisAngle(PYRAMINX_TILT_AXIS, Math.PI);
+
+  const p0 = PYRAMINX_CANONICAL_QUAT.clone();
+  const p1 = qY.clone().multiply(p0).normalize();
+  const p2 = qY.clone().multiply(p1).normalize();
+  const p3 = qX.clone().multiply(p0).normalize();
+  const p4 = qX.clone().multiply(p1).normalize();
+  const p5 = qX.clone().multiply(p2).normalize();
+
+  const poses = [p0, p1, p2, p3, p4, p5];
+
+  function isKnown(q: Quaternion): boolean {
+    for (const v of poses) {
+      const dot = Math.abs(q.x * v.x + q.y * v.y + q.z * v.z + q.w * v.w);
+      if (dot > 0.999) return true;
+    }
+    return false;
+  }
+
+  const queue = [...poses];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    for (const op of [qY, qX]) {
+      const next = op.clone().multiply(curr).normalize();
+      if (!isKnown(next)) {
+        poses.push(next);
+        queue.push(next);
+      }
+    }
+  }
+
+  return poses;
+}
+
+export const PYRAMINX_GRIP_QUATERNIONS: readonly Quaternion[] = computePyraminxGripQuaternions();
+
+/**
+ * Snap a puzzle orientation quaternion against the 12 canonical A₄ grips
+ * using the maximum absolute quaternion inner product (mirroring math-core's OrientationTable.snap).
+ */
+export function snapPyraminxGrip(quat: Quaternion): { grip: number; confidence: number } {
+  const qLen = Math.sqrt(quat.x * quat.x + quat.y * quat.y + quat.z * quat.z + quat.w * quat.w);
+  const nx = qLen > 0 ? quat.x / qLen : 0;
+  const ny = qLen > 0 ? quat.y / qLen : 0;
+  const nz = qLen > 0 ? quat.z / qLen : 0;
+  const nw = qLen > 0 ? quat.w / qLen : 1;
+
+  let bestIdx = 0;
+  let bestDot = -1;
+
+  for (let i = 0; i < PYRAMINX_GRIP_QUATERNIONS.length; i++) {
+    const p = PYRAMINX_GRIP_QUATERNIONS[i];
+    const dot = Math.abs(nx * p.x + ny * p.y + nz * p.z + nw * p.w);
+    if (dot > bestDot) {
+      bestDot = dot;
+      bestIdx = i;
+    }
+  }
+
+  return { grip: bestIdx, confidence: bestDot };
+}
+
+/**
+ * Visual key mapping per grip index (0..11).
+ * Maps the on-screen key vertex (U=top, L=left, R=right, B=back)
+ * to the corresponding physical vertex in the canonical model frame.
+ *
+ * Mapping table:
+ *   Grip 0: UI canonical upright       → { U: 'U', L: 'L', R: 'R', B: 'B' }
+ *   Grip 1: UI rotY(1)                 → { U: 'U', L: 'R', R: 'B', B: 'L' }
+ *   Grip 2: UI rotY(2)                 → { U: 'U', L: 'B', R: 'L', B: 'R' }
+ *   Grip 3: UI rotX(1) from Grip 0     → { U: 'B', L: 'R', R: 'L', B: 'U' }
+ *   Grip 4: UI rotX(1) from Grip 1     → { U: 'L', L: 'B', R: 'R', B: 'U' }
+ *   Grip 5: UI rotX(1) from Grip 2     → { U: 'R', L: 'L', R: 'B', B: 'U' }
+ *   Grip 6: Orbit pose (B top)         → { U: 'B', L: 'L', R: 'U', B: 'R' }
+ *   Grip 7: Orbit pose (L top)         → { U: 'L', L: 'R', R: 'U', B: 'B' }
+ *   Grip 8: Orbit pose (R top)         → { U: 'R', L: 'B', R: 'U', B: 'L' }
+ *   Grip 9: Orbit pose (B top)         → { U: 'B', L: 'U', R: 'R', B: 'L' }
+ *   Grip 10: Orbit pose (R top)        → { U: 'R', L: 'U', R: 'L', B: 'B' }
+ *   Grip 11: Orbit pose (L top)        → { U: 'L', L: 'U', R: 'B', B: 'R' }
+ */
+export const PYRAMINX_GRIP_MAPS: readonly Record<PyraminxVertex, PyraminxVertex>[] = [
+  { U: 'U', L: 'L', R: 'R', B: 'B' }, // Grip 0
+  { U: 'U', L: 'R', R: 'B', B: 'L' }, // Grip 1
+  { U: 'U', L: 'B', R: 'L', B: 'R' }, // Grip 2
+  { U: 'B', L: 'R', R: 'L', B: 'U' }, // Grip 3
+  { U: 'L', L: 'B', R: 'R', B: 'U' }, // Grip 4
+  { U: 'R', L: 'L', R: 'B', B: 'U' }, // Grip 5
+  { U: 'B', L: 'L', R: 'U', B: 'R' }, // Grip 6
+  { U: 'L', L: 'R', R: 'U', B: 'B' }, // Grip 7
+  { U: 'R', L: 'B', R: 'U', B: 'L' }, // Grip 8
+  { U: 'B', L: 'U', R: 'R', B: 'L' }, // Grip 9
+  { U: 'R', L: 'U', R: 'L', B: 'B' }, // Grip 10
+  { U: 'L', L: 'U', R: 'B', B: 'R' }, // Grip 11
+];
+
+/**
+ * Conjugate an input key token (e.g. "U", "L'", "r") by the given grip index (0..11).
+ * Translates the view-relative key action into the canonical physical move.
+ */
+export function conjugatePyraminxToken(token: string, grip: number): string {
+  const isPrime = token.endsWith("'");
+  const base = isPrime ? token.slice(0, -1) : token;
+  const isTip = base === base.toLowerCase();
+  const upper = base.toUpperCase() as PyraminxVertex;
+
+  const gripMap = PYRAMINX_GRIP_MAPS[grip];
+  if (!gripMap || !(upper in gripMap)) return token;
+
+  const targetVertex = gripMap[upper];
+  const targetBase = isTip ? targetVertex.toLowerCase() : targetVertex;
+  return isPrime ? targetBase + "'" : targetBase;
+}
+
+/**
+ * Inverse grip lookup table: PYRAMINX_INVERSE_GRIP[g] is the grip g⁻¹ such that
+ * conjugate(conjugate(t, g), g⁻¹) === t for all tokens t.
+ */
+export const PYRAMINX_INVERSE_GRIP: readonly number[] = [
+  0, 2, 1, 3, 9, 6, 5, 10, 8, 4, 7, 11,
+];
+
+
