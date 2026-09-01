@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Corner, Edge, CubeState } from "@cubeforge/math-core";
+import { Corner, Edge, CubeState, FaceletStringConverter } from "@cubeforge/math-core";
 import {
   isF2LSlotSolved,
   buildInfiniteF2LMask,
@@ -57,6 +57,23 @@ describe("infiniteF2lEngine", () => {
     const frDef = CROSS_COLOR_CONFIGS.white.slots.FR;
     const blDef = CROSS_COLOR_CONFIGS.white.slots.BL;
     expect(isF2LSlotSolved(state, frDef) && isF2LSlotSolved(state, blDef)).toBe(false);
+
+    // Must convert to a valid 54-char facelet string for 3D engine
+    const facelets = FaceletStringConverter.toFaceletString(state);
+    expect(facelets.length).toBe(54);
+  });
+
+  it("spawns valid Yellow cross state with intact cross", () => {
+    const { state, activePairs } = spawnInfiniteF2LState("yellow", ["FR", "FL"]);
+    expect(activePairs.length).toBe(2);
+
+    for (const ce of CROSS_COLOR_CONFIGS.yellow.crossEdges) {
+      expect(state.ep[ce]).toBe(ce);
+      expect(state.eo[ce]).toBe(0);
+    }
+
+    const facelets = FaceletStringConverter.toFaceletString(state);
+    expect(facelets.length).toBe(54);
   });
 
   it("builds correct PhaseMask with cross edges and active pairs", () => {
@@ -69,7 +86,7 @@ describe("infiniteF2lEngine", () => {
     expect(mask.corners?.length).toBe(2);
   });
 
-  it("detects solved pairs and respawns them cleanly", () => {
+  it("detects solved pairs and respawns them cleanly while maintaining cross", () => {
     const { state, activePairs } = spawnInfiniteF2LState("white", ["FR", "BL"]);
     
     // Artificially solve the FR slot
@@ -92,5 +109,15 @@ describe("infiniteF2lEngine", () => {
 
     expect(nextActivePairs.length).toBe(2);
     expect(nextActivePairs.map((p) => p.slotId)).toContain(newPair.slotId);
+
+    // Cross remains intact
+    for (const ce of CROSS_COLOR_CONFIGS.white.crossEdges) {
+      expect(state.ep[ce]).toBe(ce);
+      expect(state.eo[ce]).toBe(0);
+    }
+
+    // Converts to facelets cleanly
+    const facelets = FaceletStringConverter.toFaceletString(state);
+    expect(facelets.length).toBe(54);
   });
 });

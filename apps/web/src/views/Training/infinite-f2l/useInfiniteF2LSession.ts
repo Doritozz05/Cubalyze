@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { CubeState, StringToMove } from "@cubeforge/math-core";
+import { CubeState, StringToMove, FaceletStringConverter } from "@cubeforge/math-core";
 import type { CubeMoveEvent } from "@cubeforge/types";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import {
@@ -90,10 +90,16 @@ export function useInfiniteF2LSession({
       setLiveTps(0);
       setPeakTps(0);
 
+      // Apply initial generated facelets to 3D cube model
+      if (engineRef.current) {
+        const facelets = FaceletStringConverter.toFaceletString(state);
+        engineRef.current.syncFacelets(facelets);
+      }
+
       // Apply stickering mask to 3D cube
       applyStickeringMask(crossColor, spawnedPairs);
     },
-    [applyStickeringMask],
+    [applyStickeringMask, engineRef],
   );
 
   // Handle incoming move (from BLE physical smart cube)
@@ -143,10 +149,16 @@ export function useInfiniteF2LSession({
 
         activePairsRef.current = currentActive;
         setActivePairs([...currentActive]);
+
+        // Sync new state to 3D cube model & stickering mask
+        if (engineRef.current) {
+          const facelets = FaceletStringConverter.toFaceletString(logicalStateRef.current);
+          engineRef.current.syncFacelets(facelets);
+        }
         applyStickeringMask(crossColor, currentActive);
       }
     },
-    [isStarted, applyStickeringMask],
+    [isStarted, applyStickeringMask, engineRef],
   );
 
   // High-precision Live TPS & Timer Loop (100ms interval = 10Hz)

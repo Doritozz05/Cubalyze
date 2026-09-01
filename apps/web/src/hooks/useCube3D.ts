@@ -50,6 +50,12 @@ export interface UseCube3DOptions {
    * Default: false.
    */
   connectSmartCube?: boolean;
+  /**
+   * Whether to sync raw static physical cube facelets via Bluetooth into the 3D model.
+   * Default: true (when connectSmartCube is true). Set to false for virtual training modes (like Infinite F2L)
+   * where gyro and move events are tracked, but the virtual cube manages its own generated piece state.
+   */
+  syncFacelets?: boolean;
 }
 
 export interface UseCube3DResult {
@@ -101,7 +107,7 @@ export interface UseCube3DResult {
  * and dynamic mount/unmount cycles without WebGL context loss or blank screen bugs.
  */
 export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
-  const { maxRecentMoves = 15, order = 3, connectSmartCube = false, puzzle } = options;
+  const { maxRecentMoves = 15, order = 3, connectSmartCube = false, syncFacelets = true, puzzle } = options;
 
   /**
    * Whether this instance builds the Pyraminx family. The Pyraminx engine has
@@ -286,20 +292,22 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
             });
           }
 
-          if (globalCubeAdapter.facelets$) {
-            faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
-              engine.syncFacelets(facelets);
-            });
-          }
+          if (syncFacelets) {
+            if (globalCubeAdapter.facelets$) {
+              faceletsSub = globalCubeAdapter.facelets$.subscribe((facelets: string) => {
+                engine.syncFacelets(facelets);
+              });
+            }
 
-          connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
-            if (status === "connected") {
+            connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
+              if (status === "connected") {
+                globalCubeAdapter.requestFacelets().catch(console.error);
+              }
+            });
+
+            if (globalCubeAdapter.isConnected) {
               globalCubeAdapter.requestFacelets().catch(console.error);
             }
-          });
-
-          if (globalCubeAdapter.isConnected) {
-            globalCubeAdapter.requestFacelets().catch(console.error);
           }
 
           // ── Single calibration authority ──────────────────────────────

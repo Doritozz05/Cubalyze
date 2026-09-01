@@ -69,6 +69,7 @@ export function InfiniteF2LView({
   } = useCube3D({
     order: 3,
     connectSmartCube: true,
+    syncFacelets: false,
     maxRecentMoves: 0,
   });
 

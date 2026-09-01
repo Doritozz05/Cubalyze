@@ -1,4 +1,4 @@
-import { Corner, Edge, CubeState, type PhaseMask } from "@cubeforge/math-core";
+import { Corner, Edge, CubeState, StringToMove, type PhaseMask } from "@cubeforge/math-core";
 
 export type CrossColor = "white" | "yellow" | "green" | "blue" | "red" | "orange";
 export type F2LSlotId = "FR" | "FL" | "BL" | "BR";
@@ -312,21 +312,8 @@ export interface ActivePairState {
   spawnTime: number;
 }
 
-export interface InfiniteF2LState {
-  options: Required<InfiniteF2LOptions>;
-  activePairs: ActivePairState[];
-  solvedCount: number;
-  startTime: number;
-  lastSolvedTime?: number;
-  resolvedSlotHistory: { slotId: F2LSlotId; timestamp: number }[];
-}
-
 /**
  * Check if an F2L slot is correctly solved on a given CubeState.
- * Requires:
- * 1. The slot's corner is at its home position with orientation 0.
- * 2. The slot's edge is at its home position with orientation 0.
- * 3. The cross edges adjacent to this slot are at their home positions with orientation 0.
  */
 export function isF2LSlotSolved(
   cubeState: CubeState,
@@ -369,23 +356,109 @@ export function buildInfiniteF2LMask(
 }
 
 /**
- * Available U-layer candidate positions for scrambling pairs (White cross on D).
+ * Canonical F2L setup algorithms (scramble algorithms) that preserve the cross.
  */
-const U_LAYER_CORNERS = [Corner.URF, Corner.UFL, Corner.ULB, Corner.UBR];
-const U_LAYER_EDGES = [Edge.UR, Edge.UF, Edge.UL, Edge.UB];
+export const F2L_CANONICAL_SETUPS: string[] = [
+  "F R' F' R",
+  "R' F R F'",
+  "U' R U' R' U2 R U' R'",
+  "R U' R'",
+  "U' R U R' U2 R U' R'",
+  "U' R U2 R' U2 R U' R'",
+  "U' R U2 R' U F' U' F",
+  "R U2 R' U' R U R'",
+  "U R U2 R' U R U' R'",
+  "U' R U R' U R U R'",
+  "R U R' U' R U R' U' R U R'",
+  "U' R U' R' U R U R'",
+  "R U' R' U R U' R'",
+  "R U R' U2 R U' R'",
+  "U R U2 R' U R U2 R'",
+  "R U' R' U2 R U R'",
+  "R U R' U R U' R'",
+  "U' R U' R' U2 R U R'",
+  "R U' R' U' R U R'",
+  "R U2 R' U R U' R'",
+  "R U' R' U R U2 R'",
+  "R U R' U' R U2 R' U' R U R'",
+  "R U R' U' R U' R' U2 R U' R'",
+  "R U' R' U R U R' U2 R U' R'",
+  "R U R' U2 R U R' U R U' R'",
+  "R U R' U' R U' R' U F' U' F",
+  "R U R' U2 R U' R' U R U' R'",
+  "R U R' U' R U R' U2 R U' R'",
+  "R U' R' U' R U2 R' U' R U R'",
+];
 
-function findCornerPos(cp: { [index: number]: number; length: number }, cornerId: number): number {
-  for (let i = 0; i < cp.length; i++) {
-    if (cp[i] === cornerId) return i;
+const SLOT_MOVE_MAP: Record<F2LSlotId, Record<string, string>> = {
+  FR: { R: "R", L: "L", F: "F", B: "B", U: "U", D: "D" },
+  FL: { R: "F", F: "L", L: "B", B: "R", U: "U", D: "D" },
+  BL: { R: "L", L: "R", F: "B", B: "F", U: "U", D: "D" },
+  BR: { R: "B", B: "L", L: "F", F: "R", U: "U", D: "D" },
+};
+
+/**
+ * Adapts a standard FR setup algorithm to any slot (FL, BL, BR) and cross orientation.
+ */
+export function generateSlotScramble(slotId: F2LSlotId, crossColor: CrossColor = "white"): string[] {
+  const baseSetup = F2L_CANONICAL_SETUPS[Math.floor(Math.random() * F2L_CANONICAL_SETUPS.length)];
+
+  // For white cross (on U), the frame is inverted by x2 (F<->B, U<->D), so FR->BR, FL->BL, BL->FL, BR->FR
+  let targetSlot = slotId;
+  if (crossColor === "white") {
+    if (slotId === "FR") targetSlot = "BR";
+    else if (slotId === "FL") targetSlot = "BL";
+    else if (slotId === "BL") targetSlot = "FL";
+    else if (slotId === "BR") targetSlot = "FR";
   }
-  return -1;
+
+  const slotMap = SLOT_MOVE_MAP[targetSlot] ?? SLOT_MOVE_MAP.FR;
+  const rawMoves = baseSetup.trim().split(/\s+/);
+
+  const slotMoves = rawMoves.map((tok) => {
+    const face = tok[0];
+    const modifier = tok.slice(1);
+    const mappedFace = slotMap[face] ?? face;
+    return `${mappedFace}${modifier}`;
+  });
+
+  // Random AUF rotations
+  const aufOptions = ["", "U", "U'", "U2"];
+  const preAuf = aufOptions[Math.floor(Math.random() * aufOptions.length)];
+  const postAuf = aufOptions[Math.floor(Math.random() * aufOptions.length)];
+
+  const finalMoves: string[] = [];
+  if (preAuf) finalMoves.push(preAuf);
+  finalMoves.push(...slotMoves);
+  if (postAuf) finalMoves.push(postAuf);
+
+  // If cross is on U (White cross), map U<->D and F<->B (x2 inversion)
+  if (crossColor === "white") {
+    return finalMoves.map((tok) => {
+      let face = tok[0];
+      const modifier = tok.slice(1);
+      if (face === "U") face = "D";
+      else if (face === "D") face = "U";
+      else if (face === "F") face = "B";
+      else if (face === "B") face = "F";
+      return `${face}${modifier}`;
+    });
+  }
+
+  return finalMoves;
 }
 
-function findEdgePos(ep: { [index: number]: number; length: number }, edgeId: number): number {
-  for (let i = 0; i < ep.length; i++) {
-    if (ep[i] === edgeId) return i;
+/**
+ * Applies move tokens to a CubeState.
+ */
+export function applyMovesToState(state: CubeState, moves: string[]): void {
+  for (const moveStr of moves) {
+    if (!moveStr) continue;
+    const moveEnum = StringToMove[moveStr.trim()];
+    if (moveEnum !== undefined) {
+      state.applyMove(moveEnum);
+    }
   }
-  return -1;
 }
 
 /**
@@ -395,10 +468,10 @@ function findEdgePos(ep: { [index: number]: number; length: number }, edgeId: nu
 export function spawnInfiniteF2LState(
   crossColor: CrossColor = "white",
   activeSlots: F2LSlotId[] = ["FR", "BL"],
-  allowTrapped: boolean = true,
+  _allowTrapped: boolean = true,
 ): { state: CubeState; activePairs: ActivePairState[] } {
   const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
-  const state = new CubeState(); // Starts solved
+  const state = new CubeState(); // Starts fully solved
 
   const activePairs: ActivePairState[] = activeSlots.map((slotId) => ({
     slotId,
@@ -406,75 +479,18 @@ export function spawnInfiniteF2LState(
     spawnTime: Date.now(),
   }));
 
-  // List of candidate corner positions and edge positions
-  const availableCorners = [...U_LAYER_CORNERS];
-  const availableEdges = [...U_LAYER_EDGES];
-
-  if (allowTrapped) {
-    // Add other slot positions as candidates
-    for (const [, slot] of Object.entries(config.slots) as [F2LSlotId, F2LSlotDef][]) {
-      if (!availableCorners.includes(slot.cornerId)) availableCorners.push(slot.cornerId);
-      if (!availableEdges.includes(slot.edgeId)) availableEdges.push(slot.edgeId);
-    }
-  }
-
-  // Shuffle candidate pools
-  const shuffle = <T>(arr: T[]): T[] => arr.slice().sort(() => Math.random() - 0.5);
-  const shuffledCorners = shuffle(availableCorners);
-  const shuffledEdges = shuffle(availableEdges);
-
-  // Position assignments
-  const usedCorners = new Set<Corner>();
-  const usedEdges = new Set<Edge>();
-
-  // Ensure cross edges stay in their home positions
-  for (const ce of config.crossEdges) {
-    usedEdges.add(ce);
-  }
-
+  // Apply a cross-preserving scramble for each active slot
   for (const pair of activePairs) {
-    // Pick corner slot
-    let cornerSlot = shuffledCorners.find((c) => !usedCorners.has(c));
-    if (cornerSlot === undefined) cornerSlot = pair.def.cornerId;
-
-    // Pick edge slot
-    let edgeSlot = shuffledEdges.find((e) => !usedEdges.has(e));
-    if (edgeSlot === undefined) edgeSlot = pair.def.edgeId;
-
-    usedCorners.add(cornerSlot);
-    usedEdges.add(edgeSlot);
-
-    // Random orientations
-    let cornerOri = Math.floor(Math.random() * 3);
-    let edgeOri = Math.floor(Math.random() * 2);
-
-    // CRITICAL: Ensure the pair is NOT already fully solved in its own slot!
-    if (
-      cornerSlot === pair.def.cornerId &&
-      cornerOri === 0 &&
-      edgeSlot === pair.def.edgeId &&
-      edgeOri === 0
-    ) {
-      // Twist the corner or flip the edge to ensure a valid non-solved case
-      cornerOri = (cornerOri + 1) % 3;
+    let attempts = 0;
+    while (attempts < 10) {
+      attempts++;
+      const moves = generateSlotScramble(pair.slotId, crossColor);
+      applyMovesToState(state, moves);
+      // Ensure the pair is not accidentally solved
+      if (!isF2LSlotSolved(state, pair.def)) {
+        break;
+      }
     }
-
-    // Assign piece permutation and orientation in CubeState
-    const currentCornerPos = findCornerPos(state.cp, pair.def.cornerId);
-    if (currentCornerPos !== -1 && currentCornerPos !== cornerSlot) {
-      const occupant = state.cp[cornerSlot];
-      state.cp[cornerSlot] = pair.def.cornerId;
-      state.cp[currentCornerPos] = occupant;
-    }
-    state.co[cornerSlot] = cornerOri;
-
-    const currentEdgePos = findEdgePos(state.ep, pair.def.edgeId);
-    if (currentEdgePos !== -1 && currentEdgePos !== edgeSlot) {
-      const occupant = state.ep[edgeSlot];
-      state.ep[edgeSlot] = pair.def.edgeId;
-      state.ep[currentEdgePos] = occupant;
-    }
-    state.eo[edgeSlot] = edgeOri;
   }
 
   return { state, activePairs };
@@ -516,7 +532,6 @@ export function respawnPair(
   const usedSlots = new Set(remaining.map((p) => p.slotId));
   const availableSlots = allowedSlots.filter((s) => !usedSlots.has(s));
 
-  // If all allowed slots are active or available list is empty, reuse the solved slot
   const nextSlotId =
     availableSlots.length > 0
       ? availableSlots[Math.floor(Math.random() * availableSlots.length)]
@@ -529,51 +544,16 @@ export function respawnPair(
     spawnTime: Date.now(),
   };
 
-  // Find an unoccupied corner and edge slot in U layer (or other slots)
-  const candidateCorners = U_LAYER_CORNERS.filter(
-    (c) => state.cp[c] !== newPairDef.cornerId && !remaining.some((p) => p.def.cornerId === state.cp[c]),
-  );
-  const targetCorner =
-    candidateCorners.length > 0
-      ? candidateCorners[Math.floor(Math.random() * candidateCorners.length)]
-      : U_LAYER_CORNERS[0];
-
-  const candidateEdges = U_LAYER_EDGES.filter(
-    (e) => state.ep[e] !== newPairDef.edgeId && !remaining.some((p) => p.def.edgeId === state.ep[e]),
-  );
-  const targetEdge =
-    candidateEdges.length > 0
-      ? candidateEdges[Math.floor(Math.random() * candidateEdges.length)]
-      : U_LAYER_EDGES[0];
-
-  let cornerOri = Math.floor(Math.random() * 3);
-  let edgeOri = Math.floor(Math.random() * 2);
-
-  if (
-    targetCorner === newPairDef.cornerId &&
-    cornerOri === 0 &&
-    targetEdge === newPairDef.edgeId &&
-    edgeOri === 0
-  ) {
-    cornerOri = 1;
+  // Scramble the new pair into position
+  let attempts = 0;
+  while (attempts < 10) {
+    attempts++;
+    const moves = generateSlotScramble(nextSlotId, crossColor);
+    applyMovesToState(state, moves);
+    if (!isF2LSlotSolved(state, newPairDef)) {
+      break;
+    }
   }
-
-  // Swap pieces into position
-  const currentCornerPos = findCornerPos(state.cp, newPairDef.cornerId);
-  if (currentCornerPos !== -1 && currentCornerPos !== targetCorner) {
-    const occupant = state.cp[targetCorner];
-    state.cp[targetCorner] = newPairDef.cornerId;
-    state.cp[currentCornerPos] = occupant;
-  }
-  state.co[targetCorner] = cornerOri;
-
-  const currentEdgePos = findEdgePos(state.ep, newPairDef.edgeId);
-  if (currentEdgePos !== -1 && currentEdgePos !== targetEdge) {
-    const occupant = state.ep[targetEdge];
-    state.ep[targetEdge] = newPairDef.edgeId;
-    state.ep[currentEdgePos] = occupant;
-  }
-  state.eo[targetEdge] = edgeOri;
 
   return {
     nextActivePairs: [...remaining, newPair],
