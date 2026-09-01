@@ -203,10 +203,13 @@ describe('Pyraminx move fidelity (3D turns == WCA scrambler)', () => {
     const { model } = buildModel();
     const driver = makeDriver(model);
 
+    // The plain WCA token is the CLOCKWISE turn = −120° right-hand around the
+    // outward axis (one logical step); the prime is the +120° counter-clockwise
+    // turn (two steps). The driver angles below are the plain/prime pairs.
     for (let move = 0; move < 8; move++) {
       model.reset();
       const vertex = PYRAMINX_VERTICES_ORDER[move >> 1];
-      const angle = move % 2 === 0 ? 120 : -120;
+      const angle = move % 2 === 0 ? -120 : 120;
       await applyTurn(model, driver, vertex, 'layer', angle);
       const expected = applyPyraminxTip(applyPyraminxMove(solvedPyraminx(), move), move);
       expect(model.getState()).toEqual(expected);
@@ -215,7 +218,7 @@ describe('Pyraminx move fidelity (3D turns == WCA scrambler)', () => {
     for (let tipMove = 0; tipMove < 8; tipMove++) {
       model.reset();
       const vertex = PYRAMINX_VERTICES_ORDER[tipMove >> 1];
-      const angle = tipMove % 2 === 0 ? 120 : -120;
+      const angle = tipMove % 2 === 0 ? -120 : 120;
       await applyTurn(model, driver, vertex, 'tip', angle);
       expect(model.getState()).toEqual(applyPyraminxTip(solvedPyraminx(), tipMove));
     }
@@ -284,16 +287,17 @@ describe('Pyraminx move fidelity (3D turns == WCA scrambler)', () => {
     const { model } = buildModel();
     const driver = makeDriver(model);
 
+    // Prime (+120° counter-clockwise, 2 steps) == two single turns (−120°).
     model.reset();
-    await applyTurn(model, driver, 'U', 'layer', -120);
-    await applyTurn(model, driver, 'U', 'tip', -120);
+    await applyTurn(model, driver, 'U', 'layer', 120);
+    await applyTurn(model, driver, 'U', 'tip', 120);
     const prime = model.getState();
 
     model.reset();
-    await applyTurn(model, driver, 'U', 'layer', 120);
-    await applyTurn(model, driver, 'U', 'layer', 120);
-    await applyTurn(model, driver, 'U', 'tip', 120);
-    await applyTurn(model, driver, 'U', 'tip', 120);
+    await applyTurn(model, driver, 'U', 'layer', -120);
+    await applyTurn(model, driver, 'U', 'layer', -120);
+    await applyTurn(model, driver, 'U', 'tip', -120);
+    await applyTurn(model, driver, 'U', 'tip', -120);
     expect(model.getState()).toEqual(prime);
   });
 });

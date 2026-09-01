@@ -109,7 +109,7 @@ Cada cara es un triángulo subdividido en una **rejilla triangular de lado 3** (
 | `U L R B` (+ `'`) | Giro completo del vértice | 3 edges que tocan el vértice + corner del vértice + tip del vértice |
 | `u l r b` (+ `'`) | Giro solo del tip | únicamente el tip del vértice |
 
-- **Orden 3**: cada giro = 120°; el "primo" = los otros 120° (equivalentemente 2×120° en el mismo sentido). En el modelo 3D se anima primo como **−120°**.
+- **Orden 3**: cada giro = 120°; el "primo" = los otros 120° (equivalentemente 2×120° en el mismo sentido). En el modelo 3D el giro normal (WCA 12e2: 120° en sentido horario visto desde el vértice) se anima como **−120°** (regla de la mano derecha alrededor del eje saliente) y el primo como **+120°**.
 - **Permutación de edges por giro** (tabla del scrambler oficial, `PyraminxSolver.FACE_TURNS`):
 
 | Giro | Ciclo de edges | Edges que se voltean | Corner |

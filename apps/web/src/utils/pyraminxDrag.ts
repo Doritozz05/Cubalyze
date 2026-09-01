@@ -12,11 +12,14 @@
  * around ITS vertex; an edge can turn around either of its slot's two
  * vertices). The screen drag is projected to world space and compared
  * against each candidate's rotation TANGENT t = axis × piecePosition —
- * the direction the piece moves under a +120° turn (right-hand rule, the
- * engine's positive angle, matching the WCA single step). The candidate
- * whose tangent best matches the drag wins, and a drag along +t resolves to
- * the plain token (U, L, …) while a drag against it resolves to the prime
- * (U', …) — the grabbed stickers follow the finger, exactly like the cube.
+ * the direction the piece moves under the +120° right-hand rotation (the
+ * engine's positive angle = the COUNTER-CLOCKWISE turn = the PRIME, exactly
+ * like the cube where dragging along the +90° tangent resolves R'). The
+ * candidate whose tangent best matches the drag wins, and a drag along +t
+ * resolves to the PRIME (U', L', …) while a drag against it resolves to the
+ * plain token — the grabbed stickers follow the finger (the plain WCA turn
+ * is the CLOCKWISE turn, WCA 12e2, i.e. motion along −t), exactly like the
+ * cube.
  *
  * IMPORTANT sign detail (same as the cube): screen Y grows DOWNWARD while
  * `cameraUp` is the world direction of screen-TOP, so the world drag is
@@ -121,7 +124,10 @@ export function resolvePyraminxDragMove(input: PyraminxDragInput): PyraminxDragM
     const abs = Math.abs(cos);
     if (abs > bestScore) {
       bestScore = abs;
-      best = { vertex: c.vertex, scope: c.scope, direction: cos > 0 ? 1 : -1 };
+      // Along +t = the +120° counter-clockwise turn = the PRIME; against it
+      // (−t) = the plain CLOCKWISE turn. The stickers follow the finger in
+      // both cases (same composition as the cube's `sign / angleSign`).
+      best = { vertex: c.vertex, scope: c.scope, direction: cos < 0 ? 1 : -1 };
     }
   }
   if (!best || bestScore < MIN_TANGENT_COS) return null;

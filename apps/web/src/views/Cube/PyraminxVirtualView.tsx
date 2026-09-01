@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
 import { HelpCircle, RotateCcw, Shuffle } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,13 @@ import { usePyraminxVirtualSession } from "@/hooks/usePyraminxVirtualSession";
 import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
 import type { Penalty } from "@/types";
-import type { PyraminxEngine as PyraminxEngineT } from "@cubeforge/cube-3d-engine";
+import {
+  conjugatePyraminxToken,
+  displayPyraminxTokenThroughGrip,
+  remapPyraminxScrambleString,
+  transitionPyraminxGrip,
+  type PyraminxEngine as PyraminxEngineT,
+} from "@cubeforge/cube-3d-engine";
 import { isPyraminxSolvedAnyOrientation } from "@cubeforge/solver-engine/pyraminx";
 
 /** Base animation duration (ms) per turn speed. `instant` disables animation. */
@@ -78,6 +85,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
       engine?.reset();
       engine?.resetPuzzleOrientation();
       engine?.setIsometricView();
+      setGrip(0); // canonical view → grip 0
       setScramble(generateScrambleFor(puzzle));
     };
   });
@@ -132,9 +140,42 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
 
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
+  // "Rotate scramble with cube" (Settings → Scramble): remap the scramble
+  // notation to the puzzle's current orientation — same preference and
+  // behavior as the cube simulator (keyboard conjugation always follows the
+  // grip; only the DISPLAYED scramble is gated).
+  const scrambleFollowsCube = useStore(preferencesStore, (s) => s.scrambleFollowsCube);
 
   const [showHelp, setShowHelp] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [hintVisible, setHintVisible] = useState(true);
+
+  // ── Whole-puzzle A₄ grip (view frame) ────────────────────────────────
+  // Mirrors the cube simulator's grip state: the scramble display and the
+  // keyboard conjugation read the SAME grip, so they can never disagree
+  // (the "I did L but the system says R'" class of bugs). The grip is
+  // updated DETERMINISTICALLY at rotation START via the A₄ grip transition
+  // table — never by reading the engine's quaternion mid-animation, which
+  // is mid-SLERP between poses and would snap to the wrong frame.
+  const [grip, setGrip] = useState(0);
+
+  /** Rotate the puzzle one discrete step; the grip updates immediately. */
+  const rotatePuzzleY = useCallback(
+    (direction: 1 | -1) => {
+      setGrip((g) => transitionPyraminxGrip(g, direction === 1 ? "y1" : "y-1"));
+      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleY(direction);
+    },
+    [engineRef],
+  );
+  const rotatePuzzleX = useCallback(
+    (direction: 1 | -1) => {
+      // The 180° C2 tilt is its own inverse: both directions land on the
+      // same pose, so the transition op is x1 either way.
+      setGrip((g) => transitionPyraminxGrip(g, "x1"));
+      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleX(direction);
+    },
+    [engineRef],
+  );
 
   // ── Turn handling: logical session first, then the animated visual ────
   const handleTurn = useCallback(
@@ -158,14 +199,15 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
   const { pointerHandlers } = usePyraminxTurnControls({
     engineRef: engineRef as unknown as React.RefObject<PyraminxEngineT | null>,
     onTurn: handleTurn,
-    onRotateLateral: (direction) => {
-      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleY(direction);
+    onRotateLateral: rotatePuzzleY,
+    onRotateTilt: rotatePuzzleX,
+    onOrbitStep: (dx, dy) => {
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        rotatePuzzleY(dx > 0 ? 1 : -1);
+      } else {
+        rotatePuzzleX(dy > 0 ? 1 : -1);
+      }
     },
-    onRotateTilt: (direction) => {
-      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleX(direction);
-    },
-    onOrbitStep: (dx, dy) =>
-      (engineRef.current as unknown as PyraminxEngineT | null)?.orbitStep(dx, dy),
   });
 
   // ── Keyboard (csTimer-style, see pyraminxKeybinds) ─────────────────────
@@ -191,32 +233,42 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
       // Arrow keys mirror the background drag:
       // Left / Right: 120° drone lateral rotation
       // Down / Up: smooth tilt rotation
-      const eng = engineRef.current as unknown as PyraminxEngineT | null;
       if (e.code === "ArrowRight") {
         e.preventDefault();
-        return void eng?.rotatePuzzleY(1);
+        return void rotatePuzzleY(1);
       }
       if (e.code === "ArrowLeft") {
         e.preventDefault();
-        return void eng?.rotatePuzzleY(-1);
+        return void rotatePuzzleY(-1);
       }
       if (e.code === "ArrowDown") {
         e.preventDefault();
-        return void eng?.rotatePuzzleX(1);
+        return void rotatePuzzleX(1);
       }
       if (e.code === "ArrowUp") {
         e.preventDefault();
-        return void eng?.rotatePuzzleX(-1);
+        return void rotatePuzzleX(-1);
       }
       const rawToken = pyraminxKeyToToken(e.code);
       if (!rawToken) return;
       e.preventDefault();
-      const token = eng ? eng.conjugateKeyToken(rawToken) : rawToken;
+      // Conjugate with the VIEW's grip (the same source the scramble display
+      // uses) — never the engine's live quaternion, which is mid-SLERP while
+      // a rotation animates and would conjugate in the wrong frame.
+      const token = conjugatePyraminxToken(rawToken, grip);
       handleTurn(token);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleTurn, engineRef]);
+  }, [handleTurn, grip, rotatePuzzleX, rotatePuzzleY]);
+
+  // The one-time gesture hint disappears by itself a few seconds after the
+  // puzzle is ready (and immediately on the first drag) — same as the cube.
+  useEffect(() => {
+    if (!isReady || !hintVisible) return;
+    const timer = setTimeout(() => setHintVisible(false), 4500);
+    return () => clearTimeout(timer);
+  }, [isReady, hintVisible]);
 
   // ── Scramble / reset ───────────────────────────────────────────────────
   // Parity with 2x2/3x3: clean reset to solved first, then apply the scramble
@@ -226,6 +278,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     engine?.reset();
     engine?.resetPuzzleOrientation();
     engine?.setIsometricView();
+    setGrip(0); // resetPuzzleOrientation always lands on canonical (grip 0)
     void engine?.applyScrambleAnimated(scramble, 0);
     applyScrambleNow();
   }, [applyScrambleNow, scramble, engineRef]);
@@ -236,6 +289,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     engine?.reset();
     engine?.resetPuzzleOrientation();
     engine?.setIsometricView();
+    setGrip(0);
   }, [reset, engineRef]);
 
   // Lock the initial camera to the isometric view once the engine is ready
@@ -286,6 +340,27 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     [validation.progress, validation.totalTokens],
   );
 
+  // Orientation-adapted scramble ("the scramble rotates with the puzzle",
+  // gated by the same Settings → Scramble preference as the cube): each
+  // canonical WCA token is remapped to the VIEW position where its vertex
+  // now sits, using the A₄ grip tables — the pyraminx analog of the cube's
+  // displayScramble. Identity grip (canonical view) is a no-op.
+  const displayScramble = useMemo(
+    () =>
+      scrambleFollowsCube ? remapPyraminxScrambleString(scramble, grip) : scramble,
+    [scramble, grip, scrambleFollowsCube],
+  );
+  // Error moves are stored in the CANONICAL frame (that's what the tracker
+  // consumed); remap them to the current view frame for display, exactly
+  // like the cube's displayErrorMoves.
+  const displayErrorMoves = useMemo(
+    () =>
+      scrambleFollowsCube
+        ? validation.errorMoves.map((m) => displayPyraminxTokenThroughGrip(m, grip))
+        : validation.errorMoves,
+    [validation.errorMoves, grip, scrambleFollowsCube],
+  );
+
   const unavailable = initFailed || contextEvicted;
 
   return (
@@ -294,9 +369,11 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
       <div className="flex w-full items-start justify-between gap-3 border-b border-line/60 px-3 py-2">
         <ScrambleDisplay
           scramble={scramble}
+          displayScramble={displayScramble}
           verificationActive
           states={scrambleStates}
           currentIndex={validation.progress}
+          errorMoves={displayErrorMoves}
           isScrambled={validation.isScrambled}
           needsReset={validation.needsReset}
           awaitingSolve={false}
@@ -317,6 +394,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
           )}
           onPointerDown={(e) => {
             setIsDragging(true);
+            if (hintVisible) setHintVisible(false);
             pointerHandlers.onPointerDown(e);
           }}
           onPointerMove={pointerHandlers.onPointerMove}
@@ -329,6 +407,20 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
             pointerHandlers.onPointerCancel(e);
           }}
         />
+
+        {/* One-time gesture hint (same copy + timing as the cube simulator) */}
+        {hintVisible && isReady && !unavailable ? (
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+              className="select-none rounded-full border border-line/60 bg-background/70 px-3.5 py-1.5 text-center text-[0.65rem] text-ink-3 shadow-md backdrop-blur-md"
+            >
+              {t("gestureHint")}
+            </motion.p>
+          </div>
+        ) : null}
 
         {unavailable ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80 px-4">

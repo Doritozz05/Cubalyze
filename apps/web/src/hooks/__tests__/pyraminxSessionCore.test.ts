@@ -60,6 +60,41 @@ describe("PyraminxScrambleTracker — scramble verification", () => {
     expect(r).toEqual({ kind: "scramble-mistake" });
     expect(t.progressCount).toBe(1);
     expect(t.mistakeCount).toBe(1);
+    expect(t.errorMovesList).toEqual(["U"]);
+    expect(t.isError).toBe(true);
+  });
+
+  it("an inverse move undoes the last wrong move (cube-validator parity)", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyMove("U"); // progress 1
+    t.applyMove("L"); // wrong (expected L') → error stack ["L"]
+    expect(t.errorMovesList).toEqual(["L"]);
+    expect(t.mistakeCount).toBe(1);
+    const r = t.applyMove("L'"); // undo → pops the error, no new mistake
+    expect(r).toEqual({ kind: "scramble-undo" });
+    expect(t.errorMovesList).toEqual([]);
+    expect(t.isError).toBe(false);
+    expect(t.mistakeCount).toBe(0);
+    expect(t.progressCount).toBe(1); // undo never advances progress
+    // The correct move then advances.
+    const r2 = t.applyMove("L'");
+    expect(r2).toEqual({ kind: "scramble-progress" });
+    expect(t.progressCount).toBe(2);
+  });
+
+  it("multiple wrong moves stack; only the LAST error can be undone", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyMove("U"); // progress 1
+    t.applyMove("B"); // mistake → ["B"]
+    t.applyMove("R"); // mistake → ["B", "R"]
+    expect(t.errorMovesList).toEqual(["B", "R"]);
+    expect(t.isError).toBe(true);
+    t.applyMove("B'"); // not the inverse of the last error (R) → push
+    expect(t.errorMovesList).toEqual(["B", "R", "B'"]);
+    expect(t.mistakeCount).toBe(3);
+    t.applyMove("B"); // inverse of the last error → pop
+    expect(t.errorMovesList).toEqual(["B", "R"]);
+    expect(t.mistakeCount).toBe(2);
   });
 
   it("recovers progress after a wrong move (self-correcting catch-up)", () => {
@@ -67,14 +102,55 @@ describe("PyraminxScrambleTracker — scramble verification", () => {
     t.applyMove("U"); // progress 1
     t.applyMove("L"); // wrong (expected L') → mistake
     expect(t.progressCount).toBe(1);
-    // Undoing the wrong move returns to expected[0] (already counted).
+    // Undoing the wrong move pops the error (cube parity) — no new mistake.
     t.applyMove("L'");
     expect(t.progressCount).toBe(1);
-    expect(t.mistakeCount).toBe(2);
+    expect(t.mistakeCount).toBe(0);
+    expect(t.errorMovesList).toEqual([]);
     // Repeating the correct move now advances past expected[1].
     t.applyMove("L'");
     expect(t.progressCount).toBe(2);
     expect(t.mistakeCount).toBe(0); // mistakes reset on progress
+  });
+
+  it("a move that returns the puzzle to SOLVED restarts the scramble (3×3 parity)", () => {
+    const t = new PyraminxScrambleTracker("U L'");
+    t.applyMove("U"); // progress 1
+    // U' is wrong for the scramble (expected L'), but the puzzle is now
+    // physically solved — the 3×3 validator would resetRef on solved
+    // facelets instead of flagging an error, so we restart verification.
+    const r = t.applyMove("U'");
+    expect(r).toEqual({ kind: "scramble-restart" });
+    expect(t.progressCount).toBe(0);
+    expect(t.mistakeCount).toBe(0);
+    expect(t.errorMovesList).toEqual([]);
+    expect(t.isScrambled).toBe(false);
+    // The scramble can be performed again from scratch.
+    t.applyMove("U");
+    expect(t.progressCount).toBe(1);
+  });
+
+  it("solved mid-error also restarts (no error is kept for a solved puzzle)", () => {
+    const t = new PyraminxScrambleTracker("U L' B");
+    t.applyMove("U"); // progress 1
+    t.applyMove("L"); // mistake → error stack ["L"], state U·L
+    expect(t.errorMovesList).toEqual(["L"]);
+    t.applyMove("B'"); // not the inverse of L → stack grows
+    expect(t.errorMovesList).toEqual(["L", "B'"]);
+    // Undo BOTH errors in LIFO order (B undoes B', then L' undoes L).
+    const r1 = t.applyMove("B"); // inverse of the last (B') → pop
+    expect(r1).toEqual({ kind: "scramble-undo" });
+    expect(t.errorMovesList).toEqual(["L"]);
+    const r2 = t.applyMove("L'"); // inverse of the last (L) → pop
+    expect(r2).toEqual({ kind: "scramble-undo" });
+    expect(t.errorMovesList).toEqual([]);
+    expect(t.mistakeCount).toBe(0);
+    // State is back at U (progress 1, not solved); U' now solves it.
+    const r3 = t.applyMove("U'"); // U·U' = solved → restart
+    expect(r3).toEqual({ kind: "scramble-restart" });
+    expect(t.progressCount).toBe(0);
+    expect(t.mistakeCount).toBe(0);
+    expect(t.errorMovesList).toEqual([]);
   });
 
   it("too many consecutive mistakes sets needsReset", () => {
@@ -85,6 +161,31 @@ describe("PyraminxScrambleTracker — scramble verification", () => {
     }
     expect(t.needsResetState).toBe(true);
     expect(t.isScrambled).toBe(false);
+  });
+
+  it("needsReset is sticky until the puzzle is physically solved, then restarts fresh", () => {
+    const t = new PyraminxScrambleTracker(SCRAMBLE);
+    t.applyMove("U"); // progress 1
+    // Five mistakes with no adjacent inverse pairs (no undo branch).
+    for (const w of ["B", "R", "L", "B'", "R'"]) {
+      const r = t.applyMove(w);
+      expect(r.kind).toBe("scramble-mistake");
+    }
+    expect(t.needsResetState).toBe(true);
+    expect(t.isScrambled).toBe(false);
+    // While needsReset: moves are ignored (never evaluated) but still
+    // applied to the state mirror.
+    expect(t.applyMove("U").kind).toBe("ignored");
+    // Drive the state back to solved with the exact inverse of everything
+    // applied so far ([U, B, R, L, B', R', U]). The needsReset phase
+    // detects the solved state and restarts verification from a fresh frame.
+    for (const tok of ["U'", "R", "B", "L'", "R'", "B'", "U'"]) {
+      expect(t.applyMove(tok).kind).toBe("ignored");
+    }
+    expect(t.needsResetState).toBe(false);
+    expect(t.progressCount).toBe(0);
+    expect(t.mistakeCount).toBe(0);
+    expect(t.errorMovesList).toEqual([]);
   });
 
   it("applyScrambleNow reaches the scrambled state in one step", () => {

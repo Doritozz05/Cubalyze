@@ -33,6 +33,10 @@ export interface UsePyraminxVirtualSessionResult {
     totalTokens: number;
     /** Consecutive wrong moves since the last correct one. */
     mistakes: number;
+    /** The consecutive wrong scramble moves (canonical frame) — per-token
+     *  error display, mirror of the cube validator's errorMoves. Empty while
+     *  the user is on track; undone by the inverse move. */
+    errorMoves: string[];
   };
   /**
    * Apply one WCA pyraminx token (U, U', l, …) — the user's move. Handles
@@ -85,6 +89,7 @@ export function usePyraminxVirtualSession(
     progress: 0,
     totalTokens: tracker.totalTokens,
     mistakes: 0,
+    errorMoves: [] as string[],
   }));
 
   const collectedMovesRef = useRef<CubeMoveEvent[]>([]);
@@ -105,6 +110,7 @@ export function usePyraminxVirtualSession(
       progress: 0,
       totalTokens: trackerRef.current.totalTokens,
       mistakes: 0,
+      errorMoves: [],
     });
   }, [scramble, engine]);
 
@@ -143,6 +149,9 @@ export function usePyraminxVirtualSession(
       progress: trackerRef.current!.progressCount,
       totalTokens: trackerRef.current!.totalTokens,
       mistakes: trackerRef.current!.mistakeCount,
+      // Fresh copy — the ScrambleDisplay error list depends on the reference
+      // to re-render (same pattern as the cube's displayErrorMoves memo).
+      errorMoves: trackerRef.current!.errorMovesList,
     });
   }, []);
 

@@ -260,6 +260,11 @@ export function relabelPyraminxState(
     const [fa, fb] = EDGE_FACE_PAIRS[e];
     const faPrime = g[fa];
     const fbPrime = g[fb];
+    // The flip convention is a property of the PHYSICAL piece encoding (the
+    // 12 signatures are rotations of the solved puzzle), independent of the
+    // move-DIRECTION convention, so the formula is unchanged by the WCA-
+    // clockwise move flip: a relabel flips the piece when the face pair
+    // DESCENDS in index order.
     const baseFlip = faPrime > fbPrime ? 1 : 0;
 
     newHomes[ePrime] = oldHomes[e];
@@ -325,12 +330,18 @@ interface FaceTurn {
  * vertex (WCA notation). Edges: 0=LR, 1=UL, 2=LB, 3=UR, 4=RB, 5=UB.
  * Corners are indexed by their face (U=0, L=1, R=2, B=3).
  * This table is validated against Jaap's published depth distribution.
+ *
+ * The single turn is the WCA CLOCKWISE turn (WCA Reg 12e2: 120° clockwise
+ * when viewed from the vertex/tip) — the opposite handedness of the raw
+ * +120° right-hand rotation, so the single step cycles the edges in the
+ * REVERSED direction (e.g. U: UL→UR→UB) and the prime applies it twice.
+ * This is the same handedness the cube engine uses (R = −90° around +x).
  */
 const FACE_TURNS: Record<FaceName, FaceTurn> = {
-  U: { cycle: [1, 5, 3], flips: [1, 3], corner: 0 },
-  L: { cycle: [0, 2, 1], flips: [0, 1], corner: 1 },
-  R: { cycle: [0, 3, 4], flips: [3, 4], corner: 2 },
-  B: { cycle: [2, 4, 5], flips: [4, 5], corner: 3 },
+  U: { cycle: [1, 3, 5], flips: [3, 5], corner: 0 },
+  L: { cycle: [0, 1, 2], flips: [1, 2], corner: 1 },
+  R: { cycle: [0, 4, 3], flips: [0, 3], corner: 2 },
+  B: { cycle: [2, 5, 4], flips: [2, 4], corner: 3 },
 };
 
 /** Move index → face: moves 0..7 are U, U', L, L', R, R', B, B'. */
@@ -340,7 +351,9 @@ const stepsOfMove = (move: number): number => (move & 1) + 1;
 
 /**
  * Apply one full layer turn to the edge array (piece = home | orientation<<3)
- * and the corner array, for `steps` 120° rotations.
+ * and the corner array, for `steps` 120° rotations. The single step is the
+ * WCA CLOCKWISE turn (viewed from the vertex), so the vertex's own corner
+ * twists by +2 (i.e. one counter-clockwise step in the raw +120° frame).
  */
 function applyTurn(edges: Uint8Array, corners: Uint8Array, face: FaceName, steps: number): void {
   const turn = FACE_TURNS[face];
@@ -352,7 +365,7 @@ function applyTurn(edges: Uint8Array, corners: Uint8Array, face: FaceName, steps
     edges[b] = turn.flips.includes(b) ? pieceA ^ 8 : pieceA;
     edges[c] = turn.flips.includes(c) ? pieceB ^ 8 : pieceB;
     edges[a] = turn.flips.includes(a) ? pieceC ^ 8 : pieceC;
-    corners[turn.corner] = (corners[turn.corner] + 1) % 3;
+    corners[turn.corner] = (corners[turn.corner] + 2) % 3;
   }
 }
 
@@ -658,12 +671,16 @@ export function applyPyraminxMove(state: PyraminxState, move: number): PyraminxS
   };
 }
 
-/** Apply one tip-only turn (index 0..7: u, u', l, l', r, r', b, b'). */
+/**
+ * Apply one tip-only turn (index 0..7: u, u', l, l', r, r', b, b'). The plain
+ * token is the WCA CLOCKWISE turn (viewed from the tip) = two raw +120°
+ * steps; the prime is one raw +120° step.
+ */
 export function applyPyraminxTip(state: PyraminxState, tipMove: number): PyraminxState {
   const tip = Math.floor(tipMove / 2);
-  const direction = (tipMove % 2) + 1;
+  const steps = (tipMove % 2) + 1; // 1 step (plain) or 2 steps (prime)
   const orientations = decodeBase3(state.tips);
-  orientations[tip] = (orientations[tip] + direction) % 3;
+  orientations[tip] = (orientations[tip] + 2 * steps) % 3;
   return { ...state, tips: encodeBase3(orientations) };
 }
 
@@ -735,11 +752,13 @@ export function generatePyraminxScramble(
   for (let i = solution.length - 1; i >= 0; i--) {
     tokens.push(INVERSE_MOVE_NAMES[solution[i]]);
   }
-  // …then the direct tip turns that reach the sampled tip state.
+  // …then the direct tip turns that reach the sampled tip state. The plain
+  // token now twists by +2 (clockwise), so orientation value 1 is reached by
+  // the prime ("u'") and value 2 by the plain ("u").
   const tipOrientations = decodeBase3(state.tips);
   for (let tip = 0; tip < 4; tip++) {
     const value = tipOrientations[tip];
-    if (value > 0) tokens.push(PYRAMINX_TIP_NAMES[tip * 2 + value - 1]);
+    if (value > 0) tokens.push(PYRAMINX_TIP_NAMES[tip * 2 + (2 - value)]);
   }
   return tokens.join(" ");
 }

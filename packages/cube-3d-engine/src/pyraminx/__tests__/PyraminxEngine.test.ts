@@ -141,9 +141,10 @@ describe('PyraminxEngine.onMoveEvent (moves strip)', () => {
     const tokens: string[] = [];
     engine.onMoveEvent((token) => tokens.push(token));
 
-    await engine.rotateVertex('U', 'layer', 120, 0);
+    // −120° = the plain CLOCKWISE turn (WCA 12e2); +120° = the prime.
     await engine.rotateVertex('U', 'layer', -120, 0);
-    await engine.rotateVertex('L', 'layer', 120, 0);
+    await engine.rotateVertex('U', 'layer', 120, 0);
+    await engine.rotateVertex('L', 'layer', -120, 0);
 
     expect(tokens).toEqual(["U", "U'", 'L']);
   });
@@ -152,8 +153,8 @@ describe('PyraminxEngine.onMoveEvent (moves strip)', () => {
     const tokens: string[] = [];
     engine.onMoveEvent((token) => tokens.push(token));
 
-    await engine.rotateVertex('B', 'tip', 120, 0);
     await engine.rotateVertex('B', 'tip', -120, 0);
+    await engine.rotateVertex('B', 'tip', 120, 0);
 
     expect(tokens).toEqual(['b', "b'"]);
   });
@@ -419,26 +420,32 @@ describe('PyraminxReplayEngine over the real driver (reconstruction scramble)', 
   });
 
   it('tracks grip index and conjugates key tokens through whole-puzzle rotations', async () => {
+    // WYSIWYG conjugation: the "R" key turns the layer at the screen-RIGHT
+    // position, the "L" key the screen-LEFT one. In the canonical view the
+    // L vertex sits at the bottom-right, so "R" performs the canonical L
+    // layer and "L" the canonical R layer — the letters match what the user
+    // sees, like the cube simulator.
     expect(engine.getGripIndex()).toBe(0);
     expect(engine.conjugateKeyToken('U')).toBe('U');
-    expect(engine.conjugateKeyToken('L')).toBe('L');
-    expect(engine.conjugateKeyToken("R'")).toBe("R'");
+    expect(engine.conjugateKeyToken('L')).toBe('R');
+    expect(engine.conjugateKeyToken("R'")).toBe("L'");
     expect(engine.conjugateKeyToken('u')).toBe('u');
 
-    // Rotate lateral Y by 120° (Grip 1)
+    // Rotate lateral Y by 120° (Grip 1): canonical R is now at the bottom-
+    // right, canonical B at the left, canonical L at the back.
     await engine.rotatePuzzleY(1, 0);
     expect(engine.getGripIndex()).toBe(1);
     expect(engine.conjugateKeyToken('U')).toBe('U');
-    expect(engine.conjugateKeyToken('L')).toBe('R');
-    expect(engine.conjugateKeyToken('R')).toBe('B');
+    expect(engine.conjugateKeyToken('L')).toBe('B');
+    expect(engine.conjugateKeyToken('R')).toBe('R');
     expect(engine.conjugateKeyToken('B')).toBe('L');
 
-    // Tilt X by 180° C2 (Grip 4)
+    // Tilt X by 180° C2 (Grip 4): L tip on top, U at the back.
     await engine.rotatePuzzleX(1, 0);
     expect(engine.getGripIndex()).toBe(4);
     expect(engine.conjugateKeyToken('U')).toBe('L');
-    expect(engine.conjugateKeyToken('L')).toBe('B');
-    expect(engine.conjugateKeyToken('R')).toBe('R');
+    expect(engine.conjugateKeyToken('L')).toBe('R');
+    expect(engine.conjugateKeyToken('R')).toBe('B');
     expect(engine.conjugateKeyToken('B')).toBe('U');
 
     // Reset orientation brings back Grip 0

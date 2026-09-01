@@ -12,6 +12,8 @@ import {
   PYRAMINX_AXES,
   PYRAMINX_CANONICAL_QUAT,
   PYRAMINX_EDGE_SLOTS,
+  PYRAMINX_ISOMETRIC_PHI_RAD,
+  PYRAMINX_ISOMETRIC_THETA_RAD,
   PYRAMINX_TILT_AXIS,
   PYRAMINX_VERTICES_ORDER,
   TETRAHEDRAL_TILT_ANGLE,
@@ -76,9 +78,14 @@ const CUBE_FACE_TO_PYRAMINX: Record<PyraminxVertex, keyof CubeStyleOptions['stic
   B: 'R', // red
 };
 
-/** Signed turn steps from a driver angle (±120° → 1 / 2 steps, 0 → no-op). */
+/**
+ * Signed turn steps from a driver angle. The plain WCA token is the CLOCKWISE
+ * turn (WCA 12e2 — −120° right-hand around the outward axis), which is ONE
+ * logical step; the prime (+120°) is the counter-clockwise turn = two steps.
+ * (0 → no-op.)
+ */
 function stepsFromAngle(angleInDegrees: number): number {
-  return ((Math.round(angleInDegrees / 120) % 3) + 3) % 3;
+  return ((Math.round(-angleInDegrees / 120) % 3) + 3) % 3;
 }
 
 export {
@@ -422,8 +429,8 @@ export class PyraminxEngine {
    * back faces remain hidden.
    */
   public static readonly CANONICAL_ISOMETRIC_VIEW = {
-    theta: (39 * Math.PI) / 180,
-    phi: (22 * Math.PI) / 180,
+    theta: PYRAMINX_ISOMETRIC_THETA_RAD,
+    phi: PYRAMINX_ISOMETRIC_PHI_RAD,
     radius: 7,
   };
 
@@ -568,13 +575,17 @@ export class PyraminxEngine {
     return Promise.resolve();
   }
 
-  /** Backward-compatibility helper for discrete steps. */
-  public orbitStep(dx: number, dy: number, durationMs = 180): void {
+  /**
+   * Backward-compatibility helper for discrete steps. Returns the rotation
+   * promise so callers can await the step settling (e.g. to re-read the
+   * A₄ grip for a view-adapted scramble display). Ignoring the return
+   * keeps the legacy fire-and-forget behavior.
+   */
+  public orbitStep(dx: number, dy: number, durationMs = 180): Promise<void> {
     if (Math.abs(dx) >= Math.abs(dy)) {
-      void this.rotatePuzzleY(dx > 0 ? 1 : -1, durationMs);
-    } else {
-      void this.rotatePuzzleX(dy > 0 ? 1 : -1, durationMs);
+      return this.rotatePuzzleY(dx > 0 ? 1 : -1, durationMs);
     }
+    return this.rotatePuzzleX(dy > 0 ? 1 : -1, durationMs);
   }
 
   /** The world-space rotation axis for a vertex given the current puzzle orientation. */

@@ -192,9 +192,11 @@ export class PyraminxModel {
    * Apply one full layer turn at a vertex (edges permute + flip, the vertex's
    * corner twists). Mirrors the scrambler's `applyTurn` exactly: the piece at
    * cycle[0] moves to cycle[1], etc., flipping when its DESTINATION is in the
-   * turn's flips list. Tips are NOT touched here — a physical layer turn also
-   * rotates the tip, so callers compose `applyTipTurn` (same as the WCA
-   * scramble, which appends tip turns separately).
+   * turn's flips list. The single step is the WCA CLOCKWISE turn (viewed from
+   * the vertex), so the vertex's own corner twists by +2 per step (the same
+   * convention as the solver). Tips are NOT touched here — a physical layer
+   * turn also rotates the tip, so callers compose `applyTipTurn` (same as the
+   * WCA scramble, which appends tip turns separately).
    */
   public applyLayerTurn(vertex: PyraminxVertex, steps: 1 | 2): void {
     const turn = PYRAMINX_TURNS[PYRAMINX_VERTEX_INDEX[vertex]];
@@ -212,7 +214,7 @@ export class PyraminxModel {
       if (turn.flips.includes(a)) pieceC.flipped = !pieceC.flipped;
 
       const corner = this.corners[PYRAMINX_VERTEX_INDEX[vertex]];
-      corner.orientation = (corner.orientation + 1) % 3;
+      corner.orientation = (corner.orientation + 2) % 3;
     }
     // Sync every piece's current slot with the permutation array.
     for (let slot = 0; slot < this.edgeAtSlot.length; slot++) {
@@ -220,10 +222,10 @@ export class PyraminxModel {
     }
   }
 
-  /** Apply a tip-only turn at a vertex (the tip twists in place). */
+  /** Apply a tip-only turn at a vertex (the tip twists in place, +2 per step). */
   public applyTipTurn(vertex: PyraminxVertex, steps: 1 | 2): void {
     const tip = this.tipAt(vertex);
-    tip.orientation = (tip.orientation + steps) % 3;
+    tip.orientation = (tip.orientation + 2 * steps) % 3;
   }
 
   // ── State export / reset ────────────────────────────────────────────────

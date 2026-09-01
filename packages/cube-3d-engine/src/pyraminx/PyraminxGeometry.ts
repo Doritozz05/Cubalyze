@@ -36,10 +36,14 @@ import { Vector3, Quaternion } from 'three';
  * produces the exact same PyraminxState as `applyPyraminxMove` for every
  * move, so the tables can never drift apart unnoticed.
  *
- * A +120° turn around the OUTWARD axis of a vertex (right-hand rule) matches
- * the scrambler's single-step turn for that vertex (verified against the
- * geometry: e.g. +120° around U maps edge slot UL→UB→UR, exactly the
- * scrambler's U cycle [1,5,3]).
+ * The model's single logical step implements the scrambler's single-step
+ * cycle for that vertex (verified against the geometry: the −120° rotation
+ * around U maps edge slot UL→UR→UB, exactly the scrambler's U cycle [1,3,5]).
+ * Per WCA Regulation 12e2 a plain token is the CLOCKWISE turn (120° clockwise
+ * when viewed from the tip — the −120° right-hand rotation around the outward
+ * axis, the same handedness as the cube's R = −90°), so the engine animates
+ * −120° for the plain token and commits ONE logical step; the prime animates
+ * +120° and commits two steps.
  */
 
 // ── Vertices (circumradius 1, U on top) ─────────────────────────────────────
@@ -123,10 +127,10 @@ export interface PyraminxTurnDef {
 }
 
 export const PYRAMINX_TURNS: readonly PyraminxTurnDef[] = [
-  { vertex: 'U', cycle: [1, 5, 3], flips: [1, 3] },
-  { vertex: 'L', cycle: [0, 2, 1], flips: [0, 1] },
-  { vertex: 'R', cycle: [0, 3, 4], flips: [3, 4] },
-  { vertex: 'B', cycle: [2, 4, 5], flips: [4, 5] },
+  { vertex: 'U', cycle: [1, 3, 5], flips: [3, 5] },
+  { vertex: 'L', cycle: [0, 1, 2], flips: [1, 2] },
+  { vertex: 'R', cycle: [0, 4, 3], flips: [0, 3] },
+  { vertex: 'B', cycle: [2, 5, 4], flips: [2, 4] },
 ];
 
 /** WCA move tokens (layer + tip turns, with primes). */
@@ -138,8 +142,11 @@ export type PyraminxMoveToken = (typeof PYRAMINX_MOVE_TOKENS)[number];
 
 /**
  * Resolve a WCA token to its slice: which vertex, whether it is a full layer
- * turn or a tip-only turn, and the signed angle (a prime is −120°, which is
- * physically the 2-step turn).
+ * turn or a tip-only turn, and the signed angle. The plain token is the
+ * WCA CLOCKWISE turn — 120° clockwise when viewed from the vertex/tip, i.e.
+ * −120° right-hand around the outward axis (WCA 12e2, same handedness as the
+ * cube's R = −90°). The prime is the counter-clockwise turn (+120°), which
+ * is physically the 2-step turn.
  */
 export function resolvePyraminxMoveToken(
   token: string,
@@ -150,7 +157,7 @@ export function resolvePyraminxMoveToken(
   const upper = base.toUpperCase();
   if (upper !== 'U' && upper !== 'L' && upper !== 'R' && upper !== 'B') return null;
   const scope = base === upper ? 'layer' : 'tip';
-  return { vertex: upper, scope, angleInDegrees: prime ? -120 : 120 };
+  return { vertex: upper, scope, angleInDegrees: prime ? 120 : -120 };
 }
 
 /** Whether a string is a syntactically valid WCA Pyraminx scramble. */
@@ -349,39 +356,87 @@ export function snapPyraminxGrip(quat: Quaternion): { grip: number; confidence: 
   return { grip: bestIdx, confidence: bestDot };
 }
 
+// ── Canonical isometric camera (the virtual view's locked camera) ───────────
+// The A₄ grip maps below describe SCREEN positions, so they depend on the
+// view direction. The virtual pyraminx locks the camera to this canonical
+// isometric view — the SAME angles the engine applies through
+// SceneManager.setOrbitAngles (PyraminxEngine.CANONICAL_ISOMETRIC_VIEW
+// references these constants, so the maps and the camera can never drift
+// apart).
+export const PYRAMINX_ISOMETRIC_THETA_RAD = (39 * Math.PI) / 180;
+export const PYRAMINX_ISOMETRIC_PHI_RAD = (22 * Math.PI) / 180;
+
 /**
- * Visual key mapping per grip index (0..11).
- * Maps the on-screen key vertex (U=top, L=left, R=right, B=back)
- * to the corresponding physical vertex in the canonical model frame.
- *
- * Mapping table:
- *   Grip 0: UI canonical upright       → { U: 'U', L: 'L', R: 'R', B: 'B' }
- *   Grip 1: UI rotY(1)                 → { U: 'U', L: 'R', R: 'B', B: 'L' }
- *   Grip 2: UI rotY(2)                 → { U: 'U', L: 'B', R: 'L', B: 'R' }
- *   Grip 3: UI rotX(1) from Grip 0     → { U: 'B', L: 'R', R: 'L', B: 'U' }
- *   Grip 4: UI rotX(1) from Grip 1     → { U: 'L', L: 'B', R: 'R', B: 'U' }
- *   Grip 5: UI rotX(1) from Grip 2     → { U: 'R', L: 'L', R: 'B', B: 'U' }
- *   Grip 6: Orbit pose (B top)         → { U: 'B', L: 'L', R: 'U', B: 'R' }
- *   Grip 7: Orbit pose (L top)         → { U: 'L', L: 'R', R: 'U', B: 'B' }
- *   Grip 8: Orbit pose (R top)         → { U: 'R', L: 'B', R: 'U', B: 'L' }
- *   Grip 9: Orbit pose (B top)         → { U: 'B', L: 'U', R: 'R', B: 'L' }
- *   Grip 10: Orbit pose (R top)        → { U: 'R', L: 'U', R: 'L', B: 'B' }
- *   Grip 11: Orbit pose (L top)        → { U: 'L', L: 'U', R: 'B', B: 'R' }
+ * The camera basis (forward / right / up) of the canonical isometric view —
+ * the exact spherical-orbit convention of SceneManager.setOrbitAngles:
+ * camPos = (cos φ·sin θ, sin φ, cos φ·cos θ), camera up = world +Y.
  */
-export const PYRAMINX_GRIP_MAPS: readonly Record<PyraminxVertex, PyraminxVertex>[] = [
-  { U: 'U', L: 'L', R: 'R', B: 'B' }, // Grip 0
-  { U: 'U', L: 'R', R: 'B', B: 'L' }, // Grip 1
-  { U: 'U', L: 'B', R: 'L', B: 'R' }, // Grip 2
-  { U: 'B', L: 'R', R: 'L', B: 'U' }, // Grip 3
-  { U: 'L', L: 'B', R: 'R', B: 'U' }, // Grip 4
-  { U: 'R', L: 'L', R: 'B', B: 'U' }, // Grip 5
-  { U: 'B', L: 'L', R: 'U', B: 'R' }, // Grip 6
-  { U: 'L', L: 'R', R: 'U', B: 'B' }, // Grip 7
-  { U: 'R', L: 'B', R: 'U', B: 'L' }, // Grip 8
-  { U: 'B', L: 'U', R: 'R', B: 'L' }, // Grip 9
-  { U: 'R', L: 'U', R: 'L', B: 'B' }, // Grip 10
-  { U: 'L', L: 'U', R: 'B', B: 'R' }, // Grip 11
-];
+export function computePyraminxIsometricBasis(): {
+  forward: Vector3;
+  right: Vector3;
+  up: Vector3;
+} {
+  const theta = PYRAMINX_ISOMETRIC_THETA_RAD;
+  const phi = PYRAMINX_ISOMETRIC_PHI_RAD;
+  const camPos = new Vector3(
+    Math.cos(phi) * Math.sin(theta),
+    Math.sin(phi),
+    Math.cos(phi) * Math.cos(theta),
+  );
+  const forward = camPos.clone().negate().normalize();
+  const right = new Vector3().crossVectors(forward, new Vector3(0, 1, 0)).normalize();
+  const up = new Vector3().crossVectors(right, forward).normalize();
+  return { forward, right, up };
+}
+
+/**
+ * Derive the 12 visual grip maps DIRECTLY from the actual A₄ pose geometry
+ * and the canonical isometric camera — the single source of truth for
+ * "which canonical vertex sits at which on-screen position".
+ *
+ * Position naming (the keymap/display grid, same convention as the cube):
+ *   - U (top)  = the vertex with the greatest screen-up coordinate
+ *   - B (back) = the base vertex farthest from the camera (max depth)
+ *   - L / R    = the two front base vertices split by screen-right
+ *                (min screen-right = L, max screen-right = R)
+ *
+ * This makes the tables WYSIWYG-consistent with the actual view: the letter
+ * shown for a layer is the position where the layer sits on screen, and the
+ * key for that position turns exactly that layer. The earlier hand-authored
+ * table assumed the canonical view mirrors the WCA hold (L left / R right),
+ * but the actual pose puts the L vertex at the bottom-right and the R vertex
+ * at the left of the screen — which inverted every displayed/keyboard letter
+ * ("I turn the right red layer and it says L'").
+ */
+export function computePyraminxGripMaps(): Record<PyraminxVertex, PyraminxVertex>[] {
+  const { forward, right, up } = computePyraminxIsometricBasis();
+  const sU = (p: Vector3) => p.dot(up);
+  const sR = (p: Vector3) => p.dot(right);
+  const depth = (p: Vector3) => p.dot(forward);
+
+  return PYRAMINX_GRIP_QUATERNIONS.map((gq) => {
+    const world = (v: PyraminxVertex) =>
+      PYRAMINX_VERTEX_POSITIONS[v].clone().applyQuaternion(gq);
+    const tips = (PYRAMINX_VERTICES_ORDER as readonly PyraminxVertex[]).map((v) => ({
+      v,
+      p: world(v),
+    }));
+    const top = tips.reduce((a, b) => (sU(a.p) > sU(b.p) ? a : b)).v;
+    const base = tips.filter((t) => t.v !== top);
+    const back = base.reduce((a, b) => (depth(a.p) > depth(b.p) ? a : b)).v;
+    const front = base.filter((t) => t.v !== back);
+    const left = front.reduce((a, b) => (sR(a.p) < sR(b.p) ? a : b)).v;
+    const rightVertex = front.reduce((a, b) => (sR(a.p) > sR(b.p) ? a : b)).v;
+    return { U: top, L: left, R: rightVertex, B: back };
+  });
+}
+
+/**
+ * The 12 visual grip maps (see {@link computePyraminxGripMaps}) — computed
+ * once at module load from the pose quaternions and the canonical camera.
+ */
+export const PYRAMINX_GRIP_MAPS: readonly Record<PyraminxVertex, PyraminxVertex>[] =
+  computePyraminxGripMaps();
 
 /**
  * Conjugate an input key token (e.g. "U", "L'", "r") by the given grip index (0..11).
@@ -403,10 +458,135 @@ export function conjugatePyraminxToken(token: string, grip: number): string {
 
 /**
  * Inverse grip lookup table: PYRAMINX_INVERSE_GRIP[g] is the grip g⁻¹ such that
- * conjugate(conjugate(t, g), g⁻¹) === t for all tokens t.
+ * conjugate(conjugate(t, g), g⁻¹) === t for all tokens t. Computed from the
+ * derived maps: the inverse permutation of each map is guaranteed to exist
+ * inside the A₄ orbit of 12 poses.
  */
-export const PYRAMINX_INVERSE_GRIP: readonly number[] = [
-  0, 2, 1, 3, 9, 6, 5, 10, 8, 4, 7, 11,
-];
+export function computePyraminxInverseGrips(): number[] {
+  return PYRAMINX_GRIP_MAPS.map((map) => {
+    const inv: Record<PyraminxVertex, PyraminxVertex> = {
+      U: 'U',
+      L: 'L',
+      R: 'R',
+      B: 'B',
+    };
+    for (const pos of PYRAMINX_VERTICES_ORDER) {
+      inv[map[pos]] = pos;
+    }
+    const idx = PYRAMINX_GRIP_MAPS.findIndex(
+      (m) => m.U === inv.U && m.L === inv.L && m.R === inv.R && m.B === inv.B,
+    );
+    if (idx < 0) {
+      throw new Error(`No inverse grip found for grip map ${JSON.stringify(map)}`);
+    }
+    return idx;
+  });
+}
+
+export const PYRAMINX_INVERSE_GRIP: readonly number[] = computePyraminxInverseGrips();
+
+/**
+ * The discrete whole-puzzle rotations the virtual view exposes (the UI's
+ * lateral 120° drone steps and the 180° C2 tilt). `x1` and `x-1` produce
+ * the SAME pose (a 180° rotation is its own inverse around the tilt axis).
+ */
+export const PYRAMINX_ROTATION_OPS = ['y1', 'y-1', 'x1', 'x-1'] as const;
+export type PyraminxRotationOp = (typeof PYRAMINX_ROTATION_OPS)[number];
+
+/**
+ * Grip transition table: PYRAMINX_GRIP_TRANSITIONS[op][g] is the A₄ grip
+ * index the puzzle lands on after applying the discrete rotation `op` to
+ * pose g (computed from the actual pose quaternions — exact, not snapped
+ * by inspection). Pure and precomputed once at module load.
+ *
+ * This is what lets the VIEW update its grip state DETERMINISTICALLY at
+ * rotation START (no waiting for the animation to settle, no reading a
+ * mid-SLERP quaternion), so the scramble display and the keyboard
+ * conjugation always agree on the same frame.
+ */
+export function computePyraminxGripTransitions(): Record<
+  PyraminxRotationOp,
+  readonly number[]
+> {
+  const qY1 = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (120 * Math.PI) / 180);
+  const qY_1 = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (-120 * Math.PI) / 180);
+  const qX1 = new Quaternion().setFromAxisAngle(PYRAMINX_TILT_AXIS, Math.PI);
+  const qX_1 = new Quaternion().setFromAxisAngle(PYRAMINX_TILT_AXIS, -Math.PI);
+  const ops: Record<PyraminxRotationOp, Quaternion> = { y1: qY1, 'y-1': qY_1, x1: qX1, 'x-1': qX_1 };
+
+  const table: Record<PyraminxRotationOp, number[]> = {
+    y1: [],
+    'y-1': [],
+    x1: [],
+    'x-1': [],
+  };
+  for (let g = 0; g < PYRAMINX_GRIP_QUATERNIONS.length; g++) {
+    for (const op of PYRAMINX_ROTATION_OPS) {
+      const target = ops[op].clone().multiply(PYRAMINX_GRIP_QUATERNIONS[g]).normalize();
+      table[op][g] = snapPyraminxGrip(target).grip;
+    }
+  }
+  return table;
+}
+
+/** The precomputed 12×4 grip transition table (see {@link computePyraminxGripTransitions}). */
+export const PYRAMINX_GRIP_TRANSITIONS: Record<
+  PyraminxRotationOp,
+  readonly number[]
+> = computePyraminxGripTransitions();
+
+/**
+ * The grip index the puzzle lands on after the discrete rotation `op` is
+ * applied to the current pose `grip`. Falls back to `grip` for unknown ops.
+ */
+export function transitionPyraminxGrip(grip: number, op: PyraminxRotationOp): number {
+  return PYRAMINX_GRIP_TRANSITIONS[op]?.[grip] ?? grip;
+}
+
+/**
+ * Map a CANONICAL WCA token to its VIEW-frame display under a grip index
+ * (0..11) — the Pyraminx analog of the cube's `MoveTransformer.remapScrambleString`:
+ *
+ * The scramble is written in the canonical model frame ("turn the U vertex",
+ * …). After a whole-puzzle A₄ rotation, the canonical vertices sit at
+ * different screen positions; a WYSIWYG display renames each token to the
+ * position where its vertex now sits — e.g. the canonical L vertex sits at
+ * the bottom-right of the canonical view, so it displays as "R". This is
+ * exactly the INVERSE of the key conjugation: pressing the displayed
+ * position key performs the canonical move the display names (grip 0:
+ * display "R" → press the R key → canonical L, the layer under the finger).
+ * Primes and tip/layer case are preserved; unknown tokens pass through.
+ */
+export function displayPyraminxTokenThroughGrip(token: string, grip: number): string {
+  const isPrime = token.endsWith("'");
+  const base = isPrime ? token.slice(0, -1) : token;
+  const isTip = base === base.toLowerCase();
+  const upper = base.toUpperCase() as PyraminxVertex;
+
+  // gripMap[g] maps VIEW position → canonical vertex (conjugation). The
+  // display needs canonical → view position, i.e. the inverse grip's map.
+  const inverseGrip = PYRAMINX_INVERSE_GRIP[grip];
+  const invMap = PYRAMINX_GRIP_MAPS[inverseGrip];
+  if (!invMap || !(upper in invMap)) return token;
+
+  const viewVertex = invMap[upper];
+  const viewBase = isTip ? viewVertex.toLowerCase() : viewVertex;
+  return isPrime ? viewBase + "'" : viewBase;
+}
+
+/**
+ * Remap a whole scramble string (space-delimited WCA tokens) into the
+ * view frame for display under a grip. The canonical scramble is NEVER
+ * modified — only the displayed notation changes (same contract as
+ * `MoveTransformer.remapScrambleString`). The token count is preserved.
+ */
+export function remapPyraminxScrambleString(scramble: string, grip: number): string {
+  return scramble
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => displayPyraminxTokenThroughGrip(t, grip))
+    .join(" ");
+}
 
 

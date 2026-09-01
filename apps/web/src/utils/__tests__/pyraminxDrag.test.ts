@@ -51,20 +51,22 @@ function resolve(args: {
 
 describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
   const U_CAND: PyraminxDragCandidate[] = [{ vertex: "U", scope: "layer" }];
-  // A piece at +x on the U layer: its tangent under a +120° U turn is +y.
+  // A piece at +x on the U layer: its tangent under the +120° (counter-
+  // clockwise, prime) U turn is +y. The plain WCA turn is the CLOCKWISE one
+  // (WCA 12e2), i.e. motion along −t — the stickers follow the finger.
   const P_X = { x: 1, y: 0, z: 0 };
 
-  it("a drag along the +tangent resolves the plain token (stickers follow the finger)", () => {
-    // dy = −10 → worldDrag = −dy·up = +y = the +tangent → direction 1.
+  it("a drag along the +tangent resolves the prime (the +120° turn's motion)", () => {
+    // dy = −10 → worldDrag = −dy·up = +y = the +tangent → prime.
     const move = resolve({ dx: 0, dy: -10, p: P_X, candidates: U_CAND });
-    expect(move).toEqual({ vertex: "U", scope: "layer", direction: 1 });
-    expect(pyraminxDragToken(move!)).toBe("U");
-  });
-
-  it("a drag against the tangent resolves the prime", () => {
-    const move = resolve({ dx: 0, dy: 10, p: P_X, candidates: U_CAND });
     expect(move).toEqual({ vertex: "U", scope: "layer", direction: -1 });
     expect(pyraminxDragToken(move!)).toBe("U'");
+  });
+
+  it("a drag against the tangent resolves the plain token (stickers follow the finger)", () => {
+    const move = resolve({ dx: 0, dy: 10, p: P_X, candidates: U_CAND });
+    expect(move).toEqual({ vertex: "U", scope: "layer", direction: 1 });
+    expect(pyraminxDragToken(move!)).toBe("U");
   });
 
   it("a drag perpendicular to the tangent stays ambiguous (null) until it commits", () => {
@@ -75,7 +77,7 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
   it("tip candidates resolve lowercase tokens", () => {
     const move = resolve({
       dx: 0,
-      dy: -10,
+      dy: 10,
       p: P_X,
       candidates: [{ vertex: "U", scope: "tip" }],
     });
@@ -114,17 +116,18 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
     ];
     const tU = norm(tangent(AXES.U, p));
 
-    // Drag along U's tangent (worldDrag = dx·right − dy·up).
+    // Drag along U's tangent (worldDrag = dx·right − dy·up) = the +120°
+    // counter-clockwise motion → the prime.
     const dragU = resolve({ dx: tU.x * 50, dy: -tU.y * 50, p, candidates });
     expect(dragU?.vertex).toBe("U");
-    expect(dragU?.direction).toBe(1);
-    expect(pyraminxDragToken(dragU!)).toBe("U");
+    expect(dragU?.direction).toBe(-1);
+    expect(pyraminxDragToken(dragU!)).toBe("U'");
 
-    // Opposite direction → the prime.
+    // Opposite direction (along −t) → the plain CLOCKWISE turn.
     const dragUInv = resolve({ dx: -tU.x * 50, dy: tU.y * 50, p, candidates });
     expect(dragUInv?.vertex).toBe("U");
-    expect(dragUInv?.direction).toBe(-1);
-    expect(pyraminxDragToken(dragUInv!)).toBe("U'");
+    expect(dragUInv?.direction).toBe(1);
+    expect(pyraminxDragToken(dragUInv!)).toBe("U");
   });
 
   it("a tip dragged directly at the apex (on the axis) resolves via view-plane fallback", () => {
@@ -132,20 +135,21 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
     const onAxisPoint = { x: 0, y: 0, z: 1 };
     const tipCandidate: PyraminxDragCandidate[] = [{ vertex: "U", scope: "tip" }];
 
-    // Drag rightwards on screen (dx = 30) -> resolves to u
+    // Drag rightwards on screen (dx = 30) -> the +120° (counter-clockwise)
+    // motion, i.e. the prime: resolves to u'
     const moveRight = resolve({ dx: 30, dy: 0, p: onAxisPoint, candidates: tipCandidate });
     expect(moveRight).not.toBeNull();
     expect(moveRight?.vertex).toBe("U");
     expect(moveRight?.scope).toBe("tip");
-    expect(moveRight?.direction).toBe(1);
-    expect(pyraminxDragToken(moveRight!)).toBe("u");
+    expect(moveRight?.direction).toBe(-1);
+    expect(pyraminxDragToken(moveRight!)).toBe("u'");
 
-    // Drag leftwards on screen (dx = -30) -> resolves to u'
+    // Drag leftwards on screen (dx = -30) -> resolves to u
     const moveLeft = resolve({ dx: -30, dy: 0, p: onAxisPoint, candidates: tipCandidate });
     expect(moveLeft).not.toBeNull();
     expect(moveLeft?.vertex).toBe("U");
     expect(moveLeft?.scope).toBe("tip");
-    expect(moveLeft?.direction).toBe(-1);
-    expect(pyraminxDragToken(moveLeft!)).toBe("u'");
+    expect(moveLeft?.direction).toBe(1);
+    expect(pyraminxDragToken(moveLeft!)).toBe("u");
   });
 });
