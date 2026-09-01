@@ -23,6 +23,15 @@ export interface UseInfiniteF2LSessionProps {
   isStarted: boolean;
 }
 
+export interface FinalSessionStats {
+  totalTimeMs: number;
+  solvedCount: number;
+  totalMoves: number;
+  avgTps: number;
+  peakTps: number;
+  paceSecPerPair: number;
+}
+
 export function useInfiniteF2LSession({
   options: userOptions,
   engineRef,
@@ -39,6 +48,8 @@ export function useInfiniteF2LSession({
   const [totalMoves, setTotalMoves] = useState(0);
   const [liveTps, setLiveTps] = useState(0);
   const [peakTps, setPeakTps] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const [finalStats, setFinalStats] = useState<FinalSessionStats | null>(null);
 
   // Internal logical cube state
   const logicalStateRef = useRef<CubeState>(new CubeState());
@@ -47,6 +58,8 @@ export function useInfiniteF2LSession({
   const totalMovesRef = useRef(0);
   const moveTimestampsRef = useRef<number[]>([]);
   const peakTpsRef = useRef(0);
+  const isFinishedRef = useRef(false);
+  const startTimeRef = useRef(Date.now());
 
   // Apply stickering mask helper
   const applyStickeringMask = useCallback((crossColor: CrossColor, pairs: ActivePairState[]) => {
@@ -55,6 +68,31 @@ export function useInfiniteF2LSession({
     engineRef.current.clearLayerGray();
     engineRef.current.setPhaseStickering(mask, "#3a3a3a");
   }, [engineRef]);
+
+  // Finish session calculation
+  const finishSession = useCallback(() => {
+    if (isFinishedRef.current) return;
+    isFinishedRef.current = true;
+    setIsFinished(true);
+
+    const totalMs = Math.max(100, Date.now() - startTimeRef.current);
+    const count = solvedCountRef.current;
+    const moves = totalMovesRef.current;
+    const totalSec = totalMs / 1000;
+    const avgTps = totalSec > 0 ? Number((moves / totalSec).toFixed(2)) : 0;
+    const paceSecPerPair = count > 0 ? Number((totalSec / count).toFixed(2)) : 0;
+
+    setElapsedMs(totalMs);
+    setLiveTps(0);
+    setFinalStats({
+      totalTimeMs: totalMs,
+      solvedCount: count,
+      totalMoves: moves,
+      avgTps,
+      peakTps: peakTpsRef.current,
+      paceSecPerPair,
+    });
+  }, []);
 
   // Restart / Initialize session immediately
   const startSession = useCallback(
@@ -80,15 +118,20 @@ export function useInfiniteF2LSession({
       totalMovesRef.current = 0;
       moveTimestampsRef.current = [];
       peakTpsRef.current = 0;
+      isFinishedRef.current = false;
+      const now = Date.now();
+      startTimeRef.current = now;
 
       setActivePairs(spawnedPairs);
       setSolvedCount(0);
       setTotalMoves(0);
-      setStartTime(Date.now());
+      setStartTime(now);
       setElapsedMs(0);
       setRecentSolved(null);
       setLiveTps(0);
       setPeakTps(0);
+      setIsFinished(false);
+      setFinalStats(null);
 
       // Apply initial generated facelets to 3D cube model
       if (engineRef.current) {
@@ -105,7 +148,7 @@ export function useInfiniteF2LSession({
   // Handle incoming move (from BLE physical smart cube)
   const processMove = useCallback(
     (moveNotation: string) => {
-      if (!isStarted) return;
+      if (!isStarted || isFinishedRef.current) return;
       const moveEnum = StringToMove[moveNotation.trim()];
       if (moveEnum === undefined) return;
 
@@ -115,6 +158,7 @@ export function useInfiniteF2LSession({
       const opts = optionsRef.current;
       const crossColor: CrossColor = opts.crossColor ?? "white";
       const allowedSlots: F2LSlotId[] = opts.allowedSlots ?? ["FR", "FL", "BL", "BR"];
+      const targetPairs = opts.targetPairs ?? 0;
 
       totalMovesRef.current += 1;
       setTotalMoves(totalMovesRef.current);
@@ -135,6 +179,12 @@ export function useInfiniteF2LSession({
           solvedCountRef.current += 1;
           setSolvedCount(solvedCountRef.current);
           setRecentSolved(solvedSlotId);
+
+          // If target pairs reached, finish immediately!
+          if (targetPairs > 0 && solvedCountRef.current >= targetPairs) {
+            finishSession();
+            return;
+          }
 
           const { nextActivePairs } = respawnPair(
             logicalStateRef.current,
@@ -158,14 +208,15 @@ export function useInfiniteF2LSession({
         applyStickeringMask(crossColor, currentActive);
       }
     },
-    [isStarted, applyStickeringMask, engineRef],
+    [isStarted, finishSession, applyStickeringMask, engineRef],
   );
 
   // High-precision Live TPS & Timer Loop (100ms interval = 10Hz)
   useEffect(() => {
-    if (!isStarted) return;
+    if (!isStarted || isFinished) return;
 
     const interval = setInterval(() => {
+      if (isFinishedRef.current) return;
       const nowPerf = performance.now();
       setElapsedMs(Date.now() - startTime);
 
@@ -210,7 +261,7 @@ export function useInfiniteF2LSession({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isStarted, startTime]);
+  }, [isStarted, isFinished, startTime]);
 
   // Subscribe to physical smart cube BLE moves
   useEffect(() => {
@@ -238,6 +289,7 @@ export function useInfiniteF2LSession({
   // Overall session average TPS
   const sessionSeconds = elapsedMs / 1000;
   const avgTps = sessionSeconds >= 1 ? Number((totalMoves / sessionSeconds).toFixed(1)) : 0;
+  const paceSecPerPair = solvedCount > 0 ? Number((sessionSeconds / solvedCount).toFixed(2)) : 0;
 
   return {
     solvedCount,
@@ -248,6 +300,10 @@ export function useInfiniteF2LSession({
     liveTps,
     avgTps,
     peakTps,
+    paceSecPerPair,
+    isFinished,
+    finalStats,
+    finishSession,
     processMove,
     restart: (overrideOpts?: InfiniteF2LOptions) => startSession(overrideOpts),
     crossColorConfig: CROSS_COLOR_CONFIGS[crossColor],

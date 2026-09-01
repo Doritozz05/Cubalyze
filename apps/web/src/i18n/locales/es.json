@@ -1287,6 +1287,7 @@
       "calibrateGyro": "Calibrar giroscopio",
       "settings": "Ajustes de entrenamiento",
       "restart": "Reiniciar sesión",
+      "finish": "Terminar",
       "connectPrompt": {
         "title": "Conecta tu Smart Cube",
         "description": "Conecta tu cubo Bluetooth para sincronizar giroscopio y movimientos en tiempo real.",
@@ -1295,6 +1296,8 @@
       "setup": {
         "crossColor": "Color de la Cruz",
         "concurrentPairs": "Pares simultáneos",
+        "targetGoal": "Objetivo de pares",
+        "infiniteMode": "Infinito",
         "pairUnitSingular": "par",
         "pairUnitPlural": "pares",
         "activeSlots": "Slots activos",
@@ -1302,6 +1305,20 @@
         "allowTrappedHint": "Genera piezas en otros slots de F2L además de la capa superior",
         "enableSound": "Sonido de resolución",
         "start": "Empezar Entrenamiento"
+      },
+      "summary": {
+        "title": "¡Sesión Completada!",
+        "subtitle": "Resumen de rendimiento y ritmo de F2L",
+        "finalTime": "Tiempo Final",
+        "pairsSolved": "Pares Resueltos",
+        "avgTps": "TPS Medio",
+        "peakTps": "Pico",
+        "pace": "Ritmo Medio",
+        "perPair": "segundos por par",
+        "totalMoves": "Giros Totales",
+        "moves": "giros",
+        "retry": "Repetir",
+        "exit": "Salir"
       },
       "crossColors": {
         "white": "Blanco",

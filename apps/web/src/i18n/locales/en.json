@@ -1287,6 +1287,7 @@
       "calibrateGyro": "Calibrate gyroscope",
       "settings": "Training settings",
       "restart": "Restart session",
+      "finish": "Finish",
       "connectPrompt": {
         "title": "Connect your Smart Cube",
         "description": "Connect your Bluetooth cube to sync gyroscope and moves in real time.",
@@ -1295,6 +1296,8 @@
       "setup": {
         "crossColor": "Cross Color",
         "concurrentPairs": "Concurrent pairs",
+        "targetGoal": "Target pairs goal",
+        "infiniteMode": "Infinite",
         "pairUnitSingular": "pair",
         "pairUnitPlural": "pairs",
         "activeSlots": "Active slots",
@@ -1302,6 +1305,20 @@
         "allowTrappedHint": "Spawn pieces in other F2L slots in addition to the top layer",
         "enableSound": "Solve sound effect",
         "start": "Start Training"
+      },
+      "summary": {
+        "title": "Session Completed!",
+        "subtitle": "F2L performance & pace summary",
+        "finalTime": "Final Time",
+        "pairsSolved": "Pairs Solved",
+        "avgTps": "Average TPS",
+        "peakTps": "Peak",
+        "pace": "Average Pace",
+        "perPair": "seconds per pair",
+        "totalMoves": "Total Moves",
+        "moves": "moves",
+        "retry": "Retry",
+        "exit": "Exit"
       },
       "crossColors": {
         "white": "White",

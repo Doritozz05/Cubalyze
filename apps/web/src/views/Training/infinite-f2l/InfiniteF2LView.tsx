@@ -11,6 +11,7 @@ import {
   Sparkles,
   Zap,
   Play,
+  Flag,
 } from "lucide-react";
 import { connectionStore } from "@cubeforge/state";
 import { useCube3D } from "@/hooks/useCube3D";
@@ -20,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatTime } from "@/hooks/usePracticeSession";
 import { TrainingBreadcrumb } from "../components/TrainingBreadcrumb";
 import { InfiniteF2LSetupDialog } from "./InfiniteF2LSetupDialog";
+import { InfiniteF2LSummaryDialog } from "./InfiniteF2LSummaryDialog";
 import { useInfiniteF2LSession } from "./useInfiniteF2LSession";
 import type { InfiniteF2LOptions } from "./infiniteF2lEngine";
 
@@ -35,6 +37,7 @@ const STORAGE_KEY = "cubeforge:infinite-f2l:options";
 const DEFAULT_OPTIONS: Required<InfiniteF2LOptions> = {
   crossColor: "white",
   concurrentPairs: 2,
+  targetPairs: 0,
   allowedSlots: ["FR", "FL", "BL", "BR"],
   allowTrapped: true,
   enableSound: false,
@@ -105,6 +108,9 @@ export function InfiniteF2LView({
     elapsedMs,
     liveTps,
     avgTps,
+    isFinished,
+    finalStats,
+    finishSession,
     restart,
   } = useInfiniteF2LSession({
     options,
@@ -172,6 +178,23 @@ export function InfiniteF2LView({
             <TooltipContent>{t("infiniteF2l.settings")}</TooltipContent>
           </Tooltip>
 
+          {/* Finish Session Button */}
+          {isStarted && !isFinished && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={finishSession}
+                  className="flex h-9 items-center gap-1.5 px-3 cursor-pointer rounded-lg border border-line bg-surface-2/60 text-xs font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                  aria-label={t("infiniteF2l.finish")}
+                >
+                  <Flag className="size-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">{t("infiniteF2l.finish")}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{t("infiniteF2l.finish")}</TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Reset / Restart Session Button */}
           {isStarted && (
             <Tooltip>
@@ -206,7 +229,11 @@ export function InfiniteF2LView({
               <span className="text-xs font-semibold text-ink">
                 {t("infiniteF2l.solvedPairs")}:
               </span>
-              <span className="nums text-xs font-bold text-ink">{solvedCount}</span>
+              <span className="nums text-xs font-bold text-ink">
+                {options.targetPairs && options.targetPairs > 0
+                  ? `${solvedCount} / ${options.targetPairs}`
+                  : solvedCount}
+              </span>
             </motion.div>
 
             {/* TPS & Time Pill */}
@@ -275,6 +302,18 @@ export function InfiniteF2LView({
         onOpenChange={setIsSetupOpen}
         initialOptions={options}
         onStart={handleStartOptions}
+      />
+
+      {/* Session Summary Modal */}
+      <InfiniteF2LSummaryDialog
+        open={isFinished}
+        stats={finalStats}
+        targetPairs={options.targetPairs}
+        onRestart={() => restart()}
+        onOpenSettings={() => {
+          setIsSetupOpen(true);
+        }}
+        onBack={onBack}
       />
     </div>
   );

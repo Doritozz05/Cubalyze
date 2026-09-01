@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
-import { Infinity as InfinityIcon, Play, Palette, Layers, Box, ShieldCheck } from "lucide-react";
+import { Infinity as InfinityIcon, Play, Palette, Layers, Box, ShieldCheck, Target } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +57,7 @@ export function InfiniteF2LSetupDialog({
 
   const [crossColor, setCrossColor] = useState<CrossColor>(initialOptions?.crossColor ?? "white");
   const [concurrentPairs, setConcurrentPairs] = useState<number>(initialOptions?.concurrentPairs ?? 2);
+  const [targetPairs, setTargetPairs] = useState<number>(initialOptions?.targetPairs ?? 0);
   const [allowedSlots, setAllowedSlots] = useState<F2LSlotId[]>(initialOptions?.allowedSlots ?? ["FR", "FL", "BL", "BR"]);
   const [allowTrapped, setAllowTrapped] = useState<boolean>(initialOptions?.allowTrapped ?? true);
 
@@ -75,6 +76,7 @@ export function InfiniteF2LSetupDialog({
     onStart({
       crossColor,
       concurrentPairs,
+      targetPairs,
       allowedSlots,
       allowTrapped,
       enableSound: false,
@@ -143,6 +145,52 @@ export function InfiniteF2LSetupDialog({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Target Goal (Target Pairs Slider) */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="size-4 text-ink-3" />
+            <span className="text-[0.82rem] font-semibold text-ink">{t("infiniteF2l.setup.targetGoal")}</span>
+          </div>
+          <span className="nums rounded-md bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-ink">
+            {targetPairs === 0 ? `∞ ${t("infiniteF2l.setup.infiniteMode")}` : `${targetPairs} ${t("infiniteF2l.setup.pairUnitPlural")}`}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-ink-3 font-semibold">∞</span>
+            <input
+              type="range"
+              min={5}
+              max={100}
+              step={1}
+              value={targetPairs}
+              onChange={(e) => setTargetPairs(Number(e.target.value))}
+              className="w-full h-2 bg-surface-2 rounded-lg appearance-none cursor-pointer accent-ink"
+            />
+            <span className="text-xs text-ink-3 font-semibold">100</span>
+          </div>
+          {/* Quick presets */}
+          <div className="grid grid-cols-5 gap-1.5 pt-1">
+            {[0, 10, 25, 50, 100].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setTargetPairs(preset)}
+                className={cn(
+                  "flex h-7 items-center justify-center rounded-lg text-xs font-medium transition-all cursor-pointer",
+                  targetPairs === preset
+                    ? "bg-ink text-surface font-semibold shadow-xs"
+                    : "bg-surface-2/70 text-ink-3 hover:bg-surface-2 hover:text-ink",
+                )}
+              >
+                {preset === 0 ? "∞" : `${preset}`}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

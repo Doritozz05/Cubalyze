@@ -316,6 +316,7 @@ export const CROSS_COLOR_CONFIGS: Record<CrossColor, CrossColorDef> = {
 export interface InfiniteF2LOptions {
   crossColor?: CrossColor;
   concurrentPairs?: number; // 1 to 4 (default 2)
+  targetPairs?: number; // 0 = Infinite, > 0 = stop after N pairs
   allowedSlots?: F2LSlotId[]; // default all 4 slots
   allowTrapped?: boolean; // allow spawning in non-home F2L slots vs U layer
   enableSound?: boolean;
