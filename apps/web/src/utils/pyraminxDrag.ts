@@ -89,11 +89,33 @@ export function resolvePyraminxDragMove(input: PyraminxDragInput): PyraminxDragM
     const a = axes[c.vertex];
     // Tangent of the piece under a +120° turn around the candidate axis:
     // t = a × p (right-hand rule — the engine's positive angle).
-    const tx = a.y * p.z - a.z * p.y;
-    const ty = a.z * p.x - a.x * p.z;
-    const tz = a.x * p.y - a.y * p.x;
-    const tLen = Math.hypot(tx, ty, tz);
-    if (tLen < 1e-4) continue; // grabbed on the axis itself — no tangent
+    let tx = a.y * p.z - a.z * p.y;
+    let ty = a.z * p.x - a.x * p.z;
+    let tz = a.x * p.y - a.y * p.x;
+    let tLen = Math.hypot(tx, ty, tz);
+    if (tLen < 1e-3) {
+      // Fallback when grabbed on the axis itself (e.g. at the exact apex of a tip):
+      // A turn around axis `a` moves perpendicular to `a` in the view plane.
+      // cf = cameraRight × cameraUp (vector pointing out of screen towards viewer)
+      const cfx = cameraRight.y * cameraUp.z - cameraRight.z * cameraUp.y;
+      const cfy = cameraRight.z * cameraUp.x - cameraRight.x * cameraUp.z;
+      const cfz = cameraRight.x * cameraUp.y - cameraRight.y * cameraUp.x;
+      // t = a × cf (tangent on the front viewer-facing side)
+      tx = a.y * cfz - a.z * cfy;
+      ty = a.z * cfx - a.x * cfz;
+      tz = a.x * cfy - a.y * cfx;
+      tLen = Math.hypot(tx, ty, tz);
+      if (tLen < 1e-4) {
+        // Degenerate case: axis points directly along the camera view direction.
+        const dot = a.x * cfx + a.y * cfy + a.z * cfz;
+        const sign = dot >= 0 ? 1 : -1;
+        tx = sign * cameraRight.x;
+        ty = sign * cameraRight.y;
+        tz = sign * cameraRight.z;
+        tLen = Math.hypot(tx, ty, tz);
+      }
+      if (tLen < 1e-4) continue;
+    }
     const cos =
       (tx * worldDrag.x + ty * worldDrag.y + tz * worldDrag.z) / (tLen * dragLen);
     const abs = Math.abs(cos);

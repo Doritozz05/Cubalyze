@@ -103,7 +103,11 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
     // the other way over the same edge gives the prime of the SAME vertex
     // (a coherent edge gesture — the other vertex's layer is reachable via
     // its corner/tip or its other edges).
-    const p = { x: -0.15713484026367718, y: 0.2721655269759087, z: 0.22222222222222224 };
+    const p = {
+      x: -Math.SQRT2 / 9,
+      y: Math.SQRT2 / (3 * Math.sqrt(3)),
+      z: 2 / 9,
+    };
     const candidates: PyraminxDragCandidate[] = [
       { vertex: "U", scope: "layer" },
       { vertex: "L", scope: "layer" },
@@ -121,5 +125,27 @@ describe("resolvePyraminxDragMove (fixed ±120° turns)", () => {
     expect(dragUInv?.vertex).toBe("U");
     expect(dragUInv?.direction).toBe(-1);
     expect(pyraminxDragToken(dragUInv!)).toBe("U'");
+  });
+
+  it("a tip dragged directly at the apex (on the axis) resolves via view-plane fallback", () => {
+    // p is exactly on the axis of U: { x: 0, y: 0, z: 1 }, so axis × p = 0
+    const onAxisPoint = { x: 0, y: 0, z: 1 };
+    const tipCandidate: PyraminxDragCandidate[] = [{ vertex: "U", scope: "tip" }];
+
+    // Drag rightwards on screen (dx = 30) -> resolves to u
+    const moveRight = resolve({ dx: 30, dy: 0, p: onAxisPoint, candidates: tipCandidate });
+    expect(moveRight).not.toBeNull();
+    expect(moveRight?.vertex).toBe("U");
+    expect(moveRight?.scope).toBe("tip");
+    expect(moveRight?.direction).toBe(1);
+    expect(pyraminxDragToken(moveRight!)).toBe("u");
+
+    // Drag leftwards on screen (dx = -30) -> resolves to u'
+    const moveLeft = resolve({ dx: -30, dy: 0, p: onAxisPoint, candidates: tipCandidate });
+    expect(moveLeft).not.toBeNull();
+    expect(moveLeft?.vertex).toBe("U");
+    expect(moveLeft?.scope).toBe("tip");
+    expect(moveLeft?.direction).toBe(-1);
+    expect(pyraminxDragToken(moveLeft!)).toBe("u'");
   });
 });

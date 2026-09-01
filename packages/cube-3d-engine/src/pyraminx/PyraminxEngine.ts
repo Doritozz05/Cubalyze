@@ -406,12 +406,13 @@ export class PyraminxEngine {
     const piece = this.model.pieces.find((p) => p.mesh === node);
     if (!piece) return null;
 
-    const worldPos = piece.mesh.getWorldPosition(new Vector3());
+    // Use the exact 3D surface point clicked on the piece
+    const hitPoint = hits[0].point.clone();
     if (piece.kind === 'edge') {
       const def = PYRAMINX_EDGE_SLOTS[piece.current];
       return {
         kind: 'edge',
-        position: worldPos,
+        position: hitPoint,
         candidates: [
           { vertex: def.vertices[0], scope: 'layer' },
           { vertex: def.vertices[1], scope: 'layer' },
@@ -421,7 +422,7 @@ export class PyraminxEngine {
     const vertex = PYRAMINX_VERTICES_ORDER[piece.current];
     return {
       kind: piece.kind,
-      position: worldPos,
+      position: hitPoint,
       candidates: [
         { vertex, scope: piece.kind === 'tip' ? 'tip' : 'layer' },
       ],
