@@ -92,6 +92,19 @@ export const PYRAMINX_CANONICAL_QUAT = new Quaternion(
 export const TETRAHEDRAL_TILT_ANGLE = Math.acos(-1 / 3);
 
 /**
+ * Canonical C2 symmetry tilt axis in the vertical X=0 plane connecting the
+ * midpoint of the top-to-rear edge and the midpoint of the front horizontal edge.
+ * A 180° rotation around this axis swaps the apex with the rear base vertex,
+ * preserving the canonical upright pose (flat horizontal base at y = -1/3,
+ * apex at (0, 1, 0), and straight horizontal front edge).
+ */
+export const PYRAMINX_TILT_AXIS = new Vector3(
+  0,
+  1 / Math.sqrt(3),
+  -Math.sqrt(2 / 3),
+).normalize();
+
+/**
  * The family-specific hooks that wire the generic {@link RotationDriver3D}
  * to the Pyraminx model. Exported so tests can drive the REAL hooks without
  * constructing a WebGL engine.
@@ -547,15 +560,14 @@ export class PyraminxEngine {
   }
 
   /**
-   * Smooth tilt rotation downward/upward around the horizontal X axis:
-   * direction: 1 = tip down/forward, -1 = tip up/backward.
-   * Steps by the tetrahedral turning angle arccos(-1/3) ≈ 109.47°.
-   * Smoothly tips the apex down and brings the back vertex up to the top,
-   * landing in the exact same canonical isometric pose.
+   * Smooth tilt rotation downward/upward:
+   * Uses the tetrahedral group symmetry C2 rotation (180° around the symmetry axis
+   * (0, 1/√3, -√(2/3))), which swaps the top apex with the rear base vertex and
+   * preserves the canonical upright pose (flat horizontal base at y = -1/3,
+   * apex at (0, 1, 0), and straight horizontal front edge parallel to the screen).
    */
   public rotatePuzzleX(direction: 1 | -1, durationMs = 220): Promise<void> {
-    const angle = direction * TETRAHEDRAL_TILT_ANGLE;
-    const rot = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), angle);
+    const rot = new Quaternion().setFromAxisAngle(PYRAMINX_TILT_AXIS, direction * Math.PI);
     const target = rot.multiply(this.puzzleQuat).normalize();
     return this.animatePuzzleTo(target, durationMs);
   }
