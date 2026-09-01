@@ -1,4 +1,4 @@
-import { Mesh, Object3D, Raycaster, Vector2, Vector3 } from 'three';
+import { Mesh, Object3D, Quaternion, Raycaster, Vector2, Vector3 } from 'three';
 import type { PyraminxState } from '@cubeforge/solver-engine/pyraminx';
 import type { CubeStyleOptions } from '../core/CubeMeshFactory';
 import { SceneManager } from '../core/SceneManager';
@@ -46,15 +46,14 @@ export interface PyraminxPickCandidate {
 }
 
 /**
- * Result of a sticker pick (raycast): the piece, its root-frame slot
+ * Result of a sticker pick (raycast): the piece, its world-frame slot
  * position and the candidate turns a drag on it can resolve. A tip turns
  * only itself (`scope: 'tip'`); a corner only its layer; an edge piece can
- * turn around either of its slot's two vertices (the resolver picks the
- * one whose rotation tangent best matches the drag).
+ * turn around either of its slot's two vertices.
  */
 export interface PyraminxPick {
   kind: 'edge' | 'corner' | 'tip';
-  /** Piece slot position in the ROOT frame (the driver's turn frame). */
+  /** Piece slot position in the WORLD frame. */
   position: Vector3;
   candidates: PyraminxPickCandidate[];
 }
@@ -76,6 +75,21 @@ const CUBE_FACE_TO_PYRAMINX: Record<PyraminxVertex, keyof CubeStyleOptions['stic
 function stepsFromAngle(angleInDegrees: number): number {
   return ((Math.round(angleInDegrees / 120) % 3) + 3) % 3;
 }
+
+/**
+ * Canonical standing upright orientation for the Pyraminx:
+ * Apex U points straight UP (+Y), base (L, R, B) is horizontal in y = -1/3,
+ * and the front edge is horizontal parallel to the X axis ("base recta").
+ */
+export const PYRAMINX_CANONICAL_QUAT = new Quaternion(
+  0.18301270189221933,
+  0.6830127018922193,
+  0.6830127018922193,
+  -0.18301270189221933,
+).normalize();
+
+/** Dihedral turning angle between faces of a regular tetrahedron (arccos(-1/3) ≈ 109.47°). */
+export const TETRAHEDRAL_TILT_ANGLE = Math.acos(-1 / 3);
 
 /**
  * The family-specific hooks that wire the generic {@link RotationDriver3D}
@@ -103,14 +117,14 @@ export function createPyraminxRotationHooks(
 /**
  * Pyraminx 3D engine — the first non-cube puzzle family.
  *
- * Reuses the generic pieces of the engine package (SceneManager for the
- * camera/lights/renderer, RotationDriver3D for the pivot machinery) and adds
- * only what a vertex-turning tetrahedron needs:
- *
- *   • PyraminxMeshFactory — 14 pieces with triangular stickers
- *   • PyraminxModel       — per-slot logical mirror + packed PyraminxState
- *   • slice refs          — { vertex, scope } with the vertex's OUTWARD axis
- *                           (±120° turns, order 3)
+ * Architecture mirrors {@link Cube3DEngine}:
+ *   • {@link SceneManager} owns the Three.js scene, camera, lights, resize
+ *     and render loop.
+ *   • {@link PyraminxMeshFactory} builds the piece meshes.
+ *   • {@link PyraminxModel} owns the 14 piece Groups, their logical state,
+ *     and the exact slot positions used to snap transforms after turns.
+ *   • {@link RotationDriver3D} animates the turns using pooled pivot groups
+ *     and quaternions, with collision detection against in-flight moves.
  *
  * The move semantics match the WCA scrambler (`@cubeforge/solver-engine`)
  * byte for byte — the tests cross-validate `getState()` against
@@ -130,7 +144,6 @@ export class PyraminxEngine {
   private animFrameId: number | null = null;
   private needsRender = false;
 
-  /** Camera drag inertia state machine (same semantics as Cube3DEngine). */
   private cameraMomentumState: 'idle' | 'dragging' | 'gliding' = 'idle';
   private cameraMomentum: { x: number; y: number; lastApplyTime: number } | null = null;
   private readonly cameraMomentumThreshold = 0.01;
@@ -143,6 +156,17 @@ export class PyraminxEngine {
     targetTheta: number;
     targetPhi: number;
     targetRadius: number;
+    startTime: number;
+    durationMs: number;
+    resolve?: () => void;
+  } | null = null;
+
+  /** Whole-puzzle orientation state. */
+  private puzzleQuat = PYRAMINX_CANONICAL_QUAT.clone();
+
+  private puzzleAnim: {
+    startQuat: Quaternion;
+    targetQuat: Quaternion;
     startTime: number;
     durationMs: number;
     resolve?: () => void;
@@ -178,6 +202,7 @@ export class PyraminxEngine {
     this.factory = new PyraminxMeshFactory(style);
     this.model = new PyraminxModel(this.factory);
     this.model.root.scale.setScalar(this.scale);
+    this.model.root.quaternion.copy(this.puzzleQuat);
     this.sceneManager.scene.add(this.model.root);
 
     this.driver = new RotationDriver3D<PyraminxSliceRef>(
@@ -223,21 +248,18 @@ export class PyraminxEngine {
     this.needsRender = false;
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
+    this.finishCameraAnim();
+    this.finishPuzzleAnim();
     if (this.sceneManager) this.sceneManager.dispose();
     if (this.factory) this.factory.dispose();
   }
 
   // ── Moves ────────────────────────────────────────────────────────────────
 
-  /** Slice ref for a turn: the vertex axis + whether it is a full layer. */
   private sliceRef(vertex: PyraminxVertex, scope: 'layer' | 'tip'): PyraminxSliceRef {
     return { id: { vertex, scope }, axis: PYRAMINX_AXES[vertex] };
   }
 
-  /**
-   * Rotate a layer or tip at a vertex by a signed angle (±120° for a single
-   * step; a prime move is −120°, which is the 2-step turn).
-   */
   public rotateVertex(
     vertex: PyraminxVertex,
     scope: 'layer' | 'tip',
@@ -260,32 +282,29 @@ export class PyraminxEngine {
 
   /**
    * Apply a single WCA move token (U, U', L, …, u, u', …). Returns false for
-   * an unknown token without touching the puzzle.
+   * unparseable tokens without turning anything.
    */
   public applyMove(token: string, durationMs = 160): Promise<boolean> {
     const resolved = resolvePyraminxMoveToken(token);
     if (!resolved) return Promise.resolve(false);
-    void this.rotateVertex(resolved.vertex, resolved.scope, resolved.angleInDegrees, durationMs, 'smooth');
-    return Promise.resolve(true);
+    return this.rotateVertex(
+      resolved.vertex,
+      resolved.scope,
+      resolved.angleInDegrees,
+      durationMs,
+    ).then(() => true);
   }
 
   /**
-   * Play a WCA Pyraminx scramble as animated turns (every move is 120°, so
-   * each turn animates with the same base duration). The scramble always
-   * plays from the solved state. Returns false (without touching the puzzle)
-   * when the string is empty or contains an invalid token.
+   * Animate a full scramble sequence (space-delimited WCA tokens). Tokens
+   * run in series; invalid tokens are skipped.
    */
-  public async applyScrambleAnimated(scramble: string, baseDurationMs = 160): Promise<boolean> {
-    if (!this.model || !this.driver) return false;
-    if (!isValidPyraminxMoveString(scramble)) return false;
-    const tokens = scramble.trim().split(/\s+/).filter(Boolean);
-    if (tokens.length === 0) return false;
-
-    this.reset();
-    this.requestRender();
+  public async applyScrambleAnimated(scramble: string, durationMs = 120): Promise<boolean> {
+    const trimmed = (scramble ?? '').trim();
+    if (!isValidPyraminxMoveString(trimmed)) return false;
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
     for (const token of tokens) {
-      const resolved = resolvePyraminxMoveToken(token)!;
-      await this.rotateVertex(resolved.vertex, resolved.scope, resolved.angleInDegrees, baseDurationMs, 'smooth');
+      await this.applyMove(token, durationMs);
     }
     this.requestRender();
     return true;
@@ -293,29 +312,25 @@ export class PyraminxEngine {
 
   /** True when any pivot task is still animating (for the render loop). */
   public isAnimating(): boolean {
-    return this.driver?.isAnimating() ?? false;
+    return (this.driver?.isAnimating() ?? false) || this.puzzleAnim !== null;
   }
 
   /** Force-complete every in-flight turn and restore the solved state. */
   public reset(): void {
     if (this.driver) this.driver.flushAll();
     if (this.model) this.model.reset();
+    this.finishPuzzleAnim();
+    this.puzzleQuat.copy(PYRAMINX_CANONICAL_QUAT);
+    if (this.model?.root) this.model.root.quaternion.copy(this.puzzleQuat);
     this.requestRender();
   }
 
-  /** The model's packed state in the solver's encoding. */
   public getState(): PyraminxState {
     return this.model?.getState() ?? { edgePerm: 0, edgeOrient: 0, cornerOrient: 0, tips: 0 };
   }
 
   // ── Skin / style ────────────────────────────────────────────────────────
 
-  /**
-   * Apply a cube-skin style to the Pyraminx (the panel's shared appearance
-   * settings). Only the fields with a pyraminx meaning are honored: sticker
-   * colors (mapped cube face → pyraminx face) and skinType (stickered =
-   * sticker panels visible; stickerless = colored plastic).
-   */
   public updateStyle(style: Partial<CubeStyleOptions>): void {
     if (!this.factory || !this.model) return;
     if (style.stickerColors) {
@@ -347,8 +362,6 @@ export class PyraminxEngine {
 
   private onMoveEventCb?: (notation: string) => void;
 
-  /** Subscribe to committed turns. Fires once per completed move with the
-   *  display token (e.g. "U'", "l") — the panel's recent-moves strip. */
   public onMoveEvent(cb: (notation: string) => void): void {
     this.onMoveEventCb = cb;
   }
@@ -358,13 +371,13 @@ export class PyraminxEngine {
   /**
    * Raycast the sticker under a normalized device coordinate (−1..1) and
    * return the piece + its turn candidates, or null when the pointer misses
-   * the puzzle (background). Mirrors the cube's `pickLayer` for the
-   * virtual-cube drag interaction.
+   * the puzzle (background).
    */
   public pickSticker(ndcX: number, ndcY: number): PyraminxPick | null {
     if (!this.sceneManager?.camera || !this.model) return null;
     if (!Number.isFinite(ndcX) || !Number.isFinite(ndcY)) return null;
     this.sceneManager.camera.updateMatrixWorld(true);
+    this.model.root.updateMatrixWorld(true);
     const raycaster = new Raycaster();
     raycaster.setFromCamera(new Vector2(ndcX, ndcY), this.sceneManager.camera);
     const meshes: Object3D[] = [];
@@ -379,11 +392,13 @@ export class PyraminxEngine {
     if (!node) return null;
     const piece = this.model.pieces.find((p) => p.mesh === node);
     if (!piece) return null;
+
+    const worldPos = piece.mesh.getWorldPosition(new Vector3());
     if (piece.kind === 'edge') {
       const def = PYRAMINX_EDGE_SLOTS[piece.current];
       return {
         kind: 'edge',
-        position: piece.mesh.position.clone(),
+        position: worldPos,
         candidates: [
           { vertex: def.vertices[0], scope: 'layer' },
           { vertex: def.vertices[1], scope: 'layer' },
@@ -393,43 +408,38 @@ export class PyraminxEngine {
     const vertex = PYRAMINX_VERTICES_ORDER[piece.current];
     return {
       kind: piece.kind,
-      position: piece.mesh.position.clone(),
+      position: worldPos,
       candidates: [
         { vertex, scope: piece.kind === 'tip' ? 'tip' : 'layer' },
       ],
     };
   }
 
-  // ── Camera ───────────────────────────────────────────────────────────────
+  // ── Camera & Views ────────────────────────────────────────────────────────
 
   /**
-   * ONE discrete camera step (virtual-cube background drag) — the camera
-   * NEVER free-rotates in the virtual view. Yaw snaps to the 120° grid (the
-   * tetrahedron's 3-fold symmetry), pitch to the 30° grid; the step lands
-   * exactly on the grid so every view is a clean fixed angle.
+   * Canonical isometric framing:
+   * The pyramid stands upright with its base flat and level ("base recta").
+   * Viewed from an angle (theta ≈ 30°, phi ≈ 22°) so the right tip is down-right
+   * and both the front face and the right face are visible, while the bottom and
+   * back faces remain hidden.
    */
-  public orbitStep(dx: number, dy: number): void {
-    if (!this.sceneManager) return;
-    const YAW_STEP = (Math.PI * 2) / 3;
-    const PITCH_STEP = Math.PI / 6;
-    const current = this.sceneManager.getOrbitAngles();
-    const yaw =
-      Math.round(current.theta / YAW_STEP) * YAW_STEP +
-      (dx > 0 ? -YAW_STEP : dx < 0 ? YAW_STEP : 0);
-    const pitchRaw =
-      Math.round(current.phi / PITCH_STEP) * PITCH_STEP +
-      (dy > 0 ? -PITCH_STEP : dy < 0 ? PITCH_STEP : 0);
-    const pitch = Math.min(Math.max(pitchRaw, -Math.PI / 2 + 0.05), Math.PI / 2 - 0.05);
-    this.cameraMomentum = null;
-    this.cameraMomentumState = 'idle';
-    this.finishCameraAnim();
-    this.sceneManager.setOrbitAngles(yaw, pitch);
-    this.requestRender();
-  }
+  public static readonly CANONICAL_ISOMETRIC_VIEW = {
+    theta: (39 * Math.PI) / 180,
+    phi: (22 * Math.PI) / 180,
+    radius: 7,
+  };
 
+  /**
+   * Continuous turntable orbit camera (identical to Cube3DEngine).
+   * Used in 3D panels/widgets and replays/reconstructions.
+   */
   public rotateCamera(dx: number, dy: number): void {
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
     this.finishCameraAnim();
-    if (this.sceneManager) this.sceneManager.rotateCamera(dx, dy);
+    if (this.sceneManager) {
+      this.sceneManager.rotateCamera(dx, dy);
+    }
     if (this.cameraMomentumState !== 'idle') {
       this.cameraMomentum = { x: dx, y: dy, lastApplyTime: performance.now() };
     }
@@ -461,22 +471,19 @@ export class PyraminxEngine {
 
   public resetCamera(smooth = false): Promise<void> | void {
     if (!this.sceneManager) return;
-    if (smooth) return this.animateCameraTo(0, 0, 7);
+    const view = PyraminxEngine.CANONICAL_ISOMETRIC_VIEW;
+    if (smooth) {
+      return this.animateCameraTo(view.theta, view.phi, view.radius);
+    }
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
     this.finishCameraAnim();
-    this.sceneManager.resetCamera();
+    this.sceneManager.setOrbitAngles(view.theta, view.phi, view.radius);
     this.requestRender();
   }
 
   public setIsometricView(smooth = false): Promise<void> | void {
-    if (!this.sceneManager) return;
-    if (smooth) return this.animateCameraTo(Math.PI / 6, Math.PI / 6, 7);
-    this.cameraMomentum = null;
-    this.cameraMomentumState = 'idle';
-    this.finishCameraAnim();
-    this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6);
-    this.requestRender();
+    return this.resetCamera(smooth);
   }
 
   private animateCameraTo(
@@ -525,10 +532,109 @@ export class PyraminxEngine {
     anim?.resolve?.();
   }
 
+  // ── Whole-Puzzle Rotations (Virtual Pyraminx) ───────────────────────────
+
+  /**
+   * Lateral drone rotation around the vertical Y axis:
+   * direction: -1 = turn right (clockwise from above), 1 = turn left.
+   * Steps by 120° (3-fold symmetry), showing the 3 lateral faces.
+   */
+  public rotatePuzzleY(direction: 1 | -1, durationMs = 180): Promise<void> {
+    const angle = direction * ((120 * Math.PI) / 180);
+    const rot = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), angle);
+    const target = rot.multiply(this.puzzleQuat).normalize();
+    return this.animatePuzzleTo(target, durationMs);
+  }
+
+  /**
+   * Smooth tilt rotation downward/upward around the horizontal X axis:
+   * direction: 1 = tip down/forward, -1 = tip up/backward.
+   * Steps by the tetrahedral turning angle arccos(-1/3) ≈ 109.47°.
+   * Smoothly tips the apex down and brings the back vertex up to the top,
+   * landing in the exact same canonical isometric pose.
+   */
+  public rotatePuzzleX(direction: 1 | -1, durationMs = 220): Promise<void> {
+    const angle = direction * TETRAHEDRAL_TILT_ANGLE;
+    const rot = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), angle);
+    const target = rot.multiply(this.puzzleQuat).normalize();
+    return this.animatePuzzleTo(target, durationMs);
+  }
+
+  /** Reset whole-puzzle orientation back to canonical upright. */
+  public resetPuzzleOrientation(smooth = false): Promise<void> {
+    if (smooth) {
+      return this.animatePuzzleTo(PYRAMINX_CANONICAL_QUAT.clone(), 200);
+    }
+    this.finishPuzzleAnim();
+    this.puzzleQuat.copy(PYRAMINX_CANONICAL_QUAT);
+    this.model?.root.quaternion.copy(this.puzzleQuat);
+    this.requestRender();
+    return Promise.resolve();
+  }
+
+  /** Backward-compatibility helper for discrete steps. */
+  public orbitStep(dx: number, dy: number, durationMs = 180): void {
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      void this.rotatePuzzleY(dx > 0 ? 1 : -1, durationMs);
+    } else {
+      void this.rotatePuzzleX(dy > 0 ? 1 : -1, durationMs);
+    }
+  }
+
+  /** The world-space rotation axis for a vertex given the current puzzle orientation. */
+  public getWorldAxis(vertex: PyraminxVertex): Vector3 {
+    const v = PYRAMINX_AXES[vertex].clone();
+    if (this.model?.root) {
+      v.applyQuaternion(this.model.root.quaternion);
+    }
+    return v;
+  }
+
+  /** Current whole-puzzle quaternion. */
+  public getPuzzleQuaternion(): Quaternion {
+    return this.puzzleQuat.clone();
+  }
+
+  private animatePuzzleTo(targetQuat: Quaternion, durationMs: number): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.model?.root) {
+        resolve();
+        return;
+      }
+      this.finishPuzzleAnim();
+      if (durationMs <= 0) {
+        this.puzzleQuat.copy(targetQuat);
+        this.model.root.quaternion.copy(targetQuat);
+        this.requestRender();
+        resolve();
+        return;
+      }
+      this.puzzleAnim = {
+        startQuat: this.model.root.quaternion.clone(),
+        targetQuat: targetQuat.clone(),
+        startTime: performance.now(),
+        durationMs,
+        resolve,
+      };
+      this.requestRender();
+    });
+  }
+
+  private finishPuzzleAnim(): void {
+    const anim = this.puzzleAnim;
+    if (anim) {
+      this.puzzleAnim = null;
+      this.puzzleQuat.copy(anim.targetQuat);
+      this.model?.root.quaternion.copy(anim.targetQuat);
+      anim.resolve?.();
+    }
+  }
+
   // ── Render loop (dirty-flag, pauses when static — same as Cube3DEngine) ─
 
   private hasActiveAnimation(): boolean {
     if (this.cameraAnim) return true;
+    if (this.puzzleAnim) return true;
     if (this.driver?.isAnimating()) return true;
     if (this.cameraMomentum && this.cameraMomentumState !== 'idle') return true;
     return false;
@@ -581,6 +687,22 @@ export class PyraminxEngine {
       if (t >= 1.0) {
         const resolve = this.cameraAnim.resolve;
         this.cameraAnim = null;
+        resolve?.();
+      }
+    }
+
+    if (this.puzzleAnim && this.model?.root) {
+      const elapsed = timeMs - this.puzzleAnim.startTime;
+      const t = Math.min(1.0, elapsed / this.puzzleAnim.durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+      this.model.root.quaternion
+        .copy(this.puzzleAnim.startQuat)
+        .slerp(this.puzzleAnim.targetQuat, eased);
+      if (t >= 1.0) {
+        this.puzzleQuat.copy(this.puzzleAnim.targetQuat);
+        this.model.root.quaternion.copy(this.puzzleAnim.targetQuat);
+        const resolve = this.puzzleAnim.resolve;
+        this.puzzleAnim = null;
         resolve?.();
       }
     }

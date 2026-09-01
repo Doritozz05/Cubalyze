@@ -124,12 +124,18 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     [performMove, cubeTurnSpeed, engineRef],
   );
 
-  // ── Piece drags → FIXED ±120° turns; background drags → one discrete
-  //    camera step (camera locked on fixed angles — see the hook). The
-  //    camera NEVER moves when the pointer is over a piece. ──────────────
+  // ── Piece drags → FIXED ±120° turns; background drags → discrete
+  //    drone lateral (120°) or tilt (109.47°) puzzle rotation. The camera
+  //    remains locked in canonical isometric view. ────────────────────────
   const { pointerHandlers } = usePyraminxTurnControls({
     engineRef: engineRef as unknown as React.RefObject<PyraminxEngineT | null>,
     onTurn: handleTurn,
+    onRotateLateral: (direction) => {
+      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleY(direction);
+    },
+    onRotateTilt: (direction) => {
+      void (engineRef.current as unknown as PyraminxEngineT | null)?.rotatePuzzleX(direction);
+    },
     onOrbitStep: (dx, dy) =>
       (engineRef.current as unknown as PyraminxEngineT | null)?.orbitStep(dx, dy),
   });
@@ -154,16 +160,26 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
         setShowHelp(false);
         return;
       }
-      // Arrow keys mirror the background drag: ONE discrete fixed-angle
-      // camera step per press (parity with the cube simulator's arrows).
-      const step = (dx: number, dy: number) => {
+      // Arrow keys mirror the background drag:
+      // Left / Right: 120° drone lateral rotation
+      // Down / Up: smooth tilt rotation
+      const eng = engineRef.current as unknown as PyraminxEngineT | null;
+      if (e.code === "ArrowRight") {
         e.preventDefault();
-        (engineRef.current as unknown as PyraminxEngineT | null)?.orbitStep(dx, dy);
-      };
-      if (e.code === "ArrowRight") return step(10, 0);
-      if (e.code === "ArrowLeft") return step(-10, 0);
-      if (e.code === "ArrowUp") return step(0, -10);
-      if (e.code === "ArrowDown") return step(0, 10);
+        return void eng?.rotatePuzzleY(1);
+      }
+      if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        return void eng?.rotatePuzzleY(-1);
+      }
+      if (e.code === "ArrowDown") {
+        e.preventDefault();
+        return void eng?.rotatePuzzleX(1);
+      }
+      if (e.code === "ArrowUp") {
+        e.preventDefault();
+        return void eng?.rotatePuzzleX(-1);
+      }
       const token = pyraminxKeyToToken(e.code);
       if (!token) return;
       e.preventDefault();
@@ -171,7 +187,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleTurn]);
+  }, [handleTurn, engineRef]);
 
   // ── Scramble / reset ───────────────────────────────────────────────────
   const handleScrambleNow = useCallback(() => {
@@ -186,15 +202,20 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
     reset();
     const engine = engineRef.current as unknown as PyraminxEngineT | null;
     engine?.reset();
-    // Back to the locked isometric view (like the cube simulator's reset).
+    engine?.resetPuzzleOrientation();
     engine?.setIsometricView();
   }, [reset, engineRef]);
 
   // Lock the initial camera to the isometric view once the engine is ready
   // (same as the cube simulator — the camera never starts free).
+  // Lock the initial camera to the hero isometric view once the engine is
+  // ready (exactly the reconstruction's main shot — the camera never starts
+  // free, and R/L/U/D or a background drag only snaps between the 4 views).
   useEffect(() => {
     if (!isReady) return;
-    (engineRef.current as unknown as PyraminxEngineT | null)?.setIsometricView();
+    const eng = engineRef.current as unknown as PyraminxEngineT | null;
+    eng?.setIsometricView();
+    (window as unknown as Record<string, unknown>).__pyraminxEngine = eng;
   }, [isReady, engineRef]);
 
   const handleRegenerate = useCallback(() => {

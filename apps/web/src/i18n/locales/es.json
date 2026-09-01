@@ -62,7 +62,7 @@
     "gestureHint": "Desliza una cara para girar la capa · arrastra el fondo para rotar el cubo 90° · pellizca para hacer zoom",
     "initializing": "Inicializando cubo 3D…",
     "unavailable": "Vista 3D no disponible: hay demasiadas vistas 3D abiertas en este dispositivo. Cierra otra vista 3D y vuelve a abrir.",
-    "pyraminxKeysHint": "Teclado: J/F = U/U' · I/K = R/R' · D/E = L/L' · W/O = B/B' · U/M = u/u' · H/G = r/r' · R/V = l/l' · C/, = b/b' · arrastra el fondo para girar la cámara",
+    "pyraminxKeysHint": "Teclado: J/F = U/U' · I/K = R/R' · D/E = L/L' · W/O = B/B' · U/M = u/u' · H/G = r/r' · R/V = l/l' · C/, = b/b' · flechas o arrastra el fondo para rotar la pirámide",
     "pyraminxKeysSubtitle": "Diseño tipo csTimer: los índices descansan en U. Mayúsculas = capas, minúsculas = tips. En el sentido horario y antihorario son teclas separadas.",
     "scramble": "Mezclar",
     "scrambleTooltip": "Mezclar el cubo al instante",

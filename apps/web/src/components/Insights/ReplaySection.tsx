@@ -898,6 +898,8 @@ function ReplaySection({
                     if (pointersRef.current.size === 1) {
                       isDraggingRef.current = true;
                       lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                      pyraminxEngineRef.current?.setCameraDragActive(true);
+                      workerProxyRef.current?.setCameraDragActive(true).catch(console.error);
                     } else if (pointersRef.current.size === 2) {
                       pinchDistRef.current = currentPinchDistance();
                     }
@@ -939,6 +941,8 @@ function ReplaySection({
                     pointersRef.current.delete(e.pointerId);
                     if (pointersRef.current.size === 0) {
                       isDraggingRef.current = false;
+                      pyraminxEngineRef.current?.setCameraDragActive(false);
+                      workerProxyRef.current?.setCameraDragActive(false).catch(console.error);
                     } else if (pointersRef.current.size === 1) {
                       const remaining = [...pointersRef.current.values()][0];
                       if (remaining) {
@@ -955,6 +959,8 @@ function ReplaySection({
                     pointersRef.current.delete(e.pointerId);
                     if (pointersRef.current.size === 0) {
                       isDraggingRef.current = false;
+                      pyraminxEngineRef.current?.setCameraDragActive(false);
+                      workerProxyRef.current?.setCameraDragActive(false).catch(console.error);
                     } else if (pointersRef.current.size === 1) {
                       const remaining = [...pointersRef.current.values()][0];
                       if (remaining) {

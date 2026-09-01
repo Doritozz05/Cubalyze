@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { PYRAMINX_AXES, type PyraminxEngine, type PyraminxPick } from "@cubeforge/cube-3d-engine";
+import type { PyraminxEngine, PyraminxPick } from "@cubeforge/cube-3d-engine";
 import {
   pyraminxDragToken,
   resolvePyraminxDragMove,
@@ -46,7 +46,11 @@ export interface UsePyraminxTurnControlsOptions {
   /** Called once per resolved piece drag — the fixed ±120° WCA token
    *  (U, L', u, …). */
   onTurn?: (token: string) => void;
-  /** Called once per background drag — the discrete camera step. */
+  /** Lateral drone rotation (120° steps around Y). -1 = right, 1 = left. */
+  onRotateLateral?: (direction: 1 | -1) => void;
+  /** Tilt rotation (109.47° around horizontal X). 1 = down, -1 = up. */
+  onRotateTilt?: (direction: 1 | -1) => void;
+  /** Called once per background drag — the discrete camera step (fallback). */
   onOrbitStep?: (dx: number, dy: number) => void;
 }
 
@@ -93,10 +97,16 @@ export function usePyraminxTurnControls({
   minSwipeDistance = 14,
   rotateStepDistance = 70,
   onTurn,
+  onRotateLateral,
+  onRotateTilt,
   onOrbitStep,
 }: UsePyraminxTurnControlsOptions): UsePyraminxTurnControlsResult {
   const onTurnRef = useRef(onTurn);
   onTurnRef.current = onTurn;
+  const onRotateLateralRef = useRef(onRotateLateral);
+  onRotateLateralRef.current = onRotateLateral;
+  const onRotateTiltRef = useRef(onRotateTilt);
+  onRotateTiltRef.current = onRotateTilt;
   const onOrbitStepRef = useRef(onOrbitStep);
   onOrbitStepRef.current = onOrbitStep;
 
@@ -170,10 +180,12 @@ export function usePyraminxTurnControls({
         dy: drag.lastY - drag.startY,
         worldPoint: pick.position,
         candidates: pick.candidates,
-        axes: PYRAMINX_AXES as unknown as Record<
-          "U" | "L" | "R" | "B",
-          { x: number; y: number; z: number }
-        >,
+        axes: {
+          U: engine.getWorldAxis("U"),
+          L: engine.getWorldAxis("L"),
+          R: engine.getWorldAxis("R"),
+          B: engine.getWorldAxis("B"),
+        },
         cameraRight: { x: m[0], y: m[1], z: m[2] },
         cameraUp: { x: m[4], y: m[5], z: m[6] },
       });
@@ -224,8 +236,8 @@ export function usePyraminxTurnControls({
         return;
       }
 
-      // Background: ONE discrete camera step per drag (fixed angles — see
-      // PyraminxEngine.orbitStep). Any further travel in this gesture is
+      // Background: ONE discrete whole-puzzle step per drag (fixed angles — see
+      // PyraminxEngine.rotatePuzzleY and rotatePuzzleX). Any further travel in this gesture is
       // ignored, so one drag never produces several steps.
       if (drag.committed) return;
       drag.swipeX += dx;
@@ -235,7 +247,21 @@ export function usePyraminxTurnControls({
         Math.abs(drag.swipeY) >= rotateStepDistance
       ) {
         drag.committed = true;
-        onOrbitStepRef.current?.(drag.swipeX, drag.swipeY);
+        if (Math.abs(drag.swipeX) >= Math.abs(drag.swipeY)) {
+          const dir: 1 | -1 = drag.swipeX > 0 ? 1 : -1;
+          if (onRotateLateralRef.current) {
+            onRotateLateralRef.current(dir);
+          } else {
+            onOrbitStepRef.current?.(drag.swipeX, 0);
+          }
+        } else {
+          const dir: 1 | -1 = drag.swipeY > 0 ? 1 : -1;
+          if (onRotateTiltRef.current) {
+            onRotateTiltRef.current(dir);
+          } else {
+            onOrbitStepRef.current?.(0, drag.swipeY);
+          }
+        }
       }
     },
     [engineRef, minSwipeDistance, resolveTurn, rotateStepDistance],

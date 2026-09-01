@@ -1,6 +1,7 @@
 import {
   BufferGeometry,
   Color,
+  DoubleSide,
   Group,
   Material,
   Mesh,
@@ -31,6 +32,8 @@ export interface PyraminxStyleOptions {
   stickerColors: Record<PyraminxVertex, string>;
   /** How much each sticker triangle is inset from its piece face (0..1). */
   stickerInset: number;
+  /** Corner rounding fraction for sticker triangles (0..1). Default: 0.14. */
+  stickerRadius?: number;
 }
 
 export const DEFAULT_PYRAMINX_STYLE: PyraminxStyleOptions = {
@@ -38,6 +41,7 @@ export const DEFAULT_PYRAMINX_STYLE: PyraminxStyleOptions = {
   coreColor: '#1a1a1a',
   stickerColors: { ...DEFAULT_PYRAMINX_STICKER_COLORS },
   stickerInset: 0.1,
+  stickerRadius: 0.14,
 };
 
 /** Material slot indices inside the piece material array. */
@@ -103,6 +107,7 @@ export class PyraminxMeshFactory {
     for (const face of PYRAMINX_VERTICES_ORDER) {
       this.stickerMaterials[face] = new MeshBasicMaterial({
         color: new Color(this.style.stickerColors[face]),
+        side: DoubleSide,
         // NEGATIVE polygonOffset resolves z-fighting with the core: the
         // stickers sit a hair above the core face and must always win the
         // depth test (same technique as CubeMeshFactory).
@@ -112,6 +117,7 @@ export class PyraminxMeshFactory {
       });
       this.stickerlessFaceMaterials[face] = new MeshBasicMaterial({
         color: new Color(this.style.stickerColors[face]),
+        side: DoubleSide,
       });
     }
   }
@@ -147,12 +153,15 @@ export class PyraminxMeshFactory {
   private buildPiece(
     worldVertices: Vector3[],
     faces: PieceFace[],
+    slotCentroid?: Vector3,
   ): { mesh: Mesh; localVertices: Vector3[]; exposed: { a: Vector3; b: Vector3; c: Vector3; face: PyraminxVertex }[] } {
-    // Local space: center the geometry on the piece's centroid (which is the
-    // Group's position), so the driver's rotation around the origin works.
-    const centroid = worldVertices
-      .reduce((acc, v) => acc.add(v), new Vector3())
-      .multiplyScalar(1 / worldVertices.length);
+    // Local space: center the geometry on the slot centroid, so the driver's
+    // rotation around the origin works.
+    const centroid = slotCentroid
+      ? slotCentroid.clone()
+      : worldVertices
+          .reduce((acc, v) => acc.add(v), new Vector3())
+          .multiplyScalar(1 / worldVertices.length);
     const local = worldVertices.map((v) => v.clone().sub(centroid));
 
     const positions: number[] = [];
@@ -202,28 +211,89 @@ export class PyraminxMeshFactory {
     return [a, b, c];
   }
 
-  /** Create a sticker mesh for one exposed triangle (stickered skin). */
+  /** Create a sticker mesh with rounded corners for one exposed triangle (stickered skin). */
   private createSticker(
     tri: { a: Vector3; b: Vector3; c: Vector3; face: PyraminxVertex },
     material: MeshBasicMaterial,
   ): Mesh {
-    const g = tri.a.clone().add(tri.b).add(tri.c).multiplyScalar(1 / 3);
-    const n = tri.b.clone().sub(tri.a).cross(tri.c.clone().sub(tri.a)).normalize();
+    const [rawA, rawB, rawC] = this.windOutward([tri.a, tri.b, tri.c]);
+    const g = rawA.clone().add(rawB).add(rawC).multiplyScalar(1 / 3);
+    let n = rawB.clone().sub(rawA).cross(rawC.clone().sub(rawA)).normalize();
+    if (n.dot(g) < 0) {
+      n.negate();
+    }
     const inset = this.style.stickerInset;
     const insetPt = (p: Vector3) => g.clone().add(p.clone().sub(g).multiplyScalar(1 - inset));
-    const a = insetPt(tri.a).add(n.clone().multiplyScalar(0.002));
-    const b = insetPt(tri.b).add(n.clone().multiplyScalar(0.002));
-    const c = insetPt(tri.c).add(n.clone().multiplyScalar(0.002));
+    const a = insetPt(rawA).add(n.clone().multiplyScalar(0.003));
+    const b = insetPt(rawB).add(n.clone().multiplyScalar(0.003));
+    const c = insetPt(rawC).add(n.clone().multiplyScalar(0.003));
+
+    const radiusFraction = this.style.stickerRadius ?? 0.14;
+    const corners = [a.clone(), b.clone(), c.clone()];
+
+    // Ensure corners wind CCW around normal n
+    const edge1 = b.clone().sub(a);
+    const edge2 = c.clone().sub(a);
+    if (edge1.cross(edge2).dot(n) < 0) {
+      corners.reverse();
+    }
+
+    const boundaryPts: Vector3[] = [];
+    const segmentsPerCorner = 4;
+
+    for (let i = 0; i < 3; i++) {
+      const prev = corners[(i + 2) % 3];
+      const curr = corners[i];
+      const next = corners[(i + 1) % 3];
+
+      const d1 = curr.clone().sub(prev);
+      const l1 = d1.length();
+      const u1 = d1.multiplyScalar(1 / l1);
+
+      const d2 = next.clone().sub(curr);
+      const l2 = d2.length();
+      const u2 = d2.multiplyScalar(1 / l2);
+
+      const r = Math.min(l1, l2) * radiusFraction;
+      const pStart = curr.clone().sub(u1.clone().multiplyScalar(r));
+      const pEnd = curr.clone().add(u2.clone().multiplyScalar(r));
+
+      for (let s = 0; s <= segmentsPerCorner; s++) {
+        const t = s / segmentsPerCorner;
+        const b0 = (1 - t) * (1 - t);
+        const b1 = 2 * (1 - t) * t;
+        const b2 = t * t;
+        boundaryPts.push(
+          new Vector3(
+            b0 * pStart.x + b1 * curr.x + b2 * pEnd.x,
+            b0 * pStart.y + b1 * curr.y + b2 * pEnd.y,
+            b0 * pStart.z + b1 * curr.z + b2 * pEnd.z,
+          ),
+        );
+      }
+    }
+
+    // Build triangle fan from centroid g to boundary points
+    const positions: number[] = [];
+    const normals: number[] = [];
+    const numPts = boundaryPts.length;
+
+    for (let i = 0; i < numPts; i++) {
+      const pCurrent = boundaryPts[i];
+      const pNext = boundaryPts[(i + 1) % numPts];
+
+      positions.push(g.x, g.y, g.z);
+      positions.push(pCurrent.x, pCurrent.y, pCurrent.z);
+      positions.push(pNext.x, pNext.y, pNext.z);
+
+      normals.push(n.x, n.y, n.z);
+      normals.push(n.x, n.y, n.z);
+      normals.push(n.x, n.y, n.z);
+    }
 
     const geometry = new BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new Float32BufferAttribute([a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z], 3),
-    );
-    geometry.setAttribute(
-      'normal',
-      new Float32BufferAttribute([n.x, n.y, n.z, n.x, n.y, n.z, n.x, n.y, n.z], 3),
-    );
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
     const sticker = new Mesh(geometry, material);
     sticker.userData = { pyraminxSticker: true, face: tri.face };
     return sticker;
@@ -283,40 +353,65 @@ export class PyraminxMeshFactory {
     return this.assemble(pyraminxCornerPieceVertices(vertex), faces, pyraminxCornerSlotPosition(vertex));
   }
 
-  /** Tip piece: tetrahedron {V, P1, P2, P3} — 3 exposed faces + base. */
+  /** Tip piece: tetrahedron {V, P1, P2, P3} with rounded apex cap like 2x2/3x3. */
   public createTipPiece(vertex: PyraminxVertex): Group {
     const neighbors = PYRAMINX_VERTICES_ORDER.filter((v) => v !== vertex);
     const fourthVertex = (exclude: readonly PyraminxVertex[]) =>
       PYRAMINX_VERTICES_ORDER.find((candidate) => !exclude.includes(candidate))!;
+
+    const rawVerts = pyraminxTipPieceVertices(vertex);
+    const [v0, p1, p2, p3] = rawVerts;
+
+    // Bevel the outer apex (v0) to round the tip of the core like 2x2 and 3x3:
+    const b = 0.12;
+    const t1 = v0.clone().lerp(p1, b);
+    const t2 = v0.clone().lerp(p2, b);
+    const t3 = v0.clone().lerp(p3, b);
+    const tCenter = t1.clone().add(t2).add(t3).multiplyScalar(1 / 3);
+    const tApex = tCenter.clone().add(v0.clone().sub(tCenter).multiplyScalar(0.4));
+
+    const worldVertices = [tApex, t1, t2, t3, p1, p2, p3];
+
+    const f1 = fourthVertex([vertex, neighbors[0], neighbors[1]]);
+    const f2 = fourthVertex([vertex, neighbors[0], neighbors[2]]);
+    const f3 = fourthVertex([vertex, neighbors[1], neighbors[2]]);
+
     const faces: PieceFace[] = [
-      // The triangle (V, P(Xi), P(Xj)) lies on the big face opposite the
-      // 4th vertex (the one not in {vertex, Xi, Xj}).
-      {
-        indices: [0, 1, 2],
-        exposed: true,
-        face: fourthVertex([vertex, neighbors[0], neighbors[1]]),
-      },
-      {
-        indices: [0, 1, 3],
-        exposed: true,
-        face: fourthVertex([vertex, neighbors[0], neighbors[2]]),
-      },
-      {
-        indices: [0, 2, 3],
-        exposed: true,
-        face: fourthVertex([vertex, neighbors[1], neighbors[2]]),
-      },
-      { indices: [1, 2, 3], exposed: false },
+      // Side face 1 (was v0, p1, p2): quad (t1, t2, p2, p1)
+      { indices: [1, 2, 5], exposed: true, face: f1 },
+      { indices: [1, 5, 4], exposed: true, face: f1 },
+      // Side face 2 (was v0, p1, p3): quad (t1, t3, p3, p1)
+      { indices: [1, 3, 6], exposed: true, face: f2 },
+      { indices: [1, 6, 4], exposed: true, face: f2 },
+      // Side face 3 (was v0, p2, p3): quad (t2, t3, p3, p2)
+      { indices: [2, 3, 6], exposed: true, face: f3 },
+      { indices: [2, 6, 5], exposed: true, face: f3 },
+      // Beveled apex dome cap (rounded tip of the core):
+      { indices: [0, 1, 2], exposed: true, face: f1 },
+      { indices: [0, 3, 1], exposed: true, face: f2 },
+      { indices: [0, 2, 3], exposed: true, face: f3 },
+      // Base (p1, p2, p3) resting on corner piece:
+      { indices: [4, 5, 6], exposed: false },
     ];
-    return this.assemble(pyraminxTipPieceVertices(vertex), faces, pyraminxTipSlotPosition(vertex));
+
+    const slotPos = pyraminxTipSlotPosition(vertex);
+    const toLocal = (v: Vector3) => v.clone().sub(slotPos);
+    const customStickers = [
+      { a: toLocal(v0), b: toLocal(p1), c: toLocal(p2), face: f1 },
+      { a: toLocal(v0), b: toLocal(p1), c: toLocal(p3), face: f2 },
+      { a: toLocal(v0), b: toLocal(p2), c: toLocal(p3), face: f3 },
+    ];
+
+    return this.assemble(worldVertices, faces, slotPos, customStickers);
   }
 
   private assemble(
     worldVertices: Vector3[],
     faces: PieceFace[],
     slotPosition: Vector3,
+    customStickers?: { a: Vector3; b: Vector3; c: Vector3; face: PyraminxVertex }[],
   ): Group {
-    const { mesh, exposed } = this.buildPiece(worldVertices, faces);
+    const { mesh, exposed } = this.buildPiece(worldVertices, faces, slotPosition);
 
     const group = new Group();
     group.position.copy(slotPosition);
@@ -325,7 +420,8 @@ export class PyraminxMeshFactory {
     // Sticker panels (stickered skin only; hidden in stickerless where the
     // core faces are already colored).
     const isStickerless = this.style.skinType === 'stickerless';
-    for (const tri of exposed) {
+    const stickerList = customStickers ?? exposed;
+    for (const tri of stickerList) {
       const sticker = this.createSticker(tri, this.stickerMaterials[tri.face]);
       sticker.visible = !isStickerless;
       group.add(sticker);

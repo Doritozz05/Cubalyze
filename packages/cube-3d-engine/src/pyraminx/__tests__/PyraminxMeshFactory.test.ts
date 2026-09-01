@@ -80,4 +80,33 @@ describe('PyraminxMeshFactory', () => {
     expect(style.stickerColors.R).toBe(DEFAULT_PYRAMINX_STYLE.stickerColors.R);
     expect(style.stickerColors.B).toBe(DEFAULT_PYRAMINX_STYLE.stickerColors.B);
   });
+
+  it('all stickers across all pieces face strictly outward from piece center (never inverted/black)', () => {
+    const factory = new PyraminxMeshFactory();
+    const pieces = [
+      ...PYRAMINX_VERTICES_ORDER.map((v) => factory.createTipPiece(v)),
+      ...PYRAMINX_VERTICES_ORDER.map((v) => factory.createCornerPiece(v)),
+      ...PYRAMINX_EDGE_SLOTS.map((e) => factory.createEdgePiece(e.index)),
+    ];
+
+    let totalStickers = 0;
+    for (const piece of pieces) {
+      const stickers = piece.children.filter((c) => (c as Mesh).userData?.pyraminxSticker === true) as Mesh[];
+      for (const sticker of stickers) {
+        totalStickers++;
+        const pos = sticker.geometry.attributes.position.array;
+        const norm = sticker.geometry.attributes.normal.array;
+        // Compute sticker centroid in local piece coordinates:
+        let cx = 0, cy = 0, cz = 0;
+        const vertexCount = pos.length / 3;
+        for (let i = 0; i < pos.length; i += 3) {
+          cx += pos[i]; cy += pos[i + 1]; cz += pos[i + 2];
+        }
+        cx /= vertexCount; cy /= vertexCount; cz /= vertexCount;
+        const dot = cx * norm[0] + cy * norm[1] + cz * norm[2];
+        expect(dot).toBeGreaterThan(0);
+      }
+    }
+    expect(totalStickers).toBe(36); // 12 tip + 12 corner + 12 edge = 36
+  });
 });

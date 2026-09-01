@@ -47,7 +47,11 @@ vi.mock('three', async (importOriginal) => {
   id: number,
 ) => clearTimeout(id);
 
-import { PyraminxEngine } from '../PyraminxEngine';
+import {
+  PyraminxEngine,
+  PYRAMINX_CANONICAL_QUAT,
+  TETRAHEDRAL_TILT_ANGLE,
+} from '../PyraminxEngine';
 
 function makeCanvas(): HTMLCanvasElement {
   return {
@@ -226,7 +230,7 @@ describe('PyraminxEngine.pickSticker (virtual-cube piece drags)', () => {
   });
 });
 
-describe('PyraminxEngine.orbitStep (fixed-angle camera steps)', () => {
+describe('PyraminxEngine camera & whole-puzzle rotations', () => {
   let engine: PyraminxEngine;
 
   beforeEach(() => {
@@ -239,31 +243,66 @@ describe('PyraminxEngine.orbitStep (fixed-angle camera steps)', () => {
     engine.dispose();
   });
 
-  it('yaw snaps to the 120° grid (3-fold symmetry), pitch stays on the 30° grid', () => {
-    const YAW = (Math.PI * 2) / 3;
-    const PITCH = Math.PI / 6;
-    engine.orbitStep(10, 0); // one rightward step
-    const a1 = engine.sceneManager.getOrbitAngles();
-    expect(Math.abs(a1.theta + YAW) % (Math.PI * 2)).toBeLessThan(1e-6);
-    expect(Math.abs(a1.phi - PITCH) % (Math.PI * 2)).toBeLessThan(1e-6);
-    engine.orbitStep(10, 0); // another step stays ON the grid
-    const a2 = engine.sceneManager.getOrbitAngles();
-    expect(Math.abs((a2.theta + 2 * YAW) % (Math.PI * 2))).toBeLessThan(1e-6);
-    expect(Math.abs(a2.phi - PITCH) % (Math.PI * 2)).toBeLessThan(1e-6);
+  it('isometric/reset land on the canonical isometric view', () => {
+    const a = engine.sceneManager.getOrbitAngles();
+    expect(a.theta).toBeCloseTo(PyraminxEngine.CANONICAL_ISOMETRIC_VIEW.theta, 6);
+    expect(a.phi).toBeCloseTo(PyraminxEngine.CANONICAL_ISOMETRIC_VIEW.phi, 6);
+    expect(a.radius).toBeCloseTo(PyraminxEngine.CANONICAL_ISOMETRIC_VIEW.radius, 6);
+
+    engine.resetCamera();
+    const b = engine.sceneManager.getOrbitAngles();
+    expect(b.theta).toBeCloseTo(PyraminxEngine.CANONICAL_ISOMETRIC_VIEW.theta, 6);
+    expect(b.phi).toBeCloseTo(PyraminxEngine.CANONICAL_ISOMETRIC_VIEW.phi, 6);
   });
 
-  it('pitch steps by 30° and clamps near the poles', () => {
-    const PITCH = Math.PI / 6;
-    engine.orbitStep(0, 10); // down → top tips forward
-    const a1 = engine.sceneManager.getOrbitAngles();
-    expect(Math.abs(a1.phi - (PITCH - PITCH)) % (Math.PI * 2)).toBeLessThan(1e-6);
-    expect(Math.abs(a1.phi)).toBeLessThan(1e-6);
-    // Repeated down-steps clamp below the pole (never NaN / full flip).
-    engine.orbitStep(0, 10);
-    engine.orbitStep(0, 10);
-    const a2 = engine.sceneManager.getOrbitAngles();
-    expect(a2.phi).toBeGreaterThan(-Math.PI / 2);
-    expect(Number.isFinite(a2.phi)).toBe(true);
+  it('rotateCamera performs continuous free camera rotation (turntable orbit)', () => {
+    const initial = engine.sceneManager.getOrbitAngles();
+    engine.rotateCamera(30, 20);
+    const updated = engine.sceneManager.getOrbitAngles();
+    expect(updated.theta).not.toBe(initial.theta);
+    expect(updated.phi).not.toBe(initial.phi);
+  });
+
+  it('starts in the canonical upright orientation', () => {
+    const q = engine.getPuzzleQuaternion();
+    expect(q.x).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.x, 5);
+    expect(q.y).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.y, 5);
+    expect(q.z).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.z, 5);
+    expect(q.w).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.w, 5);
+  });
+
+  it('rotatePuzzleY performs 120° drone lateral rotation (3 steps complete 360°)', async () => {
+    const q0 = engine.getPuzzleQuaternion();
+    await engine.rotatePuzzleY(1, 0);
+    const q1 = engine.getPuzzleQuaternion();
+    expect(Math.abs(q1.y - q0.y)).toBeGreaterThan(0.05);
+
+    await engine.rotatePuzzleY(1, 0);
+    await engine.rotatePuzzleY(1, 0);
+    const q3 = engine.getPuzzleQuaternion();
+    // After 3 steps of 120° = 360°, quaternion matches q0 (or -q0 antipodal)
+    const dot = Math.abs(q3.x * q0.x + q3.y * q0.y + q3.z * q0.z + q3.w * q0.w);
+    expect(dot).toBeCloseTo(1, 4);
+  });
+
+  it('rotatePuzzleX tilts the puzzle and resetPuzzleOrientation restores canonical', async () => {
+    await engine.rotatePuzzleX(1, 0);
+    const tilted = engine.getPuzzleQuaternion();
+    expect(Math.abs(tilted.x - PYRAMINX_CANONICAL_QUAT.x)).toBeGreaterThan(0.05);
+
+    await engine.resetPuzzleOrientation(false);
+    const reset = engine.getPuzzleQuaternion();
+    expect(reset.x).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.x, 5);
+    expect(reset.y).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.y, 5);
+    expect(reset.z).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.z, 5);
+    expect(reset.w).toBeCloseTo(PYRAMINX_CANONICAL_QUAT.w, 5);
+  });
+
+  it('orbitStep delegates to puzzle rotations', () => {
+    const q0 = engine.getPuzzleQuaternion();
+    engine.orbitStep(50, 0, 0);
+    const q1 = engine.getPuzzleQuaternion();
+    expect(q1.equals(q0)).toBe(false);
   });
 });
 
