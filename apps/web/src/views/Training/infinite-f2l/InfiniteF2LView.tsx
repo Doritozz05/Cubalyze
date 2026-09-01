@@ -88,9 +88,7 @@ export function InfiniteF2LView({
   const handleStartOptions = useCallback((newOptions: Required<InfiniteF2LOptions>) => {
     setOptions(newOptions);
     setIsStarted(true);
-    setTimeout(() => {
-      restart();
-    }, 50);
+    restart(newOptions);
   }, [restart]);
 
   return (
@@ -151,7 +149,7 @@ export function InfiniteF2LView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={restart}
+                  onClick={() => restart()}
                   className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                   aria-label={t("infiniteF2l.restart")}
                 >
@@ -211,10 +209,10 @@ export function InfiniteF2LView({
           </div>
         )}
 
-        {/* 3D Cube Canvas Area */}
+        {/* 3D Cube Canvas Area — balanced, compact sizing */}
         <div
           ref={containerRef as React.RefObject<HTMLDivElement>}
-          className="relative size-full flex items-center justify-center touch-none"
+          className="relative w-full max-w-[380px] sm:max-w-[420px] aspect-square max-h-[55vh] flex items-center justify-center touch-none my-auto"
         >
           <canvas
             ref={canvasRef as React.RefObject<HTMLCanvasElement>}

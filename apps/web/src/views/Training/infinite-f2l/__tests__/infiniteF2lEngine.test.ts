@@ -10,15 +10,21 @@ import {
 } from "../infiniteF2lEngine";
 
 describe("infiniteF2lEngine", () => {
-  it("correctly identifies a solved F2L slot on a solved cube", () => {
+  it("correctly identifies a solved White F2L slot on a solved cube", () => {
     const solved = new CubeState();
     const frDef = CROSS_COLOR_CONFIGS.white.slots.FR;
     expect(isF2LSlotSolved(solved, frDef)).toBe(true);
   });
 
+  it("correctly identifies a solved Yellow F2L slot on a solved cube", () => {
+    const solved = new CubeState();
+    const frDef = CROSS_COLOR_CONFIGS.yellow.slots.FR;
+    expect(isF2LSlotSolved(solved, frDef)).toBe(true);
+  });
+
   it("detects when an F2L slot corner is misoriented", () => {
     const state = new CubeState();
-    state.co[Corner.DFR] = 1;
+    state.co[Corner.URF] = 1;
     const frDef = CROSS_COLOR_CONFIGS.white.slots.FR;
     expect(isF2LSlotSolved(state, frDef)).toBe(false);
   });
@@ -32,7 +38,7 @@ describe("infiniteF2lEngine", () => {
 
   it("fails slot solved check when adjacent cross edge is missing/flipped", () => {
     const state = new CubeState();
-    state.eo[Edge.DF] = 1; // adjacent cross edge flipped
+    state.eo[Edge.UF] = 1; // adjacent cross edge flipped
     const frDef = CROSS_COLOR_CONFIGS.white.slots.FR;
     expect(isF2LSlotSolved(state, frDef)).toBe(false);
   });

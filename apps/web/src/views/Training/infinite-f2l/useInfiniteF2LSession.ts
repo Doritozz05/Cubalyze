@@ -28,16 +28,8 @@ export function useInfiniteF2LSession({
   engineRef,
   isStarted,
 }: UseInfiniteF2LSessionProps) {
-  const crossColor: CrossColor = userOptions.crossColor ?? "white";
-  const concurrentPairs = Math.min(4, Math.max(1, userOptions.concurrentPairs ?? 2));
-  const allowedSlots: F2LSlotId[] = userOptions.allowedSlots ?? ["FR", "FL", "BL", "BR"];
-  const allowTrapped = userOptions.allowTrapped ?? true;
-
-  // Active slots to spawn initially
-  const initialSlots = useMemo(() => {
-    const shuffled = [...allowedSlots].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, concurrentPairs);
-  }, [allowedSlots, concurrentPairs]);
+  const optionsRef = useRef<InfiniteF2LOptions>(userOptions);
+  optionsRef.current = userOptions;
 
   const [solvedCount, setSolvedCount] = useState(0);
   const [activePairs, setActivePairs] = useState<ActivePairState[]>([]);
@@ -52,37 +44,49 @@ export function useInfiniteF2LSession({
   const solvedCountRef = useRef(0);
   const totalMovesRef = useRef(0);
 
-  // Update mask helper
-  const applyStickeringMask = useCallback((pairs: ActivePairState[]) => {
+  // Apply stickering mask helper
+  const applyStickeringMask = useCallback((crossColor: CrossColor, pairs: ActivePairState[]) => {
     if (!engineRef.current) return;
     const mask = buildInfiniteF2LMask(crossColor, pairs);
     engineRef.current.clearLayerGray();
     engineRef.current.setPhaseStickering(mask, "#3a3a3a");
-  }, [crossColor, engineRef]);
+  }, [engineRef]);
 
-  // Restart / Initialize session
-  const startSession = useCallback(() => {
-    const { state, activePairs: spawnedPairs } = spawnInfiniteF2LState(
-      crossColor,
-      initialSlots,
-      allowTrapped,
-    );
+  // Restart / Initialize session immediately (supports explicit options override)
+  const startSession = useCallback(
+    (overrideOptions?: InfiniteF2LOptions) => {
+      const opts = overrideOptions ?? optionsRef.current;
+      const crossColor: CrossColor = opts.crossColor ?? "white";
+      const concurrentPairs = Math.min(4, Math.max(1, opts.concurrentPairs ?? 2));
+      const allowedSlots: F2LSlotId[] = opts.allowedSlots ?? ["FR", "FL", "BL", "BR"];
+      const allowTrapped = opts.allowTrapped ?? true;
 
-    logicalStateRef.current = state;
-    activePairsRef.current = spawnedPairs;
-    solvedCountRef.current = 0;
-    totalMovesRef.current = 0;
+      const shuffled = [...allowedSlots].sort(() => Math.random() - 0.5);
+      const initialSlots = shuffled.slice(0, concurrentPairs);
 
-    setActivePairs(spawnedPairs);
-    setSolvedCount(0);
-    setTotalMoves(0);
-    setStartTime(Date.now());
-    setElapsedMs(0);
-    setRecentSolved(null);
+      const { state, activePairs: spawnedPairs } = spawnInfiniteF2LState(
+        crossColor,
+        initialSlots,
+        allowTrapped,
+      );
 
-    // Apply stickering mask to 3D cube
-    applyStickeringMask(spawnedPairs);
-  }, [crossColor, initialSlots, allowTrapped, applyStickeringMask]);
+      logicalStateRef.current = state;
+      activePairsRef.current = spawnedPairs;
+      solvedCountRef.current = 0;
+      totalMovesRef.current = 0;
+
+      setActivePairs(spawnedPairs);
+      setSolvedCount(0);
+      setTotalMoves(0);
+      setStartTime(Date.now());
+      setElapsedMs(0);
+      setRecentSolved(null);
+
+      // Apply stickering mask to 3D cube
+      applyStickeringMask(crossColor, spawnedPairs);
+    },
+    [applyStickeringMask],
+  );
 
   // Handle incoming move (from BLE physical smart cube)
   const processMove = useCallback(
@@ -90,6 +94,10 @@ export function useInfiniteF2LSession({
       if (!isStarted) return;
       const moveEnum = StringToMove[moveNotation.trim()];
       if (moveEnum === undefined) return;
+
+      const opts = optionsRef.current;
+      const crossColor: CrossColor = opts.crossColor ?? "white";
+      const allowedSlots: F2LSlotId[] = opts.allowedSlots ?? ["FR", "FL", "BL", "BR"];
 
       totalMovesRef.current += 1;
       setTotalMoves(totalMovesRef.current);
@@ -124,10 +132,10 @@ export function useInfiniteF2LSession({
 
         activePairsRef.current = currentActive;
         setActivePairs([...currentActive]);
-        applyStickeringMask(currentActive);
+        applyStickeringMask(crossColor, currentActive);
       }
     },
-    [isStarted, crossColor, allowedSlots, applyStickeringMask],
+    [isStarted, applyStickeringMask],
   );
 
   // Timer tick effect
@@ -167,6 +175,8 @@ export function useInfiniteF2LSession({
     return Number((totalMoves / seconds).toFixed(1));
   }, [totalMoves, elapsedMs]);
 
+  const crossColor = userOptions.crossColor ?? "white";
+
   return {
     solvedCount,
     activePairs,
@@ -175,7 +185,7 @@ export function useInfiniteF2LSession({
     totalMoves,
     tps,
     processMove,
-    restart: startSession,
+    restart: (overrideOpts?: InfiniteF2LOptions) => startSession(overrideOpts),
     crossColorConfig: CROSS_COLOR_CONFIGS[crossColor],
   };
 }
