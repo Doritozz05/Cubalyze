@@ -1279,6 +1279,39 @@
     "comingSoon": "próximamente",
     "caseCount_one": "{{count}} caso",
     "caseCount_other": "{{count}} casos",
+    "infiniteF2l": {
+      "chip": "Infinito",
+      "title": "F2L Infinito",
+      "subtitle": "Entrenamiento continuo de pares F2L con integración de cubo inteligente",
+      "solvedPairs": "Pares resueltos",
+      "calibrateGyro": "Calibrar giroscopio",
+      "settings": "Ajustes de entrenamiento",
+      "restart": "Reiniciar sesión",
+      "connectPrompt": {
+        "title": "Conecta tu Smart Cube",
+        "description": "Conecta tu cubo Bluetooth para sincronizar giroscopio y movimientos en tiempo real.",
+        "button": "Conectar Cubo"
+      },
+      "setup": {
+        "crossColor": "Color de la Cruz",
+        "concurrentPairs": "Pares simultáneos",
+        "pairUnitSingular": "par",
+        "pairUnitPlural": "pares",
+        "activeSlots": "Slots activos",
+        "allowTrapped": "Permitir pares atrapados",
+        "allowTrappedHint": "Genera piezas en otros slots de F2L además de la capa superior",
+        "enableSound": "Sonido de resolución",
+        "start": "Empezar Entrenamiento"
+      },
+      "crossColors": {
+        "white": "Blanco",
+        "yellow": "Amarillo",
+        "green": "Verde",
+        "blue": "Azul",
+        "red": "Rojo",
+        "orange": "Naranja"
+      }
+    },
     "drill": {
       "title": "Entrenar",
       "selectCase": "Selecciona caso",

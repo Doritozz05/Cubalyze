@@ -1279,6 +1279,39 @@
     "comingSoon": "coming soon",
     "caseCount_one": "{{count}} case",
     "caseCount_other": "{{count}} cases",
+    "infiniteF2l": {
+      "chip": "Infinite",
+      "title": "Infinite F2L",
+      "subtitle": "Continuous F2L pairs training with smart cube integration",
+      "solvedPairs": "Solved pairs",
+      "calibrateGyro": "Calibrate gyroscope",
+      "settings": "Training settings",
+      "restart": "Restart session",
+      "connectPrompt": {
+        "title": "Connect your Smart Cube",
+        "description": "Connect your Bluetooth cube to sync gyroscope and moves in real time.",
+        "button": "Connect Cube"
+      },
+      "setup": {
+        "crossColor": "Cross Color",
+        "concurrentPairs": "Concurrent pairs",
+        "pairUnitSingular": "pair",
+        "pairUnitPlural": "pairs",
+        "activeSlots": "Active slots",
+        "allowTrapped": "Allow trapped pairs",
+        "allowTrappedHint": "Spawn pieces in other F2L slots in addition to the top layer",
+        "enableSound": "Solve sound effect",
+        "start": "Start Training"
+      },
+      "crossColors": {
+        "white": "White",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "red": "Red",
+        "orange": "Orange"
+      }
+    },
     "drill": {
       "title": "Drill",
       "selectCase": "Select Case",
