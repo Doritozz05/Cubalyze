@@ -313,7 +313,6 @@ export function InfiniteF2LView({
         onOpenSettings={() => {
           setIsSetupOpen(true);
         }}
-        onBack={onBack}
       />
     </div>
   );

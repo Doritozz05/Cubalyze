@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { Trophy, RotateCcw, Sliders, Zap, Clock, Hash, Activity } from "lucide-react";
+import { Trophy, Sparkles, RotateCcw, Sliders, Zap, Clock, Hash, Activity } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ export interface InfiniteF2LSummaryDialogProps {
   targetPairs?: number;
   onRestart: () => void;
   onOpenSettings: () => void;
-  onBack: () => void;
+
 }
 
 function formatDuration(ms: number): string {
@@ -46,7 +46,6 @@ export function InfiniteF2LSummaryDialog({
   targetPairs = 0,
   onRestart,
   onOpenSettings,
-  onBack,
 }: InfiniteF2LSummaryDialogProps) {
   const { t } = useTranslation("training");
   const isTouch = useIsTouch();
@@ -76,7 +75,7 @@ export function InfiniteF2LSummaryDialog({
         {/* Solved Pairs */}
         <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface p-3.5">
           <div className="flex items-center gap-1.5 text-xs text-ink-3">
-            <Trophy className="size-3.5 text-amber-500" />
+            <Sparkles className="size-3.5 text-amber-500" />
             <span>{t("infiniteF2l.summary.pairsSolved")}</span>
           </div>
           <div className="nums text-2xl font-bold text-ink mt-1">
@@ -167,7 +166,7 @@ export function InfiniteF2LSummaryDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-md border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="max-w-md border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl [&>button]:hidden">
         <DialogHeader className="border-b border-line px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             <Trophy className="size-5 text-amber-500" />
