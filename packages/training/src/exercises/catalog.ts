@@ -40,6 +40,7 @@ export const EXERCISE_IDS = {
   lse: (subPhase: string, methodId: string, phaseId: string) => `lse-${subPhase}-${methodId}-${phaseId}`,
   srsReview: (methodId?: string) => `srs-review-${methodId ?? 'all'}`,
   fullSolve: (methodId: string) => `full-solve-${methodId}`,
+  infiniteF2l: (methodId: string) => `infinite-f2l-${methodId}`,
 } as const;
 
 // ─── Method phases (pure data — ported out of the Dashboard) ──────────────
@@ -251,6 +252,13 @@ export function buildExerciseCatalog(): ExerciseDefinition[] {
       name: 'SRS Review',
       description: 'Spaced-repetition daily review queue for this method.',
       kind: 'srs',
+      methodId: method.id,
+    });
+    defs.push({
+      id: EXERCISE_IDS.infiniteF2l(method.id),
+      name: 'Infinite F2L',
+      description: 'Continuous F2L pairs training with smart cube integration.',
+      kind: 'solve',
       methodId: method.id,
     });
 

@@ -109,23 +109,59 @@ export class CaseDetector {
       };
     }
     const entry = lookupCatalog(this.catalog, ctx.crossFace, sig);
-    if (!entry) {
+    if (entry) {
+      // Last-layer probes report the AUF face of the observed state so the
+      // renderer can show the case from the solver's exact angle. The F2L
+      // slot probe has no AUF (its relational signature is already
+      // slot-minimized), so aufFace stays undefined there.
+      const aufFace = probe.aufFace?.(state, ctx, sig);
       return {
-        entry: null,
-        confidence: 'unknown',
+        entry,
+        confidence: 'exact',
         queriedSignature: sig,
+        aufFace,
       };
     }
-    // Last-layer probes report the AUF face of the observed state so the
-    // renderer can show the case from the solver's exact angle. The F2L
-    // slot probe has no AUF (its relational signature is already
-    // slot-minimized), so aufFace stays undefined there.
-    const aufFace = probe.aufFace?.(state, ctx, sig);
+
+    // ── Piece-anchored fallback ────────────────────────────────────────
+    // The frame-context signature found nothing, but the same cube may be
+    // readable through the ANCHOR instance (the pieces the D-cross seeds
+    // are built from) — the reading that identifies a physically rotated
+    // cube labeled with a rotated frame. See f2lSlotProbe for the full
+    // rationale; the anchor path never overrides a frame-context match, so
+    // scheme-consistent inputs (the solver's recolored states) behave
+    // exactly as before.
+    //
+    // EXCEPTION — explicit pieces are authoritative: when the caller
+    // passes the pair's pieces (the training engine injects by piece ID),
+    // the frame reading above already is the pair reading. The anchor
+    // instance is a DIFFERENT piece set (the D-cross FR slot's own 4/8),
+    // so falling back on a frame miss would answer about the WRONG pair —
+    // e.g. the engine's random injects that fall outside the 41-case
+    // catalog were being labeled with the anchor slot's case (measured:
+    // a spawned FL pair answered F2L 28 from the FR pair's pieces). The
+    // fallback exists for callers WITHOUT pieces (the analysis pipeline),
+    // whose frame label can be inconsistent with the physical cube.
+    const anchorSig =
+      ctx.probe === 'f2l-slot' && 'pieces' in ctx && ctx.pieces
+        ? undefined
+        : probe.anchorSignature?.(state, ctx);
+    if (anchorSig) {
+      const anchorEntry = lookupCatalog(this.catalog, ctx.crossFace, anchorSig);
+      if (anchorEntry) {
+        return {
+          entry: anchorEntry,
+          confidence: 'exact',
+          queriedSignature: anchorSig,
+          pieceAnchored: true,
+        };
+      }
+    }
+
     return {
-      entry,
-      confidence: 'exact',
+      entry: null,
+      confidence: 'unknown',
       queriedSignature: sig,
-      aufFace,
     };
   }
 

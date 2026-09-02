@@ -72,6 +72,12 @@ export interface DetectionResult {
    * unknown results.
    */
   aufFace?: string;
+  /**
+   * True when the match came from the ANCHOR-INSTANCE fallback (the
+   * piece-anchored reading of the physical cube) instead of the
+   * frame-context signature. See f2lSlotProbe for when this fires.
+   */
+  pieceAnchored?: boolean;
 }
 
 // ─── Detector ────────────────────────────────────────────────────────────────

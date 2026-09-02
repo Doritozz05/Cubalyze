@@ -1279,6 +1279,70 @@
     "comingSoon": "coming soon",
     "caseCount_one": "{{count}} case",
     "caseCount_other": "{{count}} cases",
+    "infiniteF2l": {
+      "chip": "Infinite",
+      "title": "Infinite F2L",
+      "subtitle": "Continuous F2L pairs training with smart cube integration",
+      "solvedPairs": "Solved pairs",
+      "calibrateGyro": "Calibrate gyroscope",
+      "settings": "Training settings",
+      "restart": "Restart session",
+      "finish": "Finish",
+      "connectPrompt": {
+        "title": "Connect your Smart Cube",
+        "description": "Connect your Bluetooth cube to sync gyroscope and moves in real time.",
+        "button": "Connect Cube"
+      },
+      "setup": {
+        "crossColor": "Cross Color",
+        "concurrentPairs": "Concurrent pairs",
+        "targetGoal": "Target pairs goal",
+        "infiniteMode": "Infinite",
+        "pairUnitSingular": "pair",
+        "pairUnitPlural": "pairs",
+        "activeSlots": "Active slots",
+        "allowTrapped": "Allow trapped pairs",
+        "allowTrappedHint": "Spawn pieces in other F2L slots in addition to the top layer",
+        "spawnMode": "Case selection",
+        "spawnModeHint": "Which cases the spawner targets",
+        "spawnModeNormal": "Normal",
+        "spawnModeBasic": "Basic",
+        "spawnModeAdvanced": "Advanced",
+        "aufEnabled": "Random AUF",
+        "aufEnabledHint": "Spawn each case pre-rotated 0-2 turns on the top layer (recognition in angle)",
+        "allowTrappedOnlyNormal": "Only applies to Normal mode — case pools define their own configurations",
+        "enableSound": "Solve sound effect",
+        "start": "Start Training"
+      },
+      "summary": {
+        "title": "Session Completed!",
+        "subtitle": "F2L performance & pace summary",
+        "finalTime": "Final Time",
+        "pairsSolved": "Pairs Solved",
+        "avgTps": "Average TPS",
+        "peakTps": "Peak",
+        "pace": "Average Pace",
+        "perPair": "seconds per pair",
+        "totalMoves": "Total Moves",
+        "moves": "moves",
+        "retry": "Retry",
+        "exit": "Exit"
+      },
+      "pairHistory": {
+        "button": "View Pairs",
+        "title": "Pair History",
+        "subtitle": "Start state, moves and time for each solved pair",
+        "empty": "No pairs recorded for this session."
+      },
+      "crossColors": {
+        "white": "White",
+        "yellow": "Yellow",
+        "green": "Green",
+        "blue": "Blue",
+        "red": "Red",
+        "orange": "Orange"
+      }
+    },
     "drill": {
       "title": "Drill",
       "selectCase": "Select Case",

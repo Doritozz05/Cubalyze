@@ -33,6 +33,7 @@ import {
   MoveVertical,
   BarChart3,
   Timer,
+  Infinity as InfinityIcon,
 } from "lucide-react";
 
 /**
@@ -187,6 +188,7 @@ export function TrainingPractice({
   onDrill,
   onRecognize,
   onPracticeMode,
+  onInfiniteF2L,
   onStats,
   onFullSolve,
   embedded = false,
@@ -200,6 +202,7 @@ export function TrainingPractice({
   onDrill: (methodId: string, phaseId: string, subsetId: string) => void;
   onRecognize: (methodId: string, phaseId: string, subsetId: string) => void;
   onPracticeMode: (methodId: string, phaseId: string, phaseName: string, phaseType: PhasePracticeType, mode: string) => void;
+  onInfiniteF2L?: (methodId: string, phaseId: string, phaseName: string) => void;
   onStats: (methodId: string, phaseId: string, phaseName: string) => void;
   onFullSolve: (methodId: string) => void;
   /** True when a parent panel owns scroll + padding (desktop dashboard). */
@@ -415,6 +418,11 @@ export function TrainingPractice({
                           const pt = getPhasePracticeType(phase.id);
                           if (pt) onPracticeMode(method.id, phase.id, phase.name, pt, modeId);
                         }}
+                        onInfiniteF2L={
+                          onInfiniteF2L
+                            ? () => onInfiniteF2L(method.id, phase.id, phase.name)
+                            : undefined
+                        }
                         onStats={() => onStats(method.id, phase.id, phase.name)}
                         phaseModes={
                           !phase.hasAlgorithms
@@ -544,6 +552,7 @@ function PhaseRow({
   onDrill,
   onRecognize,
   onPracticeMode,
+  onInfiniteF2L,
   onStats,
   phaseModes,
 }: {
@@ -553,6 +562,7 @@ function PhaseRow({
   onDrill: () => void;
   onRecognize: () => void;
   onPracticeMode: (modeId: string) => void;
+  onInfiniteF2L?: () => void;
   onStats: () => void;
   phaseModes: PhaseModeDef[] | null;
 }) {
@@ -595,6 +605,11 @@ function PhaseRow({
       {/* Visible actions — all quiet outlines; Full Solve in the banner is
           the single filled control in the workspace */}
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+        {phase.id === "f2l" && onInfiniteF2L && (
+          <ActionChip onClick={onInfiniteF2L}>
+            <InfinityIcon className="size-3" /> {t("infiniteF2l.chip")}
+          </ActionChip>
+        )}
         {isAlgo ? (
           <>
             <ActionChip onClick={onDrill}>

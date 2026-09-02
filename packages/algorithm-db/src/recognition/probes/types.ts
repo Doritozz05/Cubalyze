@@ -25,6 +25,30 @@ export type ProbeKind =
   | 'last-layer-orientation'
   | 'last-layer-permutation';
 
+/**
+ * Optional piece-anchored contract for the F2L slot probe.
+ *
+ * When the caller KNOWS the pair's physical pieces (the training engine
+ * injects pairs by piece ID; the analysis engine resolves them by color
+ * in the solver's recolored frame), passing them here makes detection
+ * independent of the letter–pose consistency of the input state — the
+ * frame-color ambiguity that breaks rotated frames (see f2lSlotProbe).
+ */
+export interface F2LPairPieces {
+  /** Corner piece ID (0-7). */
+  C: number;
+  /** Edge piece ID (0-11). */
+  E: number;
+  /**
+   * The cross sticker's color letter to search for on the corner
+   * ('D' = the D-cross anchor instance, e.g. pieces 4/8 on canonical
+   * inputs; the solver's own cross-face letter for its frame instance,
+   * e.g. 'U' for a white-on-U training cube). Defaults to the cross
+   * face's own letter.
+   */
+  crossColor?: string;
+}
+
 /** Context for the F2L slot probe — a slot in a cross frame. */
 export interface F2LSlotProbeContext {
   probe: 'f2l-slot';
@@ -32,6 +56,22 @@ export interface F2LSlotProbeContext {
   crossFace: string;
   /** The slot name in this cross frame (FR, BR, BL, FL, …). */
   slotName: string;
+  /**
+   * The solver's frame-AUF (his own U-layer turn) at the observed cut
+   * ('U', 'U2' or "U'"). The probe undoes it (conjugated into the
+   * state's letter space) before signing. The relational signature's
+   * built-in U-minimization already absorbs the AUF for D-cross inputs;
+   * this closes the same gap for F/B/R/L frames, whose AUF conjugates
+   * to a D-layer turn — an orbit the signature does not (and must not,
+   * see the f2lSlotProbe docs) sweep. Optional.
+   */
+  auf?: string;
+  /**
+   * Explicit pair pieces. When provided, the signature is computed from
+   * EXACTLY these pieces instead of the color-resolved ones — the
+   * piece-anchored contract.
+   */
+  pieces?: F2LPairPieces;
 }
 
 /** Context for the last-layer probes — only the frame anchor matters. */
@@ -68,6 +108,16 @@ export interface DetectionProbe {
    * @param ctx — the probe's context (which slot / which frame anchor).
    */
   signature(state: CubeState, ctx: ProbeContext): string;
+  /**
+   * Optional ANCHOR-INSTANCE signature: the case of the cube itself,
+   * independent of the frame label — computed from the D-cross anchor
+   * pair instance (the pieces showing the anchor slot's letters after
+   * the frame→D normalization). This is the fallback the detector uses
+   * when the frame-context signature finds nothing (e.g. a physically
+   * rotated state labeled with a rotated frame, where the frame's
+   * letters describe a mirrored pair instance).
+   */
+  anchorSignature?(state: CubeState, ctx: ProbeContext): string;
   /**
    * The AUF face of the state that produced a signature — which sticker on
    * the U face sits at the F position of the solver's frame. Used to render

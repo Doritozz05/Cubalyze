@@ -4,7 +4,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw, Shuffle } from "lucide-react";
+import { Compass, RotateCcw, Shuffle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 
@@ -87,7 +87,7 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
                 disabled={!isReady}
                 className="h-6 gap-1 px-1.5 text-[0.6rem] text-ink-3 hover:text-ink"
               >
-                <RefreshCw className="size-3" />
+                <Compass className="size-3" />
                 {t("calibrate")}
               </Button>
             </TooltipTrigger>

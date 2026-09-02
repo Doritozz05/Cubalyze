@@ -65,6 +65,11 @@ const ALLOWLIST = [
   "packages/algorithm-db/src/seed/cfop-sv.ts",
   "packages/algorithm-db/src/seed/coll.ts",
   "packages/algorithm-db/src/seed/wv.ts",
+  // Cohesive Infinite F2L training engine (virtual + smart-cube flows, case
+  // pools, live TPS): 1076 lines at PR time. Self-contained state machine
+  // with explicit sequencing — splitting it mid-rollout risks behaviour
+  // drift in the training flows. Needs a dedicated refactor pass.
+  "apps/web/src/views/Training/infinite-f2l/infiniteF2lEngine.ts",
 ];
 
 function walk(dir, out = []) {

@@ -22,6 +22,7 @@ import { CrossTrainerView } from "./CrossTrainerView";
 import { LSESubPhaseView } from "./LSESubPhaseView";
 import { EODetectView } from "./EODetectView";
 import { EOEfficiencyView } from "./EOEfficiencyView";
+import { InfiniteF2LView } from "./infinite-f2l/InfiniteF2LView";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useCalendarTasks } from "@/hooks/useCalendarTasks";
@@ -94,6 +95,12 @@ interface FullSolveViewState {
   methodId: string;
 }
 
+interface InfiniteF2LViewState {
+  methodId: string;
+  phaseId: string;
+  phaseName: string;
+}
+
 export interface TrainingDashboardProps {
   preset?: { subsetId: string; caseId: string } | null;
   onPresetConsumed?: () => void;
@@ -151,6 +158,7 @@ export function TrainingDashboard({
   // Sub-view routing (direct from exercise rows, no L2)
   const [drillView, setDrillView] = useState<DrillViewState | null>(null);
   const [practiceView, setPracticeView] = useState<PracticeViewState | null>(null);
+  const [infiniteF2LView, setInfiniteF2LView] = useState<InfiniteF2LViewState | null>(null);
   const [recognizeView, setRecognizeView] = useState<RecognizeViewState | null>(null);
   const [statsView, setStatsView] = useState<StatsViewState | null>(null);
   const [fullSolveView, setFullSolveView] = useState<FullSolveViewState | null>(null);
@@ -258,6 +266,10 @@ export function TrainingDashboard({
     setPracticeView({ methodId, phaseId, phaseName, phaseType, modeId: mode });
   };
 
+  const handleInfiniteF2L = (methodId: string, phaseId: string, phaseName: string) => {
+    setInfiniteF2LView({ methodId, phaseId, phaseName });
+  };
+
   const handleStats = (methodId: string, phaseId: string, phaseName: string) => {
     setStatsView({ methodId, phaseId, phaseName });
   };
@@ -277,6 +289,7 @@ export function TrainingDashboard({
   const handleBackFromSubView = () => {
     setDrillView(null);
     setPracticeView(null);
+    setInfiniteF2LView(null);
     setRecognizeView(null);
     setStatsView(null);
     setFullSolveView(null);
@@ -368,6 +381,21 @@ export function TrainingDashboard({
         <div className="absolute inset-0 flex flex-col">
           <SRSInsightsView
             methodId={insightsView.methodId}
+            onBack={handleBackFromSubView}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (infiniteF2LView) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full">
+        <div className="absolute inset-0 flex flex-col">
+          <InfiniteF2LView
+            methodId={infiniteF2LView.methodId}
+            phaseId={infiniteF2LView.phaseId}
+            phaseName={infiniteF2LView.phaseName}
             onBack={handleBackFromSubView}
           />
         </div>
@@ -479,6 +507,7 @@ export function TrainingDashboard({
             onDrill={handleDrill}
             onRecognize={handleRecognize}
             onPracticeMode={handlePracticeMode}
+            onInfiniteF2L={handleInfiniteF2L}
             onStats={handleStats}
             onFullSolve={handleFullSolve}
           />
@@ -554,6 +583,7 @@ export function TrainingDashboard({
             onDrill={handleDrill}
             onRecognize={handleRecognize}
             onPracticeMode={handlePracticeMode}
+            onInfiniteF2L={handleInfiniteF2L}
             onStats={handleStats}
             onFullSolve={handleFullSolve}
           />

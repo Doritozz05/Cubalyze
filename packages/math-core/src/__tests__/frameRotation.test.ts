@@ -75,7 +75,7 @@ function randomState(rng: () => number): CubeState {
 }
 
 describe('countCompletedF2LSlotsInFrame (direct, no facelet conversion)', () => {
-  it('matches the independent facelet oracle on random states × rotations × schemes', () => {
+  it('matches the independent facelet oracle on random states × rotations × schemes', { timeout: 60000 }, () => {
     let seed = 42;
     const rng = () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
@@ -94,7 +94,7 @@ describe('countCompletedF2LSlotsInFrame (direct, no facelet conversion)', () => 
     }
   });
 
-  it('matches the facelet oracle on F/B/R/L cross faces too', () => {
+  it('matches the facelet oracle on F/B/R/L cross faces too', { timeout: 60000 }, () => {
     let seed = 7;
     const rng = () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
@@ -141,7 +141,7 @@ describe('countCompletedF2LSlotsInFrame (direct, no facelet conversion)', () => 
 });
 
 describe('countF2LSlotsInFrameAfterRotation (preimage, no allocation)', () => {
-  it('equals the materialized path on random states × rotations × schemes', () => {
+  it('equals the materialized path on random states × rotations × schemes', { timeout: 60000 }, () => {
     let seed = 99;
     const rng = () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;

@@ -1279,6 +1279,70 @@
     "comingSoon": "próximamente",
     "caseCount_one": "{{count}} caso",
     "caseCount_other": "{{count}} casos",
+    "infiniteF2l": {
+      "chip": "Infinito",
+      "title": "F2L Infinito",
+      "subtitle": "Entrenamiento continuo de pares F2L con integración de cubo inteligente",
+      "solvedPairs": "Pares resueltos",
+      "calibrateGyro": "Calibrar giroscopio",
+      "settings": "Ajustes de entrenamiento",
+      "restart": "Reiniciar sesión",
+      "finish": "Terminar",
+      "connectPrompt": {
+        "title": "Conecta tu Smart Cube",
+        "description": "Conecta tu cubo Bluetooth para sincronizar giroscopio y movimientos en tiempo real.",
+        "button": "Conectar Cubo"
+      },
+      "setup": {
+        "crossColor": "Color de la Cruz",
+        "concurrentPairs": "Pares simultáneos",
+        "targetGoal": "Objetivo de pares",
+        "infiniteMode": "Infinito",
+        "pairUnitSingular": "par",
+        "pairUnitPlural": "pares",
+        "activeSlots": "Slots activos",
+        "allowTrapped": "Permitir pares atrapados",
+        "allowTrappedHint": "Genera piezas en otros slots de F2L además de la capa superior",
+        "spawnMode": "Selección de casos",
+        "spawnModeHint": "Qué casos ataca el generador",
+        "spawnModeNormal": "Normal",
+        "spawnModeBasic": "Básico",
+        "spawnModeAdvanced": "Avanzado",
+        "aufEnabled": "AUF aleatorio",
+        "aufEnabledHint": "Inyecta cada caso ya girado 0-2 giros en la capa superior (reconocimiento en ángulo)",
+        "allowTrappedOnlyNormal": "Solo aplica al modo Normal — los pools de casos definen sus propias configuraciones",
+        "enableSound": "Sonido de resolución",
+        "start": "Empezar Entrenamiento"
+      },
+      "summary": {
+        "title": "¡Sesión Completada!",
+        "subtitle": "Resumen de rendimiento y ritmo de F2L",
+        "finalTime": "Tiempo Final",
+        "pairsSolved": "Pares Resueltos",
+        "avgTps": "TPS Medio",
+        "peakTps": "Pico",
+        "pace": "Ritmo Medio",
+        "perPair": "segundos por par",
+        "totalMoves": "Giros Totales",
+        "moves": "giros",
+        "retry": "Repetir",
+        "exit": "Salir"
+      },
+      "pairHistory": {
+        "button": "Ver Pares",
+        "title": "Historial de Pares",
+        "subtitle": "Estado inicial, giros y tiempo de cada par resuelto",
+        "empty": "No hay pares registrados en esta sesión."
+      },
+      "crossColors": {
+        "white": "Blanco",
+        "yellow": "Amarillo",
+        "green": "Verde",
+        "blue": "Azul",
+        "red": "Rojo",
+        "orange": "Naranja"
+      }
+    },
     "drill": {
       "title": "Entrenar",
       "selectCase": "Selecciona caso",

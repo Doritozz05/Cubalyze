@@ -1,9 +1,10 @@
 # Case Detection (reconocimiento modular de casos)
 
 Detector profesional y modular de casos algorítmicos. Hoy reconoce
-**Basic F2L (41 casos)** en reconstrucciones 3×3 CFOP, y está diseñado
+**Basic F2L (41 casos) + Advanced F2L (BirdF2L, 19 firmas nuevas)** en
+reconstrucciones 3×3 CFOP y en el trainer infinite-f2l, y está diseñado
 desde el principio para expandirse a *cualquier* método, subset o puzzle:
-Advanced F2L, OLL, PLL, COLL, 2×2 (Ortega…), Pyraminx, etc.
+OLL, PLL, COLL, 2×2 (Ortega…), Pyraminx, etc.
 
 ## Arquitectura
 
@@ -16,8 +17,9 @@ packages/algorithm-db/src/recognition/
 ├── caseCatalog.ts      — catálogo indexado: "crossFace|firma" → CatalogEntry
 ├── caseDetector.ts     — motor: estado @corte → piezas por color → firma → lookup (O(1))
 ├── loaders/
-│   └── basicF2L.ts     — wiring concreto del primer subset (Basic F2L)
-└── __tests__/          — unit tests (firma, catálogo 41×6×4, matriz de slots)
+│   ├── basicF2L.ts     — wiring de Basic F2L (41 casos)
+│   └── advancedF2L.ts  — wiring de Advanced F2L (126 patrones BirdF2L) + createF2LDetector (ambos)
+└── __tests__/          — unit tests (firma, catálogo 41×6×4, matriz de slots, loader avanzado)
 ```
 
 ### El modelo (validado empíricamente)
@@ -76,11 +78,47 @@ segmentF2LPairs → por cada par: estado @ corte (índice completionIndex - len 
 - Se detectan los pares con slot real de **cualquier cross face**
   (`FR/BR/BL/FL` para D/U, `UR/UL/DR/DL` para F/B, `UF/UB/DF/DB` para
   R/L).
-- Pares fuera del catálogo básico (F2L avanzado) devuelven
-  `detectedCase: undefined` — la firma no casa con ninguna clave.
+- El pipeline de análisis (texto, smart y virtual comparten el mismo
+  detector vía `caseDetectors.getF2LDetector`) y el trainer infinite-f2l
+  usan el detector combinado (`createF2LDetector`), que cubre el 100% del
+  espacio de configuraciones de par (ver sección Advanced F2L).
 - La detección **nunca rompe la reconstrucción** (try/catch defensivo).
 - UI: `OurDetectionPanel` muestra `caseName` + `caseNumber` en la
   columna "Case" de cada par.
+
+### El contrato anclado por piezas (seis frames + AUF)
+
+El motor reconoce el caso del CUBO, no del frame: la firma relacional sola
+no es invariante bajo la rotación física de la cámara (x2 no pertenece a la
+órbita interna y×U — sus conjugados aterrizan como giros-D en el ancla, y
+barrer esa órbita destruye la discriminación: colisiones medidas como
+`F2L 5+U ≡ F2L 21`). La verificación anclada por piezas cierra el hueco con
+un contrato explícito (`detectWith`):
+
+- `pieces` — las piezas físicas del par (la instancia ancla 4/8 en el
+  catálogo D-cross; cualquier consumidor que inyecte/rastree su par pasa las
+  suyas). La firma se calcula sobre ESAS piezas, sin resolución por color.
+- `auf` — el AUF del solver en su notación ('U'/'U2'/"U'"); el probe lo
+  deshace conjugado en el espacio de letras antes de firmar.
+
+Con piezas+auf el detector es 984/984 (41 casos × 6 frames × 4 AUF,
+validado en `__tests__/pieceAnchorMatrix.test.ts`) y 246/246 canónico.
+Sin piezas, el camino de frame (resolución por color, producción) se
+ejecuta primero — cero cambios de comportamiento para entradas
+scheme-consistentes (pipeline con recolor) — y el fallback ancla
+(`anchorSignature`, la lectura de la instancia ancla tras normalizar al
+D-cross) rescata los casos que el camino de frame no resuelve.
+
+**El fallback ancla solo se ejecuta SIN `pieces`**: cuando el caller pasa
+las piezas del par (el trainer inyecta por pieza ID), el camino de frame
+ya es la lectura del par, y la instancia ancla es OTRO conjunto de piezas
+(las 4/8 del slot FR D-cross) — caer en ella respondería sobre el par
+equivocado. Medido: un par FL spawnado fuera del catálogo se etiquetaba
+con el caso de las piezas FR (F2L 28) en vez de `undefined`. Con el guard,
+la anotación del motor es determinista por configuración del par (paridad
+reproducible desde `startFacelets`). Los F/B/R/L con AUF sin piezas+auf
+quedan en el límite informativo (los giros-D en el ancla son casos D-cross
+distintos): la única vía limpia es el contrato, no el barrido.
 
 ## Cómo añadir un subset nuevo (OLL, PLL, Advanced F2L…)
 
@@ -98,6 +136,27 @@ El catálogo es subset-agnóstico: `buildCatalog` genera el estado de cada
 setup con `CaseStateGenerator` (siempre D-cross, color de cross 'D'),
 computa la firma del par (4, 8) y lo indexa bajo `"crossFace|firma"`.
 
+### Advanced F2L (loader + cobertura completa)
+
+`loaders/advancedF2L.ts` sigue el patrón de `basicF2L.ts`: un manifest
+(6 cross faces, mismo probe `f2l-slot`) + `loadAdvancedF2LCases` sobre los
+126 patrones BirdF2L del seed. `createF2LDetector()` compone ambos subsets
+con **Basic primero**: `buildCatalog` conserva la primera entrada por
+`(crossFace, firma)`, así que los 17 patrones BirdF2L cuya firma relacional
+colapsa sobre un caso básico conservan su etiqueta canónica "F2L n" y solo
+las 19 firmas genuinamente nuevas amplían el catálogo (medido: 41 + 19 =
+60 firmas por cara de cross; ver `loaders/__tests__/advancedF2L.test.ts`).
+
+La firma relacional (minimizada sobre y × AUF) convierte las 126 setups
+(24 pares de posiciones esquina/arista × 6 orientaciones) en 36 firmas
+únicas — los espejos/inversos de BirdF2L colapsan por diseño. Y el
+resultado clave, validado de forma exhaustiva en
+`apps/web/.../f2lDetectionCoverage.test.ts`: **las 60 firmas cubren el
+100% del espacio de configuraciones de un par** (383 configuraciones
+posición×orientación × 6 colores de cross = 2298/2298 detectadas, 0
+undefined). Antes del loader, ~20% de los spawns aleatorios del trainer
+quedaban sin etiqueta; ahora ninguno — cada par inyectado responde un caso
+(exacto), con paridad reproducible desde `startFacelets`.
 ### Notas por puzzle
 
 - **2×2**: el concepto de "par" no aplica — se detectará sobre el estado

@@ -10,7 +10,7 @@
  * same catalog, so text and smart/virtual can never diverge by construction.
  */
 import {
-  createBasicF2LDetector,
+  createF2LDetector,
   createCFOPDetector,
   type CaseDetector,
 } from '@cubeforge/algorithm-db';
@@ -18,9 +18,15 @@ import {
 let f2lDetector: CaseDetector | undefined;
 let cfopDetector: CaseDetector | undefined;
 
-/** Basic F2L (41-case catalog) — used for per-pair `detectedCase`. */
+/**
+ * F2L detector — Basic (41) + Advanced (BirdF2L) catalog, used for per-pair
+ * `detectedCase`. Basic is registered first, so the 17 signature-colliding
+ * BirdF2L patterns keep their canonical "F2L n" labels; the 19 genuinely
+ * new signatures cover split/trapped pair configurations that real solves
+ * can present at a pair's cut (previously reported as undefined).
+ */
 export function getF2LDetector(): CaseDetector {
-  return (f2lDetector ??= createBasicF2LDetector());
+  return (f2lDetector ??= createF2LDetector());
 }
 
 /** Full CFOP (Basic F2L + OLL + PLL) — used for last-layer case detection. */

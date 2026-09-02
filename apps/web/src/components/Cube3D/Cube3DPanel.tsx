@@ -4,7 +4,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw, Shuffle, X } from "lucide-react";
+import { Compass, RotateCcw, Shuffle, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
 import type { Puzzle3DSpec } from "@cubeforge/cube-3d-engine";
@@ -184,7 +184,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
                 disabled={!isReady}
                 className="h-7 gap-1 px-1.5 text-xs text-ink-3 hover:text-ink max-lg:h-10 max-lg:px-3.5 max-lg:text-sm"
               >
-                <RefreshCw className="size-3 shrink-0 max-lg:size-4" />
+                <Compass className="size-3 shrink-0 max-lg:size-4" />
                 <span className="hidden @sm:inline">{t("calibrate")}</span>
               </Button>
             </TooltipTrigger>

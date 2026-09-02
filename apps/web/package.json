@@ -100,6 +100,7 @@
     "@tailwindcss/postcss": "^4.3.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.13.2",
+    "@types/three": "^0.185.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.1",
@@ -109,6 +110,7 @@
     "postcss": "^8.5.17",
     "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.2",
+    "three": "^0.185.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
