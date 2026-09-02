@@ -496,7 +496,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                   className={cn(
                     "group absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
                     "transition-colors duration-150",
-                    vi.index === solves.length - 1 && "border-b-0",
+                    (vi.index === solves.length - 1 || isSelected || isChecked) && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
