@@ -22,6 +22,7 @@ export type TechnicalSolveInput =
   | {
       analysis?: SolveMetrics | null;
       time?: number;
+      timestamp?: number;
       moves?: import("@cubeforge/types").CubeMoveEvent[];
     }
   | SolveMetrics
@@ -820,18 +821,41 @@ export function deriveSkillRadarProfile(
   }
 
   // 6. Consistency (Session Stability & Improvement-aware variance)
-  const solveTimes: number[] = [];
-  for (const s of solves) {
+  interface TimedSolve {
+    time: number;
+    timestamp: number;
+  }
+  const timedSolves: TimedSolve[] = [];
+  for (let i = 0; i < solves.length; i++) {
+    const s = solves[i];
     if (!s) continue;
+    let t: number | undefined;
+    let ts = i;
     if (typeof s === "object" && "time" in s && typeof (s as { time: number }).time === "number" && (s as { time: number }).time > 0) {
-      solveTimes.push((s as { time: number }).time);
+      t = (s as { time: number }).time;
+      if ("timestamp" in s && typeof (s as { timestamp: number }).timestamp === "number") {
+        ts = (s as { timestamp: number }).timestamp;
+      }
     } else {
       const a = analysisOf(s);
       if (a?.totalTimeMs && a.totalTimeMs > 0) {
-        solveTimes.push(a.totalTimeMs);
+        t = a.totalTimeMs;
       }
     }
+    if (t != null && t > 0) {
+      timedSolves.push({ time: t, timestamp: ts });
+    }
   }
+
+  // Sort chronological (oldest -> newest): solves passed in CubeForge are newest-first,
+  // so sorting by epoch timestamp or reversing ensures index 0 is oldest and index N-1 is newest.
+  const hasEpochTimestamps = timedSolves.some((s) => s.timestamp > 1000000);
+  if (hasEpochTimestamps) {
+    timedSolves.sort((a, b) => a.timestamp - b.timestamp);
+  } else {
+    timedSolves.reverse();
+  }
+  const solveTimes = timedSolves.map((s) => s.time);
 
   let cv: number | null = null;
   let consistencyScore = 80;
@@ -843,7 +867,7 @@ export function deriveSkillRadarProfile(
     );
     const rawCv = meanTime > 0 ? rawStd / meanTime : 0;
 
-    // Linear regression to detect positive improvement trend (negative slope = times dropping)
+    // Linear regression over chronological solves (negative slope = times dropping/improving)
     let sumX = 0;
     let sumY = 0;
     let sumXY = 0;
@@ -868,15 +892,15 @@ export function deriveSkillRadarProfile(
     const detrendedStd = Math.sqrt(residualSumSq / n);
     const detrendedCv = meanTime > 0 ? detrendedStd / meanTime : 0;
 
-    // If times are dropping (slope < 0), reward the progression instead of penalizing the range!
+    // Permissive curve: 10% CV -> 88, 20% -> 76, 30% -> 60, 40% -> 44, 55% -> 22
     if (slope < 0) {
       cv = Math.min(rawCv, detrendedCv);
-      const base = 100 - sigmoid(cv, 0.25, 12.0);
-      const improvementBonus = Math.min(10, Math.round((Math.abs(slope) * n / (meanTime || 1)) * 15));
+      const base = 100 - sigmoid(cv, 0.35, 7.5);
+      const improvementBonus = Math.min(12, Math.round((Math.abs(slope) * n / (meanTime || 1)) * 20));
       consistencyScore = clampScore(base + improvementBonus);
     } else {
       cv = rawCv;
-      consistencyScore = clampScore(100 - sigmoid(cv, 0.25, 12.0));
+      consistencyScore = clampScore(100 - sigmoid(cv, 0.35, 7.5));
     }
   } else if (solveTimes.length === 1) {
     cv = 0;

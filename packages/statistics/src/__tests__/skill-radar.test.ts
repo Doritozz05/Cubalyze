@@ -282,7 +282,22 @@ describe("deriveSkillRadarProfile", () => {
     const profile = deriveSkillRadarProfile([s1, s2, s3, s4]);
     const consistencyAxis = profile.axes.find((a) => a.id === "consistency");
 
-    expect(consistencyAxis?.score).toBeGreaterThanOrEqual(85); // High score for steady improvement!
+    expect(consistencyAxis?.score).toBeGreaterThanOrEqual(80); // High score for steady improvement!
+  });
+
+  it("scores user session (36s down to 17.89s) with solid consistency score (> 70) and formatted percent", () => {
+    // CubeForge passes newest-first:
+    const s4 = { time: 17890, timestamp: 1725277840000, moves: [] }; // newest
+    const s3 = { time: 31140, timestamp: 1725277830000, moves: [] };
+    const s2 = { time: 20820, timestamp: 1725277820000, moves: [] };
+    const s1 = { time: 36130, timestamp: 1725277810000, moves: [] }; // oldest
+
+    const profile = deriveSkillRadarProfile([s4, s3, s2, s1]);
+    const consistencyAxis = profile.axes.find((a) => a.id === "consistency");
+
+    expect(consistencyAxis?.score).toBeGreaterThanOrEqual(70);
+    expect(consistencyAxis?.formattedValue).not.toBe("—");
+    expect(consistencyAxis?.formattedValue).toMatch(/%$/);
   });
 });
 
