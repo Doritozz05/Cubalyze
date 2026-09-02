@@ -28,7 +28,8 @@ export interface InfiniteF2LSummaryDialogProps {
   targetPairs?: number;
   onRestart: () => void;
   onOpenSettings: () => void;
-
+  /** Dismiss the summary and return to the idle screen (X, outside click, Esc, swipe). */
+  onClose: () => void;
 }
 
 function formatDuration(ms: number): string {
@@ -48,6 +49,7 @@ export function InfiniteF2LSummaryDialog({
   targetPairs = 0,
   onRestart,
   onOpenSettings,
+  onClose,
 }: InfiniteF2LSummaryDialogProps) {
   const { t } = useTranslation("training");
   const isTouch = useIsTouch();
@@ -166,7 +168,7 @@ export function InfiniteF2LSummaryDialog({
 
   if (isTouch) {
     return (
-      <Drawer open={open} onOpenChange={() => {}}>
+      <Drawer open={open} onOpenChange={() => onClose()}>
         <DrawerContent className="max-h-[90vh] bg-surface">
           <DrawerHeader className="border-b border-line px-6 py-4">
             <DrawerTitle className="flex items-center gap-2 text-base font-semibold text-ink">
@@ -184,8 +186,8 @@ export function InfiniteF2LSummaryDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-md border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl [&>button]:hidden">
+    <Dialog open={open} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-md border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl">
         <DialogHeader className="border-b border-line px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             <Trophy className="size-5 text-amber-500" />

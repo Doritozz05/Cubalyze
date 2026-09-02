@@ -113,6 +113,7 @@ export function InfiniteF2LView({
     isFinished,
     finalStats,
     finishSession,
+    dismissSession,
     restart,
   } = useInfiniteF2LSession({
     options,
@@ -123,9 +124,16 @@ export function InfiniteF2LView({
   const handleStartOptions = useCallback((newOptions: Required<InfiniteF2LOptions>) => {
     setOptions(newOptions);
     saveStoredOptions(newOptions);
+    if (!isConnected) {
+      // No cube connected: don't start the session, send the user to the
+      // connection dialog first. Once connected, the setup dialog reopens.
+      setIsSetupOpen(false);
+      setIsConnectorOpen(true);
+      return;
+    }
     setIsStarted(true);
     restart(newOptions);
-  }, [restart]);
+  }, [restart, isConnected]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-ink select-none">
@@ -272,28 +280,29 @@ export function InfiniteF2LView({
           </div>
         )}
 
-        {/* 3D Cube Canvas Area — balanced, compact sizing */}
-        <div
-          ref={containerRef as React.RefObject<HTMLDivElement>}
-          className="relative w-full max-w-95 sm:max-w-105 aspect-square max-h-[55vh] flex items-center justify-center touch-none my-auto"
-        >
-          <canvas
-            ref={canvasRef as React.RefObject<HTMLCanvasElement>}
-            className="size-full outline-none cursor-grab active:cursor-grabbing"
-          />
+        {/* 3D Cube Canvas Area — balanced, compact sizing; the Start prompt
+            floats BELOW the cube so it never covers the 3D view. */}
+        <div className="relative flex w-full max-w-95 sm:max-w-105 flex-col items-center justify-center">
+          <div
+            ref={containerRef as React.RefObject<HTMLDivElement>}
+            className="relative w-full aspect-square max-h-[55vh] flex items-center justify-center touch-none"
+          >
+            <canvas
+              ref={canvasRef as React.RefObject<HTMLCanvasElement>}
+              className="size-full outline-none cursor-grab active:cursor-grabbing"
+            />
+          </div>
 
           {/* Prompt to start configuration if modal was closed before starting */}
           {!isStarted && !isSetupOpen && isConnected && (
-            <div className="absolute inset-x-4 top-16 sm:top-20 z-30 mx-auto max-w-sm">
-              <Button
-                type="button"
-                onClick={() => setIsSetupOpen(true)}
-                className="w-full h-11 gap-2 rounded-xl bg-ink text-surface text-sm font-semibold shadow-lg hover:opacity-90 transition-opacity cursor-pointer"
-              >
-                <Play className="size-4 fill-current" />
-                {t("infiniteF2l.setup.start")}
-              </Button>
-            </div>
+            <Button
+              type="button"
+              onClick={() => setIsSetupOpen(true)}
+              className="z-30 mt-5 w-full h-11 sm:w-auto sm:min-w-64 gap-2 rounded-xl bg-ink text-surface text-sm font-semibold shadow-lg hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              <Play className="size-4 fill-current" />
+              {t("infiniteF2l.setup.start")}
+            </Button>
           )}
         </div>
       </div>
@@ -314,6 +323,10 @@ export function InfiniteF2LView({
         onRestart={() => restart()}
         onOpenSettings={() => {
           setIsSetupOpen(true);
+        }}
+        onClose={() => {
+          dismissSession();
+          setIsStarted(false);
         }}
       />
     </div>

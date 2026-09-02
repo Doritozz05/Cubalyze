@@ -130,6 +130,13 @@ export function useInfiniteF2LSession({
     });
   }, []);
 
+  // End the session without starting a new one (e.g. user closes the summary)
+  const dismissSession = useCallback(() => {
+    isFinishedRef.current = false;
+    setIsFinished(false);
+    setFinalStats(null);
+  }, []);
+
   // Restart / Initialize session immediately
   const startSession = useCallback(
     (overrideOptions?: InfiniteF2LOptions) => {
@@ -388,6 +395,7 @@ export function useInfiniteF2LSession({
     isFinished,
     finalStats,
     finishSession,
+    dismissSession,
     processMove,
     restart: (overrideOpts?: InfiniteF2LOptions) => startSession(overrideOpts),
     crossColorConfig: CROSS_COLOR_CONFIGS[crossColor],
