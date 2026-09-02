@@ -81,9 +81,9 @@ components:
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.xl}"
+    rounded: "{rounded.lg}"
     border: "1px solid {colors.border}"
-    padding: "24px"
+    padding: "16px 20px"
   sidebar-nav-item:
     backgroundColor: "transparent"
     rounded: "{rounded.md}"
@@ -176,7 +176,7 @@ Flat by default, flat is the law. Depth is expressed through **tonal layering** 
 
 ## Shapes
 
-Deliberately restrained geometry. The form language is **soft, not fancy**: `rounded-md` (6px) for buttons and inputs, `rounded-lg` (8px) for chooser tiles and skill nodes, `rounded-xl` (12px) for cards, full roundness (`9999px`) reserved for dots, avatars, and scrollbar thumbs. Corners never exceed 12px on the largest surface and stay what the shadcn-Radix primitives already ship. The brand mark and CubeMark are square tiles (`rounded-md`) — the room has no mascot and hides nothing behind a logo.
+Deliberately restrained geometry. The form language is **soft, not fancy**: `rounded-md` (6px) for buttons and inputs, `rounded-lg` (8px) for **all content panels and cards** (the real app standard — see `PANEL_BASE` in `lib/panel.ts`), `rounded-xl` (12px) reserved for media containers (cube canvas viewport, replay transport bar, modal sheets), full roundness (`9999px`) for dots, avatars, and scrollbar thumbs. Corners never exceed 12px on the largest interactive surface. The brand mark and CubeMark are square tiles (`rounded-md`) — the room has no mascot and hides nothing behind a logo.
 
 ## Components
 
@@ -194,10 +194,10 @@ Each component is soft, restrained, and state-aware — tactile on hover, calm a
 - **State:** selected chips swap to Carbon Ink primary fill with paper text.
 
 ### Cards / Containers
-- **Corner Style:** `rounded-xl` (12px).
+- **Corner Style:** `rounded-lg` (8px) — the real standard for all content panels and cards across the app. `rounded-xl` (12px) is reserved for media containers (cube canvas, replay transport, floating modals).
 - **Background:** surface (#ffffff light / #1b1f23 dark).
 - **Shadow Strategy:** `shadow-sm` only when raised; resting cards are flat behind a 1px hairline.
-- **Internal Padding:** 24px (px-6); content flows as a `flex flex-col gap-6` (24px).
+- **Internal Padding:** 20px horizontal / 16px vertical (`px-5 py-4`); touch-responsive `max-lg:px-4 max-lg:py-3`. Canonical constant: `PANEL_BASE` in `apps/web/src/lib/panel.ts`.
 - **CardTitle:** `leading-none`, semibold, sans.
 
 ### Inputs / Fields

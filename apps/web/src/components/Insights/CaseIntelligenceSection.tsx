@@ -14,6 +14,7 @@ import { CaseMiniCube } from "@/components/Cases";
 import { deriveCaseIntelligence, type CaseIntelligence } from "@/utils/insights";
 import { formatTime } from "@/utils/formatTime";
 import { SectionHeader } from "./atoms";
+import { PANEL_BASE } from "@/lib/panel";
 import type { Solve } from "@/types";
 
 const PHASE_ORDER = ["F2L", "OLL", "PLL"] as const;
@@ -47,7 +48,7 @@ export function CaseIntelligenceSection({ solves }: { solves: Solve[] }) {
   const hasData = groups.some((g) => g.slowest != null);
   if (!hasData) {
     return (
-      <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
+    <div className={PANEL_BASE}>
         <SectionHeader title={t("caseIntelligence.title")} />
         <div className="mt-3 flex h-14 items-center justify-center text-center text-[0.7rem] text-ink-3">
           {t("caseIntelligence.empty")}
@@ -57,7 +58,7 @@ export function CaseIntelligenceSection({ solves }: { solves: Solve[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
+    <div className={PANEL_BASE}>
       <SectionHeader title={t("caseIntelligence.title")} eyebrow={t("caseIntelligence.bestOfEach")} />
 
       <div className="mt-2 divide-y divide-line/60">

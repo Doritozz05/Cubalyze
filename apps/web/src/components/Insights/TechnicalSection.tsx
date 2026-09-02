@@ -16,6 +16,7 @@ import {
   Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { PANEL_BASE } from "@/lib/panel";
 import { formatTime } from "@/utils/formatTime";
 
 import { deriveMoveMetrics, deriveSkillRadarProfile } from "@/utils/insights";
@@ -26,7 +27,8 @@ import type { Solve } from "@/types";
 
 // ─── Shared card chrome ──────────────────────────────────────────────────────
 
-const CARD = "rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3";
+/** @see {@link PANEL_BASE} in lib/panel — imported as the single source of truth. */
+const CARD = PANEL_BASE;
 
 // Recharts tooltip chrome reused by every chart in this section.
 const TOOLTIP_STYLE = {
