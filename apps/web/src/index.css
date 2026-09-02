@@ -535,6 +535,17 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.10) !important;
 }
 
+/* ── Skeletons: liquid frosted placeholders ───────────────────────────
+   The shared Skeleton (data-slot="skeleton", bg-accent chip) reads as a
+   SOLID white block without backdrop blur. Under liquid glass give it
+   the same inner-surface tint + a soft blur so placeholders sit inside
+   the glass like every other surface (pulse animation untouched). */
+html.liquid-glass [data-slot="skeleton"] {
+  background-color: var(--glass-bg-subtle) !important;
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
+}
+
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */
 html.liquid-glass .grid[class*="bg-line"] {
   background-color: var(--glass-border) !important;
