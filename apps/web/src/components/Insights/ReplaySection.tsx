@@ -106,6 +106,15 @@ export interface ReplaySectionProps {
    * Whether to render the section header. Defaults to true.
    */
   showHeader?: boolean;
+  /**
+   * Embed the replay WITHOUT its own panel (no background, border, shadow or
+   * padding) — used by the horizontal/split layouts (stats detail mode and
+   * reconstruction detail) where the replay column must be 100% transparent.
+   * The base classes are dropped entirely (not overridden), so the
+   * liquid-glass engine never matches this surface. Fullscreen chrome
+   * always wins over flat.
+   */
+  flat?: boolean;
   className?: string;
 }
 
@@ -135,6 +144,7 @@ function ReplaySection({
   size = "normal",
   collapsible = true,
   showHeader = true,
+  flat,
   className,
 }: ReplaySectionProps, ref) {
   const { t } = useTranslation("insights");
@@ -798,11 +808,12 @@ function ReplaySection({
   return (
     <div
       className={cn(
-        "rounded-lg border border-line bg-surface px-5 py-4",
-        size === "large" ? "flex flex-col h-full w-full min-h-0" : "",
         isFullscreen
           ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-background/98 backdrop-blur-xl p-4 sm:p-6 shadow-2xl"
-          : "",
+          : flat
+            ? "rounded-none border-0 bg-transparent p-0 shadow-none"
+            : "rounded-lg border border-line bg-surface px-5 py-4",
+        size === "large" ? "flex flex-col h-full w-full min-h-0" : "",
         className,
       )}
     >

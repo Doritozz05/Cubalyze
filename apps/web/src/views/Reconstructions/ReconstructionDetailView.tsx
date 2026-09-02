@@ -390,13 +390,17 @@ export function ReconstructionDetailView({
           {/* Replay — on mobile (< lg), scrolls in document flow with the content list; on desktop (lg+), sticky split column */}
           {solve && (
             <div className="w-full shrink-0 max-lg:px-3 max-lg:pt-4 max-lg:pb-1 max-w-4xl mx-auto lg:mx-0 lg:h-full lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
-              <div className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-auto w-full min-h-75 sm:min-h-95 lg:min-h-0 lg:h-full rounded-xl border border-line bg-surface p-3 sm:p-4 lg:rounded-none lg:border-0 lg:bg-transparent shadow-xs lg:shadow-none">
+              {/* Horizontal/split: the replay column is 100% transparent —
+                  the panel classes live on max-lg: variants so desktop never
+                  matches the liquid-glass surface rule either. */}
+              <div className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-auto w-full min-h-75 sm:min-h-95 lg:min-h-0 lg:h-full max-lg:rounded-xl max-lg:border max-lg:border-line max-lg:bg-surface max-lg:p-3 sm:max-lg:p-4 max-lg:shadow-xs">
                 <ReplaySection
                   ref={replayRef}
                   solve={solve}
                   size="large"
                   collapsible={false}
                   showHeader={false}
+                  flat
                   className="h-full w-full min-h-0 border-0 p-0 bg-transparent shadow-none"
                 />
               </div>
