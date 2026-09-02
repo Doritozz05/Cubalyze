@@ -16,6 +16,7 @@ import {
   type F2LSlotDef,
   type CrossColor,
   type DetectedPairCase,
+  type AufTurn,
   spawnInfiniteF2LState,
   checkSolvedPairs,
   respawnPair,
@@ -42,6 +43,8 @@ export interface PairRecord {
   rightColor: FaceLetter;
   /** Recognized Basic F2L case at injection time, when in the 41-case catalog. */
   detectedCase?: DetectedPairCase;
+  /** Frame-AUF folded into this pair's spawn (basic/advanced modes). */
+  auf?: AufTurn;
   /** Facelet string at the moment this pair was injected */
   startFacelets: string;
   /** Facelet string at the moment this pair was resolved */
@@ -135,6 +138,8 @@ export function useInfiniteF2LSession({
       const concurrentPairs = Math.min(4, Math.max(1, opts.concurrentPairs ?? 2));
       const allowedSlots: F2LSlotId[] = opts.allowedSlots ?? ["FR", "FL", "BL", "BR"];
       const allowTrapped = opts.allowTrapped ?? true;
+      const spawnMode = opts.spawnMode ?? "normal";
+      const aufEnabled = opts.aufEnabled ?? true;
 
       const shuffled = [...allowedSlots].sort(() => Math.random() - 0.5);
       const initialSlots = shuffled.slice(0, concurrentPairs);
@@ -143,6 +148,7 @@ export function useInfiniteF2LSession({
         crossColor,
         initialSlots,
         allowTrapped,
+        { spawnMode, aufEnabled },
       );
 
       logicalStateRef.current = state;
@@ -197,6 +203,8 @@ export function useInfiniteF2LSession({
       const crossColor: CrossColor = opts.crossColor ?? "white";
       const allowedSlots: F2LSlotId[] = opts.allowedSlots ?? ["FR", "FL", "BL", "BR"];
       const targetPairs = opts.targetPairs ?? 0;
+      const spawnMode = opts.spawnMode ?? "normal";
+      const aufEnabled = opts.aufEnabled ?? true;
 
       totalMovesRef.current += 1;
       setTotalMoves(totalMovesRef.current);
@@ -239,6 +247,7 @@ export function useInfiniteF2LSession({
               leftColor: sideColors.left,
               rightColor: sideColors.right,
               detectedCase: solvedPair.detectedCase,
+              auf: solvedPair.auf,
               startFacelets: solvedPair.startFacelets,
               endFacelets,
               moves: [...pairMoves],
@@ -258,10 +267,16 @@ export function useInfiniteF2LSession({
             currentActive,
             solvedSlotId,
             allowedSlots,
+            { spawnMode, aufEnabled },
           );
 
-          // Reset move buffer for the new pair's slot
-          slotMovesRef.current.set(newPair.slotId, []);
+          // Reset move buffer for the new pair's slot. When the respawn is
+          // DEFERRED (every config of the case pool is blocked by the
+          // positions of the remaining in-flight pairs), no pair takes the
+          // freed slot yet — the next completion event retries naturally.
+          if (newPair) {
+            slotMovesRef.current.set(newPair.slotId, []);
+          }
 
           currentActive = nextActivePairs;
         }

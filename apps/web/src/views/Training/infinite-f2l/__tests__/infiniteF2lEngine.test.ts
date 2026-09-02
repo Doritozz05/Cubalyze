@@ -142,7 +142,9 @@ describe("infiniteF2lEngine", () => {
     );
 
     expect(nextActivePairs.length).toBe(2);
-    expect(nextActivePairs.map((p) => p.slotId)).toContain(newPair.slotId);
+    // Normal mode never defers the respawn.
+    expect(newPair).toBeDefined();
+    expect(nextActivePairs.map((p) => p.slotId)).toContain(newPair!.slotId);
 
     // Cross remains intact
     for (const ce of CROSS_COLOR_CONFIGS.white.crossEdges) {
@@ -202,7 +204,7 @@ describe("infiniteF2lEngine", () => {
         const { state, activePairs } = spawnInfiniteF2LState(crossColor, slots);
 
         for (const p of activePairs) {
-          expect(p.detectedCase).toEqual(detectPairCase(state, crossColor, p.slotId));
+          expect(p.detectedCase).toEqual(detectPairCase(state, crossColor, p.slotId, p.auf));
           if (p.detectedCase) {
             // Basic cases are "F2L n"; Advanced BirdF2L cases carry their
             // pattern name (e.g. "Up", "Gn (A15)").
@@ -218,7 +220,11 @@ describe("infiniteF2lEngine", () => {
         state.ep[frDef.edgeId] = frDef.edgeId;
         state.eo[frDef.edgeId] = 0;
         const { newPair } = respawnPair(state, crossColor, activePairs, "FR");
-        expect(newPair.detectedCase).toEqual(detectPairCase(state, crossColor, newPair.slotId));
+        // Normal mode never defers the respawn.
+        expect(newPair).toBeDefined();
+        expect(newPair!.detectedCase).toEqual(
+          detectPairCase(state, crossColor, newPair!.slotId, newPair!.auf),
+        );
       }
     });
 
@@ -261,7 +267,7 @@ describe("infiniteF2lEngine", () => {
         for (const p of activePairs) {
           const recordDetectedCase = p.detectedCase;
           const startState = FaceletStringConverter.fromFaceletString(p.startFacelets);
-          expect(detectPairCase(startState, crossColor, p.slotId)).toEqual(recordDetectedCase);
+          expect(detectPairCase(startState, crossColor, p.slotId, p.auf)).toEqual(recordDetectedCase);
         }
         expect(state).toBeDefined();
       }

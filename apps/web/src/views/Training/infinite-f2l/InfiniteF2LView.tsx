@@ -41,6 +41,8 @@ const DEFAULT_OPTIONS: Required<InfiniteF2LOptions> = {
   allowedSlots: ["FR", "FL", "BL", "BR"],
   allowTrapped: true,
   enableSound: false,
+  spawnMode: "normal",
+  aufEnabled: true,
 };
 
 function loadStoredOptions(): Required<InfiniteF2LOptions> {

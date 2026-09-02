@@ -20,8 +20,14 @@ import {
 } from "@/components/ui/drawer";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { CrossColor, F2LSlotId, InfiniteF2LOptions } from "./infiniteF2lEngine";
+import type {
+  CrossColor,
+  F2LSlotId,
+  InfiniteF2LOptions,
+  SpawnMode,
+} from "./infiniteF2lEngine";
 
 export interface InfiniteF2LSetupDialogProps {
   open: boolean;
@@ -60,6 +66,8 @@ export function InfiniteF2LSetupDialog({
   const [targetPairs, setTargetPairs] = useState<number>(initialOptions?.targetPairs ?? 0);
   const [allowedSlots, setAllowedSlots] = useState<F2LSlotId[]>(initialOptions?.allowedSlots ?? ["FR", "FL", "BL", "BR"]);
   const [allowTrapped, setAllowTrapped] = useState<boolean>(initialOptions?.allowTrapped ?? true);
+  const [spawnMode, setSpawnMode] = useState<SpawnMode>(initialOptions?.spawnMode ?? "normal");
+  const [aufEnabled, setAufEnabled] = useState<boolean>(initialOptions?.aufEnabled ?? true);
 
   const toggleSlot = (slotId: F2LSlotId) => {
     setAllowedSlots((prev) => {
@@ -80,9 +88,17 @@ export function InfiniteF2LSetupDialog({
       allowedSlots,
       allowTrapped,
       enableSound: false,
+      spawnMode,
+      aufEnabled,
     });
     onOpenChange(false);
   };
+
+  const SPAWN_MODES: { id: SpawnMode; labelKey: string }[] = [
+    { id: "normal", labelKey: "infiniteF2l.setup.spawnModeNormal" },
+    { id: "basic", labelKey: "infiniteF2l.setup.spawnModeBasic" },
+    { id: "advanced", labelKey: "infiniteF2l.setup.spawnModeAdvanced" },
+  ];
 
   const content = (
     <div className="flex flex-col gap-6 p-6 max-sm:p-4">
@@ -146,6 +162,50 @@ export function InfiniteF2LSetupDialog({
             );
           })}
         </div>
+      </div>
+
+      {/* 2b. Case Pool (spawn mode) */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2">
+          <Layers className="size-4 text-ink-3" />
+          <span className="text-[0.82rem] font-semibold text-ink">{t("infiniteF2l.setup.spawnMode")}</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {SPAWN_MODES.map((m) => {
+            const isSelected = spawnMode === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSpawnMode(m.id)}
+                className={cn(
+                  "flex h-11 items-center justify-center gap-1.5 rounded-xl border text-[0.78rem] font-semibold transition-all cursor-pointer",
+                  isSelected
+                    ? "border-ink bg-ink text-surface shadow-xs"
+                    : "border-line bg-surface hover:bg-surface-2 text-ink-2",
+                )}
+              >
+                {t(m.labelKey as never)}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* AUF switch — same Switch pill as the Widget Explorer cards */}
+        <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4 cursor-pointer select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className="size-4 shrink-0 text-ink-3" />
+            <div className="flex flex-col">
+              <span className="text-[0.78rem] font-semibold text-ink">{t("infiniteF2l.setup.aufEnabled")}</span>
+              <span className="text-[0.68rem] text-ink-3">{t("infiniteF2l.setup.aufEnabledHint")}</span>
+            </div>
+          </div>
+          <Switch
+            checked={aufEnabled}
+            onCheckedChange={setAufEnabled}
+            aria-label={t("infiniteF2l.setup.aufEnabled")}
+          />
+        </label>
       </div>
 
       {/* Target Goal (Target Pairs Slider) */}

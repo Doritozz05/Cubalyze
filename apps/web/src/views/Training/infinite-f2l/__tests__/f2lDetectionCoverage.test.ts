@@ -25,7 +25,12 @@ function findPieceIndex(arr: { [index: number]: number; length: number }, id: nu
 }
 
 describe("f2l detection coverage", () => {
-  it("detects every possible pair configuration for all 6 cross colors (0 undefined)", () => {
+  it(
+    "detects every possible pair configuration for all 6 cross colors (0 undefined)",
+    // Exhaustive over 6×383 configurations; generous timeout because the
+    // full parallel suite can slow the worker far past the 5s default.
+    { timeout: 60_000 },
+    () => {
     const CROSS_COLORS: CrossColor[] = ["white", "yellow", "green", "blue", "red", "orange"];
     let total = 0;
     let undefinedTotal = 0;

@@ -1303,6 +1303,13 @@
         "activeSlots": "Active slots",
         "allowTrapped": "Allow trapped pairs",
         "allowTrappedHint": "Spawn pieces in other F2L slots in addition to the top layer",
+        "spawnMode": "Case selection",
+        "spawnModeHint": "Which cases the spawner targets",
+        "spawnModeNormal": "Normal",
+        "spawnModeBasic": "Basic",
+        "spawnModeAdvanced": "Advanced",
+        "aufEnabled": "Random AUF",
+        "aufEnabledHint": "Spawn each case pre-rotated 0-2 turns on the top layer (recognition in angle)",
         "enableSound": "Solve sound effect",
         "start": "Start Training"
       },

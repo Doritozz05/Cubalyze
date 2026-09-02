@@ -1303,6 +1303,13 @@
         "activeSlots": "Slots activos",
         "allowTrapped": "Permitir pares atrapados",
         "allowTrappedHint": "Genera piezas en otros slots de F2L además de la capa superior",
+        "spawnMode": "Selección de casos",
+        "spawnModeHint": "Qué casos ataca el generador",
+        "spawnModeNormal": "Normal",
+        "spawnModeBasic": "Básico",
+        "spawnModeAdvanced": "Avanzado",
+        "aufEnabled": "AUF aleatorio",
+        "aufEnabledHint": "Inyecta cada caso ya girado 0-2 giros en la capa superior (reconocimiento en ángulo)",
         "enableSound": "Sonido de resolución",
         "start": "Empezar Entrenamiento"
       },
