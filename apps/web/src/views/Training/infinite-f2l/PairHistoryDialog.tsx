@@ -64,13 +64,13 @@ function PairCard({ record }: { record: PairRecord }) {
       : null;
 
   return (
-    <div className="flex gap-3 rounded-xl border border-line bg-surface p-3">
+    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-surface p-2.5 text-center">
       {/* 3D mini case cube — the combined Basic + Advanced catalog covers
           every pair configuration, so every recorded pair resolves to a
           case and renders its diagram. The placeholder only guards legacy
           records persisted before detection existed. */}
       {caseData && record.detectedCase ? (
-        <div className="flex items-center justify-center shrink-0 w-16 sm:w-20">
+        <div className="flex h-11 items-center justify-center">
           <CaseMiniCube
             caseData={caseData}
             slotIndex={0}
@@ -79,51 +79,52 @@ function PairCard({ record }: { record: PairRecord }) {
           />
         </div>
       ) : (
-        <div className="shrink-0 w-16 sm:w-20" aria-hidden />
+        <div className="h-11" aria-hidden />
       )}
 
-      {/* Info */}
-      <div className="flex flex-1 flex-col gap-1.5 min-w-0">
-        {/* Header row: pair number + slot badge + recognized case */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="nums text-xs font-bold text-ink">#{record.index}</span>
-          <span
-            className="rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold text-surface"
-            style={{ backgroundColor: record.colorDef.colorName }}
-          >
-            {record.slotId}
-          </span>
-          {record.detectedCase && caseData && (
-            <span className="ml-auto flex flex-col items-end min-w-0 text-right">
-              <span className="text-[0.66rem] font-semibold text-ink truncate">
-                {record.detectedCase.caseName}
-              </span>
-              <span className="nums text-[0.58rem] text-ink-3">
-                {record.detectedCase.caseNumber}
-              </span>
+      {/* Pair number + slot badge */}
+      <div className="flex items-center gap-1.5">
+        <span className="nums text-[0.68rem] font-bold text-ink">#{record.index}</span>
+        <span
+          className="rounded-md px-1.5 py-0.5 text-[0.58rem] font-semibold text-surface"
+          style={{ backgroundColor: record.colorDef.colorName }}
+        >
+          {record.slotId}
+        </span>
+      </div>
+
+      {/* Recognized case — fixed-height slot keeps cards aligned */}
+      <div className="flex h-6 w-full min-w-0 flex-col items-center justify-start">
+        {record.detectedCase && caseData && (
+          <>
+            <span className="w-full truncate text-[0.62rem] font-semibold text-ink">
+              {record.detectedCase.caseName}
             </span>
-          )}
-        </div>
-
-        {/* Stats row */}
-        <div className="flex items-center gap-3 text-[0.68rem] text-ink-3 font-medium">
-          <span className="flex items-center gap-1">
-            <Clock className="size-3" />
-            <span className="nums">{formatMs(record.timeMs)}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <Hash className="size-3" />
-            <span className="nums">{record.moves.length} moves</span>
-          </span>
-        </div>
-
-        {/* Moves sequence */}
-        {record.moves.length > 0 && (
-          <p className="nums text-[0.65rem] text-ink-3 leading-relaxed break-all line-clamp-2">
-            {record.moves.join(" ")}
-          </p>
+            <span className="nums text-[0.55rem] text-ink-3">
+              {record.detectedCase.caseNumber}
+            </span>
+          </>
         )}
       </div>
+
+      {/* Stats row */}
+      <div className="flex items-center gap-2.5 text-[0.6rem] text-ink-3 font-medium">
+        <span className="flex items-center gap-1">
+          <Clock className="size-3" />
+          <span className="nums">{formatMs(record.timeMs)}</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <Hash className="size-3" />
+          <span className="nums">{record.moves.length}</span>
+        </span>
+      </div>
+
+      {/* Moves sequence */}
+      {record.moves.length > 0 && (
+        <p className="nums w-full text-[0.6rem] text-ink-3 leading-snug break-all line-clamp-2">
+          {record.moves.join(" ")}
+        </p>
+      )}
     </div>
   );
 }
@@ -151,7 +152,11 @@ export function PairHistoryDialog({
           {t("infiniteF2l.pairHistory.empty")}
         </p>
       ) : (
-        records.map((r) => <PairCard key={r.index} record={r} />)
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {records.map((r) => (
+            <PairCard key={r.index} record={r} />
+          ))}
+        </div>
       )}
     </div>
   );
