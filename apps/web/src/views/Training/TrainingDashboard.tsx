@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { format, addDays, isToday } from "date-fns";
 import { es, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-import { Target, CalendarDays, RotateCcw, Plus, Sparkles, Play } from "lucide-react";
+import { Target, CalendarDays, RotateCcw, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
@@ -533,7 +533,10 @@ export function TrainingDashboard({
           calendar as one page. No tabs: everything on one screen. */}
       <div className="hidden min-h-0 flex-1 gap-5 lg:flex">
         {/* Methods rail */}
-        <aside className="flex w-56 shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface">
+        <aside
+          className="flex w-56 shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface"
+          data-context-zone="training-methods"
+        >
           <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
             <PuzzleSelector value={selectedPuzzle} onChange={handleSelectPuzzle} />
           </div>
@@ -555,23 +558,6 @@ export function TrainingDashboard({
 
         {/* Content panel — one scrollable page */}
         <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-canvas">
-          {/* Today strip: due-review CTA (only when something is due) */}
-          {dueCount > 0 && (
-            <div className="flex items-center justify-between gap-3 border-b border-line bg-surface/50 px-6 py-2.5">
-              <span className="inline-flex min-w-0 items-center gap-2 text-[0.68rem] font-medium text-ink-2">
-                <RotateCcw className="size-3.5 shrink-0 text-caution" />
-                <span className="truncate">{t("dueForReview", { count: dueCount })}</span>
-              </span>
-              <button
-                onClick={() => handleStartReview()}
-                className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-ink px-3 text-[0.65rem] font-semibold text-surface transition-colors hover:bg-ink/90"
-              >
-                <Play className="size-3" />
-                {t("review.queue.startReview", { count: dueCount })}
-              </button>
-            </div>
-          )}
-
           {/* Practice workspace — embedded so the panel owns the scroll */}
           <TrainingPractice
             embedded

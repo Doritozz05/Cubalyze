@@ -232,6 +232,11 @@
      steps the alpha up instead of snapping to an opaque gray/white patch. */
   --glass-btn-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.8));
   --glass-btn-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.95));
+  /* Nested panels (panel inside glass panel): HALF-POWER liquid — more
+     see-through tint + half the blur, so nesting reads as depth instead
+     of the old dry fill or milky blur-over-blur. */
+  --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.5));
+  --glass-nested-blur: calc(var(--glass-blur) * 0.5);
 }
 
 .dark {
@@ -307,6 +312,10 @@
      nudges toward the panel's light so the raise reads in both themes. */
   --glass-btn-bg: rgba(38, 43, 49, calc(var(--glass-opacity, 0.65) * 0.8));
   --glass-btn-bg-hover: rgba(48, 54, 61, calc(var(--glass-opacity, 0.65) * 0.95));
+  /* Nested panels (panel inside glass panel): HALF-POWER liquid — see
+     light theme comment. Dark nudges a touch denser for legibility. */
+  --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.65) * 0.55));
+  --glass-nested-blur: calc(var(--glass-blur) * 0.5);
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -457,23 +466,73 @@ html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) 
 
 /* ── Flat-button exceptions: dock pills, menus & sidebar tabs ────────────
    These are flat BY DESIGN (macOS-style icon tray, right-click menu
-   items, the session switcher, and the sidebar tab lists of Settings
-   and both Explorers — see WidgetDock.tsx, ContextMenu/ContextMenu.tsx,
-   SessionPiece.tsx, Header.tsx, SettingsSidebar.tsx, DockExplorer.tsx
-   and WidgetExplorerSidebar.tsx): their buttons never carry a
-   background at rest. The remap above keys off [class*="bg-surface"],
-   which also catches hover-only utilities (hover:bg-surface) — so every
-   pill / menu item / tab would render as a persistent chip. Zero the
-   rest fill inside those zones; the engine's hover rule above still
-   supplies the raised hover chip, the active tab pills (bare bg-surface
-   divs) stay, destructive items keep their own red wash, and
-   edit-mode badges (bare bg-surface fills) stay untouched. */
+   items, the session switcher, the sidebar tab lists of Settings and
+   both Explorers, and the Training method rail — see WidgetDock.tsx,
+   ContextMenu/ContextMenu.tsx, SessionPiece.tsx, Header.tsx,
+   SettingsSidebar.tsx, DockExplorer.tsx, WidgetExplorerSidebar.tsx and
+   TrainingDashboard.tsx): their buttons never carry a background at
+   rest. The remap above keys off [class*="bg-surface"], which also
+   catches hover-only utilities (hover:bg-surface) — so every pill /
+   menu item / tab would render as a persistent chip. Zero the rest
+   fill inside those zones; the engine's hover rule above still
+   supplies the raised hover chip, and the active tab pills (bare
+   bg-surface divs) stay. */
 html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"] {
   background-color: transparent !important;
+}
+
+/* ── X / cross buttons: icon-only closers stay flat ──────────────────
+   Every "cross" (X) close button whose neutral fill would render as a
+   chip (bg-surface / bg-card / bg-white / bg-background / bg-canvas,
+   data-slot buttons, or the shadcn dialog close's data-[state=open]
+   accent) is flattened at rest: cross buttons are icon-only BY DESIGN
+   (TimesList, ManualSolveSheet, TrainingCalendar, floating widgets,
+   dialogs, editors…). Hover still raises the engine chip for
+   affordance.
+
+   lucide-react (v0.468) strips the per-icon class — svgs carry only
+   "lucide" + size classes — so the X glyph is fingerprinted by its
+   geometry: two path segments with d="M18 6 6 18" and d="m6 6 12 12",
+   both required (verified against icons/x.js in this version). If
+   lucide ever changes those d values the selector stops matching
+   silently (X keeps the chip) — no visual break.
+   Semantic X actions (verdicts, quiz options with their own colored
+   fills like bg-hold-soft / bg-ready) keep their fills: they don't
+   carry neutral-bg classes. */
+html.liquid-glass button[class*="bg-surface"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-card"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-white"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-background"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-canvas"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass [data-slot="button"][class*="bg-surface"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass [data-slot="dialog-close"] {
+  background-color: transparent !important;
+}
+
+/* ── Nested panels: half-power liquid ─────────────────────────────────
+   A panel (bg-surface/bg-surface-2 + border + rounded) nested inside
+   another glass panel gets a STANDARD half-strength frosted treatment:
+   --glass-nested-bg (more see-through than the base glass) + half the
+   blur + saturated hairline shadow. This replaces the old dry nested
+   fill / milky blur-over-blur trade-off with a consistent "inner
+   surface" depth cue (cards inside dialogs, widgets and panels).
+   Buttons deliberately KEEP no backdrop-filter (tiny hot-spots, still
+   milky — nudge only the alpha via --glass-btn-bg). */
+html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface-2"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] div[class*="bg-surface-2"][class*="border"][class*="rounded"],
+html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
+  background-color: var(--glass-nested-bg) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.10) !important;
 }
 
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */

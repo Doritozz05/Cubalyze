@@ -64,15 +64,22 @@ export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as 
  *     the backplate instead of rendering solid white/gray;
  *   - hover raises to `var(--glass-btn-bg-hover)` (+1px hairline shadow).
  *
- * Buttons NEVER get backdrop-filter under glass (nested blur → milky).
+ * Buttons NEVER get backdrop-filter under glass (nested blur → milky);
+ * panels nested inside glass panels instead get a standard HALF-POWER
+ * liquid (--glass-nested-bg + --glass-nested-blur, engine rule in
+ * index.css) so inner surfaces read as depth, not dry fills.
  * Primary / destructive / semantic state buttons keep their solid fills.
- * The dock, the context menu, the session switcher and the Settings /
- * Explorer sidebar tabs are the designed exceptions: their buttons are
- * flat (icon-only pills / menu items / tabs), so the engine zeroes their
- * rest fill inside [data-context-zone="dock"],
+ * The dock, the context menu, the session switcher, the Settings /
+ * Explorer sidebar tabs, the Training method rail and every X/cross
+ * close button are the designed exceptions: they are flat (icon-only
+ * pills / menu items / tabs / method buttons / closers), so the engine
+ * zeroes their rest fill inside [data-context-zone="dock"],
  * [data-context-zone="context-menu"], [data-context-zone="session"],
- * [data-context-zone="settings-sidebar"] and
- * [data-context-zone="explorer-sidebar"] (only the hover chip remains).
+ * [data-context-zone="settings-sidebar"],
+ * [data-context-zone="explorer-sidebar"] and
+ * [data-context-zone="training-methods"], plus a :has() glyph rule
+ * for cross buttons (lucide X fingerprint) and the shadcn dialog-close
+ * slot (only the hover chip remains).
  */
 
 /**
