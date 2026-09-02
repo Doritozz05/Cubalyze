@@ -163,6 +163,9 @@
   --canvas: #f8f9fa;
   --surface: #ffffff;
   --surface-2: #f1f3f5;
+  /* Solid (non-glass) surface-2 — NEVER remapped by the liquid-glass
+     engine, so small identity tiles (sidebar CubeMark frame) stay dry. */
+  --surface-2-solid: #f1f3f5;
   --accent-emerald: #047857;
   /* Phase dots (light) — identical hex values to the previous Tailwind-400
      classes so colours don't change, they're just tokenised now. */
@@ -276,6 +279,7 @@
   --canvas: #14171b;
   --surface: #1b1f23;
   --surface-2: #24292e;
+  --surface-2-solid: #24292e;
   --card: #1f2429;
   --popover: #22282e;
   --accent-emerald: #34d399;
@@ -336,6 +340,11 @@ html.liquid-glass {
   --sidebar-accent: rgba(0, 0, 0, 0.08);
   --sidebar-accent-foreground: #212529;
   --line: var(--glass-border);
+  /* Sidebar separators + the profile frame (border/ring-sidebar-border)
+     follow the SAME glass hairline as every other panel (dock, 3D panel,
+     widgets): the solid light/dark gray tokens read as white in light
+     mode and near-black in dark mode on translucent glass. */
+  --sidebar-border: var(--glass-border);
   /* Buttons & chips: secondary / muted / accent (ghost hovers, selected
      chips, steppers) inherit the frosted chip token so interactive fills
      tint with the backplate instead of rendering solid white/gray. */
