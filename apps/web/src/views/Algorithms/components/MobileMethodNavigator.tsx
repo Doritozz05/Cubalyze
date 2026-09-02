@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -38,7 +38,7 @@ function subsetNode(subset: AlgorithmSubset): NavNode {
   return { id: subset.id, label: subset.name, kind: "subset" };
 }
 
-function buildTree(): NavNode[] {
+export function buildTree(): NavNode[] {
   return PUZZLE_ORDER.filter((pt) =>
     METHODS.some((m) => (m.puzzleType as PuzzleType) === pt),
   ).map((pt) => {
@@ -62,7 +62,7 @@ function buildTree(): NavNode[] {
 }
 
 /** Breadcrumb path labels for a given subset id, e.g. "3×3 › CFOP › PLL". */
-function pathLabelFor(
+export function pathLabelFor(
   tree: NavNode[],
   subsetId: string | null,
   selectMethodLabel: string,
@@ -114,6 +114,9 @@ export interface MobileMethodNavigatorProps {
   selectedSubsetId: string | null;
   onSelectSubset: (subsetId: string) => void;
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
 }
 
 /**
@@ -129,15 +132,35 @@ export function MobileMethodNavigator({
   selectedSubsetId,
   onSelectSubset,
   className,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  defaultOpen,
 }: MobileMethodNavigatorProps) {
   const { t } = useTranslation("algorithms");
   const tree = useMemo(buildTree, []);
   const leaves = useMemo(() => flattenLeaves(tree), [tree]);
 
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(
+    () => defaultOpen ?? !selectedSubsetId,
+  );
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) {
+        setInternalOpen(next);
+      }
+      controlledOnOpenChange?.(next);
+    },
+    [isControlled, controlledOnOpenChange],
+  );
+
   // Path of selected nodes; the visible list is the last node's children
   // (or the roots when empty).
-  const [path, setPath] = useState<NavNode[]>([]);
+  const [path, setPath] = useState<NavNode[]>(() =>
+    findPathTo(tree, selectedSubsetId),
+  );
   const [query, setQuery] = useState("");
 
   const currentList =
@@ -150,10 +173,18 @@ export function MobileMethodNavigator({
 
   const handleOpen = useCallback(() => {
     setQuery("");
-    // Pre-navigate to the level containing the current selection.
+    // Pre-navigate to the level containing the current selection (or [] for root).
     setPath(findPathTo(tree, selectedSubsetId));
     setOpen(true);
-  }, [tree, selectedSubsetId]);
+  }, [tree, selectedSubsetId, setOpen]);
+
+  // Synchronize path and clear query whenever drawer is opened externally
+  useEffect(() => {
+    if (controlledOpen) {
+      setQuery("");
+      setPath(findPathTo(tree, selectedSubsetId));
+    }
+  }, [controlledOpen, tree, selectedSubsetId]);
 
   const handleTap = useCallback(
     (node: NavNode) => {
@@ -164,12 +195,18 @@ export function MobileMethodNavigator({
         setOpen(false);
       }
     },
-    [onSelectSubset],
+    [onSelectSubset, setOpen],
   );
 
   const handleJumpTo = useCallback((depth: number) => {
     setPath((p) => p.slice(0, depth));
   }, []);
+
+  const panelTitle = useMemo(() => {
+    if (path.length === 0) return t("puzzle", { defaultValue: "Puzzle" });
+    if (path.length === 1) return t("method", { defaultValue: "Método" });
+    return t("method");
+  }, [path.length, t]);
 
   const filteredLeaves = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -195,7 +232,7 @@ export function MobileMethodNavigator({
         <ChevronDown className="size-4 shrink-0 text-ink-3" />
       </button>
 
-      <TouchPanel open={open} onOpenChange={setOpen} title={t("method")}>
+      <TouchPanel open={open} onOpenChange={setOpen} title={panelTitle}>
         {/* Instant search — jump straight to any subset */}
         <div className="relative mb-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
@@ -310,17 +347,22 @@ export function MobileMethodNavigator({
   );
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
 /** Find the node path that leads to the given subset id (for pre-navigation). */
-function findPathTo(nodes: NavNode[], id: string | null): NavNode[] {
+export function findPathTo(nodes: NavNode[], id: string | null): NavNode[] {
   if (!id) return [];
+  const found = findPathHelper(nodes, id);
+  return found ?? [];
+}
+
+function findPathHelper(nodes: NavNode[], id: string): NavNode[] | null {
   for (const node of nodes) {
     if (node.id === id) return [];
-    if (node.children) {
-      const sub = findPathTo(node.children, id);
-      if (sub) return [node, ...sub];
+    if (node.children && node.children.length > 0) {
+      const sub = findPathHelper(node.children, id);
+      if (sub !== null) {
+        return [node, ...sub];
+      }
     }
   }
-  return [];
+  return null;
 }

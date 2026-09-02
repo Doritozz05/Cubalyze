@@ -24,12 +24,19 @@ export function AlgorithmDashboard({
   initialCaseId,
 }: AlgorithmDashboardProps = {}) {
   const { t } = useTranslation("algorithms");
-  const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(
-    () => initialSubsetId ?? SUBSETS.find((s) => s.name === "PLL")?.id ?? null,
-  );
+  const [selectedSubsetId, setSelectedSubsetId] = useState<string | null>(() => {
+    if (initialSubsetId) return initialSubsetId;
+    // On mobile / touch (<768px), start with nothing selected so the user is prompted to pick a puzzle and method first.
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      return null;
+    }
+    // On desktop (>=768px), default to 3×3 PLL.
+    return SUBSETS.find((s) => s.name === "PLL")?.id ?? null;
+  });
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(
     () => initialCaseId ?? null,
   );
+  const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(() => !selectedSubsetId);
 
   // Defer useIsTouch to post-mount to avoid SSR/hydration flash (same
   // pattern as MainLayout / TouchAside). Desktop (>=768px) always false.
@@ -41,6 +48,7 @@ export function AlgorithmDashboard({
   useEffect(() => {
     if (initialSubsetId) {
       setSelectedSubsetId(initialSubsetId);
+      setMobileNavOpen(false);
     }
     if (initialCaseId !== undefined) {
       setSelectedCaseId(initialCaseId);
@@ -71,6 +79,7 @@ export function AlgorithmDashboard({
   const handleSelectSubset = useCallback((subsetId: string) => {
     setSelectedSubsetId(subsetId);
     setSelectedCaseId(null);
+    setMobileNavOpen(false);
   }, []);
 
   const handleSelectCase = useCallback((caseId: string) => {
@@ -112,6 +121,8 @@ export function AlgorithmDashboard({
             <MobileMethodNavigator
               selectedSubsetId={selectedSubsetId}
               onSelectSubset={handleSelectSubset}
+              open={mobileNavOpen}
+              onOpenChange={setMobileNavOpen}
             />
           </div>
 
@@ -134,12 +145,25 @@ export function AlgorithmDashboard({
                   </p>
                 </div>
               </div>
-              <CaseGrid
-                cases={filteredCases}
-                selectedCaseId={selectedCaseId}
-                onSelectCase={handleSelectCase}
-                visualizationStyle={visualizationStyle}
-              />
+
+              {selectedSubsetId ? (
+                <CaseGrid
+                  cases={filteredCases}
+                  selectedCaseId={selectedCaseId}
+                  onSelectCase={handleSelectCase}
+                  visualizationStyle={visualizationStyle}
+                />
+              ) : (
+                /* Desktop: hint to select from the left method tree. Mobile: left clean and empty. */
+                <div className="hidden lg:block">
+                  <CaseGrid
+                    cases={[]}
+                    selectedCaseId={null}
+                    onSelectCase={() => {}}
+                    visualizationStyle={visualizationStyle}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Detail panel — desktop side panel only (>=768px) */}
