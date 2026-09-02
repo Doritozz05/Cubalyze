@@ -150,9 +150,10 @@ export interface UnifiedF2LPair {
   /** Recognition gap between the previous pair's end and this pair's start. */
   recognitionMs: number;
   /**
-   * The recognized Basic F2L algorithmic case (41-case catalog), when the
-   * SHARED detector matched. Same detection the reconstruction text route
-   * reports, so smart/virtual and text never diverge for the same solve.
+   * The recognized F2L algorithmic case (Basic 41 + Advanced BirdF2L
+   * catalog), when the SHARED detector matched. Same detection the
+   * reconstruction text route reports, so smart/virtual and text never
+   * diverge for the same solve.
    */
   detectedCase?: {
     caseNumber: string;
@@ -602,7 +603,7 @@ export function segmentF2LPairs(
     prevPairEndTs = endTs;
   }
 
-  // ── Modular case detection (Basic F2L — 41 cases) ──────────────────────
+  // ── Modular case detection (Basic 41 + Advanced BirdF2L) ───────────────
   // SHARED with the reconstruction text route: the state at the pair's exact
   // CUT (the frame just before its first move). It uses the SAME
   // `completionIndex - moves.length + 1` cut the text route's buildPairs

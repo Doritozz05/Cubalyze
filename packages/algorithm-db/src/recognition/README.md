@@ -78,11 +78,10 @@ segmentF2LPairs → por cada par: estado @ corte (índice completionIndex - len 
 - Se detectan los pares con slot real de **cualquier cross face**
   (`FR/BR/BL/FL` para D/U, `UR/UL/DR/DL` para F/B, `UF/UB/DF/DB` para
   R/L).
-- El pipeline de análisis usa el catálogo Básico (41): pares fuera de él
-  (configuraciones avanzadas) devuelven `detectedCase: undefined` — la
-  firma no casa con ninguna clave. El trainer infinite-f2l usa el detector
-  combinado (`createF2LDetector`), que cubre el 100% del espacio de
-  configuraciones de par (ver sección Advanced F2L).
+- El pipeline de análisis (texto, smart y virtual comparten el mismo
+  detector vía `caseDetectors.getF2LDetector`) y el trainer infinite-f2l
+  usan el detector combinado (`createF2LDetector`), que cubre el 100% del
+  espacio de configuraciones de par (ver sección Advanced F2L).
 - La detección **nunca rompe la reconstrucción** (try/catch defensivo).
 - UI: `OurDetectionPanel` muestra `caseName` + `caseNumber` en la
   columna "Case" de cada par.
