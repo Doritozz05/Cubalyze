@@ -113,6 +113,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
 
               <div className="relative w-full">
                 <div
+                  data-glass-panel="true"
                   className={cn(
                     "grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-surface transition-colors",
                     interactive &&

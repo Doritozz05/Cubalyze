@@ -56,6 +56,8 @@ export function MobileTabBar({
   return (
     <nav
       aria-label={t("primary")}
+      data-slot="mobile-tab-bar"
+      data-glass-panel="true"
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur-xl pb-safe shadow-[0_-2px_12px_rgba(0,0,0,0.04)] select-none lg:hidden",
         className,

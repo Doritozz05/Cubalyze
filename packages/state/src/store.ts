@@ -193,6 +193,10 @@ export interface PreferencesState {
   timerBackgroundAlwaysAnimate: boolean;
   setTimerBackgroundAlwaysAnimate: (value: boolean) => void;
 
+  /** Theme visual effect: translucent liquid glass with backdrop blur on supported UI panels. Default false. */
+  liquidGlass: boolean;
+  setLiquidGlass: (value: boolean) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -297,6 +301,7 @@ const DEFAULT_VALUES = {
   timerBackgroundOverlay: 0,
   timerBackgroundAllViews: false,
   timerBackgroundAlwaysAnimate: false,
+  liquidGlass: false,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -356,6 +361,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundOverlay: (timerBackgroundOverlay) => set({ timerBackgroundOverlay }),
         setTimerBackgroundAllViews: (timerBackgroundAllViews) => set({ timerBackgroundAllViews }),
         setTimerBackgroundAlwaysAnimate: (timerBackgroundAlwaysAnimate) => set({ timerBackgroundAlwaysAnimate }),
+        setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -407,6 +413,7 @@ export const createPreferencesStore = () => {
           timerBackgroundOverlay: state.timerBackgroundOverlay,
           timerBackgroundAllViews: state.timerBackgroundAllViews,
           timerBackgroundAlwaysAnimate: state.timerBackgroundAlwaysAnimate,
+          liquidGlass: state.liquidGlass,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

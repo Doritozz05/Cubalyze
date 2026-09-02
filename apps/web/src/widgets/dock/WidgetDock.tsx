@@ -910,6 +910,8 @@ export function WidgetDock({
         )}
       <div
         ref={barRef}
+        data-slot="dock"
+        data-glass-panel="true"
         className={cn(
           "relative z-10 flex min-w-0 items-center gap-0.5 rounded-full border border-line bg-surface px-1.5 py-1 shadow-sm",
           isExpanded && "z-40 w-max",

@@ -7,6 +7,7 @@ import { preferencesStore } from "@cubeforge/state";
 
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
+  const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const { theme: nextTheme, setTheme } = useTheme();
 
   React.useEffect(() => {
@@ -14,6 +15,18 @@ function ThemeSync() {
       setTheme(storeTheme);
     }
   }, [storeTheme, nextTheme, setTheme]);
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (liquidGlass) {
+      root.classList.add("liquid-glass");
+      root.setAttribute("data-liquid-glass", "true");
+    } else {
+      root.classList.remove("liquid-glass");
+      root.removeAttribute("data-liquid-glass");
+    }
+  }, [liquidGlass]);
 
   return null;
 }

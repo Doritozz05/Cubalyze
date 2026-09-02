@@ -49,6 +49,8 @@ export function CustomBackgroundSetting() {
   const setTimerBackgroundAllViews = useStore(preferencesStore, (s) => s.setTimerBackgroundAllViews);
   const timerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.timerBackgroundAlwaysAnimate);
   const setTimerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.setTimerBackgroundAlwaysAnimate);
+  const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
+  const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
@@ -432,6 +434,22 @@ export function CustomBackgroundSetting() {
               <Switch
                 checked={timerBackgroundAllViews}
                 onCheckedChange={setTimerBackgroundAllViews}
+              />
+            </div>
+
+            {/* Liquid Glass panels toggle */}
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-medium text-ink">
+                  {t('appearance.liquidGlass')}
+                </span>
+                <span className="text-[0.72rem] text-ink-3 leading-4">
+                  {t('appearance.liquidGlassHint')}
+                </span>
+              </div>
+              <Switch
+                checked={liquidGlass}
+                onCheckedChange={setLiquidGlass}
               />
             </div>
           </div>

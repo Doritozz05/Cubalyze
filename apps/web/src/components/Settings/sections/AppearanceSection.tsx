@@ -62,6 +62,8 @@ export function AppearanceSection() {
   const { t } = useTranslation('settings');
   const theme = useStore(preferencesStore, (s) => s.theme);
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
+  const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
+  const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
   const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
@@ -110,6 +112,14 @@ export function AppearanceSection() {
             </SelectContent>
           </Select>
         }
+      />
+
+      {/* Liquid Glass UI Panels (Theme visual effect) */}
+      <SettingToggle
+        title={t('appearance.liquidGlass')}
+        description={t('appearance.liquidGlassHint')}
+        checked={liquidGlass}
+        onCheckedChange={setLiquidGlass}
       />
 
       {/* Header visibility — mobile keeps the simple on/off toggle; desktop

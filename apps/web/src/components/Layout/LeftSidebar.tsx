@@ -510,6 +510,8 @@ export function LeftSidebar({
         // touch-pan-y: the browser only owns vertical pans on the rail, so
         // horizontal swipes (open/close) always reach the gesture handlers
         // instead of being claimed as pans.
+        data-slot="sidebar"
+        data-glass-panel="true"
         className="fixed left-0 top-0 z-50 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar select-none overflow-hidden touch-pan-y"
       >
         {sidebarContent}

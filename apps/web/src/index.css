@@ -218,6 +218,14 @@
   --sidebar-accent-foreground: #212529;
   --sidebar-border: #e9ecef;
   --sidebar-ring: #adb5bd;
+
+  /* ── Liquid Glass theme tokens (light) ── */
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-bg-subtle: rgba(241, 243, 245, 0.58);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: 18px;
+  --glass-saturate: 180%;
+  --glass-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
 }
 
 .dark {
@@ -279,6 +287,74 @@
   --chart-pb: #fcd34d;
   --chart-ao5: #f87171;
   --chart-ao12: #4ade80;
+
+  /* ── Liquid Glass theme tokens (dark) ── */
+  --glass-bg: rgba(27, 31, 35, 0.72);
+  --glass-bg-subtle: rgba(36, 41, 46, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 22px;
+  --glass-saturate: 190%;
+  --glass-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   Liquid Glass Theme Engine
+   When active (html.liquid-glass / [data-liquid-glass="true"]), converts
+   supported UI panels into translucent frosted glass surfaces.
+   Built for easy customization by future theme editors.
+   ─────────────────────────────────────────────────────────────────────── */
+html.liquid-glass {
+  --surface: var(--glass-bg);
+  --surface-2: var(--glass-bg-subtle);
+  --card: var(--glass-bg);
+  --popover: var(--glass-bg);
+  --sidebar: var(--glass-bg);
+  --line: var(--glass-border);
+}
+
+html.liquid-glass [data-slot="card"],
+html.liquid-glass [data-slot="dialog-content"],
+html.liquid-glass [data-slot="alert-dialog-content"],
+html.liquid-glass [data-slot="sheet-content"],
+html.liquid-glass [data-slot="drawer-content"],
+html.liquid-glass [data-slot="popover-content"],
+html.liquid-glass [data-slot="dropdown-menu-content"],
+html.liquid-glass [data-slot="context-menu-content"],
+html.liquid-glass [data-slot="select-content"],
+html.liquid-glass [data-slot="dock"],
+html.liquid-glass [data-slot="mobile-tab-bar"],
+html.liquid-glass [data-slot="sidebar"],
+html.liquid-glass aside[class*="bg-sidebar"],
+html.liquid-glass header[class*="max-lg:bg-surface"],
+html.liquid-glass .liquid-glass-panel,
+html.liquid-glass [data-glass-panel],
+html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
+html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] {
+  background-color: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
+}
+
+/* Metric tile grids and sub-tiles (Insights / Stats overview) */
+html.liquid-glass .grid[class*="bg-line"] {
+  background-color: var(--glass-border) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  box-shadow: var(--glass-shadow);
+}
+
+html.liquid-glass .grid[class*="bg-line"] > div {
+  background-color: var(--glass-bg) !important;
+}
+
+/* Clear opaque nested canvases when liquid glass is active so backgrounds shine through */
+html.liquid-glass main [class*="bg-canvas"],
+html.liquid-glass section [class*="bg-canvas"] {
+  background-color: transparent !important;
 }
 
 @layer base {

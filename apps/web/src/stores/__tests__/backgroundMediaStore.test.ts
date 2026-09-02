@@ -73,4 +73,14 @@ describe("useBackgroundMediaStore", () => {
     preferencesStore.getState().setTimerBackgroundAlwaysAnimate(false);
     expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(false);
   });
+
+  it("defaults liquidGlass to false and allows toggling", () => {
+    expect(preferencesStore.getState().liquidGlass).toBe(false);
+
+    preferencesStore.getState().setLiquidGlass(true);
+    expect(preferencesStore.getState().liquidGlass).toBe(true);
+
+    preferencesStore.getState().setLiquidGlass(false);
+    expect(preferencesStore.getState().liquidGlass).toBe(false);
+  });
 });
