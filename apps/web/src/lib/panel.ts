@@ -36,3 +36,15 @@ export const PANEL_FLUSH =
  */
 export const PANEL_METRIC_GRID =
   "grid gap-px overflow-hidden rounded-lg border border-line bg-line" as const;
+
+/**
+ * CSS semantic class for a glass selection pill (active row/item indicator).
+ * Applied by the liquid-glass engine when `html.liquid-glass` is active.
+ * Used in SolveListPanel's ActivePill and the LeftSidebar active background.
+ * Always combine with `bg-sidebar-accent` as the non-glass fallback color.
+ *
+ * Example:
+ *   <div className="rounded-md bg-sidebar-accent glass-active-pill" />
+ */
+export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as const;
+

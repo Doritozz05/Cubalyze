@@ -635,7 +635,7 @@ function ActivePill({ active }: { active: boolean }) {
           animate={{ opacity: 1 }}
           exit={reduceMotion ? {} : { opacity: 0 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
-          className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent border border-line/35 dark:border-white/4"
+          className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent glass-active-pill border border-line/35 dark:border-white/4"
         />
       )}
     </AnimatePresence>

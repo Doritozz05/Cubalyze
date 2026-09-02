@@ -372,9 +372,10 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   }
 }
 
-/* LeftSidebar active item: frosted translucent pill instead of opaque white */
+/* LeftSidebar active item + shared glass selection pill: frosted translucent pill */
 html.liquid-glass [data-slot="sidebar"] .bg-sidebar-accent,
-html.liquid-glass aside[class*="bg-sidebar"] .bg-sidebar-accent {
+html.liquid-glass aside[class*="bg-sidebar"] .bg-sidebar-accent,
+html.liquid-glass .glass-active-pill {
   background-color: var(--sidebar-accent) !important;
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
