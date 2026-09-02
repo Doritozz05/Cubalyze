@@ -324,7 +324,7 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
               <p className="mt-2 text-[0.6rem] text-ink-3/70">{t("overview.techFingerprintHint")}</p>
             </div>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-[0.7rem] text-ink-3 min-h-[5rem]">
+            <div className="flex flex-1 items-center justify-center text-[0.7rem] text-ink-3 min-h-20">
               {t("overview.technicalNoData")}
             </div>
           )}
