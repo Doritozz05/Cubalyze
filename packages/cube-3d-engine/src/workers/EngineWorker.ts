@@ -80,6 +80,17 @@ export class EngineWorkerAPI {
     this.engine?.rotateCamera(dx, dy);
   }
 
+  /**
+   * Mark the camera as being dragged (pointer down/up). ReplaySection calls
+   * this on every drag gesture on the replay cube; without it the worker
+   * side throws the comlink "undefined.apply" error on every drag (the
+   * method was only forwarded on the main-thread engine, never exposed on
+   * the worker API).
+   */
+  public setCameraDragActive(active: boolean): void {
+    this.engine?.setCameraDragActive(active);
+  }
+
   public zoomCamera(deltaY: number) {
     this.engine?.zoomCamera(deltaY);
   }
