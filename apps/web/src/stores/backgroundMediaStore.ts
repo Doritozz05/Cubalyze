@@ -209,7 +209,7 @@ export const useBackgroundMediaStore = create<BackgroundMediaState>((set, get) =
       // Update preferences store to flag that custom background is active
       preferencesStore.getState().setTimerBackgroundImage("indexeddb:current");
 
-      set({
+      set((state) => ({
         mediaUrl: objectUrl,
         posterUrl: data.posterDataUrl || objectUrl,
         mediaType: data.mediaType,
@@ -217,7 +217,8 @@ export const useBackgroundMediaStore = create<BackgroundMediaState>((set, get) =
         fileName: data.name,
         isLoading: false,
         isAnimating: false,
-      });
+        animationKey: state.animationKey + 1,
+      }));
     } catch (err) {
       console.error("[BackgroundMedia] Error setting media:", err);
       set({ isLoading: false });

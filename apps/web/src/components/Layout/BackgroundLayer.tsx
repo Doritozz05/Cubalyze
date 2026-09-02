@@ -28,6 +28,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const effectiveIsAnimating = timerBackgroundAlwaysAnimate || isAnimating;
+  const effectiveMediaUrl = mediaUrl || (timerBackgroundImage?.startsWith("data:") ? timerBackgroundImage : null);
 
   // Synchronize HTML5 video element playback with the timer animation state
   useEffect(() => {
@@ -48,9 +49,8 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
       video.pause();
       video.currentTime = 0;
     }
-  }, [effectiveIsAnimating, mediaType, animationKey]);
+  }, [effectiveIsAnimating, mediaType, animationKey, effectiveMediaUrl]);
 
-  const effectiveMediaUrl = mediaUrl || (timerBackgroundImage?.startsWith("data:") ? timerBackgroundImage : null);
   const isVisible =
     !!effectiveMediaUrl &&
     (timerBackgroundAllViews || activeView === "timer" || activeView === "cube");
@@ -85,7 +85,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
         <>
           {effectiveIsAnimating ? (
             <img
-              key={`gif-${animationKey}`}
+              key={`gif-${effectiveMediaUrl}-${animationKey}`}
               src={effectiveMediaUrl}
               alt=""
               className="absolute inset-0 size-full pointer-events-none"
