@@ -58,8 +58,12 @@ function TabsContent({
     <TabsPrimitive.Content
       data-slot="tabs-content"
       className={cn(
+        // No entrance animation (animate-in/fade-in/slide-in) — the 200ms
+        // opacity+transform animation conflicts with liquid-glass
+        // backdrop-filter: while a composited animation runs, the browser
+        // defers the panel blur, so glass panels pop in as solid and only
+        // frost up after the animation ends (seen on the Profile tabs).
         "flex-1 outline-none",
-        "data-[state=active]:animate-in data-[state=active]:fade-in data-[state=active]:slide-in-from-right-3 data-[state=active]:duration-200",
         className
       )}
       {...props}
