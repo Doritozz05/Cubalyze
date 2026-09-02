@@ -15,7 +15,7 @@ function rotationGroup(): string[] {
       const next = `${cur} ${b}`.trim();
       const c = new CubeState();
       c.applySequence(next);
-      const k = `${Array.from(c.cp as any).join(',')}|${Array.from(c.ep as any).join(',')}`;
+      const k = `${Array.from(c.cp).join(',')}|${Array.from(c.ep).join(',')}`;
       if (!seen.has(k)) {
         seen.add(k);
         group.push(next);
@@ -38,7 +38,7 @@ function crossFaceOf(state: CubeState): string {
     ['L', [1, 2, 5, 6]],
   ];
   for (const [name, pos] of faces) {
-    const pieces = pos.map((p) => (state.cp as any)[p] as number);
+    const pieces = pos.map((p) => state.cp[p]);
     if (pieces.every((p) => p >= 4 && p <= 7)) return name;
   }
   return '?';

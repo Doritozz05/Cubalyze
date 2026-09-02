@@ -13,12 +13,11 @@ function makeValidSolve(puzzleType?: string) {
   };
 }
 
-function makeValidSession(puzzleType?: string) {
+function makeValidSession() {
   return {
     id: '123e4567-e89b-12d3-a456-426614174001',
     name: 'Main',
     createdAt: Date.now(),
-    ...(puzzleType !== undefined ? { puzzleType } : {}),
   };
 }
 
@@ -85,21 +84,10 @@ describe('ProfileSchema — mainPuzzle validation against the registry (A2/ADR-0
   });
 });
 
-describe('SessionSchema — puzzle_type validation against the registry (A2/ADR-002)', () => {
-  it('accepts WCA codes and defaults to 333 when absent', () => {
-    const parsed = SessionSchema.safeParse(makeValidSession('222'));
+describe('SessionSchema', () => {
+  it('validates a session without any puzzle field (per-solve puzzle_type only)', () => {
+    const parsed = SessionSchema.safeParse(makeValidSession());
     expect(parsed.success).toBe(true);
-    expect(parsed.success && parsed.data.puzzleType).toBe('222');
-
-    const defaulted = SessionSchema.safeParse(makeValidSession());
-    expect(defaulted.success).toBe(true);
-    expect(defaulted.success && defaulted.data.puzzleType).toBe('333');
-  });
-
-  it('rejects unknown puzzle_type values, including the pre-ADR-002 scheme', () => {
-    for (const junk of ['3x3x3', '2x2x2', '3x3', '9x9x9', 'pyraminx', '']) {
-      const result = SessionSchema.safeParse(makeValidSession(junk));
-      expect(result.success, `${junk} rejected`).toBe(false);
-    }
+    expect(parsed.success && parsed.data.puzzleType).toBeUndefined();
   });
 });

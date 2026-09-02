@@ -195,14 +195,15 @@ describe('SessionsRepository', () => {
     repo = new SessionsRepository(mockDb());
   });
 
-  it('findAll returns mapped sessions', async () => {
+  it('findAll returns mapped sessions (no puzzle field — per-solve puzzle_type only)', async () => {
     const db = mockDb([
-      { id: 'ses1', name: 'Practice', puzzle_type: '333', created_at: '2026-01-01' },
+      { id: 'ses1', name: 'Practice', created_at: '2026-01-01' },
     ]);
     repo = new SessionsRepository(db);
     const sessions = await repo.findAll();
     expect(sessions).toHaveLength(1);
-    expect(sessions[0].puzzleType).toBe('333');
+    expect(sessions[0].name).toBe('Practice');
+    expect(sessions[0]).not.toHaveProperty('puzzleType');
   });
 
   it('findById returns null for missing session', async () => {
@@ -213,13 +214,13 @@ describe('SessionsRepository', () => {
   it('insert and update call correct SQL', async () => {
     const db = mockDb();
     repo = new SessionsRepository(db);
-    await repo.insert({ id: 'ses1', name: 'Test', puzzleType: '333', createdAt: 1767225600000, updatedAt: 1767225600000 });
-    expect(db.mock.calls[0][0]).toContain('INSERT INTO sessions');
+    await repo.insert({ id: 'ses1', name: 'Test', createdAt: 1767225600000, updatedAt: 1767225600000 });
+    expect(db.mock.calls[0][0]).toContain('INSERT INTO sessions (id, name, created_at, updated_at, is_demo)');
 
     db.mockReset();
     db.mockResolvedValue([]);
-    await repo.update({ id: 'ses1', name: 'Updated', puzzleType: '444', createdAt: 1767225600000 });
-    expect(db.mock.calls[0][0]).toContain('UPDATE sessions');
+    await repo.update({ id: 'ses1', name: 'Updated', createdAt: 1767225600000 });
+    expect(db.mock.calls[0][0]).toContain('UPDATE sessions SET name = ?, updated_at = ? WHERE id = ?');
   });
 
   it('delete calls DELETE SQL', async () => {

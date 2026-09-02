@@ -37,7 +37,7 @@ async function auditSolves(executor: Executor, storageType: () => string): Promi
   const [totalRows] = await executor("SELECT COUNT(*) AS c FROM solves");
   const [demoRows] = await executor("SELECT COUNT(*) AS c FROM solves WHERE is_demo = 1");
   const sessions = await executor(
-    `SELECT s.id, s.name, s.puzzle_type, s.is_demo,
+    `SELECT s.id, s.name, s.is_demo,
             COUNT(v.id) AS solves
      FROM sessions s
      LEFT JOIN solves v ON v.session_id = s.id
@@ -79,7 +79,6 @@ async function auditSolves(executor: Executor, storageType: () => string): Promi
   console.table(
     sessions.map((s) => ({
       name: s.name,
-      puzzle: s.puzzle_type,
       demo: num(s.is_demo) === 1 ? "sí" : "no",
       solves: num(s.solves),
       id: s.id,

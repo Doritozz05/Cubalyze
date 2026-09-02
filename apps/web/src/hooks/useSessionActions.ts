@@ -3,9 +3,8 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import i18n from "@/i18n";
-import type { Penalty, PuzzleCategory, Solve, SolveSource } from "@/types";
+import type { Penalty, Solve, SolveSource } from "@/types";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
-import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 
@@ -30,11 +29,10 @@ export interface SessionActionsDeps {
   moveSolveToSession: (ids: string[], targetSessionId: string) => Promise<number>;
   clearSession: () => Promise<void>;
   importSolves: (inputs: ImportInputs) => Promise<number>;
-  newSession: (name?: string, puzzle?: string) => Promise<void>;
+  newSession: (name?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
   sessions: SessionMeta[];
   fetchSessionSolves: (sessionId: string) => Promise<Solve[]>;
-  puzzle: PuzzleCategory;
   /** Replace the scramble (called after session ops that regenerate it). */
   resetScramble: () => void;
   /** Reset timer state (clear lastTime and live time). */
@@ -59,7 +57,6 @@ export function useSessionActions(deps: SessionActionsDeps) {
     switchSession,
     sessions,
     fetchSessionSolves,
-    puzzle,
     resetScramble,
     resetTimer,
     lastSolveId,
@@ -103,14 +100,14 @@ export function useSessionActions(deps: SessionActionsDeps) {
   );
 
   const handleNewSession = useCallback(() => {
-    newSession(undefined, puzzleCategoryToType(puzzle))
+    newSession()
       .then(() => {
         resetScramble();
         resetTimer?.();
         toast.success(i18n.t("toast:sessionStarted"));
       })
       .catch(() => toast.error(i18n.t("toast:createSessionFailed")));
-  }, [newSession, puzzle, resetScramble, resetTimer]);
+  }, [newSession, resetScramble, resetTimer]);
 
   const handleSwitchSession = useCallback(
     (id: string) => {

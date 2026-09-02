@@ -415,8 +415,8 @@ function readAndCopySessions(src: any): { sessions: number; solves: number } {
 
   // Sessions always exist; their created_at may be TEXT (v1) or INTEGER (v2).
   const sessionsSql = isV2
-    ? 'SELECT id, name, puzzle_type, created_at, updated_at, is_demo FROM sessions'
-    : "SELECT id, name, puzzle_type, CASE WHEN typeof(created_at) = 'text' THEN CAST((julianday(created_at) - 2440587.5) * 86400000 AS INTEGER) ELSE created_at END AS created_at, CASE WHEN typeof(updated_at) = 'text' THEN CAST((julianday(updated_at) - 2440587.5) * 86400000 AS INTEGER) ELSE updated_at END AS updated_at, COALESCE(is_demo, 0) AS is_demo FROM sessions";
+    ? 'SELECT id, name, created_at, updated_at, is_demo FROM sessions'
+    : "SELECT id, name, CASE WHEN typeof(created_at) = 'text' THEN CAST((julianday(created_at) - 2440587.5) * 86400000 AS INTEGER) ELSE created_at END AS created_at, CASE WHEN typeof(updated_at) = 'text' THEN CAST((julianday(updated_at) - 2440587.5) * 86400000 AS INTEGER) ELSE updated_at END AS updated_at, COALESCE(is_demo, 0) AS is_demo FROM sessions";
   const solvesSql = isV2
     ? 'SELECT id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at FROM solves'
     : "SELECT id, session_id, time_ms, CASE WHEN typeof(date) = 'text' THEN CAST((julianday(date) - 2440587.5) * 86400000 AS INTEGER) ELSE CAST(date AS INTEGER) END AS timestamp, scramble, penalty, method, source, note, moves, NULL AS orientation_timeline, NULL AS analysis_engine_version, NULL AS analysis, COALESCE(puzzle_type, '3x3x3') AS puzzle_type, COALESCE(is_demo, 0) AS is_demo, CASE WHEN typeof(created_at) = 'text' THEN CAST((julianday(created_at) - 2440587.5) * 86400000 AS INTEGER) ELSE created_at END AS created_at, CASE WHEN typeof(updated_at) = 'text' THEN CAST((julianday(updated_at) - 2440587.5) * 86400000 AS INTEGER) ELSE updated_at END AS updated_at FROM solves";
@@ -424,12 +424,11 @@ function readAndCopySessions(src: any): { sessions: number; solves: number } {
   const sessions = src.exec({ sql: sessionsSql, rowMode: 'object' }) as Record<string, unknown>[];
   for (const s of sessions) {
     db.exec(
-      'INSERT OR IGNORE INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT OR IGNORE INTO sessions (id, name, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?)',
       {
         bind: [
           s.id,
           s.name,
-          s.puzzle_type,
           Number(s.created_at) || 0,
           Number(s.updated_at) || 0,
           Number(s.is_demo) || 0,

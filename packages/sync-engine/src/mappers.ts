@@ -103,7 +103,6 @@ export function sessionToCloudRow(session: Session, userId: string): CloudRow {
     user_id: userId,
     id: session.id,
     name: session.name,
-    puzzle_type: session.puzzleType,
     created_at: b(session.createdAt) ?? 0,
     updated_at: b(session.updatedAt ?? session.createdAt) ?? 0,
     is_demo: 0,
@@ -114,7 +113,6 @@ export function cloudRowToSession(row: CloudRow): Session {
   return {
     id: String(row.id),
     name: String(row.name ?? ""),
-    puzzleType: String(row.puzzle_type ?? "333"),
     createdAt: Number(row.created_at) || 0,
     updatedAt: Number(row.updated_at) || 0,
   };

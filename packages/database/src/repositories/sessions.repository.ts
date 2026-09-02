@@ -1,11 +1,9 @@
 import type { Session } from './types.js';
-import { isDbPuzzleType } from '@cubeforge/events';
 import { nextLocalStamps } from './local-clock.js';
 
 export interface SessionRow {
   id: string;
   name: string;
-  puzzle_type: string;
   created_at: number;
   updated_at: number;
   is_demo?: number;
@@ -17,7 +15,6 @@ function rowToSession(row: SessionRow): Session {
   return {
     id: row.id,
     name: row.name,
-    puzzleType: row.puzzle_type,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -118,10 +115,6 @@ export class SessionsRepository {
    * it stays hidden from the UI and removable via deleteDemoSessions().
    */
   async insert(session: Session, options?: { isDemo?: boolean }): Promise<void> {
-    // Same default as the SessionSchema (ADR-002): a missing puzzle_type is
-    // '333', never a legacy alias.
-    const puzzleType = session.puzzleType ?? '333';
-    assertValidSessionPuzzleType({ ...session, puzzleType });
     const stamped =
       session.updatedAt === undefined
         ? {
@@ -130,8 +123,8 @@ export class SessionsRepository {
           }
         : session;
     await this.db(
-      'INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?, ?)',
-      [stamped.id, stamped.name, puzzleType, stamped.createdAt || Date.now(), stamped.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
+      'INSERT INTO sessions (id, name, created_at, updated_at, is_demo) VALUES (?, ?, ?, ?, ?)',
+      [stamped.id, stamped.name, stamped.createdAt || Date.now(), stamped.updatedAt || Date.now(), options?.isDemo ? 1 : 0]
     );
   }
 
@@ -143,7 +136,6 @@ export class SessionsRepository {
    * (M9).
    */
   async update(session: Session, opts?: { local?: boolean }): Promise<void> {
-    assertValidSessionPuzzleType(session);
     const stamped = opts?.local
       ? {
           ...session,
@@ -157,8 +149,8 @@ export class SessionsRepository {
         ? stamped.updatedAt
         : Date.now();
     await this.db(
-      'UPDATE sessions SET name = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [stamped.name, stamped.puzzleType, updatedAt, stamped.id]
+      'UPDATE sessions SET name = ?, updated_at = ? WHERE id = ?',
+      [stamped.name, updatedAt, stamped.id]
     );
   }
 
@@ -229,17 +221,4 @@ export class SessionsRepository {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM sessions');
     return (rows[0] as { cnt: number }).cnt;
   }
-}
-
-/**
- * Phase A2 (ADR-002) — validate a session's puzzle_type against the WCA
- * event registry before any write. Same contract as the solves repository
- * and the SQLite CHECK (migration 027): unknown values never reach the disk.
- */
-function assertValidSessionPuzzleType(session: Session): void {
-  if (!isDbPuzzleType(session.puzzleType)) {
-    throw new Error(
-      `Cannot persist session: unknown puzzle_type '${session.puzzleType}' — must be a WCA event code declared by the registry`
-    );
-  }
-}
+}

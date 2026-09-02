@@ -385,6 +385,11 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
       setInitFailed(false);
       setContextEvicted(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- puzzleKey is the
+    // STABLE change proxy for puzzle/isPyraminx: callers pass inline puzzle
+    // specs, so the object identity churns on every render and listing
+    // `puzzle`/`isPyraminx` here would tear down and re-init the WebGL engine
+    // each render. syncFacelets is a mount-time option (init only).
   }, [appendRecentMove, order, puzzleKey, debouncedResize, connectSmartCube]);
 
   // ── Controls ─────────────────────────────────────────────────────────────

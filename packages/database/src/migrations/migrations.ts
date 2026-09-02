@@ -1146,4 +1146,136 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '032_remove_sessions_puzzle_type',
+    description: 'Drop sessions.puzzle_type: the column is legacy metadata (ADR-002-era COPY of the per-solve field) that no code reads or filters on — a session can hold solves of several puzzles (per-solve puzzle_type is the source of truth), and the stale column is wrong in most rows. sessions and solves are rebuilt with data preserved so solves\' FK keeps pointing at the final sessions table (SQLite RENAME rewrites the FK to the legacy name; the 026/027 ORDER MATTERS lesson). Zero data loss: every solve row is copied byte-for-byte; sessions merely lose the unused column.',
+    sql: `
+      -- ── sessions ─────────────────────────────────────────────────────
+      DROP INDEX IF EXISTS idx_sessions_created_at;
+      DROP INDEX IF EXISTS idx_sessions_is_demo;
+
+      ALTER TABLE sessions RENAME TO sessions_no_puzzle_legacy;
+
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        is_demo INTEGER NOT NULL DEFAULT 0
+      );
+
+      INSERT INTO sessions (id, name, created_at, updated_at, is_demo)
+        SELECT id, name, created_at, updated_at, is_demo
+        FROM sessions_no_puzzle_legacy;
+
+      -- Do NOT drop the legacy sessions table yet: the solves table still
+      -- references it (the RENAME above rewrote the FK). Dropping it here
+      -- would fire the solves FK's ON DELETE CASCADE and delete every solve.
+      -- It is dropped at the very end, after solves has been rebuilt.
+      CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions(created_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_is_demo ON sessions(is_demo);
+
+      -- ── solves (rebuilt only to re-point the FK, schema unchanged) ────
+      DROP INDEX IF EXISTS idx_solves_session_id;
+      DROP INDEX IF EXISTS idx_solves_timestamp;
+      DROP INDEX IF EXISTS idx_solves_is_demo;
+
+      ALTER TABLE solves RENAME TO solves_no_puzzle_legacy;
+
+      CREATE TABLE IF NOT EXISTS solves (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        time_ms INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        scramble TEXT NOT NULL DEFAULT '',
+        penalty TEXT NOT NULL DEFAULT 'none' CHECK (penalty IN ('none', '+2', 'dnf', 'DNF')),
+        method TEXT,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK (source IN ('smart', 'manual', 'virtual')),
+        note TEXT,
+        moves TEXT NOT NULL DEFAULT '[]',
+        orientation_timeline TEXT,
+        analysis_engine_version TEXT,
+        analysis TEXT,
+        puzzle_type TEXT NOT NULL DEFAULT '333' CHECK (puzzle_type IN (${WCA_CODE_LIST_SQL})),
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+
+      -- Byte-for-byte copy: every solve column is preserved unchanged
+      -- (including per-solve puzzle_type — the real source of truth).
+      INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at)
+        SELECT id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at
+        FROM solves_no_puzzle_legacy;
+
+      DROP TABLE IF EXISTS solves_no_puzzle_legacy;
+
+      -- Now safe: solves no longer references the legacy sessions table, so
+      -- this DROP cannot cascade into any surviving data.
+      DROP TABLE IF EXISTS sessions_no_puzzle_legacy;
+
+      CREATE INDEX IF NOT EXISTS idx_solves_session_id ON solves(session_id);
+      CREATE INDEX IF NOT EXISTS idx_solves_timestamp ON solves(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_solves_is_demo ON solves(is_demo);
+
+      -- Triggers do NOT survive ALTER TABLE RENAME (SQLite re-points them at
+      -- the legacy table), so every trigger on the two rebuilt tables is
+      -- re-created here, using the latest versions from migrations 028/031
+      -- (DROP IF EXISTS + CREATE forces the current shape).
+
+      -- ── Tombstone triggers (031: ms precision, MAX(wall, updated_at+1)) ──
+      DROP TRIGGER IF EXISTS trg_tombstone_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_solves
+      AFTER DELETE ON solves
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'solves',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_sessions
+      AFTER DELETE ON sessions
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'sessions',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      -- ── Dirty flags (028: any write marks the sync engine dirty) ──────
+      DROP TRIGGER IF EXISTS trg_dirty_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves AFTER INSERT ON solves BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_solves_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves_upd AFTER UPDATE ON solves BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions AFTER INSERT ON sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_sessions_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions_upd AFTER UPDATE ON sessions BEGIN
+        INSERT OR REPLACE INTO app_meta (key, value) VALUES ('sync_dirty', '1');
+      END;
+    `,
+  },
 ];

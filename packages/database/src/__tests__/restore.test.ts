@@ -40,15 +40,20 @@ describe('restoreLegacyData — v1 → v2 restore statements', () => {
     expect(RESTORE_SOLVES_SQL).toContain('* 86400000');
   });
 
-  it('converts legacy puzzle_type to WCA codes (ADR-002) and defaults missing values to 333', () => {
+  it('converts legacy solve puzzle_type to WCA codes (ADR-002) and defaults missing values to 333', () => {
     // Restore runs AFTER migrations, so restored rows must satisfy the
-    // post-027 CHECK (WCA codes only). Every restore path wraps puzzle_type
-    // in the CASE that maps '3x3x3'/'3x3' → '333' and '2x2x2'/'2x2' → '222'.
-    expect(RESTORE_SESSIONS_SQL).toContain("COALESCE(puzzle_type, '3x3x3')");
+    // post-027 CHECK (WCA codes only). Solves restore keeps the CASE that
+    // maps '3x3x3'/'3x3' → '333' and '2x2x2'/'2x2' → '222'; sessions restore
+    // no longer carries puzzle_type at all (per-solve field only, migration
+    // 032), so it must not reference the column anymore.
     expect(RESTORE_SOLVES_SQL).toContain("COALESCE(puzzle_type, '3x3x3')");
-    for (const sql of [RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL]) {
+    expect(RESTORE_SOLVES_V2_SNAPSHOT_SQL).toContain('puzzle_type');
+    for (const sql of [RESTORE_SOLVES_SQL, RESTORE_SOLVES_V2_SNAPSHOT_SQL]) {
       expect(sql).toMatch(/'3x3x3', '3x3'\) THEN '333'/);
       expect(sql).toMatch(/'2x2x2', '2x2'\) THEN '222'/);
+    }
+    for (const sql of [RESTORE_SESSIONS_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_SQL]) {
+      expect(sql).not.toContain('puzzle_type');
     }
     expect(RESTORE_SESSIONS_SQL).toContain('COALESCE(is_demo, 0)');
     expect(RESTORE_SOLVES_SQL).toContain('COALESCE(is_demo, 0)');

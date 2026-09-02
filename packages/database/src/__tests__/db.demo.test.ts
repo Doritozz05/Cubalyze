@@ -66,7 +66,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
 });
 
 describe('SessionsRepository — demo session isolation (is_demo)', () => {
-  const baseSession = { id: 'ses1', name: 'Main', puzzleType: '333', createdAt: 1767225600000, updatedAt: 1767225600000 };
+  const baseSession = { id: 'ses1', name: 'Main', createdAt: 1767225600000, updatedAt: 1767225600000 };
 
   it('insert without options binds is_demo = 0', async () => {
     const db = mockDb();
@@ -74,8 +74,8 @@ describe('SessionsRepository — demo session isolation (is_demo)', () => {
     await repo.insert({ ...baseSession });
     const call = db.mock.calls[0];
     expect(call[0]).toContain('is_demo');
-    // Column order: id, name, puzzle_type, created_at, updated_at, is_demo
-    expect((call[1] as unknown[])[5]).toBe(0);
+    // Column order: id, name, created_at, updated_at, is_demo
+    expect((call[1] as unknown[])[4]).toBe(0);
   });
 
   it('insert with { isDemo: true } binds is_demo = 1', async () => {
@@ -83,12 +83,12 @@ describe('SessionsRepository — demo session isolation (is_demo)', () => {
     const repo = new SessionsRepository(db);
     await repo.insert({ ...baseSession }, { isDemo: true });
     const call = db.mock.calls[0];
-    expect((call[1] as unknown[])[5]).toBe(1);
+    expect((call[1] as unknown[])[4]).toBe(1);
   });
 
   it('findAllNonDemo filters out demo sessions', async () => {
     const db = mockDb([
-      { id: 'ses1', name: 'Main', puzzle_type: '333', created_at: '2026-01-01', updated_at: '2026-01-01' },
+      { id: 'ses1', name: 'Main', created_at: '2026-01-01', updated_at: '2026-01-01' },
     ]);
     const repo = new SessionsRepository(db);
     const sessions = await repo.findAllNonDemo();

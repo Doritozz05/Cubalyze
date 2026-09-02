@@ -43,11 +43,10 @@ const PUZZLE_TYPE = (col: string) => `CASE
 
 /** Copy `_backup_v1_sessions` → `sessions` (sessions first: solves FK depends on it). */
 export const RESTORE_SESSIONS_SQL = `
-  INSERT OR IGNORE INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo)
+  INSERT OR IGNORE INTO sessions (id, name, created_at, updated_at, is_demo)
   SELECT
     id,
     name,
-    ${PUZZLE_TYPE("COALESCE(puzzle_type, '3x3x3')")},
     ${ISO_MS('created_at')},
     ${ISO_MS('updated_at')},
     COALESCE(is_demo, 0)
@@ -112,11 +111,10 @@ export const RESTORE_SOLVES_V2_SNAPSHOT_SQL = `
 
 /** Copy a v2-shaped `_backup_v1_sessions` snapshot straight across (no conversion). */
 export const RESTORE_SESSIONS_V2_SNAPSHOT_SQL = `
-  INSERT OR IGNORE INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo)
+  INSERT OR IGNORE INTO sessions (id, name, created_at, updated_at, is_demo)
   SELECT
     id,
     name,
-    ${PUZZLE_TYPE('puzzle_type')},
     created_at,
     updated_at,
     is_demo

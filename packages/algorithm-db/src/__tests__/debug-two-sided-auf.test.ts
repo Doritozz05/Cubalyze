@@ -64,13 +64,9 @@ describe('solve #2286 — exact frame/PLL investigation', () => {
         if (sig === pllSig(ja, 'D')) rows.push(`${frame || 'id'} + ${auf || 'id'}`);
       }
     }
-    // eslint-disable-next-line no-console
     console.log('exact conjugated observed:', stateKey(observed));
-    // eslint-disable-next-line no-console
     console.log('catalog Ja:', stateKey(ja));
-    // eslint-disable-next-line no-console
     console.log('Ja signature:', pllSig(ja, 'D'));
-    // eslint-disable-next-line no-console
     console.log('matching frame/AUF combinations:', rows);
 
     // The source reconstruction includes a trailing U' after PLL, so the
