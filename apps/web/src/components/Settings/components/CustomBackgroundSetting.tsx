@@ -47,6 +47,8 @@ export function CustomBackgroundSetting() {
   const setTimerBackgroundOverlay = useStore(preferencesStore, (s) => s.setTimerBackgroundOverlay);
   const timerBackgroundAllViews = useStore(preferencesStore, (s) => s.timerBackgroundAllViews);
   const setTimerBackgroundAllViews = useStore(preferencesStore, (s) => s.setTimerBackgroundAllViews);
+  const timerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.timerBackgroundAlwaysAnimate);
+  const setTimerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.setTimerBackgroundAlwaysAnimate);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
@@ -393,6 +395,24 @@ export function CustomBackgroundSetting() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Always animate (only visible for video or gif, above the experimental toggle) */}
+            {(mediaType === 'video' || mediaType === 'gif') && (
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-medium text-ink">
+                    {t('appearance.backgroundAlwaysAnimate')}
+                  </span>
+                  <span className="text-[0.72rem] text-ink-3 leading-4">
+                    {t('appearance.backgroundAlwaysAnimateHint')}
+                  </span>
+                </div>
+                <Switch
+                  checked={timerBackgroundAlwaysAnimate}
+                  onCheckedChange={setTimerBackgroundAlwaysAnimate}
+                />
+              </div>
+            )}
 
             {/* Experimental: Background on all views */}
             <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">

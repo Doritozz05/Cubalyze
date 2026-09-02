@@ -18,6 +18,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
   const timerBackgroundFit = useStore(preferencesStore, (s) => s.timerBackgroundFit);
   const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
   const timerBackgroundAllViews = useStore(preferencesStore, (s) => s.timerBackgroundAllViews);
+  const timerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.timerBackgroundAlwaysAnimate);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
@@ -26,25 +27,28 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
   const animationKey = useBackgroundMediaStore((s) => s.animationKey);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const effectiveIsAnimating = timerBackgroundAlwaysAnimate || isAnimating;
 
   // Synchronize HTML5 video element playback with the timer animation state
   useEffect(() => {
     const video = videoRef.current;
     if (!video || mediaType !== "video") return;
 
-    if (isAnimating) {
-      video.currentTime = 0;
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.debug("[BackgroundLayer] Video autoplay prevented:", err);
-        });
+    if (effectiveIsAnimating) {
+      if (video.paused) {
+        video.currentTime = 0;
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.debug("[BackgroundLayer] Video autoplay prevented:", err);
+          });
+        }
       }
     } else {
       video.pause();
       video.currentTime = 0;
     }
-  }, [isAnimating, mediaType, animationKey]);
+  }, [effectiveIsAnimating, mediaType, animationKey]);
 
   const effectiveMediaUrl = mediaUrl || (timerBackgroundImage?.startsWith("data:") ? timerBackgroundImage : null);
   const isVisible =
@@ -76,10 +80,10 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
         />
       )}
 
-      {/* 2. Animated GIF (static poster when idle/stopped, animated when inspecting/solving) */}
+      {/* 2. Animated GIF (static poster when idle/stopped, animated when inspecting/solving or alwaysAnimate) */}
       {mediaType === "gif" && (
         <>
-          {isAnimating ? (
+          {effectiveIsAnimating ? (
             <img
               key={`gif-${animationKey}`}
               src={effectiveMediaUrl}

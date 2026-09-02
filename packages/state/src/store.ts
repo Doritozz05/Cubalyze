@@ -189,6 +189,10 @@ export interface PreferencesState {
   timerBackgroundAllViews: boolean;
   setTimerBackgroundAllViews: (value: boolean) => void;
 
+  /** When true and background is video or GIF, animation loops continuously at all times instead of only during inspection and solve. Default false. */
+  timerBackgroundAlwaysAnimate: boolean;
+  setTimerBackgroundAlwaysAnimate: (value: boolean) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -292,6 +296,7 @@ const DEFAULT_VALUES = {
   timerBackgroundFit: 'cover' as const,
   timerBackgroundOverlay: 0,
   timerBackgroundAllViews: false,
+  timerBackgroundAlwaysAnimate: false,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -350,6 +355,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundFit: (timerBackgroundFit) => set({ timerBackgroundFit }),
         setTimerBackgroundOverlay: (timerBackgroundOverlay) => set({ timerBackgroundOverlay }),
         setTimerBackgroundAllViews: (timerBackgroundAllViews) => set({ timerBackgroundAllViews }),
+        setTimerBackgroundAlwaysAnimate: (timerBackgroundAlwaysAnimate) => set({ timerBackgroundAlwaysAnimate }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -400,6 +406,7 @@ export const createPreferencesStore = () => {
           timerBackgroundFit: state.timerBackgroundFit,
           timerBackgroundOverlay: state.timerBackgroundOverlay,
           timerBackgroundAllViews: state.timerBackgroundAllViews,
+          timerBackgroundAlwaysAnimate: state.timerBackgroundAlwaysAnimate,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

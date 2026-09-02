@@ -1,11 +1,11 @@
 # Lista maestra de commits — CubeForge
 
 > Generado automáticamente el 2026-09-02 por `scripts/generate-changelog.cjs`.
-> **1104 commits** · 2026-07-12 → 2026-09-02 · repositorio undefined
+> **1105 commits** · 2026-07-12 → 2026-09-02 · repositorio undefined
 
 ## Metodología
 
-- **Total real de commits: 1104**, verificado con `git rev-list --count HEAD` (contaba 1.100 al inicio del análisis; entró un commit nuevo (2739e3c6, TechnicalSection) durante la sesión, por lo que el número verificado final es 1104). Las cifras "1000" y "1080" que circularon antes no coinciden con el valor real del repositorio; este documento usa el valor verificado.
+- **Total real de commits: 1105**, verificado con `git rev-list --count HEAD` (contaba 1.100 al inicio del análisis; entró un commit nuevo (2739e3c6, TechnicalSection) durante la sesión, por lo que el número verificado final es 1105). Las cifras "1000" y "1080" que circularon antes no coinciden con el valor real del repositorio; este documento usa el valor verificado.
 - Cada commit se revisó en orden cronológico (del más antiguo al más reciente). Se registran hash, fecha exacta, mensaje original y archivos tocados.
 - **Categoría:** si el mensaje sigue Conventional Commits (convención adoptada en las fases posteriores), el prefijo es la categoría. Si el mensaje es genérico ("fix", "fixes", "Update X.ts", …), la categoría se infiere de los archivos modificados con una heurística conservadora (solo markdown → `docs`; solo tests → `test`; solo manifests → `chore`). Sin evidencia suficiente se marca **sin clasificar** (`other`) — nunca se adivina.
 - Las descripciones por versión (resúmenes y destacados) están respaldadas por los mensajes y archivos de sus commits, los documentos del repositorio (`docs/`, PRD, roadmap, auditorías) y los PR fusionados (#4–#30).
@@ -93,7 +93,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | v0.8.8 | 2026-08-30 → 2026-08-30 | 7 | Professional Pause Analytics & Case Intelligence / Analítica de pausas e inteligencia de casos |
 | v0.8.9 | 2026-08-31 → 2026-08-31 | 1 | Puzzle Roulette & Reconstruction Table Polish / Ruleta de puzzles y tablas de reconstrucción |
 | v0.9.0 | 2026-09-01 → 2026-09-01 | 1 | 3D Pyraminx Engine & Face Simulator / Motor 3D de Pyraminx y simulador |
-| v0.9.1 ⭐ (actual) | 2026-09-02 → 2026-09-02 | 17 | Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog |
+| v0.9.1 ⭐ (actual) | 2026-09-02 → 2026-09-02 | 18 | Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog |
 
 ## Changelog completo
 
@@ -2015,7 +2015,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 |---|---|---|---|---|
 | 2026-09-01 | [`19fdcce`](https://github.com/Doritozz05/Cubeforge/commit/19fdcce) | feat | feat(multi-puzzle): 3D Pyraminx engine, virtual simulator and drag interactions (#27) | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/components/Layout/AppShell.tsx · apps/web/src/hooks/__tests__/pyraminxSessionCore.test.ts · … (57 en total) |
 
-### v0.9.1 (actual) — Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog — 2026-09-02 → 2026-09-02 — 17 commits
+### v0.9.1 (actual) — Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog — 2026-09-02 → 2026-09-02 — 18 commits
 
 **Resumen:** Modo de entrenamiento continuo Infinite F2L, radar universal de habilidades en 6 ejes, navegador móvil y changelog interactivo.
 
@@ -2026,6 +2026,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 - Tactile single-collapsible changelog accordion closing previous releases on open with exact dates and commit links.
 - Looping video & animated GIF backgrounds (<10s) with IndexedDB persistence, resting as a static frame and looping during inspection and solve.
 - Experimental 'Background on all views' setting allowing custom backgrounds across all tabs (Insights, Algorithms, Training, Skill Tree, Profile).
+- 'Always animate' toggle for video and GIF backgrounds to run continuously without waiting for inspection or solve.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -2046,6 +2047,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-09-02 | [`b81dae8`](https://github.com/Doritozz05/Cubeforge/commit/b81dae8) | feat | feat(settings): redesign changelog with clean flat accordion and exact dates | apps/web/package.json · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/sections/ChangelogSection.tsx · apps/web/src/components/Settings/settings.constants.ts · … (11 en total) |
 | 2026-09-02 | [`80dc181`](https://github.com/Doritozz05/Cubeforge/commit/80dc181) | feat | feat(settings): refine procedural changelog accordion, dynamic credits version and v0.9.1 semver sync | apps/web/package.json · apps/web/src/components/Settings/sections/ChangelogSection.tsx · apps/web/src/components/Settings/sections/CreditsSection.tsx · apps/web/src/data/changelog/changelog.json · … (8 en total) |
 | 2026-09-02 | [`4a19eff`](https://github.com/Doritozz05/Cubeforge/commit/4a19eff) | feat | feat(timer): support looping video and animated GIF backgrounds synced with inspection and solving | apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/BackgroundLayer.tsx · apps/web/src/components/Settings/components/CustomBackgroundSetting.tsx · apps/web/src/data/changelog/changelog.json · … (14 en total) |
+| 2026-09-02 | [`3c0c18e`](https://github.com/Doritozz05/Cubeforge/commit/3c0c18e) | feat | feat(settings): add experimental setting to display background across all views | apps/web/src/components/Layout/BackgroundLayer.tsx · apps/web/src/components/Settings/components/CustomBackgroundSetting.tsx · apps/web/src/data/changelog/changelog.json · apps/web/src/i18n/locales/en.json · … (9 en total) |
 
 ---
 

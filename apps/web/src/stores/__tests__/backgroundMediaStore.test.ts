@@ -63,4 +63,14 @@ describe("useBackgroundMediaStore", () => {
     preferencesStore.getState().setTimerBackgroundAllViews(false);
     expect(preferencesStore.getState().timerBackgroundAllViews).toBe(false);
   });
+
+  it("defaults timerBackgroundAlwaysAnimate to false and allows toggling", () => {
+    expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(false);
+
+    preferencesStore.getState().setTimerBackgroundAlwaysAnimate(true);
+    expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(true);
+
+    preferencesStore.getState().setTimerBackgroundAlwaysAnimate(false);
+    expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(false);
+  });
 });

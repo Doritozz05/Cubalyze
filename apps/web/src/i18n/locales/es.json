@@ -232,6 +232,8 @@
       "fitCover": "Cubrir (Cover)",
       "fitContain": "Ajustar (Contain)",
       "fitTile": "Mosaico (Tile)",
+      "backgroundAlwaysAnimate": "Animar siempre",
+      "backgroundAlwaysAnimateHint": "Reproduce la animación en bucle continuo todo el tiempo, en lugar de mantenerse fija y animar solo durante la inspección y resolución.",
       "backgroundAllViews": "Fondo en todas las vistas",
       "backgroundAllViewsHint": "Muestra el fondo personalizado en todas las pestañas de la aplicación (Insights, Algoritmos, Entrenamiento, Árbol, Perfil) y no solo en el Cronómetro y Cubo Virtual.",
       "experimentalBadge": "EXPERIMENTAL"

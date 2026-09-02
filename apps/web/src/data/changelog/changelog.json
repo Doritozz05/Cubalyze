@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-02T14:20:21.231Z",
-  "totalCommits": 1104,
+  "generatedAt": "2026-09-02T14:24:12.612Z",
+  "totalCommits": 1105,
   "currentVersion": "0.9.1",
   "versions": [
     {
@@ -2329,6 +2329,11 @@
           "type": "new",
           "en": "Experimental 'Background on all views' setting allowing custom backgrounds across all tabs (Insights, Algorithms, Training, Skill Tree, Profile).",
           "es": "Ajuste experimental 'Fondo en todas las vistas' que permite mostrar el fondo personalizado en todas las pestañas (Insights, Algoritmos, Entrenamiento, Árbol, Perfil)."
+        },
+        {
+          "type": "new",
+          "en": "'Always animate' toggle for video and GIF backgrounds to run continuously without waiting for inspection or solve.",
+          "es": "Interruptor 'Animar siempre' para fondos en vídeo y GIF que permite animación continua sin esperar a la inspección o resolución."
         }
       ],
       "date": "2026-09-02"

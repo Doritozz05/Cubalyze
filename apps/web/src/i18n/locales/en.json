@@ -232,6 +232,8 @@
       "fitCover": "Cover",
       "fitContain": "Contain",
       "fitTile": "Tile",
+      "backgroundAlwaysAnimate": "Always animate",
+      "backgroundAlwaysAnimateHint": "Plays continuous animation loop at all times, rather than staying static and only animating during inspection and solve.",
       "backgroundAllViews": "Background on all views",
       "backgroundAllViewsHint": "Display custom background across all tabs in the app (Insights, Algorithms, Training, Skill Tree, Profile) instead of only Timer and Virtual Cube.",
       "experimentalBadge": "EXPERIMENTAL"
