@@ -247,6 +247,9 @@ export function MobileMethodNavigator({
       </button>
 
       <TouchPanel open={open} onOpenChange={setOpen} title={panelTitle}>
+        {/* The drawer portals to document.body, so the flat-button zone must
+            live INSIDE it — a zone on this root never reaches the sheet rows. */}
+        <div data-context-zone="algorithms-nav">
         {/* Instant search — jump straight to any subset */}
         <div className="relative mb-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
@@ -356,6 +359,7 @@ export function MobileMethodNavigator({
             </div>
           </>
         )}
+        </div>
       </TouchPanel>
     </div>
   );

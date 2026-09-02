@@ -302,6 +302,7 @@ export function TimerContainer({
       {/* Quick Penalty Action Bar for Last Solve (Only for solves completed in the current session) */}
       {lastTime !== null && lastSolve && onUpdatePenalty && (phase === "stopped" || phase === "idle") && (
         <div
+          data-context-zone="timer-actions"
           className="mt-3 flex items-center gap-1 rounded-full border border-line bg-surface px-1.5 py-1 shadow-2xs transition-all duration-200 z-10 max-lg:px-2.5 max-lg:py-1.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}

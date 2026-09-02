@@ -67,7 +67,9 @@ export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as 
  * Buttons NEVER get backdrop-filter under glass (nested blur → milky);
  * panels nested inside glass panels instead get a standard HALF-POWER
  * liquid (--glass-nested-bg + --glass-nested-blur, engine rule in
- * index.css) so inner surfaces read as depth, not dry fills.
+ * index.css) so inner surfaces read as depth, not dry fills. Toasts
+ * (sonner, [data-sonner-toast]) join the panel rule, so they render
+ * frosted like every other floating panel.
  * Primary / destructive / semantic state buttons keep their solid fills.
  * The dock, the context menu, the session switcher, the Settings /
  * Explorer sidebar tabs, the Training method rail and every X/cross
@@ -76,8 +78,11 @@ export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as 
  * zeroes their rest fill inside [data-context-zone="dock"],
  * [data-context-zone="context-menu"], [data-context-zone="session"],
  * [data-context-zone="settings-sidebar"],
- * [data-context-zone="explorer-sidebar"] and
- * [data-context-zone="training-methods"], plus a :has() glyph rule
+ * [data-context-zone="explorer-sidebar"],
+ * [data-context-zone="training-methods"],
+ * [data-context-zone="algorithms-nav"],
+ * [data-context-zone="mobile-header"] and
+ * [data-context-zone="timer-actions"], plus a :has() glyph rule
  * for cross buttons (lucide X fingerprint) and the shadcn dialog-close
  * slot (only the hover chip remains).
  */

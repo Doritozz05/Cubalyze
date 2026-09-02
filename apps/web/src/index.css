@@ -225,7 +225,6 @@
   --glass-border: rgba(0, 0, 0, calc(0.04 + var(--glass-opacity, 0.65) * 0.06));
   --glass-blur: calc(10px + var(--glass-opacity, 0.65) * 14px);
   --glass-saturate: 180%;
-  --glass-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
   --glass-scrollbar-thumb: rgba(0, 0, 0, calc(0.14 + var(--glass-opacity, 0.65) * 0.10));
   --glass-scrollbar-thumb-hover: rgba(0, 0, 0, calc(0.24 + var(--glass-opacity, 0.65) * 0.14));
   /* Buttons / chips: neutral fills become translucent frosted chips; hover
@@ -308,7 +307,6 @@
   --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-opacity, 0.65) * 0.08));
   --glass-blur: calc(12px + var(--glass-opacity, 0.65) * 16px);
   --glass-saturate: 190%;
-  --glass-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.45);
   --glass-scrollbar-thumb: rgba(255, 255, 255, calc(0.16 + var(--glass-opacity, 0.65) * 0.12));
   --glass-scrollbar-thumb-hover: rgba(255, 255, 255, calc(0.28 + var(--glass-opacity, 0.65) * 0.16));
   /* Buttons / chips: brighter frosted fill for the low-glare canvas; hover
@@ -368,6 +366,7 @@ html.liquid-glass [data-slot="sidebar"],
 html.liquid-glass aside[class*="bg-sidebar"],
 html.liquid-glass .liquid-glass-panel,
 html.liquid-glass [data-glass-panel],
+html.liquid-glass [data-sonner-toast],
 html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
@@ -376,7 +375,6 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow);
 }
 
 /* Header: only mobile touch bar gets glass; desktop floats the dock without a background */
@@ -386,7 +384,6 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     border-color: var(--glass-border) !important;
-    box-shadow: var(--glass-shadow);
   }
 }
 
@@ -474,8 +471,9 @@ html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) 
    items, the session switcher, the sidebar tab lists of Settings and
    both Explorers, and the Training method rail — see WidgetDock.tsx,
    ContextMenu/ContextMenu.tsx, SessionPiece.tsx, Header.tsx,
-   SettingsSidebar.tsx, DockExplorer.tsx, WidgetExplorerSidebar.tsx and
-   TrainingDashboard.tsx): their buttons never carry a background at
+   SettingsSidebar.tsx, DockExplorer.tsx, WidgetExplorerSidebar.tsx,
+   TrainingDashboard.tsx and TimerContainer.tsx — the timer's +2 / DNF /
+   comment pill): their buttons never carry a background at
    rest. The remap above keys off [class*="bg-surface"], which also
    catches hover-only utilities (hover:bg-surface) — so every pill /
    menu item / tab would render as a persistent chip. Zero the rest
@@ -487,8 +485,21 @@ html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-sur
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="algorithms-nav"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"] {
   background-color: transparent !important;
+}
+
+/* Mobile header: the center puzzle selector sits on the glass touch bar,
+   and its shadcn select base ships a 1px border that the remap above
+   paints with the glass hairline — a redundant rounded frame around an
+   otherwise flat, text-only selector. Zero it inside the mobile-header
+   zone only; the desktop puzzle selectors (dock tray / settings) are
+   untouched. */
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"] {
+  border-color: transparent !important;
 }
 
 /* ── X / cross buttons: icon-only closers stay flat ──────────────────
@@ -523,9 +534,11 @@ html.liquid-glass [data-slot="dialog-close"] {
    A panel (bg-surface/bg-surface-2 + border + rounded) nested inside
    another glass panel gets a STANDARD half-strength frosted treatment:
    --glass-nested-bg (more see-through than the base glass) + half the
-   blur + saturated hairline shadow. This replaces the old dry nested
-   fill / milky blur-over-blur trade-off with a consistent "inner
-   surface" depth cue (cards inside dialogs, widgets and panels).
+   blur. Glass panels carry NO drop shadows anywhere (flat by law) —
+   depth comes from blur + hairline only. This replaces the old dry
+   nested fill / milky blur-over-blur trade-off with a consistent
+   "inner surface" depth cue (cards inside dialogs, widgets and
+   panels).
    Buttons deliberately KEEP no backdrop-filter (tiny hot-spots, still
    milky — nudge only the alpha via --glass-btn-bg). */
 html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"],
@@ -537,7 +550,6 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   border-color: var(--glass-border) !important;
-  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.10) !important;
 }
 
 /* ── Skeletons: liquid frosted placeholders ───────────────────────────
@@ -556,7 +568,6 @@ html.liquid-glass .grid[class*="bg-line"] {
   background-color: var(--glass-border) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  box-shadow: var(--glass-shadow);
 }
 
 html.liquid-glass .grid[class*="bg-line"] > div {
@@ -587,7 +598,6 @@ html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
 html.liquid-glass [data-slot="dialog-content"] div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass [data-slot="drawer-content"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
   background-color: var(--glass-bg-subtle) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Liquid glass scrollbars — translucent frosted pills with refraction border */
