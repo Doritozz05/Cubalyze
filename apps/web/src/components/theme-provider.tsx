@@ -8,6 +8,7 @@ import { preferencesStore } from "@cubeforge/state";
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
+  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const { theme: nextTheme, setTheme } = useTheme();
 
   React.useEffect(() => {
@@ -22,11 +23,13 @@ function ThemeSync() {
     if (liquidGlass) {
       root.classList.add("liquid-glass");
       root.setAttribute("data-liquid-glass", "true");
+      root.style.setProperty("--glass-opacity", `${liquidGlassOpacity / 100}`);
     } else {
       root.classList.remove("liquid-glass");
       root.removeAttribute("data-liquid-glass");
+      root.style.removeProperty("--glass-opacity");
     }
-  }, [liquidGlass]);
+  }, [liquidGlass, liquidGlassOpacity]);
 
   return null;
 }

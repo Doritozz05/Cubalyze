@@ -300,10 +300,17 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
     );
   }, [engineRef, order]);
 
+  /**
+   * Default viewing distance for the virtual simulator cube.
+   * Scaled out ~2 mouse wheel notches (from standard 7 to 8.5) so the cube
+   * sits comfortably in the stage without dominating the entire viewport.
+   */
+  const VIRTUAL_CUBE_DEFAULT_DISTANCE = 8.5;
+
   /** Return the camera to the locked isometric view (same as the algorithms
    *  3D: theta/phi = 30°, tilted right for the best perspective). */
   const resetCamera = useCallback(() => {
-    engineRef.current?.setIsometricView();
+    engineRef.current?.setIsometricView(false, VIRTUAL_CUBE_DEFAULT_DISTANCE);
   }, [engineRef]);
 
   // Warm the turn-sound sample pool as soon as the view mounts — BEFORE the
@@ -338,7 +345,7 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
   // Lock the initial camera to the isometric view once the engine is ready.
   useEffect(() => {
     if (!isReady) return;
-    engineRef.current?.setIsometricView();
+    engineRef.current?.setIsometricView(false, VIRTUAL_CUBE_DEFAULT_DISTANCE);
   }, [isReady, engineRef]);
 
   // Mount: once ready, tell the validator we start from a solved cube (its

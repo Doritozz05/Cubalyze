@@ -238,7 +238,9 @@
       "backgroundAllViewsHint": "Display custom background across all tabs in the app (Insights, Algorithms, Training, Skill Tree, Profile) instead of only Timer and Virtual Cube.",
       "experimentalBadge": "EXPERIMENTAL",
       "liquidGlass": "Liquid Glass effect",
-      "liquidGlassHint": "Transforms UI panels, cards, and dialogs into translucent frosted glass surfaces with backdrop blur and specular highlights."
+      "liquidGlassHint": "Transforms UI panels, cards, and navigation bars into translucent frosted glass surfaces with backdrop blur and specular highlights.",
+      "liquidGlassOpacity": "Glass Opacity",
+      "liquidGlassOpacityHint": "Adjust the density and translucency of liquid glass surfaces."
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",

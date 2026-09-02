@@ -524,8 +524,18 @@ export class PyraminxEngine {
     this.requestRender();
   }
 
-  public setIsometricView(smooth = false): Promise<void> | void {
-    return this.resetCamera(smooth);
+  public setIsometricView(smooth = false, radius?: number): Promise<void> | void {
+    if (!this.sceneManager) return;
+    const view = PyraminxEngine.CANONICAL_ISOMETRIC_VIEW;
+    const r = radius ?? view.radius;
+    if (smooth) {
+      return this.animateCameraTo(view.theta, view.phi, r);
+    }
+    this.cameraMomentum = null;
+    this.cameraMomentumState = 'idle';
+    this.finishCameraAnim();
+    this.sceneManager.setOrbitAngles(view.theta, view.phi, r);
+    this.requestRender();
   }
 
   private animateCameraTo(

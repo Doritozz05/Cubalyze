@@ -99,8 +99,8 @@ export class EngineWorkerAPI {
     return this.engine?.resetCamera(smooth);
   }
 
-  public setIsometricView(smooth = false) {
-    return this.engine?.setIsometricView(smooth);
+  public setIsometricView(smooth = false, radius?: number) {
+    return this.engine?.setIsometricView(smooth, radius);
   }
 
   public animateCameraTo(theta: number, phi: number, radius?: number, durationMs?: number) {

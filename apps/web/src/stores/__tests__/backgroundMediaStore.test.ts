@@ -83,4 +83,11 @@ describe("useBackgroundMediaStore", () => {
     preferencesStore.getState().setLiquidGlass(false);
     expect(preferencesStore.getState().liquidGlass).toBe(false);
   });
+
+  it("defaults liquidGlassOpacity to 65 and allows updating", () => {
+    expect(preferencesStore.getState().liquidGlassOpacity).toBe(65);
+
+    preferencesStore.getState().setLiquidGlassOpacity(40);
+    expect(preferencesStore.getState().liquidGlassOpacity).toBe(40);
+  });
 });

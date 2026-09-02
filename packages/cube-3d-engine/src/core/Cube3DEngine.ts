@@ -671,15 +671,15 @@ export class Cube3DEngine {
     };
   }
 
-  public setIsometricView(smooth = false): Promise<void> | void {
+  public setIsometricView(smooth = false, radius = 7): Promise<void> | void {
     if (!this.sceneManager) return;
     if (smooth) {
-      return this.animateCameraTo(Math.PI / 6, Math.PI / 6, 7);
+      return this.animateCameraTo(Math.PI / 6, Math.PI / 6, radius);
     }
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
     this.finishCameraAnim();
-    this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6);
+    this.sceneManager.setOrbitAngles(Math.PI / 6, Math.PI / 6, radius);
     this.requestRender();
   }
 

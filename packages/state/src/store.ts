@@ -197,6 +197,10 @@ export interface PreferencesState {
   liquidGlass: boolean;
   setLiquidGlass: (value: boolean) => void;
 
+  /** Opacity percentage for liquid glass effect (10 - 95, default 65). */
+  liquidGlassOpacity: number;
+  setLiquidGlassOpacity: (value: number) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -302,6 +306,7 @@ const DEFAULT_VALUES = {
   timerBackgroundAllViews: false,
   timerBackgroundAlwaysAnimate: false,
   liquidGlass: false,
+  liquidGlassOpacity: 65,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -362,6 +367,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundAllViews: (timerBackgroundAllViews) => set({ timerBackgroundAllViews }),
         setTimerBackgroundAlwaysAnimate: (timerBackgroundAlwaysAnimate) => set({ timerBackgroundAlwaysAnimate }),
         setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
+        setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -414,6 +420,7 @@ export const createPreferencesStore = () => {
           timerBackgroundAllViews: state.timerBackgroundAllViews,
           timerBackgroundAlwaysAnimate: state.timerBackgroundAlwaysAnimate,
           liquidGlass: state.liquidGlass,
+          liquidGlassOpacity: state.liquidGlassOpacity,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

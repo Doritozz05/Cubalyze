@@ -238,7 +238,9 @@
       "backgroundAllViewsHint": "Muestra el fondo personalizado en todas las pestañas de la aplicación (Insights, Algoritmos, Entrenamiento, Árbol, Perfil) y no solo en el Cronómetro y Cubo Virtual.",
       "experimentalBadge": "EXPERIMENTAL",
       "liquidGlass": "Efecto Liquid Glass (Cristal líquido)",
-      "liquidGlassHint": "Convierte los paneles, tarjetas y ventanas de la interfaz en superficies de cristal translúcido con desenfoque y reflejos."
+      "liquidGlassHint": "Convierte los paneles, tarjetas y barras de navegación en superficies de cristal translúcido con desenfoque y reflejos.",
+      "liquidGlassOpacity": "Opacidad del cristal",
+      "liquidGlassOpacityHint": "Ajusta la densidad o transparencia del cristal líquido."
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",

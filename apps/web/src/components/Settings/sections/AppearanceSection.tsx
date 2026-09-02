@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 
 /**
  * Appearance settings section.
@@ -64,6 +66,8 @@ export function AppearanceSection() {
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
+  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
+  const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
   const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
   const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
   const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
@@ -115,12 +119,49 @@ export function AppearanceSection() {
       />
 
       {/* Liquid Glass UI Panels (Theme visual effect) */}
-      <SettingToggle
-        title={t('appearance.liquidGlass')}
-        description={t('appearance.liquidGlassHint')}
-        checked={liquidGlass}
-        onCheckedChange={setLiquidGlass}
-      />
+      <div className="flex flex-col gap-3.5 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+        <div className="flex items-center justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-[0.85rem] font-medium leading-5 text-ink">
+              {t('appearance.liquidGlass')}
+            </h4>
+            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
+              {t('appearance.liquidGlassHint')}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center">
+            <Switch
+              checked={liquidGlass}
+              onCheckedChange={setLiquidGlass}
+              aria-label={t('appearance.liquidGlass')}
+            />
+          </div>
+        </div>
+
+        {liquidGlass && (
+          <div className="mt-1 flex flex-col gap-2.5 rounded-lg border border-line/60 bg-surface-2/40 p-3.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-ink">
+                {t('appearance.liquidGlassOpacity')}
+              </span>
+              <span className="font-mono text-xs font-semibold text-ink">
+                {liquidGlassOpacity}%
+              </span>
+            </div>
+            <Slider
+              value={[liquidGlassOpacity]}
+              onValueChange={([val]) => setLiquidGlassOpacity(val)}
+              min={15}
+              max={95}
+              step={5}
+              className="w-full"
+            />
+            <p className="text-[0.7rem] text-ink-3">
+              {t('appearance.liquidGlassOpacityHint')}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Header visibility — mobile keeps the simple on/off toggle; desktop
           gets the tri-state selector (always visible / hidden / auto-hide). */}

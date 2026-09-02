@@ -14,7 +14,7 @@ export interface Puzzle3DEngine {
   rotateCamera(dx: number, dy: number): void;
   zoomCamera(deltaY: number): void;
   resetCamera(smooth?: boolean): Promise<void> | void;
-  setIsometricView(smooth?: boolean): Promise<void> | void;
+  setIsometricView(smooth?: boolean, radius?: number): Promise<void> | void;
   setCameraDragActive(active: boolean): void;
 }
 
