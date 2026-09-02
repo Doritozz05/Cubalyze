@@ -5,7 +5,7 @@ import { createCFOPDetector } from '../loaders/lastLayer';
 import { PLL_CASES } from '../../seed/cfop-pll';
 
 const keyOf = (c: CubeState) =>
-  `${Array.from(c.cp as any).join(',')}|${Array.from(c.co as any).join(',')}|${Array.from(c.ep as any).join(',')}|${Array.from(c.eo as any).join(',')}`;
+  `${Array.from(c.cp).join(',')}|${Array.from(c.co).join(',')}|${Array.from(c.ep).join(',')}|${Array.from(c.eo).join(',')}`;
 
 describe('recolorState round-trip', () => {
   it('recolor(scheme) then recolor(inverse scheme) is identity', () => {
@@ -35,7 +35,7 @@ describe('recolorState round-trip', () => {
 
     // Sanity: does the recolored state look like a canonical Ja (cross on D,
     // LL on U)? Check the cross pieces 4-7 occupy some layer.
-    const cp = Array.from(recolored.cp as any) as number[];
+    const cp = Array.from(recolored.cp);
     const crossPos = cp.map((p, i) => (p >= 4 && p <= 7 ? i : -1)).filter((i) => i >= 0);
     console.log('recolored cross-piece positions:', crossPos.join(','));
     const llPos = cp.map((p, i) => (p <= 3 ? i : -1)).filter((i) => i >= 0);
@@ -63,7 +63,7 @@ describe('recolorState round-trip', () => {
         const next = `${cur} ${b}`.trim();
         const c = new CubeState();
         c.applySequence(next);
-        const k = `${Array.from(c.cp as any).join(',')}|${Array.from(c.ep as any).join(',')}`;
+        const k = `${Array.from(c.cp).join(',')}|${Array.from(c.ep).join(',')}`;
         if (seen.has(k)) continue;
         seen.add(k);
         rots.push(next);
@@ -78,7 +78,7 @@ describe('recolorState round-trip', () => {
         ['B', [2, 3, 6, 7]], ['R', [0, 3, 4, 7]], ['L', [1, 2, 5, 6]],
       ];
       for (const [n, pos] of faces) {
-        if (pos.every((p) => (s.cp as any)[p] >= 4 && (s.cp as any)[p] <= 7)) return n;
+        if (pos.every((p) => s.cp[p] >= 4 && s.cp[p] <= 7)) return n;
       }
       return '?';
     };

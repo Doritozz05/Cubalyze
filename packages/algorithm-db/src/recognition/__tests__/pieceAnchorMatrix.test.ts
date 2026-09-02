@@ -45,7 +45,7 @@ const ANCHOR_PIECES = { C: 4, E: 8, crossColor: 'D' as const };
 const ALL_MOVES = ['U', 'U2', "U'", 'D', 'D2', "D'", 'F', 'F2', "F'", 'B', 'B2', "B'", 'R', 'R2', "R'", 'L', 'L2', "L'"];
 
 const keyOf = (s: CubeState) =>
-  `${Array.from(s.cp as any).join(',')}|${Array.from(s.co as any).join(',')}|${Array.from(s.ep as any).join(',')}|${Array.from(s.eo as any).join(',')}`;
+  `${Array.from(s.cp).join(',')}|${Array.from(s.co).join(',')}|${Array.from(s.ep).join(',')}|${Array.from(s.eo).join(',')}`;
 
 /** The canonical move string r m r⁻¹ — the frame-camera reading of the solver's U-turn. */
 function frameAUF(cf: string, move: string): string {
@@ -134,7 +134,7 @@ describe('piece-anchored detection matrix (41 × 6 frames × 4 AUF)', () => {
     // never fire with a wrong answer on this family of inputs.
     let anchored = 0;
     let wrongAnchored = 0;
-    let rescued = 0;
+    let _rescued = 0;
     let wrongFrame = 0;
     let correct = 0;
     let total = 0;
@@ -152,7 +152,7 @@ describe('piece-anchored detection matrix (41 × 6 frames × 4 AUF)', () => {
         anchored++;
         if (!ok) wrongAnchored++;
       } else if (ok) {
-        rescued++;
+        _rescued++;
       } else if (result.confidence === 'exact') {
         wrongFrame++;
       }
