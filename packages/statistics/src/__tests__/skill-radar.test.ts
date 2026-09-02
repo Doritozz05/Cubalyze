@@ -128,8 +128,8 @@ describe("deriveSkillRadarProfile", () => {
         forwardDrift: 0.65,
       },
       rotation: {
-        totalCount: 7,
-        byAxis: { x: 1, y: 6, z: 0 },
+        totalCount: 22,
+        byAxis: { x: 4, y: 16, z: 2 },
         estimatedRotationTimeMs: 2100,
         consecutiveCount: 2,
         byPhase: { Cross: 1, F2L: 5, OLL: 0, PLL: 1 },
@@ -245,4 +245,44 @@ describe("deriveSkillRadarProfile", () => {
     expect(tpsAxis?.score).toBeGreaterThanOrEqual(45); // Permissive: not 0!
     expect(economyAxis?.score).toBeGreaterThanOrEqual(60); // 60 moves has healthy score
   });
+
+  it("gives healthy ergonomics score for smart cube solves with 12-15 rotations (wide moves/regrips)", () => {
+    const smartCubeSolve: SolveMetrics = {
+      solveId: "smart-1",
+      totalTimeMs: 20000,
+      totalMoves: 58,
+      phases: [],
+      tps: { global: 2.9, effective: 3.5, byPhase: {}, peakInstantaneous: 4.8 },
+      pauses: { totalCount: 4, maxDurationMs: 900, avgDurationMs: 600, totalPauseTimeMs: 2400, pauseRatio: 0.12, byPhase: {}, pauses: [] },
+      fluidity: { stdDevMs: 50, coefficientOfVariation: 0.6, byPhase: {}, burstCount: 2, accelerationCount: 1, decelerationCount: 1 },
+      rotation: {
+        totalCount: 14,
+        byAxis: { x: 4, y: 8, z: 2 },
+        estimatedRotationTimeMs: 2800,
+        consecutiveCount: 1,
+        byPhase: {},
+        rotationToMoveRatio: 0.24,
+        redundantRotations: 2,
+      },
+    };
+
+    const profile = deriveSkillRadarProfile(smartCubeSolve);
+    const ergoAxis = profile.axes.find((a) => a.id === "ergonomics");
+
+    expect(ergoAxis?.formattedValue).toBe("14.0");
+    expect(ergoAxis?.score).toBeGreaterThanOrEqual(50); // Not 0!
+  });
+
+  it("rewards descending times (positive progression/warmup) with high consistency score", () => {
+    const s1 = { time: 30000, moves: [] };
+    const s2 = { time: 27000, moves: [] };
+    const s3 = { time: 24000, moves: [] };
+    const s4 = { time: 21000, moves: [] };
+
+    const profile = deriveSkillRadarProfile([s1, s2, s3, s4]);
+    const consistencyAxis = profile.axes.find((a) => a.id === "consistency");
+
+    expect(consistencyAxis?.score).toBeGreaterThanOrEqual(85); // High score for steady improvement!
+  });
 });
+

@@ -19,7 +19,11 @@ import type { SolveMetrics } from "@cubeforge/types";
  * or nothing — so callers can pass `solves` straight through.
  */
 export type TechnicalSolveInput =
-  | { analysis?: SolveMetrics | null }
+  | {
+      analysis?: SolveMetrics | null;
+      time?: number;
+      moves?: import("@cubeforge/types").CubeMoveEvent[];
+    }
   | SolveMetrics
   | null
   | undefined;
@@ -703,7 +707,7 @@ export function deriveSkillRadarProfile(
       { id: "tps", labelKey: "radar.tps", score: 0, rawValue: null, formattedValue: "—", unit: "TPS", benchmark: "> 4.0", status: "balanced" },
       { id: "lookahead", labelKey: "radar.lookahead", score: 0, rawValue: null, formattedValue: "—", unit: "% pausas", benchmark: "< 30%", status: "balanced" },
       { id: "economy", labelKey: "radar.economy", score: 0, rawValue: null, formattedValue: "—", unit: "movs", benchmark: "< 65", status: "balanced" },
-      { id: "ergonomics", labelKey: "radar.ergonomics", score: 0, rawValue: null, formattedValue: "—", unit: "rot", benchmark: "≤ 3.0", status: "balanced" },
+      { id: "ergonomics", labelKey: "radar.ergonomics", score: 0, rawValue: null, formattedValue: "—", unit: "rot", benchmark: "≤ 8.0", status: "balanced" },
       { id: "recognition", labelKey: "radar.recognition", score: 0, rawValue: null, formattedValue: "—", unit: "s", benchmark: "< 0.75s", status: "balanced" },
       { id: "consistency", labelKey: "radar.consistency", score: 0, rawValue: null, formattedValue: "—", unit: "% var", benchmark: "< 18%", status: "balanced" },
     ];
@@ -775,7 +779,7 @@ export function deriveSkillRadarProfile(
     }
   }
 
-  // 4. Ergonomics (Rotations & orientation control)
+  // 4. Ergonomics (Rotations & orientation control - calibrated for Smart Cube wide/slice events)
   const rotCounts: number[] = [];
   for (const s of solves) {
     const a = analysisOf(s);
@@ -789,8 +793,8 @@ export function deriveSkillRadarProfile(
     if (avgRot === 0) {
       ergonomicsScore = 100;
     } else {
-      // 0 rot -> 100, 1 -> 87, 2 -> 79, 3 -> 70, 4 -> 57, 6 -> 31, 8+ -> 13
-      ergonomicsScore = clampScore(100 - sigmoid(avgRot, 4.5, 0.55));
+      // Calibrated for Smart Cubes (wide moves/M slice regrips): 0 rot -> 100, 4 -> 88, 8 -> 78, 12 -> 63, 15 -> 50, 18 -> 37, 24+ -> 15
+      ergonomicsScore = clampScore(100 - sigmoid(avgRot, 15.0, 0.18));
     }
   }
 
@@ -815,7 +819,7 @@ export function deriveSkillRadarProfile(
     recognitionScore = 65;
   }
 
-  // 6. Consistency (Session Stability / Variance between solve times)
+  // 6. Consistency (Session Stability & Improvement-aware variance)
   const solveTimes: number[] = [];
   for (const s of solves) {
     if (!s) continue;
@@ -832,13 +836,48 @@ export function deriveSkillRadarProfile(
   let cv: number | null = null;
   let consistencyScore = 80;
   if (solveTimes.length >= 2) {
+    const n = solveTimes.length;
     const meanTime = mean(solveTimes) ?? 0;
-    const stdTime = Math.sqrt(
-      solveTimes.reduce((acc, t) => acc + (t - meanTime) ** 2, 0) / solveTimes.length,
+    const rawStd = Math.sqrt(
+      solveTimes.reduce((acc, t) => acc + (t - meanTime) ** 2, 0) / n,
     );
-    cv = meanTime > 0 ? stdTime / meanTime : 0;
-    // 8% variation -> 89, 14% -> 79, 20% -> 65, 28% -> 41, 40% -> 16
-    consistencyScore = clampScore(100 - sigmoid(cv, 0.25, 12.0));
+    const rawCv = meanTime > 0 ? rawStd / meanTime : 0;
+
+    // Linear regression to detect positive improvement trend (negative slope = times dropping)
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += solveTimes[i];
+      sumXY += i * solveTimes[i];
+      sumXX += i * i;
+    }
+    const denom = n * sumXX - sumX * sumX;
+    const slope = denom !== 0 ? (n * sumXY - sumX * sumY) / denom : 0;
+
+    // Detrended variance (variance around the session learning curve)
+    let residualSumSq = 0;
+    const intercept = (sumY - slope * sumX) / n;
+    for (let i = 0; i < n; i++) {
+      const predicted = intercept + slope * i;
+      const res = solveTimes[i] - predicted;
+      residualSumSq += res * res;
+    }
+    const detrendedStd = Math.sqrt(residualSumSq / n);
+    const detrendedCv = meanTime > 0 ? detrendedStd / meanTime : 0;
+
+    // If times are dropping (slope < 0), reward the progression instead of penalizing the range!
+    if (slope < 0) {
+      cv = Math.min(rawCv, detrendedCv);
+      const base = 100 - sigmoid(cv, 0.25, 12.0);
+      const improvementBonus = Math.min(10, Math.round((Math.abs(slope) * n / (meanTime || 1)) * 15));
+      consistencyScore = clampScore(base + improvementBonus);
+    } else {
+      cv = rawCv;
+      consistencyScore = clampScore(100 - sigmoid(cv, 0.25, 12.0));
+    }
   } else if (solveTimes.length === 1) {
     cv = 0;
     consistencyScore = 85;
@@ -888,7 +927,7 @@ export function deriveSkillRadarProfile(
       rawValue: avgRot != null ? Number(avgRot.toFixed(1)) : null,
       formattedValue: avgRot != null ? `${avgRot.toFixed(1)}` : "—",
       unit: "rot",
-      benchmark: "≤ 3.0",
+      benchmark: "≤ 8.0",
       status: classify(ergonomicsScore),
     },
     {
