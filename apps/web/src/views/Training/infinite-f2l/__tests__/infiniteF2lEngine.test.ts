@@ -204,7 +204,9 @@ describe("infiniteF2lEngine", () => {
         for (const p of activePairs) {
           expect(p.detectedCase).toEqual(detectPairCase(state, crossColor, p.slotId));
           if (p.detectedCase) {
-            expect(p.detectedCase.caseNumber).toMatch(/^F2L \d+$/);
+            // Basic cases are "F2L n"; Advanced BirdF2L cases carry their
+            // pattern name (e.g. "Up", "Gn (A15)").
+            expect(p.detectedCase.caseNumber).toMatch(/^(F2L \d+|\S+( \(\S+\))?)$/);
             expect(p.detectedCase.caseName.length).toBeGreaterThan(0);
           }
         }

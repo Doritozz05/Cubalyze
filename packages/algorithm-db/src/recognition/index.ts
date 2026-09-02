@@ -42,6 +42,12 @@ export {
   createBasicF2LDetector,
 } from './loaders/basicF2L';
 export {
+  ADVANCED_F2L_SUBSET_MANIFEST,
+  loadAdvancedF2LCases,
+  loadF2LCases,
+  createF2LDetector,
+} from './loaders/advancedF2L';
+export {
   OLL_SUBSET_MANIFEST,
   PLL_SUBSET_MANIFEST,
   loadOLLCases,

@@ -9,7 +9,7 @@ import {
   type PhaseMask,
 } from "@cubeforge/math-core";
 import {
-  createBasicF2LDetector,
+  createF2LDetector,
   type CaseDetector,
 } from "@cubeforge/algorithm-db";
 
@@ -32,18 +32,20 @@ const SLOT_TO_DETECTOR_SLOT: Record<CrossColor, Record<F2LSlotId, string>> = {
 
 let f2lDetector: CaseDetector | undefined;
 
-/** Lazy shared Basic F2L detector (catalog is built once, like the analysis engine). */
+/**
+ * Lazy shared F2L detector: Basic (41) + Advanced (BirdF2L) catalog, built
+ * once like the analysis engine.
+ */
 function getF2LDetector(): CaseDetector {
-  return (f2lDetector ??= createBasicF2LDetector());
+  return (f2lDetector ??= createF2LDetector());
 }
 
 /**
- * Recognize the Basic F2L case of an injected pair from the CURRENT logical
- * state (the pair's pieces settle wherever they were injected). The state is
+ * Recognize the F2L case of an injected pair from the CURRENT logical state
+ * (the pair's pieces settle wherever they were injected). The state is
  * already in the standard canonical colors, so no recolor step is needed.
- * Returns undefined when the injected configuration (e.g. a pair trapped in
- * two different non-home slots) falls outside the 41-case catalog — detection
- * must never break spawning.
+ * Returns undefined when the injected configuration falls outside the
+ * Basic + Advanced catalog — detection must never break spawning.
  */
 export function detectPairCase(
   state: CubeState,
@@ -431,8 +433,9 @@ export interface ActivePairState {
   /** Facelet string (54 chars) of the cube state immediately after this pair was injected. */
   startFacelets: string;
   /**
-   * Recognized Basic F2L case (41-case catalog) at injection time, when the
-   * injected configuration matches one of the catalog signatures.
+   * Recognized F2L case (Basic 41 + Advanced BirdF2L catalog) at injection
+   * time, when the injected configuration matches one of the catalog
+   * signatures.
    */
   detectedCase?: DetectedPairCase;
 }
