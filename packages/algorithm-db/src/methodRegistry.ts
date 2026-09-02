@@ -77,9 +77,8 @@ export const SUBSETS: AlgorithmSubset[] = [
   { id: sid(60), methodId: mid(6), name: 'CLL', description: 'Corners of Last Layer — 42 cases orienting + permuting last layer corners when first layer is solved.', sortOrder: 1, puzzleType: "222" },
 
   // ── 2×2: EG ─────────────────────────────────────────────────────────
-  { id: sid(70), methodId: mid(7), name: 'EG', description: 'Extended CLL — 128 cases total.', sortOrder: 1, puzzleType: "222" },
-  { id: sid(71), methodId: mid(7), parentId: sid(70), name: 'EG-1', description: 'Bottom layer has adjacent swap. 42 cases.', sortOrder: 1, puzzleType: "222" },
-  { id: sid(72), methodId: mid(7), parentId: sid(70), name: 'EG-2', description: 'Bottom layer has diagonal swap. 42 cases.', sortOrder: 2, puzzleType: "222" },
+  { id: sid(71), methodId: mid(7), name: 'EG-1', description: 'Bottom layer has adjacent swap. 42 cases.', sortOrder: 1, puzzleType: "222" },
+  { id: sid(72), methodId: mid(7), name: 'EG-2', description: 'Bottom layer has diagonal swap. 42 cases.', sortOrder: 2, puzzleType: "222" },
 ];
 
 /** Get top-level subsets for a method (without a parentId). */

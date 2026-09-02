@@ -55,6 +55,41 @@ describe("MobileMethodNavigator logic & responsive selection contract", () => {
     expect(label).toBe("3×3 › CFOP › PLL");
   });
 
+  it("flattens single-subset method CLL directly under 2×2 without redundant submenu", () => {
+    const twoByTwo = tree.find((n) => n.id === "222");
+    expect(twoByTwo).toBeDefined();
+
+    const cllNode = twoByTwo?.children?.find((n) => n.label === "CLL");
+    expect(cllNode).toBeDefined();
+    expect(cllNode?.kind).toBe("subset");
+    expect(cllNode?.children).toBeUndefined();
+
+    const cllPath = findPathTo(tree, cllNode!.id);
+    expect(cllPath.map((n) => n.label)).toEqual(["2×2"]);
+
+    const label = pathLabelFor(tree, cllNode!.id, "Selecciona un método");
+    expect(label).toBe("2×2 › CLL");
+  });
+
+  it("organizes EG directly with EG-1 and EG-2 without an intermediate 'EG' folder", () => {
+    const twoByTwo = tree.find((n) => n.id === "222");
+    const egNode = twoByTwo?.children?.find((n) => n.label === "EG");
+    expect(egNode).toBeDefined();
+    expect(egNode?.kind).toBe("method");
+
+    // Children are directly EG-1 and EG-2
+    const childLabels = egNode?.children?.map((c) => c.label);
+    expect(childLabels).toEqual(["EG-1", "EG-2"]);
+
+    const eg1 = egNode?.children?.find((c) => c.label === "EG-1");
+    expect(eg1).toBeDefined();
+    const eg1Path = findPathTo(tree, eg1!.id);
+    expect(eg1Path.map((n) => n.label)).toEqual(["2×2", "EG"]);
+
+    const eg1Label = pathLabelFor(tree, eg1!.id, "Selecciona un método");
+    expect(eg1Label).toBe("2×2 › EG › EG-1");
+  });
+
   describe("Responsive initialization contract for AlgorithmDashboard", () => {
     const computeInitialSubset = (
       width: number,

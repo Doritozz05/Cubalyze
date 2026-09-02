@@ -178,6 +178,30 @@ function CollapsibleMethodNode({
   const subsets = getSubsetsForMethod(method.id);
   const visibleSubsets = subsets.filter((s) => s.sortOrder > 0);
 
+  // If a method has only 1 subset with no children (like CLL):
+  // Render it directly as a single selectable item without a redundant submenu ("CLL de nuevo")!
+  if (
+    visibleSubsets.length === 1 &&
+    getChildSubsets(visibleSubsets[0].id).length === 0
+  ) {
+    const singleSubset = visibleSubsets[0];
+    const isSelected = singleSubset.id === selectedSubsetId;
+    return (
+      <button
+        type="button"
+        onClick={() => onSelectSubset(singleSubset.id)}
+        className={cn(
+          "flex w-full items-center px-2 py-1 text-[0.7rem] font-medium transition-colors rounded-sm",
+          isSelected
+            ? "bg-surface-2 text-ink font-semibold"
+            : "text-ink-2 hover:bg-surface-2/30 hover:text-ink",
+        )}
+      >
+        <span>{method.name}</span>
+      </button>
+    );
+  }
+
   // Check if any subset (or child of subset) under this method is selected
   const hasSelected = subsets.some((s) => {
     if (s.id === selectedSubsetId) return true;

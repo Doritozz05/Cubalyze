@@ -49,31 +49,45 @@ export function buildTree(): NavNode[] {
       id: pt,
       label: PUZZLE_LABELS[pt] ?? pt,
       kind: "puzzle",
-      children: methods.map((m) => ({
-        id: m.id,
-        label: m.name,
-        kind: "method",
-        children: getSubsetsForMethod(m.id)
+      children: methods.map((m) => {
+        const subsets = getSubsetsForMethod(m.id)
           .filter((s) => s.sortOrder > 0)
-          .map(subsetNode),
-      })),
+          .map(subsetNode);
+
+        // If a method has exactly one subset with no children (e.g. CLL),
+        // flatten it so tapping the method directly selects the subset instead of showing
+        // a redundant single-item submenu ("CLL de nuevo").
+        if (
+          subsets.length === 1 &&
+          (!subsets[0].children || subsets[0].children.length === 0)
+        ) {
+          return {
+            id: subsets[0].id,
+            label: m.name,
+            kind: "subset" as const,
+          };
+        }
+
+        return {
+          id: m.id,
+          label: m.name,
+          kind: "method" as const,
+          children: subsets,
+        };
+      }),
     };
   });
 }
 
-/** Breadcrumb path labels for a given subset id, e.g. "3×3 › CFOP › PLL". */
+/** Breadcrumb path labels for a given subset id, e.g. "3×3 › CFOP › PLL" or "2×2 › CLL". */
 export function pathLabelFor(
   tree: NavNode[],
   subsetId: string | null,
   selectMethodLabel: string,
 ): string {
   if (!subsetId) return selectMethodLabel;
-  for (const puzzle of tree) {
-    for (const method of puzzle.children ?? []) {
-      const found = findIn(method.children ?? [], subsetId, [puzzle.label, method.label]);
-      if (found) return found.join(" › ");
-    }
-  }
+  const found = findIn(tree, subsetId, []);
+  if (found) return found.join(" › ");
   return selectMethodLabel;
 }
 
@@ -84,7 +98,7 @@ function findIn(
 ): string[] | null {
   for (const node of nodes) {
     if (node.id === id) return [...trail, node.label];
-    if (node.children) {
+    if (node.children && node.children.length > 0) {
       const found = findIn(node.children, id, [...trail, node.label]);
       if (found) return found;
     }
