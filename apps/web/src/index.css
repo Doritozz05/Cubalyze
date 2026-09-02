@@ -409,6 +409,26 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   border-color: var(--glass-border) !important;
 }
 
+/* Replay split/detail columns (stats detail mode, reconstruction split):
+   the column must be a normal glass panel on mobile (<768px) but 100%
+   transparent on desktop. The rules above match class-attribute
+   SUBSTRINGS, so responsive variants like `max-lg:bg-surface` still
+   contain "bg-surface" and the panel is re-frosted at every size — a
+   plain `lg:bg-transparent` can never win (lower specificity, both
+   !important). This override re-declares the same properties with the
+   extra [data-replay-flat] attribute (higher specificity) inside the
+   desktop breakpoint only. Border-color is left alone so the intentional
+   `lg:border-r` divider keeps its glass hairline. */
+@media (min-width: 768px) {
+  html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-flat],
+  html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"][data-replay-flat] {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Header: only mobile touch bar gets glass; desktop floats the dock without a background */
 @media (max-width: 1023px) {
   html.liquid-glass header {
