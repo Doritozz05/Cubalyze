@@ -317,12 +317,12 @@ export function InfiniteF2LSetupDialog({
                 <span className="text-[0.68rem] text-ink-3">{t("infiniteF2l.setup.allowTrappedHint")}</span>
               </div>
             </div>
-            <input
-              type="checkbox"
+            <Switch
               checked={allowTrapped}
               disabled={spawnMode !== "normal"}
-              onChange={(e) => setAllowTrapped(e.target.checked)}
-              className="size-4 rounded accent-ink cursor-pointer disabled:cursor-not-allowed"
+              onCheckedChange={setAllowTrapped}
+              aria-label={t("infiniteF2l.setup.allowTrapped")}
+              className="disabled:cursor-not-allowed"
             />
           </label>
           {spawnMode !== "normal" && (
