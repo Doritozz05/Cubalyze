@@ -33,10 +33,11 @@ export type WcaEventCode = (typeof WCA_EVENT_CODES)[number];
 
 /**
  * Canonical `puzzle_type` values persisted in the database
- * (solves.puzzle_type / sessions.puzzle_type) — **the WCA event codes**
- * (ADR-002). Runtime array — the single source of truth used by consumers
- * that must validate at runtime (database repositories, zod schemas,
- * migrations CHECK constraints).
+ * (solves.puzzle_type — the WCA event codes, ADR-002). A session can hold
+ * solves of several puzzles, so sessions carry no puzzle_type of their own;
+ * the per-solve column is the single source of truth. Runtime array — the
+ * single source of truth used by consumers that must validate at runtime
+ * (database repositories, zod schemas, migrations CHECK constraints).
  *
  * Before ADR-002 the DB stored `'3x3x3'`/`'2x2x2'` (and legacy `'3x3'`/`'2x2'`
  * written by older app code). Migration 027 converts every existing row to

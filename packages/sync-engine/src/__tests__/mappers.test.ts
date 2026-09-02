@@ -84,7 +84,6 @@ describe("session mappers", () => {
     const session: Session = {
       id: "11111111-2222-3333-4444-555555555555",
       name: "Main 3×3",
-      puzzleType: "333",
       createdAt: 1700000000000,
       updatedAt: 1700000005000,
     };

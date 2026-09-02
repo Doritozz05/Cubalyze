@@ -294,7 +294,6 @@ export default function App() {
     switchSession,
     sessions,
     fetchSessionSolves,
-    puzzle,
     resetScramble,
     resetTimer,
     lastSolveId: solves[0]?.id,

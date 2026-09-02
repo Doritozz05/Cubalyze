@@ -122,7 +122,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     const session: Session = {
       id: UUID(1),
       name: 'Smoke 500',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     };
     await sessionsRepo.insert(session);
@@ -153,7 +152,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Rollback',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     // Seed one solve whose id will be duplicated at insert #499 of the batch.
@@ -181,7 +179,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Delete batch',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     const batch = Array.from({ length: 500 }, (_, i) =>
@@ -202,7 +199,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Order',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     const base = 1_700_000_000_000;
@@ -229,7 +225,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: sessionId,
       name: 'Chunking',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     // 1200 solves → 3 multi-row INSERT statements (500 + 500 + 200).
@@ -250,7 +245,6 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: UUID(7),
       name: 'CHECK',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     await expect(
@@ -333,7 +327,7 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
       tmp.exec('COMMIT');
     }
     tmp.exec(
-      "INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at, is_demo) VALUES ('sess-snapshot-a', 'Snapshot Session', '333', 1700000000000, 1700000000000, 0)"
+      "INSERT INTO sessions (id, name, created_at, updated_at, is_demo) VALUES ('sess-snapshot-a', 'Snapshot Session', 1700000000000, 1700000000000, 0)"
     );
     tmp.exec(
       "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ('solve-snapshot-1', 'sess-snapshot-a', 12345, 1700000000000, 'R U F', 'none', 'CFOP', 'manual', NULL, '[]', NULL, NULL, NULL, '333', 0, 1700000000000, 1700000000000)"
@@ -361,13 +355,11 @@ describe('Real sqlite-wasm engine (smoke, no mocks)', () => {
     await sessionsRepo.insert({
       id: a,
       name: 'Counts A',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
     await sessionsRepo.insert({
       id: b,
       name: 'Counts B',
-      puzzleType: '333',
       createdAt: 1_700_000_000_000,
     });
 

@@ -48,7 +48,7 @@ describe('FK cascade safety on rebuild migrations (foreign_keys=ON)', () => {
     try {
       db.exec('PRAGMA foreign_keys = ON;');
       const upTo025 = MIGRATIONS.filter(
-        (m) => m.id !== '026_add_puzzle_type_check' && m.id !== '027_puzzle_type_wca_codes',
+        (m) => m.id !== '026_add_puzzle_type_check' && m.id !== '027_puzzle_type_wca_codes' && m.id !== '032_remove_sessions_puzzle_type',
       );
       runMigrations(db, upTo025);
 
@@ -77,6 +77,45 @@ describe('FK cascade safety on rebuild migrations (foreign_keys=ON)', () => {
       expect(pt('sv-3')).toBe('222');
 
       // FK enforcement is still active after the rebuilds (bad session_id fails).
+      expect(() =>
+        db.exec("INSERT INTO solves (id, session_id, time_ms, timestamp, puzzle_type) VALUES ('sv-x','nope',1,1700000000000,'333')"),
+      ).toThrow();
+    } finally {
+      db.close();
+    }
+  });
+
+  it('032 drops sessions.puzzle_type and preserves every solve with foreign_keys ON', () => {
+    const db = new sqlite3.oo1.DB('/mem-fkcascade032.sqlite3', 'c');
+    try {
+      db.exec('PRAGMA foreign_keys = ON;');
+      const upTo031 = MIGRATIONS.filter((m) => m.id !== '032_remove_sessions_puzzle_type');
+      runMigrations(db, upTo031);
+
+      // Legacy pre-032 shape: sessions WITH puzzle_type, solves with per-solve types.
+      db.exec("INSERT INTO sessions (id, name, puzzle_type, created_at, updated_at) VALUES ('ses-a','Main','333', 1700000000000, 1700000000000), ('ses-b','Pyramix','222', 1700000000000, 1700000000000)");
+      db.exec(
+        "INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, puzzle_type) VALUES " +
+          "('sv-1','ses-a',1000,1700000000000,'R U R','333'), " +
+          "('sv-2','ses-a',2000,1700000000000,'R U R U','222'), " +
+          "('sv-3','ses-b',3000,1700000000000,'R U F','pyram')",
+      );
+
+      runMigrations(db, MIGRATIONS.filter((m) => m.id === '032_remove_sessions_puzzle_type'));
+
+      // Zero data loss on both tables.
+      const count = (t: string) => Number(db.exec({ sql: `SELECT COUNT(*) FROM ${t}`, rowMode: 'array' })[0][0]);
+      expect(count('sessions')).toBe(2);
+      expect(count('solves')).toBe(3);
+
+      // Per-solve puzzle_type survives; the sessions column is gone.
+      const pt = (id: string) =>
+        String(db.exec({ sql: `SELECT puzzle_type FROM solves WHERE id='${id}'`, rowMode: 'array' })[0][0]);
+      expect(pt('sv-2')).toBe('222');
+      const sessionCols = (db.exec({ sql: 'PRAGMA table_info(sessions)', rowMode: 'array' }) as string[][]).map((c) => c[1]);
+      expect(sessionCols).not.toContain('puzzle_type');
+
+      // FK still enforced after the rebuild (bad session_id fails).
       expect(() =>
         db.exec("INSERT INTO solves (id, session_id, time_ms, timestamp, puzzle_type) VALUES ('sv-x','nope',1,1700000000000,'333')"),
       ).toThrow();

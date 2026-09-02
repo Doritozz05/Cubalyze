@@ -161,7 +161,7 @@ describe('migration runner (execution against real sqlite)', () => {
       // stored as '3x3x3'/'2x2x2', an OH solve stored as '3x3x3', a profile
       // main_puzzle, and a seeded algorithm catalog.
       const upTo025 = MIGRATIONS.filter(
-        (m) => m.id !== '026_add_puzzle_type_check' && m.id !== '027_puzzle_type_wca_codes',
+        (m) => m.id !== '026_add_puzzle_type_check' && m.id !== '027_puzzle_type_wca_codes' && m.id !== '032_remove_sessions_puzzle_type',
       );
       runMigrations(db, upTo025);
 

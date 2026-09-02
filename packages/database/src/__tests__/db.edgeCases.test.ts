@@ -407,44 +407,6 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────────────
-//  SessionsRepository — puzzle_type validation (A2)
-// ────────────────────────────────────────────────────────────────────────
-
-describe('SessionsRepository — puzzle_type validation against the registry (A2)', () => {
-  let db: ReturnType<typeof mockDb>;
-  let repo: SessionsRepository;
-
-  beforeEach(() => {
-    db = mockDb();
-    repo = new SessionsRepository(db);
-  });
-
-  function makeSession(puzzleType: string) {
-    return {
-      id: 'ses1',
-      name: 'Main',
-      puzzleType,
-      createdAt: 1767225600000,
-      updatedAt: 1767225600000,
-    };
-  }
-
-  it('insert accepts canonical types', async () => {
-    await repo.insert(makeSession('222'));
-    expect(db).toHaveBeenCalledTimes(1);
-  });
-
-  it('insert rejects an unknown puzzle_type', async () => {
-    await expect(repo.insert(makeSession('9x9x9'))).rejects.toThrow(/unknown puzzle_type '9x9x9'/);
-    expect(db).not.toHaveBeenCalled();
-  });
-
-  it('update rejects an unknown puzzle_type', async () => {
-    await expect(repo.update(makeSession('pyraminx'))).rejects.toThrow(/unknown puzzle_type 'pyraminx'/);
-    expect(db).not.toHaveBeenCalled();
-  });
-});
 
 // ────────────────────────────────────────────────────────────────────────
 //  Client lifecycle — integration-style (skipped: requires window/Worker mock)

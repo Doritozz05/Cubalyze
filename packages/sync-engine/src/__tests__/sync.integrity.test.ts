@@ -318,7 +318,7 @@ describe("A) updated_at convergence (no eternal re-sync)", () => {
     engineB.setUser(UID, { schedule: false });
 
     // B creates session + solve and pushes (one full engine cycle).
-    await b.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await b.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await b.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -376,7 +376,7 @@ describe("B) deleted data never resurrects on a fresh link", () => {
     const cloud = new FakeCloud();
     const a = makeDevice(cloud);
 
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -400,7 +400,7 @@ describe("B) deleted data never resurrects on a fresh link", () => {
     const cloud = new FakeCloud();
     const a = makeDevice(cloud);
 
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -431,7 +431,7 @@ describe("C) a newer offline edit beats an older delete (LWW)", () => {
     const b = makeDevice(cloud);
 
     // Seed: A creates the solve, B pulls it.
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -480,7 +480,7 @@ describe("D) writes during claim() are preserved", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await dev.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -536,7 +536,7 @@ describe("D) writes during claim() are preserved", () => {
     // While the pull is gated, record a NEW solve (as the analysis pipeline
     // or a fast user would).
     await cloud.pullStartedPromise;
-    await dev.ctx.sessions.insert({ id: "s2", name: "Session 2", puzzleType: "333", createdAt: 2000, updatedAt: 2000 });
+    await dev.ctx.sessions.insert({ id: "s2", name: "Session 2", createdAt: 2000, updatedAt: 2000 });
     await dev.ctx.solves.insert({
       id: "x2", sessionId: "s2", timeMs: 500, timestamp: 2000, scramble: "U",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 2000, updatedAt: 2000,
@@ -753,7 +753,7 @@ describe("F) batched push correctness and scale", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     const solves = Array.from({ length: 1200 }, (_, i) => ({
       id: `solve-${String(i).padStart(4, "0")}`,
       sessionId: "s1",
@@ -794,7 +794,7 @@ describe("G) tombstone pull watermark (M4)", () => {
     const a = makeDevice(cloud);
     const b = makeDevice(cloud);
 
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -831,7 +831,7 @@ describe("H) sync_apply skip feedback (M1)", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await dev.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -856,7 +856,7 @@ describe("I) monotonic local clock (M9)", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     const base = {
       sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none" as const, source: "manual" as const, moves: [],
@@ -874,7 +874,7 @@ describe("I) monotonic local clock (M9)", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await dev.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -905,7 +905,7 @@ describe("J) float time normalization (M5)", () => {
     const cloud = new FakeCloud();
     const dev = makeDevice(cloud);
 
-    await dev.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await dev.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await dev.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 112.729, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -930,7 +930,7 @@ describe("K) tombstone clock floor (031)", () => {
     const b = makeDevice(cloud);
 
     // Seed: A creates a session + solve.
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 5000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -947,7 +947,7 @@ describe("K) tombstone clock floor (031)", () => {
       await a.ctx.solves.update(
         {
           id: "x1", sessionId: "s1", timeMs: 5000 + i, timestamp: 1000, scramble: "R",
-          penalty: "none", source: "manual", moves: [], puzzleType: "333",
+          penalty: "none", source: "manual", moves: [],
           createdAt: 1000, updatedAt: cur?.updatedAt ?? 0,
         },
         { local: true },
@@ -981,7 +981,7 @@ describe("K) tombstone clock floor (031)", () => {
     const a = makeDevice(cloud);
     const b = makeDevice(cloud);
 
-    await a.ctx.sessions.insert({ id: "s1", name: "Main", puzzleType: "333", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
     await a.ctx.solves.insert({
       id: "x1", sessionId: "s1", timeMs: 5000, timestamp: 1000, scramble: "R",
       penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
@@ -1005,7 +1005,7 @@ describe("K) tombstone clock floor (031)", () => {
     await b.ctx.solves.update(
       {
         id: "x1", sessionId: "s1", timeMs: 9999, timestamp: 1000, scramble: "R",
-        penalty: "+2", source: "manual", moves: [], puzzleType: "333",
+        penalty: "+2", source: "manual", moves: [],
         createdAt: 1000, updatedAt: 0,
       },
       { local: true },

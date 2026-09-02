@@ -213,7 +213,7 @@ export function getEvent(id: WcaEventCode): EventSpec | undefined {
 export const DB_PUZZLE_TYPES: readonly string[] = [...PUZZLE_TYPES];
 
 /**
- * Whether a value may be persisted as `puzzle_type` (solves/sessions).
+ * Whether a value may be persisted as `puzzle_type` (per-solve; sessions no longer carry one).
  * Rejects unknown strings — the database never stores a type the registry
  * does not declare.
  */

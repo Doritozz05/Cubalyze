@@ -39,7 +39,6 @@ function syncAfter<A extends unknown[], R>(
 export interface SessionMeta {
   id: string;
   name: string;
-  puzzle: string;
   createdAt: number;
   updatedAt: number;
   solveCount: number;
@@ -97,7 +96,7 @@ export interface UsePersistentSessionResult {
     analysis?: SolveMetrics;
     orientationTimeline?: OrientationTimeline;
   }>) => Promise<number>;
-  newSession: (name?: string, puzzle?: string) => Promise<void>;
+  newSession: (name?: string) => Promise<void>;
   switchSession: (id: string) => Promise<void>;
   renameSession: (id: string, name: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
@@ -166,7 +165,6 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const metaSessions: SessionMeta[] = allSessions.map((s) => ({
       id: s.id,
       name: s.name,
-      puzzle: s.puzzleType,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt ?? s.createdAt,
       solveCount: sessionCounts.get(s.id) ?? 0,
@@ -268,7 +266,6 @@ export function usePersistentSession(): UsePersistentSessionResult {
             await sessionsRepo.insert({
               id: emergencyId,
               name: "Main session",
-              puzzleType: "333", // canonical DB type (A2)
               createdAt: now,
               updatedAt: now,
             });
@@ -614,14 +611,13 @@ export function usePersistentSession(): UsePersistentSessionResult {
     ));
   }, [session]);
 
-  const newSession = useCallback(async (name?: string, puzzle?: string) => {
+  const newSession = useCallback(async (name?: string) => {
     if (!reposRef.current) return;
     const { sessions: sessionsRepo } = reposRef.current;
     
     const newSess = {
       id: uuidv4(),
       name: name ?? "Session",
-      puzzleType: puzzle ?? "333", // canonical DB type (A2)
       createdAt: Date.now(),
     };
     
@@ -630,7 +626,6 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const meta: SessionMeta = {
       id: newSess.id,
       name: newSess.name,
-      puzzle: newSess.puzzleType,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       solveCount: 0,

@@ -131,7 +131,6 @@ describe("B2 — 3×3 golden path (real components)", () => {
     const session: Session = {
       id: "golden-session",
       name: "Golden path",
-      puzzleType: "333", // canonical (ADR-002)
       createdAt: now,
       updatedAt: now,
     };
@@ -166,7 +165,7 @@ describe("B2 — 3×3 golden path (real components)", () => {
 
     // D1: an OH solve persists with its own type '333oh' in the real DB
     // (same engine, same CHECK constraint — never collides with '333').
-    const ohSession: Session = { ...session, id: "golden-oh-session", name: "OH", puzzleType: "333oh" };
+    const ohSession: Session = { ...session, id: "golden-oh-session", name: "OH" };
     await sessionsRepo.insert(ohSession);
     await solvesRepo.insert({ ...solve, id: "golden-oh-solve", sessionId: ohSession.id, puzzleType: "333oh" });
     const ohRows = await solvesRepo.findAll(ohSession.id);
