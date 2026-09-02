@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { getSeedData, SUBSETS, resolveVisualizationStyleForSubset } from "@cubeforge/algorithm-db";
 import type { VisualizationStyle } from "@cubeforge/algorithm-db";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MethodTree } from "./components/MethodTree";
 import { MobileMethodNavigator } from "./components/MobileMethodNavigator";
 import { CaseGrid } from "./components/CaseGrid";
@@ -154,15 +155,24 @@ export function AlgorithmDashboard({
                   visualizationStyle={visualizationStyle}
                 />
               ) : (
-                /* Desktop: hint to select from the left method tree. Mobile: left clean and empty. */
-                <div className="hidden lg:block">
-                  <CaseGrid
-                    cases={[]}
-                    selectedCaseId={null}
-                    onSelectCase={() => {}}
-                    visualizationStyle={visualizationStyle}
-                  />
-                </div>
+                <>
+                  {/* Touch/mobile: empty gray skeletons matching case card size & 2-col grid */}
+                  <div className="grid grid-cols-2 gap-3 lg:hidden">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-44 w-full rounded-xl" />
+                    ))}
+                  </div>
+
+                  {/* Desktop: hint to select from the left method tree */}
+                  <div className="hidden lg:block">
+                    <CaseGrid
+                      cases={[]}
+                      selectedCaseId={null}
+                      onSelectCase={() => {}}
+                      visualizationStyle={visualizationStyle}
+                    />
+                  </div>
+                </>
               )}
             </div>
 
