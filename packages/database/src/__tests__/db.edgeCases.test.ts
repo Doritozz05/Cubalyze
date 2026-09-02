@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SolvesRepository } from '../repositories/solves.repository';
-import { SessionsRepository } from '../repositories/sessions.repository';
 import type { OrientationTimeline } from '@cubeforge/types';
 
 // ────────────────────────────────────────────────────────────────────────

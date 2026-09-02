@@ -528,6 +528,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.3.2)
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
       use-debounce:
         specifier: ^10.1.1
         version: 10.1.1(react@19.2.7)
@@ -568,6 +571,9 @@ importers:
       '@types/react-dom':
         specifier: 18.3.0
         version: 18.3.0
+      '@types/three':
+        specifier: ^0.185.1
+        version: 0.185.1
       '@vitejs/plugin-basic-ssl':
         specifier: ^2.3.0
         version: 2.3.0(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
