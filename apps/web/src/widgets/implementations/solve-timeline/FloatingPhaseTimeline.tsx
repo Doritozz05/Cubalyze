@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import { formatTime } from "@/utils/formatTime";
@@ -19,7 +19,7 @@ import {
 } from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics, DetectedCase } from "@cubeforge/types";
 
 const MAX_SOLVES_IN_PICKER = 3;
 
@@ -53,6 +53,31 @@ interface TimelineEntry {
   pauseDurationMs: number;
 }
 
+function getPhaseDetails(
+  phaseName: string,
+  effectiveAnalysis?: SolveMetrics | null,
+): { caseInfo?: Pick<DetectedCase, "caseNumber" | "caseName"> | null; recogMs: number; detail?: string } {
+  if (!effectiveAnalysis) return { recogMs: 0 };
+  if (phaseName === "OLL") {
+    return {
+      caseInfo: effectiveAnalysis.cfop?.ollCase ?? null,
+      recogMs: effectiveAnalysis.cfop?.ollRecognitionMs ?? 0,
+    };
+  }
+  if (phaseName === "PLL") {
+    return {
+      caseInfo: effectiveAnalysis.cfop?.pllCase ?? null,
+      recogMs: effectiveAnalysis.cfop?.pllRecognitionMs ?? 0,
+    };
+  }
+  if (phaseName === "Cross") {
+    return {
+      recogMs: 0,
+    };
+  }
+  return { recogMs: 0 };
+}
+
 /**
  * Floating widget showing the phase breakdown + pauses of the last solve.
  * Uses FloatingWidgetWrapper for all portal/drag/minimize behavior.
@@ -65,7 +90,7 @@ export function FloatingPhaseTimeline({
   const { t } = useTranslation("widgets");
   const [selectedIdx, setSelectedIdx] = useState(0);
 
-  const { selectedSolve, derived, skippedPhases, pairSegments } = useMemo(() => {
+  const { selectedSolve, derived, skippedPhases, pairSegments, effectiveAnalysis } = useMemo(() => {
     const orderedSolves = [...solves].sort((a, b) => b.timestamp - a.timestamp);
     const firstSolve = orderedSolves[0];
     const hasPending =
@@ -83,6 +108,7 @@ export function FloatingPhaseTimeline({
         derived: null,
         skippedPhases: [] as string[],
         pairSegments: [] as PairSegment[],
+        effectiveAnalysis: null,
       };
     }
 
@@ -93,6 +119,7 @@ export function FloatingPhaseTimeline({
         derived: null,
         skippedPhases: [] as string[],
         pairSegments: [] as PairSegment[],
+        effectiveAnalysis: null,
       };
     }
     const effectiveSolve: Solve = { ...solve, analysis: effectiveAnalysis };
@@ -104,7 +131,7 @@ export function FloatingPhaseTimeline({
       effectiveAnalysis,
       effectiveSolve.moves,
     );
-    return { selectedSolve: solve, derived: tl, skippedPhases, pairSegments };
+    return { selectedSolve: solve, derived: tl, skippedPhases, pairSegments, effectiveAnalysis };
   }, [solves, selectedIdx, lastAnalysis]);
 
   const timelinePhaseEntries = useMemo<TimelineEntry[]>(() => {
@@ -223,7 +250,7 @@ export function FloatingPhaseTimeline({
               /* ── Per-phase breakdown — the F2L bar itself is divided into
                   its pairs (light→dark green slices) with rich hover info ── */
               <>
-                <div className="mb-2 flex h-7 w-full gap-px overflow-hidden rounded-md">
+                <div className="mb-2 flex h-7 w-full gap-px overflow-hidden rounded-md border border-line/60 bg-surface-2">
                   {timelinePhaseEntries.map((entry) => {
                     // The F2L phase bar is divided into its pairs: one
                     // light→dark green slice per pair, hover shows the pair's
@@ -234,23 +261,27 @@ export function FloatingPhaseTimeline({
                           totalMs > 0 ? (seg.durationMs / totalMs) * 100 : 0;
                         const seekable = !!onSeekToMove && seg.moveStartIndex >= 0;
                         return (
-                          <Tooltip key={`f2l-pair-${seg.pairNumber}`}>
-                            <TooltipTrigger asChild>
+                          <HoverCard key={`f2l-pair-${seg.pairNumber}`} openDelay={120} closeDelay={80}>
+                            <HoverCardTrigger asChild>
                               <div
                                 className={cn(
-                                  "relative flex items-center justify-center text-[0.6rem] font-medium text-white transition-all",
+                                  "relative flex h-full items-center justify-center text-[0.62rem] font-bold text-white transition-all select-none",
                                   seekable && "cursor-pointer",
                                 )}
                                 style={{
-                                  width: `${Math.max(segPct, 4)}%`,
+                                  flex: `${Math.max(seg.durationMs, 1)} 1 0%`,
+                                  minWidth: "14px",
                                   backgroundColor: pairColor(seg.pairNumber),
-                                  opacity: 0.85,
+                                  opacity: 0.9,
                                 }}
                                 role={seekable ? "button" : undefined}
                                 tabIndex={seekable ? 0 : undefined}
                                 onClick={
                                   seekable
-                                    ? () => onSeekToMove!(seg.moveStartIndex)
+                                    ? (e) => {
+                                        e.stopPropagation();
+                                        onSeekToMove!(seg.moveStartIndex);
+                                      }
                                     : undefined
                                 }
                                 onKeyDown={
@@ -264,82 +295,186 @@ export function FloatingPhaseTimeline({
                                     : undefined
                                 }
                               >
-                                {segPct > 10 && (
+                                {segPct >= 3.5 && (
                                   <span className="truncate px-0.5 drop-shadow-sm">
                                     {seg.pairNumber}
                                   </span>
                                 )}
                               </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="w-56 text-xs">
+                            </HoverCardTrigger>
+                            <HoverCardContent side="top" align="center" sideOffset={8} className="w-60 p-3 text-xs shadow-lg">
                               <div className="flex items-center gap-2">
                                 <span
                                   className="inline-block size-2.5 shrink-0 rounded-sm"
                                   style={{ background: pairColor(seg.pairNumber) }}
                                 />
-                                <span className="font-medium text-ink">
+                                <span className="font-semibold text-ink">
                                   {t("panel.solveTimeline.f2lPair", {
                                     count: seg.pairNumber,
                                   })}
                                 </span>
                                 {seg.slot && (
-                                  <span className="rounded bg-ink/5 px-1 py-0.5 font-mono text-[0.54rem] font-medium text-ink-2">
+                                  <span className="rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-ink-2">
                                     {seg.slot}
                                   </span>
                                 )}
+                                <span className="ml-auto nums text-[0.65rem] text-ink-3">
+                                  {Math.round(segPct)}%
+                                </span>
                               </div>
                               {seg.caseName && (
                                 <div className="mt-1.5 flex items-baseline gap-2">
-                                  <span className="text-[0.72rem] font-medium text-ink-2">
+                                  <span className="text-[0.74rem] font-medium text-ink-2">
                                     {seg.caseName}
                                   </span>
                                   {seg.caseNumber && (
-                                    <span className="font-mono text-[0.56rem] text-ink-3">
+                                    <span className="font-mono text-[0.58rem] text-ink-3">
                                       {seg.caseNumber}
                                     </span>
                                   )}
                                 </div>
                               )}
-                              <div className="mt-2 flex items-baseline gap-3">
-                                <span className="nums text-sm font-medium text-ink">
-                                  {formatTime(seg.durationMs)}
-                                </span>
-                                <span className="text-ink-2">{seg.tps.toFixed(1)} TPS</span>
-                                <span className="text-ink-3">{seg.moves}m</span>
-                                {seg.recognitionMs > 50 && (
-                                  <span className="text-caution/70">
-                                    +{formatTime(seg.recognitionMs)}
+                              <div className="mt-2 flex items-baseline justify-between border-t border-line/40 pt-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    {t("panel.solveTimeline.time")}
                                   </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {formatTime(seg.durationMs)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    {t("panel.solveTimeline.moves")}
+                                  </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {seg.moves}m
+                                  </span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                    TPS
+                                  </span>
+                                  <span className="nums text-sm font-semibold text-ink">
+                                    {seg.tps.toFixed(1)}
+                                  </span>
+                                </div>
+                                {seg.recognitionMs > 50 && (
+                                  <div className="flex flex-col">
+                                    <span className="text-[0.58rem] uppercase tracking-wider text-caution">
+                                      {t("panel.solveTimeline.recog")}
+                                    </span>
+                                    <span className="nums text-sm font-semibold text-caution">
+                                      +{formatTime(seg.recognitionMs)}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-                            </TooltipContent>
-                          </Tooltip>
+                            </HoverCardContent>
+                          </HoverCard>
                         );
                       });
                     }
 
+                    const phasePct = totalMs > 0 ? (entry.durationMs / totalMs) * 100 : 0;
+                    const phaseDetails = getPhaseDetails(entry.phaseName, effectiveAnalysis);
+
                     return (
-                      <Tooltip key={entry.phaseName}>
-                        <TooltipTrigger asChild>
+                      <HoverCard key={entry.phaseName} openDelay={120} closeDelay={80}>
+                        <HoverCardTrigger asChild>
                           <div
-                            className="relative flex items-center justify-center text-[0.6rem] font-medium text-white transition-all"
+                            className="relative flex h-full items-center justify-center text-[0.62rem] font-bold text-white transition-all select-none"
                             style={{
-                              width: `${Math.max(entry.fraction * 100, 4)}%`,
+                              flex: `${Math.max(entry.durationMs, 1)} 1 0%`,
+                              minWidth: "18px",
                               backgroundColor: entry.color,
-                              opacity: 0.85,
+                              opacity: 0.9,
                             }}
                           >
-                            {entry.fraction > 0.1 && (
+                            {phasePct >= 5 && (
                               <span className="truncate px-0.5 drop-shadow-sm">
                                 {entry.phaseName}
                               </span>
                             )}
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          {entry.phaseName}: {formatTime(entry.durationMs)}
-                        </TooltipContent>
-                      </Tooltip>
+                        </HoverCardTrigger>
+                        <HoverCardContent side="top" align="center" sideOffset={8} className="w-56 p-3 text-xs shadow-lg">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block size-2.5 shrink-0 rounded-sm"
+                              style={{ background: entry.color }}
+                            />
+                            <span className="font-semibold text-ink">{entry.phaseName}</span>
+                            {phaseDetails.detail && (
+                              <span className="rounded bg-ink/5 px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-ink-2">
+                                {phaseDetails.detail}
+                              </span>
+                            )}
+                            <span className="ml-auto nums text-[0.65rem] text-ink-3">
+                              {Math.round(phasePct)}%
+                            </span>
+                          </div>
+                          {phaseDetails.caseInfo && (
+                            <div className="mt-1.5 flex items-baseline gap-2">
+                              <span className="text-[0.74rem] font-medium text-ink-2">
+                                {phaseDetails.caseInfo.caseName}
+                              </span>
+                              {phaseDetails.caseInfo.caseNumber && (
+                                <span className="font-mono text-[0.58rem] text-ink-3">
+                                  {phaseDetails.caseInfo.caseNumber}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2 flex items-baseline justify-between border-t border-line/40 pt-2">
+                            <div className="flex flex-col">
+                              <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                {t("panel.solveTimeline.time")}
+                              </span>
+                              <span className="nums text-sm font-semibold text-ink">
+                                {formatTime(entry.durationMs)}
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                {t("panel.solveTimeline.moves")}
+                              </span>
+                              <span className="nums text-sm font-semibold text-ink">
+                                {entry.moveCount}m
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[0.58rem] uppercase tracking-wider text-ink-3">
+                                TPS
+                              </span>
+                              <span className="nums text-sm font-semibold text-ink">
+                                {entry.tps.toFixed(1)}
+                              </span>
+                            </div>
+                            {phaseDetails.recogMs > 50 && (
+                              <div className="flex flex-col">
+                                <span className="text-[0.58rem] uppercase tracking-wider text-caution">
+                                  {t("panel.solveTimeline.recog")}
+                                </span>
+                                <span className="nums text-sm font-semibold text-caution">
+                                  +{formatTime(phaseDetails.recogMs)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {entry.pauseCount > 0 && (
+                            <div className="mt-2 flex items-center gap-1.5 border-t border-line/40 pt-1.5 text-[0.62rem] text-caution">
+                              <Pause className="size-2.5 shrink-0" />
+                              <span>
+                                {t("panel.solveTimeline.pauseCount", {
+                                  count: entry.pauseCount,
+                                  time: formatTime(entry.pauseDurationMs),
+                                })}
+                              </span>
+                            </div>
+                          )}
+                        </HoverCardContent>
+                      </HoverCard>
                     );
                   })}
                 </div>
@@ -364,20 +499,22 @@ export function FloatingPhaseTimeline({
                         <span className="text-ink-2">{entry.tps.toFixed(1)} TPS</span>
                         <span>{entry.moveCount}m</span>
                         {entry.pauseCount > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex items-center gap-0.5 text-caution/70">
+                          <HoverCard openDelay={120} closeDelay={80}>
+                            <HoverCardTrigger asChild>
+                              <span className="flex items-center gap-0.5 text-caution/70 cursor-help">
                                 <Pause className="size-2.5" />
                                 {formatTime(entry.pauseDurationMs)}
                               </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              {t("panel.solveTimeline.pauseCount", {
-                                count: entry.pauseCount,
-                                time: formatTime(entry.pauseDurationMs),
-                              })}
-                            </TooltipContent>
-                          </Tooltip>
+                            </HoverCardTrigger>
+                            <HoverCardContent side="top" align="end" sideOffset={6} className="w-auto p-2 text-xs shadow-md">
+                              <span className="text-ink text-[0.68rem] font-medium">
+                                {t("panel.solveTimeline.pauseCount", {
+                                  count: entry.pauseCount,
+                                  time: formatTime(entry.pauseDurationMs),
+                                })}
+                              </span>
+                            </HoverCardContent>
+                          </HoverCard>
                         )}
                       </div>
                     </div>

@@ -14,6 +14,7 @@ import {
   Download,
   UserRound,
   Heart,
+  History,
   AudioLines,
   Cloud,
 } from 'lucide-react';
@@ -114,6 +115,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     labelKey: 'sections.advanced.label',
     icon: Wrench,
     descriptionKey: 'sections.advanced.description',
+  },
+  {
+    id: 'changelog',
+    labelKey: 'sections.changelog.label',
+    icon: History,
+    descriptionKey: 'sections.changelog.description',
   },
   {
     id: 'credits',

@@ -42,6 +42,7 @@ import { AccountSection } from './sections/AccountSection';
 import { NotificationsSection } from './sections/NotificationsSection';
 import { AdvancedSection } from './sections/AdvancedSection';
 import { CreditsSection } from './sections/CreditsSection';
+import { ChangelogSection } from './sections/ChangelogSection';
 import type { Solve } from '@/types';
 
 export interface SettingsDialogProps {
@@ -152,6 +153,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return <NotificationsSection />;
       case 'advanced':
         return <AdvancedSection />;
+      case 'changelog':
+        return <ChangelogSection />;
       case 'credits':
         return <CreditsSection />;
       default: {

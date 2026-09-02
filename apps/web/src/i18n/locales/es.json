@@ -91,6 +91,15 @@
     "languageHint": "Elige el idioma de la interfaz o sigue el del navegador",
     "preferences": "Preferencias",
     "selectSection": "Selecciona una sección",
+    "changelog": {
+      "latest": "actual",
+      "changeNew": "Nuevo",
+      "changeImproved": "Mejorado",
+      "changeFixed": "Corregido",
+      "changeBreaking": "Ruptura",
+      "moralLabel": "La moraleja de la historia",
+      "gridNote": "El entramado de fondo es un campo de cubos isométricos: una capa por versión. Nada de gradientes: con las capas basta."
+    },
     "sections": {
       "profile": {
         "label": "Perfil",
@@ -147,6 +156,10 @@
       "credits": {
         "label": "Créditos",
         "description": "Fuentes de datos, librerías y contribuciones de la comunidad."
+      },
+      "changelog": {
+        "label": "Cambios",
+        "description": "Historial de novedades, mejoras y correcciones en cada versión."
       },
       "account": {
         "label": "Cuenta",
@@ -3801,6 +3814,9 @@
         "backToLatest": "Volver a la más reciente",
         "timelineUnavailable": "Datos de línea temporal no disponibles para esta resolución.",
         "f2lPair": "F2L {{count}}",
+        "time": "Tiempo",
+        "moves": "Movs",
+        "recog": "Recon",
         "pauseCount_one": "{{count}} pausa · {{time}}",
         "pauseCount_other": "{{count}} pausas · {{time}}",
         "movesTotal_one": "{{count}} movimiento · {{time}} en total",

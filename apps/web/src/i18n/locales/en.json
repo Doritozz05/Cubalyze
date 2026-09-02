@@ -91,6 +91,15 @@
     "languageHint": "Choose the interface language, or follow your browser's",
     "preferences": "Preferences",
     "selectSection": "Select section",
+    "changelog": {
+      "latest": "latest",
+      "changeNew": "New",
+      "changeImproved": "Improved",
+      "changeFixed": "Fixed",
+      "changeBreaking": "Breaking",
+      "moralLabel": "The moral of the story",
+      "gridNote": "The lattice behind this list is an isometric cube field — one layer per version. No gradients: the layers are enough."
+    },
     "sections": {
       "profile": {
         "label": "Profile",
@@ -147,6 +156,10 @@
       "credits": {
         "label": "Credits",
         "description": "Data sources, libraries, and community contributions."
+      },
+      "changelog": {
+        "label": "Changelog",
+        "description": "Release notes and recent updates across versions."
       },
       "account": {
         "label": "Account",
@@ -3801,6 +3814,9 @@
         "backToLatest": "Back to latest",
         "timelineUnavailable": "Timeline data unavailable for this solve.",
         "f2lPair": "F2L {{count}}",
+        "time": "Time",
+        "moves": "Moves",
+        "recog": "Recog",
         "pauseCount_one": "{{count}} pause · {{time}}",
         "pauseCount_other": "{{count}} pauses · {{time}}",
         "movesTotal_one": "{{count}} move · {{time}} total",

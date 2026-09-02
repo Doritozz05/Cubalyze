@@ -1,0 +1,433 @@
+{
+  "repoUrl": "https://github.com/Doritozz05/Cubeforge",
+  "commitUrlTemplate": "https://github.com/Doritozz05/Cubeforge/commit/{sha}",
+  "currentVersion": "0.9.0",
+  "finalMoral": {
+    "en": "A cube is solved layer by layer, and so is a product. If early saves had no name, it is because we did not yet know how to name what we were building. Now even the changelog has a moral.",
+    "es": "Un cubo se resuelve por capas, y un producto también. Si al principio guardábamos cambios sin nombre, fue porque aún no sabíamos nombrar lo que construíamos. Ahora hasta el changelog tiene moraleja."
+  },
+  "versions": [
+    {
+      "version": "0.1.0",
+      "startDate": "2026-07-12",
+      "endDate": "2026-07-13",
+      "name": {
+        "en": "The Seed",
+        "es": "La semilla"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "CubeForge starts as a blank monorepo: product docs, architecture decisions, a shadcn/Tailwind UI kit and the first packages. No face has been turned yet, but the room already has walls.",
+        "es": "CubeForge nace como monorepo en blanco: documento de producto, decisiones de arquitectura, kit de UI shadcn/Tailwind y los primeros paquetes. Aún no se ha girado ni una cara, pero la sala ya tiene paredes."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "pnpm monorepo with 19 packages, a design system and CI from day one.",
+          "es": "Monorepo pnpm con 19 paquetes, design system y CI desde el día uno."
+        },
+        {
+          "type": "new",
+          "en": "PRD, roadmap and architecture governance (ADRs + RFCs).",
+          "es": "PRD, roadmap y gobernanza de arquitectura (ADRs + RFCs)."
+        },
+        {
+          "type": "new",
+          "en": "First packages: models, database, state and the timer engine.",
+          "es": "Primeros paquetes: modelos, base de datos, estado y motor de cronómetro."
+        },
+        {
+          "type": "new",
+          "en": "Custom UI kit with shadcn/Tailwind and the bone/carbon theme.",
+          "es": "Kit de UI propio con shadcn/Tailwind y el tema bone/carbon."
+        }
+      ],
+      "moral": {
+        "en": "Every big cube starts with the lower layers: plan first, pieces after.",
+        "es": "Todo cubo grande empieza por las capas de abajo: primero el plan, luego las piezas."
+      }
+    },
+    {
+      "version": "0.2.0",
+      "startDate": "2026-07-14",
+      "endDate": "2026-07-20",
+      "name": {
+        "en": "The First Solve",
+        "es": "El primer solve"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "The timer beats: WCA inspection, sessions, scrambles and session statistics, plus the first analysis engine — CFOP phase detection, solve metrics, and a GAN smart cube over Web Bluetooth.",
+        "es": "El cronómetro late: inspección WCA, sesiones, scrambles y estadísticas, más el primer motor de análisis — detección de fases CFOP, métricas de solve y el cubo inteligente GAN vía Web Bluetooth."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Timer with WCA inspection, sessions, scrambles and penalties.",
+          "es": "Cronómetro con inspección WCA, sesiones, scrambles y penalizaciones."
+        },
+        {
+          "type": "new",
+          "en": "CFOP phase analysis with per-solve metrics.",
+          "es": "Análisis por fases CFOP con métricas por solve."
+        },
+        {
+          "type": "new",
+          "en": "GAN smart cube over Web Bluetooth with auto-arm and gyro reset.",
+          "es": "Cubo inteligente GAN vía Web Bluetooth con auto-arm y recalibrado."
+        },
+        {
+          "type": "improved",
+          "en": "3D engine, solver and a floating times panel.",
+          "es": "Motor 3D, solver y panel de tiempos flotante."
+        }
+      ],
+      "moral": {
+        "en": "That first solve was timed by hand and analysed by heart; now every move is recorded.",
+        "es": "Ese primer solve se cronometró con la mano y se analizó con el corazón; ahora cada movimiento queda registrado."
+      }
+    },
+    {
+      "version": "0.3.0",
+      "startDate": "2026-07-21",
+      "endDate": "2026-07-27",
+      "name": {
+        "en": "The Gym",
+        "es": "El gimnasio"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "The app becomes a training hall: algorithm database, drills and recall, SRS review, an interactive skill tree, 3D case diagrams and a training-system v2 plan.",
+        "es": "La app se convierte en sala de entrenamiento: base de algoritmos, drills y recall, repaso SRS, árbol de habilidades interactivo, diagramas 3D de casos y un plan del sistema de entrenamiento v2."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "CFOP algorithm database with a case editor.",
+          "es": "Base de algoritmos CFOP con editor de casos."
+        },
+        {
+          "type": "new",
+          "en": "Drills, recall and SRS review, integrated with the smart cube.",
+          "es": "Drills, recall y repaso SRS, integrados con el smart cube."
+        },
+        {
+          "type": "new",
+          "en": "Interactive skill tree.",
+          "es": "Árbol de habilidades interactivo."
+        },
+        {
+          "type": "improved",
+          "en": "3D case diagrams and a full-solve view.",
+          "es": "Diagramas 3D de casos y vista de solve completo."
+        },
+        {
+          "type": "improved",
+          "en": "PB detection, practice calendar and training plans.",
+          "es": "Detección de PB, calendario de práctica y planes de entrenamiento."
+        }
+      ],
+      "moral": {
+        "en": "Learning algorithms is like solving a corner: awkward at first, automatic after.",
+        "es": "Aprender algoritmos es como resolver una esquina: al principio cuesta, luego sale solo."
+      }
+    },
+    {
+      "version": "0.4.0",
+      "startDate": "2026-07-28",
+      "endDate": "2026-08-03",
+      "name": {
+        "en": "The Dock Era",
+        "es": "La era del dock"
+      },
+      "period": {
+        "en": "Jul–Aug 2026",
+        "es": "jul–ago 2026"
+      },
+      "summary": {
+        "en": "Floating widgets and a draggable dock, local profiles with CubeMark, manual time entry, data import — and the first deploy: PWA on Vercel with SEO and COOP/COEP headers.",
+        "es": "Widgets flotantes y dock arrastrable, perfiles locales con CubeMark, entrada manual de tiempos, importación de datos — y el primer despliegue: PWA en Vercel con SEO y cabeceras COOP/COEP."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Floating widget system with a draggable dock.",
+          "es": "Sistema de widgets flotantes con dock arrastrable."
+        },
+        {
+          "type": "new",
+          "en": "Local profiles with CubeMark, avatar and country.",
+          "es": "Perfiles locales con CubeMark, avatar y país."
+        },
+        {
+          "type": "new",
+          "en": "Manual time entry and solve import (CSV).",
+          "es": "Entrada manual de tiempos e importación de solves (CSV)."
+        },
+        {
+          "type": "improved",
+          "en": "PWA with icons, SEO and COOP/COEP headers — first deploy on Vercel.",
+          "es": "PWA con iconos, SEO y cabeceras COOP/COEP — primer despliegue en Vercel."
+        }
+      ],
+      "moral": {
+        "en": "First rule of any dock: if you can drag it, you can live with it.",
+        "es": "Primera regla de todo dock: si puedes arrastrarlo, puedes convivir con él."
+      }
+    },
+    {
+      "version": "0.5.0",
+      "startDate": "2026-08-04",
+      "endDate": "2026-08-10",
+      "name": {
+        "en": "Two Languages",
+        "es": "Dos idiomas"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Typed i18n (en/es) across the whole app, a grown algorithm database (COLL/WV, BirdF2L, X-cross), a professional solve-analysis panel, and a much faster first load via lazy chunks.",
+        "es": "i18n tipado (en/es) en toda la app, una base de algoritmos ampliada (COLL/WV, BirdF2L, X-cross), un panel profesional de análisis de solves y una carga inicial mucho más rápida gracias a los chunks lazy."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "The whole app in Spanish and English with typed i18n.",
+          "es": "Toda la app en español e inglés con i18n tipado."
+        },
+        {
+          "type": "new",
+          "en": "Algorithm database growth: COLL/WV, BirdF2L and X-cross.",
+          "es": "Base de algoritmos ampliada: COLL/WV, BirdF2L y X-cross."
+        },
+        {
+          "type": "improved",
+          "en": "A professional solve-analysis panel.",
+          "es": "Panel de análisis de solves profesional."
+        },
+        {
+          "type": "improved",
+          "en": "First load ~40% lighter (lazy chunks).",
+          "es": "Carga inicial ~40% más ligera (chunks lazy)."
+        },
+        {
+          "type": "new",
+          "en": "CSP headers, desktop app and enforced commit convention.",
+          "es": "CSP, app de escritorio y convención de commits obligatoria."
+        }
+      ],
+      "moral": {
+        "en": "Translating the app forced us to name things properly: the code understood first, the users after.",
+        "es": "Traducir la app nos obligó a nombrar bien las cosas: el código entendió primero, los usuarios después."
+      }
+    },
+    {
+      "version": "0.6.0",
+      "startDate": "2026-08-11",
+      "endDate": "2026-08-17",
+      "name": {
+        "en": "The Studio",
+        "es": "El estudio"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "The room becomes a studio: WCA-compliant 2×2 scrambles, cube turn sounds, a trackball orbit camera, tablet layout, background images — and the docs program (Fases 1–9) with AGENTS.md.",
+        "es": "La sala se convierte en estudio: scrambles 2×2 conforme a la WCA, sonidos de giro, cámara orbital tipo trackball, diseño para tablet, imágenes de fondo — y el programa de documentación (Fases 1–9) con AGENTS.md."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "WCA-compliant 2×2 scrambles and the WCA event registry.",
+          "es": "Scrambles 2×2 conforme a la WCA y registro de eventos."
+        },
+        {
+          "type": "new",
+          "en": "Cube turn sounds with Web Audio.",
+          "es": "Sonidos de giro del cubo con Web Audio."
+        },
+        {
+          "type": "fixed",
+          "en": "Trackball orbit camera and improved gyro fusion.",
+          "es": "Cámara orbital tipo trackball y fusión giroscópica mejorada."
+        },
+        {
+          "type": "improved",
+          "en": "Tablet layout, configurable top bar and layout templates.",
+          "es": "Diseño para tablet, barra superior configurable y plantillas de layout."
+        },
+        {
+          "type": "improved",
+          "en": "Full documentation (Fases 1–9) and AGENTS.md.",
+          "es": "Documentación completa (Fases 1–9) y AGENTS.md."
+        }
+      ],
+      "moral": {
+        "en": "When a rotation goes wrong, it is almost never the rotation: it is the axis.",
+        "es": "Cuando un giro sale mal, casi nunca es culpa del giro: es del eje."
+      }
+    },
+    {
+      "version": "0.7.0",
+      "startDate": "2026-08-18",
+      "endDate": "2026-08-24",
+      "name": {
+        "en": "The Cloud",
+        "es": "La nube"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Accounts and offline-first cloud sync (Supabase), resilient storage with a dedicated OPFS worker, on-device crash diagnostics and the redesigned Training dashboard. The web package version was set to 0.8.0 here (cc813171) — the first explicit app-version marker.",
+        "es": "Cuentas y sincronización en la nube offline-first (Supabase), almacenamiento resiliente con worker OPFS dedicado, diagnóstico de caídas en el dispositivo y el rediseño del dashboard de Training. Aquí se fijó el versionado del paquete web en 0.8.0 (cc813171): el primer marcador de versión explícito."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Accounts with sign-in and offline-first cloud sync.",
+          "es": "Cuentas con inicio de sesión y sync en la nube offline-first."
+        },
+        {
+          "type": "fixed",
+          "en": "Resilient storage: OPFS with a dedicated worker.",
+          "es": "Almacenamiento resiliente: OPFS con worker dedicado."
+        },
+        {
+          "type": "new",
+          "en": "On-device crash screen and log viewer.",
+          "es": "Pantalla de error y visor de logs en el dispositivo."
+        },
+        {
+          "type": "improved",
+          "en": "Training dashboard redesigned and responsive profile.",
+          "es": "Dashboard de Training rediseñado y perfil responsive."
+        },
+        {
+          "type": "improved",
+          "en": "Solve multi-select with bulk move/delete.",
+          "es": "Selección múltiple de solves con mover/borrar en bloque."
+        }
+      ],
+      "moral": {
+        "en": "Syncing data is like orienting the cube: ignore the orientation and the next move will hurt.",
+        "es": "Sincronizar datos es como orientar el cubo: si ignoras la orientación, el siguiente movimiento duele."
+      }
+    },
+    {
+      "version": "0.8.0",
+      "startDate": "2026-08-25",
+      "endDate": "2026-08-31",
+      "name": {
+        "en": "Case Intelligence",
+        "es": "Inteligencia de casos"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "One detection engine across smart cube, virtual cube and reconstructions: a professional pause model, 100% colour-neutral F2L/OLL/PLL recognition, mini case cubes and theater replay.",
+        "es": "Un único motor de detección para smart cube, cubo virtual y reconstrucciones: modelo profesional de pausas, reconocimiento F2L/OLL/PLL 100% independiente del color, mini-cubos de caso y replay de cine."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Unified CFOP case analysis (smart cube, virtual, reconstructions).",
+          "es": "Análisis de casos CFOP unificado (smart cube, virtual y reconstrucciones)."
+        },
+        {
+          "type": "new",
+          "en": "Professional pause model: recognition vs. execution.",
+          "es": "Modelo profesional de pausas: reconocimiento vs. ejecución."
+        },
+        {
+          "type": "fixed",
+          "en": "F2L/OLL/PLL recognition that is 100% colour-neutral.",
+          "es": "Reconocimiento F2L/OLL/PLL 100% independiente del color."
+        },
+        {
+          "type": "new",
+          "en": "Mini 3D case cubes with the solve's real colours.",
+          "es": "Mini-cubos 3D con los colores reales del solve."
+        },
+        {
+          "type": "new",
+          "en": "Theater replay: fullscreen, touch gestures and floating stickers.",
+          "es": "Replay de cine: pantalla completa, gestos táctiles y stickers flotantes."
+        },
+        {
+          "type": "improved",
+          "en": "Customizable random-puzzle roulette.",
+          "es": "Ruleta de puzzles aleatorios personalizable."
+        }
+      ],
+      "moral": {
+        "en": "Recognising the case is half the time; the other half is convincing the camera you did.",
+        "es": "Reconocer el caso es la mitad del tiempo; la otra mitad es convencer a la cámara de que lo hiciste."
+      }
+    },
+    {
+      "version": "0.9.0",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-02",
+      "name": {
+        "en": "More Puzzles",
+        "es": "Más puzzles"
+      },
+      "period": {
+        "en": "Sep 2026",
+        "es": "sep 2026"
+      },
+      "summary": {
+        "en": "Five-sided: 3D Pyraminx engine and virtual simulator, multi-puzzle support end to end, Infinite F2L training mode and the universal skill radar. This is the wave that justifies the jump from 0.8.0 to 0.9.0.",
+        "es": "De cinco caras: motor 3D de Pyraminx y simulador virtual, soporte multi-puzzle de punta a punta, modo de entrenamiento Infinite F2L y el radar universal de habilidades. Esta es la ola que justifica el salto de 0.8.0 a 0.9.0."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Pyraminx in 3D with a virtual simulator and drag interactions.",
+          "es": "Pyraminx en 3D con simulador virtual y gestos de arrastre."
+        },
+        {
+          "type": "new",
+          "en": "Multi-puzzle support end to end.",
+          "es": "Soporte multi-puzzle de punta a punta."
+        },
+        {
+          "type": "new",
+          "en": "Infinite F2L training mode with pair history.",
+          "es": "Modo de entrenamiento Infinite F2L con historial de pares."
+        },
+        {
+          "type": "new",
+          "en": "Universal per-session skill radar.",
+          "es": "Radar universal de habilidades por sesión."
+        },
+        {
+          "type": "improved",
+          "en": "Algorithms redesigned for mobile.",
+          "es": "Algoritmos rediseñados para móvil."
+        }
+      ],
+      "moral": {
+        "en": "Just when you master the 3×3, life hands you a Pyraminx: the tricks carry over, the ego does not.",
+        "es": "Justo cuando dominas el 3×3, la vida te regala un Pyraminx: los trucos se reutilizan, el orgullo casi nunca."
+      }
+    }
+  ]
+}
