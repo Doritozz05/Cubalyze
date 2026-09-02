@@ -455,20 +455,22 @@ html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) 
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
-/* ── Flat-button exceptions: dock pills, context-menu & session items ────
+/* ── Flat-button exceptions: dock pills, menus & settings sidebar ────────
    These are flat BY DESIGN (macOS-style icon tray, right-click menu
-   items, and the session switcher — see WidgetDock.tsx,
-   ContextMenu/ContextMenu.tsx, SessionPiece.tsx and Header.tsx): their buttons
-   never carry a background at rest. The remap above keys off
-   [class*="bg-surface"], which also catches hover-only utilities
-   (hover:bg-surface-2) — so every pill / menu item would render as a
-   persistent chip. Zero the rest fill inside those zones; the engine's
-   hover rule above still supplies the raised hover chip, destructive
-   items keep their own red wash, and edit-mode badges (bare bg-surface
-   fills) stay untouched. */
+   items, the session switcher, and the Settings tab sidebar — see
+   WidgetDock.tsx, ContextMenu/ContextMenu.tsx, SessionPiece.tsx,
+   Header.tsx and SettingsSidebar.tsx): their buttons never carry a
+   background at rest. The remap above keys off [class*="bg-surface"],
+   which also catches hover-only utilities (hover:bg-surface) — so every
+   pill / menu item / tab would render as a persistent chip. Zero the
+   rest fill inside those zones; the engine's hover rule above still
+   supplies the raised hover chip, the active Settings pill (a bare
+   bg-surface div) stays, destructive items keep their own red wash, and
+   edit-mode badges (bare bg-surface fills) stay untouched. */
 html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"] {
   background-color: transparent !important;
 }
 
