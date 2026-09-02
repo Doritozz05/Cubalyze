@@ -32,6 +32,7 @@ import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { puzzleCategoryToOrder, puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { useBackgroundMediaStore } from "@/stores/backgroundMediaStore";
 import type { AppShellProps } from "@/components/Layout/appShell.types";
 /**
  * The application shell (extracted from App.tsx): the fixed layout (header,
@@ -125,6 +126,18 @@ export function AppShell(props: AppShellProps) {
       setMobileMoreOpen(false);
     }
   }, [tourActive]);
+
+  // Synchronize timer solve/inspection phase with background media animation (GIFs / videos)
+  useEffect(() => {
+    const phase = session$?.phase;
+    const isAnimating =
+      phase === "inspection" ||
+      phase === "holding" ||
+      phase === "ready" ||
+      phase === "ready_for_move" ||
+      phase === "running";
+    useBackgroundMediaStore.getState().setIsAnimating(isAnimating);
+  }, [session$?.phase]);
 
   // Volatile-storage warning: when the DB falls back to in-memory storage
   // (OPFS unavailable or locked), all data is lost on reload. Rendered as a

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-02T13:54:45.748Z",
-  "totalCommits": 1102,
+  "generatedAt": "2026-09-02T14:14:11.181Z",
+  "totalCommits": 1103,
   "currentVersion": "0.9.1",
   "versions": [
     {
@@ -2319,6 +2319,11 @@
           "type": "new",
           "en": "Tactile single-collapsible changelog accordion closing previous releases on open with exact dates and commit links.",
           "es": "Acordeón táctil de changelog con cierre automático de releases anteriores al abrir, fechas exactas y enlaces a commits."
+        },
+        {
+          "type": "new",
+          "en": "Looping video & animated GIF backgrounds (<10s) with IndexedDB persistence, resting as a static frame and looping during inspection and solve.",
+          "es": "Fondos en vídeo y GIFs animados (<10s) con almacenamiento en IndexedDB, estáticos en reposo y en bucle continuo durante la inspección y resolución."
         }
       ],
       "date": "2026-09-02"

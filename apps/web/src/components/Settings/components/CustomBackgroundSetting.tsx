@@ -1,9 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { Image as ImageIcon, Upload, Trash2, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import {
+  Image as ImageIcon,
+  Upload,
+  Trash2,
+  Loader2,
+  Play,
+  Pause,
+  Film,
+  Sparkles,
+} from 'lucide-react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { preferencesStore } from '@cubeforge/state';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -14,14 +24,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { processBackgroundImage } from '@/utils/imageUtils';
+import {
+  validateAndProcessBackgroundMedia,
+  MediaValidationError,
+} from '@/utils/mediaUtils';
+import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 
 export function CustomBackgroundSetting() {
   const { t } = useTranslation('settings');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
 
   const timerBackgroundImage = useStore(preferencesStore, (s) => s.timerBackgroundImage);
-  const setTimerBackgroundImage = useStore(preferencesStore, (s) => s.setTimerBackgroundImage);
   const timerBackgroundOpacity = useStore(preferencesStore, (s) => s.timerBackgroundOpacity);
   const setTimerBackgroundOpacity = useStore(preferencesStore, (s) => s.setTimerBackgroundOpacity);
   const timerBackgroundBlur = useStore(preferencesStore, (s) => s.timerBackgroundBlur);
@@ -31,22 +45,89 @@ export function CustomBackgroundSetting() {
   const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
   const setTimerBackgroundOverlay = useStore(preferencesStore, (s) => s.setTimerBackgroundOverlay);
 
+  const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
+  const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
+  const mediaType = useBackgroundMediaStore((s) => s.mediaType);
+  const duration = useBackgroundMediaStore((s) => s.duration);
+  const setMedia = useBackgroundMediaStore((s) => s.setMedia);
+  const clearMedia = useBackgroundMediaStore((s) => s.clearMedia);
+
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Synchronize preview video playback
+  useEffect(() => {
+    const video = previewVideoRef.current;
+    if (!video || mediaType !== 'video') return;
+
+    if (previewPlaying) {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, [previewPlaying, mediaType]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setIsProcessing(true);
-      const dataUrl = await processBackgroundImage(file);
-      setTimerBackgroundImage(dataUrl);
+      const processed = await validateAndProcessBackgroundMedia(file);
+      await setMedia({
+        blob: processed.blob,
+        mimeType: processed.mimeType,
+        mediaType: processed.mediaType,
+        name: processed.name,
+        posterDataUrl: processed.posterDataUrl,
+        duration: processed.duration,
+        width: processed.width,
+        height: processed.height,
+      });
+      setPreviewPlaying(false);
     } catch (err) {
-      console.error('Failed to process custom background image:', err);
+      console.error('Failed to process custom background:', err);
+      if (err instanceof MediaValidationError) {
+        if (err.code === 'DURATION_EXCEEDED') {
+          toast.error(
+            t('appearance.videoDurationError', {
+              duration: err.duration?.toFixed(1) ?? '10+',
+            }),
+          );
+        } else if (err.code === 'SIZE_EXCEEDED') {
+          toast.error(t('appearance.videoSizeError'));
+        } else {
+          toast.error(t('appearance.uploadError'));
+        }
+      } else {
+        toast.error(t('appearance.uploadError'));
+      }
     } finally {
       setIsProcessing(false);
-      // Reset input value so same file re-upload works
       e.target.value = '';
     }
   };
+
+  const handleRemove = async () => {
+    try {
+      setIsProcessing(true);
+      setPreviewPlaying(false);
+      await clearMedia();
+    } catch (err) {
+      console.error('Failed to remove custom background:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const hasBackground =
+    !!timerBackgroundImage &&
+    (!!mediaUrl || timerBackgroundImage.startsWith('data:'));
+
+  const effectiveMediaUrl =
+    mediaUrl ||
+    (timerBackgroundImage?.startsWith('data:') ? timerBackgroundImage : null);
 
   return (
     <div className="group flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
@@ -64,7 +145,7 @@ export function CustomBackgroundSetting() {
           <input
             type="file"
             id="bg-image-upload"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime,video/ogg"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -81,16 +162,18 @@ export function CustomBackgroundSetting() {
             ) : (
               <Upload className="size-3.5" />
             )}
-            {timerBackgroundImage ? t('appearance.changeImage') : t('appearance.uploadImage')}
+            {hasBackground
+              ? t('appearance.changeImage')
+              : t('appearance.uploadImage')}
           </Button>
-          {timerBackgroundImage && (
+          {hasBackground && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
               disabled={isProcessing}
               className="h-8 text-xs text-caution hover:bg-caution/10 hover:text-caution"
-              onClick={() => setTimerBackgroundImage(null)}
+              onClick={handleRemove}
             >
               <Trash2 className="size-3.5" />
               {t('appearance.removeImage')}
@@ -99,27 +182,135 @@ export function CustomBackgroundSetting() {
         </div>
       </div>
 
-      {timerBackgroundImage && (
+      {hasBackground && effectiveMediaUrl && (
         <div className="flex flex-col gap-4 border-t border-line/50 pt-4">
-          {/* Image Thumbnail Preview */}
-          <div className="relative h-32 w-full overflow-hidden rounded-lg border border-line bg-canvas">
-            <div
-              className="absolute inset-0 bg-center"
-              style={{
-                backgroundImage: `url("${timerBackgroundImage}")`,
-                backgroundSize: timerBackgroundFit === 'tile' ? 'auto' : timerBackgroundFit,
-                backgroundRepeat: timerBackgroundFit === 'tile' ? 'repeat' : 'no-repeat',
-                opacity: timerBackgroundOpacity / 100,
-                filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
-                transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
-              }}
-            />
+          {/* Thumbnail / Interactive Live Preview */}
+          <div className="relative h-36 w-full overflow-hidden rounded-lg border border-line bg-canvas">
+            {/* 1. Video preview */}
+            {mediaType === 'video' && (
+              <video
+                ref={previewVideoRef}
+                src={effectiveMediaUrl}
+                poster={posterUrl || undefined}
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 size-full object-cover"
+                style={{
+                  objectFit: timerBackgroundFit === 'contain' ? 'contain' : 'cover',
+                  opacity: timerBackgroundOpacity / 100,
+                  filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                  transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
+                }}
+              />
+            )}
+
+            {/* 2. Animated GIF preview */}
+            {mediaType === 'gif' && (
+              <>
+                {previewPlaying ? (
+                  <img
+                    key="preview-gif-anim"
+                    src={effectiveMediaUrl}
+                    alt=""
+                    className="absolute inset-0 size-full pointer-events-none"
+                    style={{
+                      objectFit:
+                        timerBackgroundFit === 'contain'
+                          ? 'contain'
+                          : timerBackgroundFit === 'tile'
+                            ? 'none'
+                            : 'cover',
+                      opacity: timerBackgroundOpacity / 100,
+                      filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                      transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0 bg-center"
+                    style={{
+                      backgroundImage: `url("${posterUrl || effectiveMediaUrl}")`,
+                      backgroundSize: timerBackgroundFit === 'tile' ? 'auto' : timerBackgroundFit,
+                      backgroundRepeat: timerBackgroundFit === 'tile' ? 'repeat' : 'no-repeat',
+                      opacity: timerBackgroundOpacity / 100,
+                      filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                      transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
+                    }}
+                  />
+                )}
+              </>
+            )}
+
+            {/* 3. Static image preview */}
+            {(mediaType === 'image' || !mediaType) && (
+              <div
+                className="absolute inset-0 bg-center"
+                style={{
+                  backgroundImage: `url("${effectiveMediaUrl}")`,
+                  backgroundSize: timerBackgroundFit === 'tile' ? 'auto' : timerBackgroundFit,
+                  backgroundRepeat: timerBackgroundFit === 'tile' ? 'repeat' : 'no-repeat',
+                  opacity: timerBackgroundOpacity / 100,
+                  filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                  transform: timerBackgroundBlur ? 'scale(1.05)' : undefined,
+                }}
+              />
+            )}
+
+            {/* Dark overlay */}
             {timerBackgroundOverlay > 0 && (
               <div
                 className="absolute inset-0 bg-black pointer-events-none"
                 style={{ opacity: timerBackgroundOverlay / 100 }}
               />
             )}
+
+            {/* Media Type Badge in corner */}
+            <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface/85 backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60">
+              {mediaType === 'video' ? (
+                <>
+                  <Film className="size-3 text-primary" />
+                  <span>
+                    {t('appearance.typeVideo')}{' '}
+                    {duration ? `(${duration.toFixed(1)}s)` : ''}
+                  </span>
+                </>
+              ) : mediaType === 'gif' ? (
+                <>
+                  <Sparkles className="size-3 text-amber-500" />
+                  <span>{t('appearance.typeGif')}</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="size-3 text-ink-2" />
+                  <span>{t('appearance.typeImage')}</span>
+                </>
+              )}
+            </div>
+
+            {/* Test Animation (Play/Pause) Button for Videos and GIFs */}
+            {(mediaType === 'video' || mediaType === 'gif') && (
+              <button
+                type="button"
+                onClick={() => setPreviewPlaying((p) => !p)}
+                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface/90 hover:bg-surface backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60 transition-colors"
+                title={previewPlaying ? t('appearance.previewPause') : t('appearance.previewPlay')}
+              >
+                {previewPlaying ? (
+                  <>
+                    <Pause className="size-3 text-primary fill-primary" />
+                    <span>{t('appearance.previewPause')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-3 text-primary fill-primary" />
+                    <span>{t('appearance.previewPlay')}</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Mock timer readout */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="rounded-md bg-surface/90 backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
                 00:00.00
@@ -140,7 +331,9 @@ export function CustomBackgroundSetting() {
                 max={100}
                 step={5}
                 value={[timerBackgroundOpacity]}
-                onValueChange={(val) => val[0] !== undefined && setTimerBackgroundOpacity(val[0])}
+                onValueChange={(val) =>
+                  val[0] !== undefined && setTimerBackgroundOpacity(val[0])
+                }
               />
             </div>
 
@@ -155,7 +348,9 @@ export function CustomBackgroundSetting() {
                 max={20}
                 step={1}
                 value={[timerBackgroundBlur]}
-                onValueChange={(val) => val[0] !== undefined && setTimerBackgroundBlur(val[0])}
+                onValueChange={(val) =>
+                  val[0] !== undefined && setTimerBackgroundBlur(val[0])
+                }
               />
             </div>
 
@@ -170,7 +365,9 @@ export function CustomBackgroundSetting() {
                 max={80}
                 step={5}
                 value={[timerBackgroundOverlay]}
-                onValueChange={(val) => val[0] !== undefined && setTimerBackgroundOverlay(val[0])}
+                onValueChange={(val) =>
+                  val[0] !== undefined && setTimerBackgroundOverlay(val[0])
+                }
               />
             </div>
 
@@ -179,7 +376,9 @@ export function CustomBackgroundSetting() {
               <span className="text-xs text-ink-2 font-medium">{t('appearance.fit')}</span>
               <Select
                 value={timerBackgroundFit}
-                onValueChange={(val) => setTimerBackgroundFit(val as 'cover' | 'contain' | 'tile')}
+                onValueChange={(val) =>
+                  setTimerBackgroundFit(val as 'cover' | 'contain' | 'tile')
+                }
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />

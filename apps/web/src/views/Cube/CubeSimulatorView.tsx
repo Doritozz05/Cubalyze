@@ -46,6 +46,7 @@ import {
 } from "@cubeforge/math-core";
 import { preferencesStore } from "@cubeforge/state";
 import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
+import { useBackgroundMediaStore } from "@/stores/backgroundMediaStore";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 import { CubeHelpOverlay, type CubeTurnSpeed } from "./CubeHelpOverlay";
 import { PyraminxVirtualView } from "./PyraminxVirtualView";
@@ -276,6 +277,15 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
     onSolve: (time, penalty, moves, orientations, orientationTimeline) =>
       virtualSolveRef.current(time, penalty, moves, orientations, orientationTimeline),
   });
+
+  // Synchronize virtual cube solve phase with background media animation
+  useEffect(() => {
+    const isAnimating = phase === "running" || phase === "ready_for_move";
+    useBackgroundMediaStore.getState().setIsAnimating(isAnimating);
+    return () => {
+      useBackgroundMediaStore.getState().setIsAnimating(false);
+    };
+  }, [phase]);
 
   /** Push the logical state to the 3D engine (instant facelet sync — used for
    *  scramble apply and reset, whose frames are always canonical). */

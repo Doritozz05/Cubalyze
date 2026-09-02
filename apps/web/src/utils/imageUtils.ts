@@ -6,6 +6,8 @@
  * For larger files, downscales using high-quality canvas smoothing to prevent
  * localStorage quota exhaustion.
  */
+export { validateAndProcessBackgroundMedia } from './mediaUtils';
+
 export function processBackgroundImage(
   file: File,
   maxSizeForOriginalBytes = 3.5 * 1024 * 1024,
