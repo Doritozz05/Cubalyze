@@ -48,6 +48,18 @@ export interface GrayedStickerRecord {
 }
 
 export class Cube3DEngine {
+  /**
+   * Canonical front-facing view with natural downward eye perspective.
+   * - theta: 0 (directly facing front face, Left and Right edges symmetrical)
+   * - phi: Math.PI / 4 rad (45°) elevation showing an equal 50% front face and 50% top face
+   * - radius: 7 (standard viewing distance)
+   */
+  public static readonly CANONICAL_VIEW = {
+    theta: 0,
+    phi: Math.PI / 4,
+    radius: 7,
+  } as const;
+
   public sceneManager!: SceneManager;
   public factory!: CubeMeshFactory;
   public model!: CubeModel;
@@ -159,6 +171,11 @@ export class Cube3DEngine {
     this.factory = new CubeMeshFactory();
     this.model = new CubeModel(this.factory, order);
     this.sceneManager.scene.add(this.model.root);
+    this.sceneManager.setOrbitAngles(
+      Cube3DEngine.CANONICAL_VIEW.theta,
+      Cube3DEngine.CANONICAL_VIEW.phi,
+      Cube3DEngine.CANONICAL_VIEW.radius,
+    );
 
     this.rotationEngine = new RotationEngine(this.model);
     this.gyroFusion = new GyroFusion(this.model.root);
@@ -426,7 +443,8 @@ export class Cube3DEngine {
   public calibrateGyro(): void {
     if (!this.gyroFusion) return;
     if (this.sceneManager) {
-      this.sceneManager.resetCamera();
+      const view = Cube3DEngine.CANONICAL_VIEW;
+      this.sceneManager.setOrbitAngles(view.theta, view.phi, view.radius);
     }
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
@@ -667,13 +685,14 @@ export class Cube3DEngine {
 
   public resetCamera(smooth = false): Promise<void> | void {
     if (!this.sceneManager) return;
+    const view = Cube3DEngine.CANONICAL_VIEW;
     if (smooth) {
-      return this.animateCameraTo(0, 0, 7);
+      return this.animateCameraTo(view.theta, view.phi, view.radius);
     }
     this.cameraMomentum = null;
     this.cameraMomentumState = 'idle';
     this.finishCameraAnim();
-    this.sceneManager.resetCamera();
+    this.sceneManager.setOrbitAngles(view.theta, view.phi, view.radius);
     this.requestRender();
   }
 
