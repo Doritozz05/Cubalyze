@@ -102,7 +102,10 @@ export function AlgorithmDashboard({
           (was flush against header/rail) + compact touch gutters. */}
       <div className="absolute inset-0 flex flex-col gap-4 overflow-hidden lg:flex-row lg:gap-5 max-lg:px-3 lg:px-6 lg:pt-3">
         {/* Left panel: Method tree — desktop only (>=768px) */}
-        <aside className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0">
+        <aside
+          data-context-zone="algorithms-nav"
+          className="hidden h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface lg:flex lg:w-64 lg:shrink-0"
+        >
           <div className="flex-1 overflow-y-auto py-2">
             <MethodTree
               selectedSubsetId={selectedSubsetId}

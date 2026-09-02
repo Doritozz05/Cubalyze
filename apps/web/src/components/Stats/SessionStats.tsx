@@ -41,14 +41,18 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
 
+  // BPA/WPA projection for the NEXT solve of the pending average. Shown
+  // permanently once enough solves exist (no more popping in/out): prefers
+  // the Ao12 projection when an Ao12 window is about to complete, otherwise
+  // always shows the Ao5 projection of the most recent 4 solves.
   const bpaWpa = useMemo(() => {
     if (!showBpaWpa || filtered.length === 0) return null;
     const statSolves = filtered.map((s) => ({ time: s.time ?? 0, penalty: s.penalty }));
-    if (statSolves.length % 5 === 4) {
-      return computeBpaWpa(statSolves.slice(0, 4), 5);
+    if (statSolves.length >= 11 && statSolves.length % 12 === 11) {
+      return computeBpaWpa(statSolves.slice(-11), 12);
     }
-    if (statSolves.length % 12 === 11) {
-      return computeBpaWpa(statSolves.slice(0, 11), 12);
+    if (statSolves.length >= 4) {
+      return computeBpaWpa(statSolves.slice(-4), 5);
     }
     return null;
   }, [filtered, showBpaWpa]);
@@ -100,7 +104,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
           >
             <div className="relative flex flex-col items-center w-full h-full justify-center">
               {bpaWpa != null && (
-                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface/95 px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
+                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
                     Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
                   </span>

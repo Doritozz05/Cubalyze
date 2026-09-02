@@ -14,13 +14,14 @@ import {
 import { derivePauseCauseSums } from "@/utils/insights";
 import { formatTime } from "@/utils/formatTime";
 import { SectionHeader } from "./atoms";
+import { PANEL_BASE } from "@/lib/panel";
 import { phaseColorHex } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
 
 const TOOLTIP_STYLE = {
   border: "1px solid var(--line)",
   borderRadius: "6px",
-  background: "var(--surface)",
+  background: "var(--glass-bg-dense)",
   color: "var(--ink)",
   fontSize: "0.7rem",
   padding: "4px 8px",
@@ -67,7 +68,7 @@ export function PauseCauseSection({ solves }: { solves: Solve[] }) {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
+      <div className={PANEL_BASE}>
         <SectionHeader title={t("overview.pauseByCause")} />
         <div className="mt-3 flex h-14 items-center justify-center text-center text-[0.7rem] text-ink-3">
           {t("overview.pauseByCauseEmpty")}
@@ -87,7 +88,7 @@ export function PauseCauseSection({ solves }: { solves: Solve[] }) {
   }));
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-5 py-4 max-lg:px-4 max-lg:py-3">
+    <div className={PANEL_BASE}>
       <SectionHeader
         title={t("overview.pauseByCause")}
         eyebrow={t("overview.pauseByCauseEyebrow", { total: formatTime(totalMs) })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { motion, LayoutGroup } from "framer-motion";
 import { Search, LayoutGrid, Filter } from "lucide-react";
 import {
   Dialog,
@@ -86,33 +87,48 @@ export function DockExplorer({ open, onOpenChange }: DockExplorerProps) {
 
   const innerContent = (
     <div className="flex h-full min-h-0">
-      {/* Sidebar (desktop) */}
+      {/* Sidebar (desktop) — same nav treatment as settings */}
       <div className="hidden lg:flex h-full shrink-0">
-        <div className="flex h-full w-44 flex-col border-r border-line bg-surface-2/30 p-2">
+        <nav
+          className="flex h-full w-44 flex-col border-r border-line bg-surface-2/30 p-2"
+          data-context-zone="explorer-sidebar"
+        >
           <div className="px-2 pb-2 text-[0.68rem] font-medium uppercase tracking-wider text-ink-3">
             {t("explorer.categories")}
           </div>
-          {KIND_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleSelectKind(cat.id)}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[0.82rem] transition-colors",
-                activeKind === cat.id
-                  ? "bg-surface font-medium text-ink shadow-xs"
-                  : "text-ink-2 hover:bg-surface hover:text-ink",
-              )}
-            >
-              <span className="truncate">{t(cat.label)}</span>
-            </button>
-          ))}
-        </div>
+          <LayoutGroup>
+            {KIND_CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleSelectKind(cat.id)}
+                className={cn(
+                  "group relative flex w-full items-center rounded-lg px-2.5 py-2 text-left text-[0.82rem] transition-colors duration-150",
+                  activeKind === cat.id
+                    ? "text-ink"
+                    : "text-ink-2 hover:bg-surface hover:text-ink",
+                )}
+              >
+                {activeKind === cat.id && (
+                  <motion.div
+                    layoutId="dock-explorer-active-bg"
+                    className="absolute inset-0 rounded-lg bg-surface"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 truncate">{t(cat.label)}</span>
+              </button>
+            ))}
+          </LayoutGroup>
+        </nav>
       </div>
 
       {/* Main area */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 border-b border-line px-6 py-5 max-lg:px-4 max-lg:py-4">
+        {/* Header — same tint as the sidebar (settings parity) */}
+        <div
+          className="shrink-0 border-b border-line bg-surface-2/30 px-6 py-5 max-lg:px-4 max-lg:py-4"
+          data-modal-header
+        >
           <div className="flex items-center justify-between">
             <div>
               <h2 className="flex items-center gap-2 text-[0.95rem] font-semibold text-ink">

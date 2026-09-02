@@ -384,7 +384,7 @@ export const SolveListPanel = memo(function SolveListPanel({
       ) : (
         <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1">
           {selectionMode && (
-            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface px-3 py-1.5">
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-[var(--glass-bg-dense)] px-3 py-1.5">
               <button
                 onClick={onExitSelection}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
@@ -405,7 +405,7 @@ export const SolveListPanel = memo(function SolveListPanel({
             </div>
           )}
           <ul
-            className="relative w-full"
+            className="relative w-full py-1"
             style={{ height: virtualizer.getTotalSize() }}
           >
             {virtualizer.getVirtualItems().map((vi) => {
@@ -494,9 +494,8 @@ export const SolveListPanel = memo(function SolveListPanel({
                     time: isDnf ? "DNF" : formatTime(eff),
                   })}${s.method ? `, ${s.method}` : ""}`}
                   className={cn(
-                    "group absolute left-0 top-0 w-full cursor-pointer border-b border-line/70 outline-none",
+                    "group absolute left-0 top-0 w-full cursor-pointer px-1.5 py-0.5 outline-none",
                     "transition-colors duration-150",
-                    vi.index === solves.length - 1 && "border-b-0",
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
@@ -635,7 +634,7 @@ function ActivePill({ active }: { active: boolean }) {
           animate={{ opacity: 1 }}
           exit={reduceMotion ? {} : { opacity: 0 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
-          className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-surface-2 border border-line/35 dark:border-white/4"
+          className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent glass-active-pill"
         />
       )}
     </AnimatePresence>

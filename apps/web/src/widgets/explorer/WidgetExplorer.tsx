@@ -121,8 +121,11 @@ export function WidgetExplorer({ open, onOpenChange }: WidgetExplorerProps) {
 
       {/* ── Main Area ──────────────────────────────────────────────── */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 border-b border-line px-6 py-5 max-lg:px-4 max-lg:py-4">
+        {/* Header — same tint as the sidebar (settings parity) */}
+        <div
+          className="shrink-0 border-b border-line bg-surface-2/30 px-6 py-5 max-lg:px-4 max-lg:py-4"
+          data-modal-header
+        >
           <div className="flex items-center justify-between">
             <div>
               <h2 className="flex items-center gap-2 text-[0.95rem] font-semibold text-ink">

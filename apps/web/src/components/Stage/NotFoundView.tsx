@@ -32,7 +32,7 @@ export function NotFoundView() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-canvas px-6 py-16 text-center">
-      <div className="grid size-16 place-items-center rounded-2xl border border-line bg-surface text-ink-3 shadow-2xs">
+      <div className="grid size-16 place-items-center rounded-xl border border-line bg-surface text-ink-3 shadow-2xs">
         <Compass className="size-8" />
       </div>
 

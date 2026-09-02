@@ -25,6 +25,7 @@ export function SettingsSidebar({
     <nav
       className="flex h-full max-lg:hidden shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-surface-2/30 px-2 py-3"
       style={{ width: SIDEBAR_WIDTH }}
+      data-context-zone="settings-sidebar"
     >
       <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">
         {t('preferences')}

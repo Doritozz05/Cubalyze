@@ -661,7 +661,10 @@ function SidebarProfileItem({
     <IdenticonAvatar
       seed={seed}
       size={20}
-      tile="surface-2"
+      // Solid (non-glass) tile: the liquid-glass engine must not turn the
+      // identity frame into a frosted chip — it stays dry like the base
+      // --surface-2 look (see --surface-2-solid in index.css).
+      tile="surface-2-solid"
       className="rounded-md ring-1 ring-sidebar-border"
     />
   ) : (

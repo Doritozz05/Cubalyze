@@ -490,13 +490,22 @@ export function SolveAnalysisPanel({
         <>
           {/* Left — replay pinned large & sticky, like reconstructions */}
           <div className="flex min-h-75 w-full shrink-0 flex-col sm:min-h-95 lg:min-h-0 lg:w-7/12 lg:max-w-200 lg:flex-none">
-            <div className="flex flex-col rounded-xl border border-line bg-surface p-3 shadow-xs sm:p-4 lg:min-h-0 lg:flex-1 lg:rounded-none lg:border-0 lg:border-r lg:border-line/60 lg:bg-transparent lg:shadow-none">
+            {/* Horizontal/detail: the replay column is 100% transparent on
+                desktop — panel classes are max-lg: variants, and
+                [data-replay-flat] makes the liquid-glass engine force
+                transparency at lg+ too (its rules match class substrings,
+                so responsive variants alone can't escape them). */}
+            <div
+              data-replay-flat
+              className="flex flex-col max-lg:rounded-xl max-lg:border max-lg:border-line max-lg:bg-surface max-lg:p-3 sm:max-lg:p-4 max-lg:shadow-xs lg:min-h-0 lg:flex-1 lg:border-r lg:border-line/60"
+            >
               <ReplaySection
                 ref={replayRef}
                 solve={replaySolve}
                 size="large"
                 collapsible={false}
                 showHeader={false}
+                flat
                 onReplayPosition={(ms, moveIndex) => {
                   setReplayPosMs(ms);
                   setReplayMoveIdx(moveIndex);

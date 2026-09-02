@@ -427,7 +427,10 @@ export function Header({
       {/* Touch (<lg): minimal bar — More (bottom-bar icon) top-left, the
           selected puzzle with the session name beneath it centered, and the
           session icon-only at the far right. No manual solve on touch. */}
-      <div className="relative flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:hidden">
+      <div
+        data-context-zone="mobile-header"
+        className="relative flex h-full w-full items-center justify-between px-4 pt-safe sm:px-6 lg:hidden"
+      >
         {/* Left: More button — same icon/action as the bottom tab bar */}
         <button
           type="button"

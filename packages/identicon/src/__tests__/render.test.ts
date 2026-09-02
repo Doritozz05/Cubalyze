@@ -34,6 +34,14 @@ describe('renderCubeMark — SVG output', () => {
     expect(transparent).not.toContain('var(--surface-2)');
   });
 
+  it('fills the solid (non-glass) tile with --surface-2-solid only on request', () => {
+    const svg = renderCubeMark(generateCubeMarkSpec('solid'), { tile: 'surface-2-solid' });
+    expect(svg).toContain('var(--surface-2-solid)');
+    expect(svg).not.toContain('var(--surface-2)');
+    const transparent = renderCubeMark(generateCubeMarkSpec('solid'), { tile: 'transparent' });
+    expect(transparent).not.toContain('var(--surface-2-solid)');
+  });
+
   it('is deterministic for a given spec', () => {
     const spec = generateCubeMarkSpec('det-render');
     expect(renderCubeMark(spec)).toBe(renderCubeMark(spec));

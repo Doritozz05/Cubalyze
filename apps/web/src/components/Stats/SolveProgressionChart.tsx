@@ -364,7 +364,7 @@ function ScatterTooltip({ active, payload }: any) {
   if (!point) return null;
 
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg">
+    <div className="rounded-lg border border-line bg-[var(--glass-bg-dense)] px-3 py-2 text-xs shadow-lg">
       <div className="flex items-baseline gap-2 text-[0.6rem] text-ink-3">
         {t("overview.solveNumber", { number: point.solveIndex })}
         {point.isPb && (

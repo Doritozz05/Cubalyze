@@ -109,19 +109,23 @@ export function getSortDate(e: ReconIndexEntry): string {
 const ROW_GRID =
   "grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_4.5rem_5.25rem] xl:grid-cols-[2.25rem_minmax(0,1.2fr)_4.25rem_5.75rem_minmax(0,1.6fr)_4.5rem_5.25rem_6.25rem]";
 
-/** Method chip, coloured per family with the design-system phase palette. */
+/** Method chip, coloured per family with the design-system phase palette.
+ *  Chips use SOLID fills + paper/white labels — the same badge treatment the
+ *  app's lists use (e.g. the SRS review queue: `bg-phase-* text-white`) —
+ *  never translucent tints. The amber family follows the `bg-caution
+ *  text-surface` pairing (amber is too light for white text). */
 function methodBadgeClass(entry: ReconIndexEntry): string {
   const m = (entry.method || "").toUpperCase();
   const group = (entry.methodGroup || "").toUpperCase();
 
   if (m === "CFOP" || group === "CFOP") {
-    return "border-phase-blue/40 bg-phase-blue/10 text-phase-blue";
+    return "bg-phase-blue text-white";
   }
   if (m === "ROUX" || group === "ROUX") {
-    return "border-phase-violet/40 bg-phase-violet/10 text-phase-violet";
+    return "bg-phase-violet text-white";
   }
   if (m.startsWith("EG") || m === "CLL" || m.includes("ORTEGA")) {
-    return "border-phase-emerald/40 bg-phase-emerald/10 text-phase-emerald";
+    return "bg-phase-emerald text-white";
   }
   if (
     m.startsWith("ZB") ||
@@ -132,10 +136,10 @@ function methodBadgeClass(entry: ReconIndexEntry): string {
     m === "ZZ" ||
     m === "PETRUS"
   ) {
-    return "border-phase-amber/40 bg-phase-amber/10 text-phase-amber";
+    return "bg-caution text-surface";
   }
   if (m.includes("MOVER")) {
-    return "border-phase-purple/40 bg-phase-purple/10 text-phase-purple";
+    return "bg-phase-purple text-white";
   }
   return "border-line bg-surface-2 text-ink-3";
 }
@@ -144,7 +148,7 @@ function MethodBadge({ entry }: { entry: ReconIndexEntry }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center w-fit max-w-full rounded border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider whitespace-nowrap",
+        "inline-flex items-center justify-center w-fit max-w-full rounded px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider whitespace-nowrap",
         methodBadgeClass(entry),
       )}
       title={entry.method}

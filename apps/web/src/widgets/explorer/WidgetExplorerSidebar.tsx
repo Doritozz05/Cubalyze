@@ -21,8 +21,9 @@ export function WidgetExplorerSidebar({
   const { t } = useTranslation("widgets");
   return (
     <nav
-      className="flex h-full shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-canvas px-2 py-3"
+      className="flex h-full shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-line bg-surface-2/30 px-2 py-3"
       style={{ width: EXPLORER_SIDEBAR_WIDTH }}
+      data-context-zone="explorer-sidebar"
     >
       <p className="mb-2 px-3 text-[0.65rem] font-medium uppercase tracking-[0.15em] text-ink-3 select-none">
         {t("sidebar.categories")}

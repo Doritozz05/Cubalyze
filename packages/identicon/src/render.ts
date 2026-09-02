@@ -5,7 +5,10 @@
  * radius language (rounded squares with a uniform gap); the anchor cell is
  * tinted with a complementary accent (hue + 30°) so the glyph reads as
  * designed. When `tile: 'surface-2'` the tile fill uses the CSS variable
- * `--surface-2`, so inline usage is theme-aware automatically.
+ * `--surface-2`, so inline usage is theme-aware automatically. The
+ * `'surface-2-solid'` variant fills with `--surface-2-solid` — the same
+ * color, but a token the liquid-glass engine NEVER remaps, for identity
+ * tiles that must stay dry.
  *
  * The glyph is pure cells — no interior frames or overlays — so every
  * CubeMark renders as squares only.
@@ -18,8 +21,9 @@ import type { CubeMarkSpec } from './spec.js';
 export interface CubeMarkRenderOptions {
   /** SVG viewBox size in units (default 64). SVG scales to any CSS size. */
   size?: number;
-  /** Tile background: theme-aware `--surface-2` or transparent (default). */
-  tile?: 'transparent' | 'surface-2';
+  /** Tile background: theme-aware `--surface-2`, its solid (non-glass)
+   *  counterpart `--surface-2-solid`, or transparent (default). */
+  tile?: 'transparent' | 'surface-2' | 'surface-2-solid';
 }
 
 /** Round to 2 decimals to keep the SVG markup small. */
@@ -66,7 +70,12 @@ export function renderCubeMark(
 ): string {
   const size = options.size ?? 64;
   const tile = options.tile ?? 'transparent';
-  const tileFill = tile === 'surface-2' ? 'var(--surface-2)' : 'none';
+  const tileFill =
+    tile === 'surface-2'
+      ? 'var(--surface-2)'
+      : tile === 'surface-2-solid'
+        ? 'var(--surface-2-solid)'
+        : 'none';
   const pad = size * 0.055;
   const tileRadius = size * 0.16;
 

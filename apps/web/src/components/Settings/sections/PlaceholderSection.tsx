@@ -25,7 +25,7 @@ export function PlaceholderSection({
   return (
     <div className={cn('flex h-full flex-col', className)}>
       <div className="flex flex-1 flex-col items-center justify-center gap-5">
-        <div className="flex size-16 items-center justify-center rounded-2xl border border-line bg-surface shadow-sm">
+        <div className="flex size-16 items-center justify-center rounded-xl border border-line bg-surface shadow-sm">
           <Icon className="size-6 text-ink-3" />
         </div>
 

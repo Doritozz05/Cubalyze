@@ -163,6 +163,9 @@
   --canvas: #f8f9fa;
   --surface: #ffffff;
   --surface-2: #f1f3f5;
+  /* Solid (non-glass) surface-2 — NEVER remapped by the liquid-glass
+     engine, so small identity tiles (sidebar CubeMark frame) stay dry. */
+  --surface-2-solid: #f1f3f5;
   --accent-emerald: #047857;
   /* Phase dots (light) — identical hex values to the previous Tailwind-400
      classes so colours don't change, they're just tokenised now. */
@@ -225,9 +228,20 @@
   --glass-border: rgba(0, 0, 0, calc(0.04 + var(--glass-opacity, 0.65) * 0.06));
   --glass-blur: calc(10px + var(--glass-opacity, 0.65) * 14px);
   --glass-saturate: 180%;
-  --glass-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
   --glass-scrollbar-thumb: rgba(0, 0, 0, calc(0.14 + var(--glass-opacity, 0.65) * 0.10));
   --glass-scrollbar-thumb-hover: rgba(0, 0, 0, calc(0.24 + var(--glass-opacity, 0.65) * 0.14));
+  /* Buttons / chips: neutral fills become translucent frosted chips; hover
+     steps the alpha up instead of snapping to an opaque gray/white patch. */
+  --glass-btn-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.8));
+  --glass-btn-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.95));
+  /* Nested panels (panel inside glass panel): HALF-POWER liquid — more
+     see-through tint + half the blur, so nesting reads as depth instead
+     of the old dry fill or milky blur-over-blur. */
+  --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.5));
+  --glass-nested-blur: calc(var(--glass-blur) * 0.5);
+  /* Overlay surfaces (selection bars, chart tooltips, floating chips):
+     NEARLY OPAQUE glass — background text must never read through. */
+  --glass-bg-dense: rgba(255, 255, 255, 0.94);
 }
 
 .dark {
@@ -265,6 +279,7 @@
   --canvas: #14171b;
   --surface: #1b1f23;
   --surface-2: #24292e;
+  --surface-2-solid: #24292e;
   --card: #1f2429;
   --popover: #22282e;
   --accent-emerald: #34d399;
@@ -296,9 +311,18 @@
   --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-opacity, 0.65) * 0.08));
   --glass-blur: calc(12px + var(--glass-opacity, 0.65) * 16px);
   --glass-saturate: 190%;
-  --glass-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
   --glass-scrollbar-thumb: rgba(255, 255, 255, calc(0.16 + var(--glass-opacity, 0.65) * 0.12));
   --glass-scrollbar-thumb-hover: rgba(255, 255, 255, calc(0.28 + var(--glass-opacity, 0.65) * 0.16));
+  /* Buttons / chips: brighter frosted fill for the low-glare canvas; hover
+     nudges toward the panel's light so the raise reads in both themes. */
+  --glass-btn-bg: rgba(38, 43, 49, calc(var(--glass-opacity, 0.65) * 0.8));
+  --glass-btn-bg-hover: rgba(48, 54, 61, calc(var(--glass-opacity, 0.65) * 0.95));
+  /* Nested panels (panel inside glass panel): HALF-POWER liquid — see
+     light theme comment. Dark nudges a touch denser for legibility. */
+  --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.65) * 0.55));
+  --glass-nested-blur: calc(var(--glass-blur) * 0.5);
+  /* Overlay surfaces: nearly opaque glass (see light theme comment). */
+  --glass-bg-dense: rgba(27, 31, 35, 0.96);
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -316,6 +340,17 @@ html.liquid-glass {
   --sidebar-accent: rgba(0, 0, 0, 0.08);
   --sidebar-accent-foreground: #212529;
   --line: var(--glass-border);
+  /* Sidebar separators + the profile frame (border/ring-sidebar-border)
+     follow the SAME glass hairline as every other panel (dock, 3D panel,
+     widgets): the solid light/dark gray tokens read as white in light
+     mode and near-black in dark mode on translucent glass. */
+  --sidebar-border: var(--glass-border);
+  /* Buttons & chips: secondary / muted / accent (ghost hovers, selected
+     chips, steppers) inherit the frosted chip token so interactive fills
+     tint with the backplate instead of rendering solid white/gray. */
+  --secondary: var(--glass-btn-bg);
+  --muted: var(--glass-btn-bg);
+  --accent: var(--glass-btn-bg);
 }
 
 html.dark.liquid-glass,
@@ -323,6 +358,29 @@ html.dark.liquid-glass,
 html.liquid-glass.dark {
   --sidebar-accent: rgba(255, 255, 255, 0.12);
   --sidebar-accent-foreground: #e9ecef;
+}
+
+/* ── Solid label text (inverted fills) ──────────────────────────────
+   `text-surface` / `text-sidebar` / `text-accent` — the paper label of
+   solid chips and the classic "solid fill + light label" buttons (Full
+   Solve "bg-ink text-surface", selected tree rows, dark pills) — read
+   the REMAPPED glass tokens, so under liquid glass the label itself
+   turns translucent: white-on-black becomes invisible, and in dark the
+   inverse. TEXT IS NEVER GLASS — restore the solid original palette
+   for text usages only (backgrounds keep the glass remap). */
+html.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
+html.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
+  color: #ffffff !important;
+}
+html.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
+  color: #f1f3f5 !important;
+}
+html.dark.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
+html.dark.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
+  color: #1b1f23 !important;
+}
+html.dark.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
+  color: #24292e !important;
 }
 
 html.liquid-glass [data-slot="card"],
@@ -340,6 +398,7 @@ html.liquid-glass [data-slot="sidebar"],
 html.liquid-glass aside[class*="bg-sidebar"],
 html.liquid-glass .liquid-glass-panel,
 html.liquid-glass [data-glass-panel],
+html.liquid-glass [data-sonner-toast],
 html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
@@ -348,7 +407,26 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow);
+}
+
+/* Replay split/detail columns (stats detail mode, reconstruction split):
+   the column must be a normal glass panel on mobile (<768px) but 100%
+   transparent on desktop. The rules above match class-attribute
+   SUBSTRINGS, so responsive variants like `max-lg:bg-surface` still
+   contain "bg-surface" and the panel is re-frosted at every size — a
+   plain `lg:bg-transparent` can never win (lower specificity, both
+   !important). This override re-declares the same properties with the
+   extra [data-replay-flat] attribute (higher specificity) inside the
+   desktop breakpoint only. Border-color is left alone so the intentional
+   `lg:border-r` divider keeps its glass hairline. */
+@media (min-width: 768px) {
+  html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-flat],
+  html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"][data-replay-flat] {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /* Header: only mobile touch bar gets glass; desktop floats the dock without a background */
@@ -358,7 +436,6 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     border-color: var(--glass-border) !important;
-    box-shadow: var(--glass-shadow);
   }
 }
 
@@ -372,14 +449,170 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   }
 }
 
-/* LeftSidebar active item: frosted translucent pill instead of opaque white */
+/* LeftSidebar active item + shared glass selection pill: frosted translucent pill */
 html.liquid-glass [data-slot="sidebar"] .bg-sidebar-accent,
-html.liquid-glass aside[class*="bg-sidebar"] .bg-sidebar-accent {
+html.liquid-glass aside[class*="bg-sidebar"] .bg-sidebar-accent,
+html.liquid-glass .glass-active-pill {
   background-color: var(--sidebar-accent) !important;
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Inputs & search boxes: harmonize with liquid glass panels */
+html.liquid-glass [data-slot="input"],
+html.liquid-glass input[type="text"],
+html.liquid-glass input[type="search"],
+html.liquid-glass textarea {
+  background-color: var(--glass-bg-subtle) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass [data-slot="input"]:focus-visible,
+html.liquid-glass input[type="text"]:focus-visible,
+html.liquid-glass input[type="search"]:focus-visible,
+html.liquid-glass textarea:focus-visible {
+  border-color: var(--ink-3) !important;
+}
+
+/* ── Buttons & interactive chips: harmonize with liquid glass ────────────
+   Neutral fills (surface / surface-2 / card / white / background / canvas)
+   become translucent frosted chips via --glass-btn-bg. NO backdrop-filter
+   here on purpose: buttons nest inside already-blurred glass panels and
+   blur-over-blur turns them milky (DESIGN.md nesting rule). Hover raises
+   the chip by stepping the glass alpha up (--glass-btn-bg-hover) with a
+   hairline shadow instead of snapping to an opaque gray/white patch.
+   Token-driven fills (secondary / muted / accent — incl. ghost hovers and
+   selected chips) are remapped in the html.liquid-glass variable block
+   above; primary, destructive and the semantic state buttons (ready / hold
+   / dnf / +2 / caution, and bg-ink) keep their solid colors so emphasis
+   survives the glass. The dock is the one DESIGNED exception: its buttons
+   are flat icon-only pills (see block below), so they are never given a
+   persistent chip fill. */
+html.liquid-glass button[class*="bg-surface"],
+html.liquid-glass button[class*="bg-card"],
+html.liquid-glass button[class*="bg-white"],
+html.liquid-glass button[class*="bg-background"],
+html.liquid-glass button[class*="bg-canvas"],
+html.liquid-glass [data-slot="button"][class*="bg-surface"],
+html.liquid-glass [data-slot="button"][class*="bg-card"],
+html.liquid-glass [data-slot="button"][class*="bg-white"],
+html.liquid-glass [data-slot="button"][class*="bg-background"],
+html.liquid-glass [data-slot="button"][class*="bg-canvas"] {
+  background-color: var(--glass-btn-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-canvas"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Flat-button exceptions: dock pills, menus & sidebar tabs ────────────
+   These are flat BY DESIGN (macOS-style icon tray, right-click menu
+   items, the session switcher, the sidebar tab lists of Settings and
+   both Explorers, and the Training method rail — see WidgetDock.tsx,
+   ContextMenu/ContextMenu.tsx, SessionPiece.tsx, Header.tsx,
+   SettingsSidebar.tsx, DockExplorer.tsx, WidgetExplorerSidebar.tsx,
+   TrainingDashboard.tsx and TimerContainer.tsx — the timer's +2 / DNF /
+   comment pill): their buttons never carry a background at
+   rest. The remap above keys off [class*="bg-surface"], which also
+   catches hover-only utilities (hover:bg-surface) — so every pill /
+   menu item / tab would render as a persistent chip. Zero the rest
+   fill inside those zones; the engine's hover rule above still
+   supplies the raised hover chip, and the active tab pills (bare
+   bg-surface divs) stay. */
+html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="algorithms-nav"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"] {
+  background-color: transparent !important;
+}
+
+/* Mobile header: the center puzzle selector sits on the glass touch bar,
+   and its shadcn select base ships a 1px border that the remap above
+   paints with the glass hairline — a redundant rounded frame around an
+   otherwise flat, text-only selector. Zero it inside the mobile-header
+   zone only; the desktop puzzle selectors (dock tray / settings) are
+   untouched. */
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"] {
+  border-color: transparent !important;
+}
+
+/* ── X / cross buttons: icon-only closers stay flat ──────────────────
+   Every "cross" (X) close button whose neutral fill would render as a
+   chip (bg-surface / bg-card / bg-white / bg-background / bg-canvas,
+   data-slot buttons, or the shadcn dialog close's data-[state=open]
+   accent) is flattened at rest: cross buttons are icon-only BY DESIGN
+   (TimesList, ManualSolveSheet, TrainingCalendar, floating widgets,
+   dialogs, editors…). Hover still raises the engine chip for
+   affordance.
+
+   lucide-react (v0.468) strips the per-icon class — svgs carry only
+   "lucide" + size classes — so the X glyph is fingerprinted by its
+   geometry: two path segments with d="M18 6 6 18" and d="m6 6 12 12",
+   both required (verified against icons/x.js in this version). If
+   lucide ever changes those d values the selector stops matching
+   silently (X keeps the chip) — no visual break.
+   Semantic X actions (verdicts, quiz options with their own colored
+   fills like bg-hold-soft / bg-ready) keep their fills: they don't
+   carry neutral-bg classes. */
+html.liquid-glass button[class*="bg-surface"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-card"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-white"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-background"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass button[class*="bg-canvas"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass [data-slot="button"][class*="bg-surface"]:has(> svg.lucide > path[d="M18 6 6 18"]):has(> svg.lucide > path[d="m6 6 12 12"]),
+html.liquid-glass [data-slot="dialog-close"] {
+  background-color: transparent !important;
+}
+
+/* ── Nested panels: half-power liquid ─────────────────────────────────
+   A panel (bg-surface/bg-surface-2 + border + rounded) nested inside
+   another glass panel gets a STANDARD half-strength frosted treatment:
+   --glass-nested-bg (more see-through than the base glass) + half the
+   blur. Glass panels carry NO drop shadows anywhere (flat by law) —
+   depth comes from blur + hairline only. This replaces the old dry
+   nested fill / milky blur-over-blur trade-off with a consistent
+   "inner surface" depth cue (cards inside dialogs, widgets and
+   panels).
+   Buttons deliberately KEEP no backdrop-filter (tiny hot-spots, still
+   milky — nudge only the alpha via --glass-btn-bg). */
+html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface-2"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] div[class*="bg-surface-2"][class*="border"][class*="rounded"],
+html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
+  background-color: var(--glass-nested-bg) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* ── Skeletons: liquid frosted placeholders ───────────────────────────
+   The shared Skeleton (data-slot="skeleton", bg-accent chip) reads as a
+   SOLID white block without backdrop blur. Under liquid glass give it
+   the same inner-surface tint + a soft blur so placeholders sit inside
+   the glass like every other surface (pulse animation untouched). */
+html.liquid-glass [data-slot="skeleton"] {
+  background-color: var(--glass-bg-subtle) !important;
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
 }
 
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */
@@ -387,7 +620,6 @@ html.liquid-glass .grid[class*="bg-line"] {
   background-color: var(--glass-border) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  box-shadow: var(--glass-shadow);
 }
 
 html.liquid-glass .grid[class*="bg-line"] > div {
@@ -400,11 +632,16 @@ html.liquid-glass section [class*="bg-canvas"] {
   background-color: transparent !important;
 }
 
-/* Settings modal refinements: frosted sidebar and harmonious nested cards */
+/* Modal refinements: frosted sidebar navs (settings + explorers) with
+   matching section headers, and harmonious nested cards. The header
+   marker tints the header strip the same as the sidebar — non-glass
+   themes already carry bg-surface-2/30 on both. */
 html.liquid-glass [data-slot="dialog-content"] nav[class*="bg-canvas"],
 html.liquid-glass [data-slot="drawer-content"] nav[class*="bg-canvas"],
 html.liquid-glass [data-slot="dialog-content"] nav,
-html.liquid-glass [data-slot="drawer-content"] nav {
+html.liquid-glass [data-slot="drawer-content"] nav,
+html.liquid-glass [data-slot="dialog-content"] [data-modal-header],
+html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
   background-color: var(--glass-bg-subtle) !important;
   backdrop-filter: blur(var(--glass-blur)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
@@ -413,7 +650,6 @@ html.liquid-glass [data-slot="drawer-content"] nav {
 html.liquid-glass [data-slot="dialog-content"] div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass [data-slot="drawer-content"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
   background-color: var(--glass-bg-subtle) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Liquid glass scrollbars — translucent frosted pills with refraction border */
@@ -436,7 +672,6 @@ html.liquid-glass *::-webkit-scrollbar-thumb {
   border-radius: 9999px;
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 

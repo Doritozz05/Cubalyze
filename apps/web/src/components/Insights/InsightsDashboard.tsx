@@ -16,6 +16,7 @@ import { OverviewPanel } from "./OverviewPanel";
 import { SolveAnalysisPanel } from "./SolveAnalysisPanel";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { MoveToSessionDialog } from "./MoveToSessionDialog";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
@@ -358,6 +359,18 @@ export function InsightsDashboard({
     setDetailMode(false);
   }, []);
 
+  // ── Whole-screen loading ────────────────────────────────────────────
+  // While solves are being fetched the ENTIRE stats screen is the app's
+  // custom loading view (same as the web entry / other views: centered
+  // cube spinner) — never a text snippet or a partial page.
+  if (loadingData) {
+    return (
+      <div className="relative flex-1 min-h-0 w-full flex max-lg:px-3 max-lg:pt-2 lg:px-6 lg:pt-3">
+        <Spinner variant="centered" size="md" />
+      </div>
+    );
+  }
+
   return (
     <div
       // Desktop (>=768px): the dashboard used to sit flush against the
@@ -432,13 +445,6 @@ export function InsightsDashboard({
             </SelectContent>
           </Select>
         </div>
-
-        {/* Loading indicator */}
-        {loadingData && (
-          <span className="text-[0.6rem] text-ink-3 animate-pulse">
-            {t("dashboard.loading")}
-          </span>
-        )}
 
         {/* Count */}
         <span className="text-[0.62rem] text-ink-3 tabular-nums ml-auto">

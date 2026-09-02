@@ -81,9 +81,9 @@ components:
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.xl}"
+    rounded: "{rounded.lg}"
     border: "1px solid {colors.border}"
-    padding: "24px"
+    padding: "16px 20px"
   sidebar-nav-item:
     backgroundColor: "transparent"
     rounded: "{rounded.md}"
@@ -176,7 +176,7 @@ Flat by default, flat is the law. Depth is expressed through **tonal layering** 
 
 ## Shapes
 
-Deliberately restrained geometry. The form language is **soft, not fancy**: `rounded-md` (6px) for buttons and inputs, `rounded-lg` (8px) for chooser tiles and skill nodes, `rounded-xl` (12px) for cards, full roundness (`9999px`) reserved for dots, avatars, and scrollbar thumbs. Corners never exceed 12px on the largest surface and stay what the shadcn-Radix primitives already ship. The brand mark and CubeMark are square tiles (`rounded-md`) — the room has no mascot and hides nothing behind a logo.
+Deliberately restrained geometry. The form language is **soft, not fancy**: `rounded-md` (6px) for buttons and inputs, `rounded-lg` (8px) for **all content panels and cards** (the real app standard — see `PANEL_BASE` in `lib/panel.ts`), `rounded-xl` (12px) reserved for media containers (cube canvas viewport, replay transport bar, modal sheets), full roundness (`9999px`) for dots, avatars, and scrollbar thumbs. Corners never exceed 12px on the largest interactive surface. The brand mark and CubeMark are square tiles (`rounded-md`) — the room has no mascot and hides nothing behind a logo.
 
 ## Components
 
@@ -188,21 +188,27 @@ Each component is soft, restrained, and state-aware — tactile on hover, calm a
 - **Outline:** transparent/paper background, 1px Hairline border; hover fills `bg-accent` (raised surface). Dark mode uses a translucent `bg-input/30` stroke.
 - **Secondary:** raised-surface fill, ink text. **Ghost:** no fill at rest, raised-surface wash on hover. **Destructive:** DNF red.
 - **Motion:** `transition-all` ~150-200ms; `[&_svg]` icons sized 16px. +2px raise on press variants via transforms where used.
+- **Liquid Glass Theme:** neutral fills (`bg-surface` / `bg-surface-2` / `bg-card` / `bg-white` / `bg-background` / `bg-canvas`) remap to the frosted chip token `--glass-btn-bg`, and the `secondary` / `muted` / `accent` tokens inherit the same chip tone — so buttons and chips never render as solid white/gray blocks against the amber glass backplate (engine-owned in `index.css`, no component changes needed). Hover raises the chip to `--glass-btn-bg-hover` with a hairline shadow instead of an opaque wash. Buttons carry **no** `backdrop-filter` (they nest inside already-blurred panels — blur-over-blur turns milky). **Label text is never glass**: `text-surface` / `text-sidebar` / `text-accent` (inverted "solid fill + paper label" buttons) read the remapped tokens, which would tint the label itself translucent — the engine restores their solid original colors for text usages only. **Nested panels** (a `bg-surface`/`bg-surface-2` panel inside another glass panel — cards inside dialogs, widgets and panels) get a standard **half-power liquid**: `--glass-nested-bg` (more see-through tint) + `--glass-nested-blur` (half the blur), so nesting reads as depth instead of the old dry fill or milky full-double-blur. Glass panels carry **no** drop shadows (`--glass-shadow` removed) — depth comes from blur + hairline only, matching the flat-by-default rule. **Toasts** (sonner) are also liquid: `[data-sonner-toast]` joins the panel rule, so notifications render as frosted glass like any other floating panel. Primary, destructive and the semantic state buttons (ready / hold / dnf / +2 / caution, `bg-ink`) keep their solid fills so emphasis survives the glass. **Dock + context-menu + session-switcher + Settings/Explorer sidebar tabs + Training method rail + every X/cross close button are the designed exceptions:** flat surfaces by design (icon-only macOS-style pills in the dock; icon+label items in the right-click and session flyouts; the mobile session trigger; the Settings/Explorer tab lists; the Training method buttons; the Algorithms method tree; the mobile header icon buttons; the timer's +2/DNF/comment pill; icon-only closers) — the engine's `hover:bg-surface`-match is zeroed at rest inside `[data-context-zone="dock"]`, `[data-context-zone="context-menu"]`, `[data-context-zone="session"]`, `[data-context-zone="settings-sidebar"]`, `[data-context-zone="explorer-sidebar"]`, `[data-context-zone="training-methods"]`, `[data-context-zone="algorithms-nav"]`, `[data-context-zone="mobile-header"]` (the mobile-header zone also zeroes the select trigger's glass frame — the center puzzle selector is text-only on touch) and `[data-context-zone="timer-actions"]` (the timer's +2/DNF/comment pill), and cross buttons (glyph-fingerprinted via `:has()` on the lucide X's two crossing lines + the shadcn dialog close slot) are flattened by their own rule, so none of them shows a persistent background (only the hover chip remains; active pills keep their bare `bg-surface` fill as selection state).
 
 ### Badges / Chips
 - **Style:** `rounded-md` (6px), `text-xs`, 2px 8px padding, 1px hairline border for outline variants. **Secondary** fill is the raised surface.
 - **State:** selected chips swap to Carbon Ink primary fill with paper text.
 
 ### Cards / Containers
-- **Corner Style:** `rounded-xl` (12px).
+- **Corner Style:** `rounded-lg` (8px) — the real standard for all content panels and cards across the app. `rounded-xl` (12px) is reserved for media containers (cube canvas, replay transport, floating modals).
 - **Background:** surface (#ffffff light / #1b1f23 dark).
 - **Shadow Strategy:** `shadow-sm` only when raised; resting cards are flat behind a 1px hairline.
-- **Internal Padding:** 24px (px-6); content flows as a `flex flex-col gap-6` (24px).
+- **Internal Padding:** 20px horizontal / 16px vertical (`px-5 py-4`); touch-responsive `max-lg:px-4 max-lg:py-3`. Canonical constant: `PANEL_BASE` in `apps/web/src/lib/panel.ts`.
 - **CardTitle:** `leading-none`, semibold, sans.
 
 ### Inputs / Fields
 - **Style:** transparent background, 1px Hairline border, `rounded-md` (6px), height 36px, 12px x-padding, `text-base`-at-`md:text-sm`.
+- **Liquid Glass Theme:** inputs adopt `var(--glass-bg-subtle)` fill and `var(--glass-border)` border so search fields harmonize seamlessly with the glass backplate without stark white lines.
 - **Focus:** border shifts to `border-ring` with a 3px `ring-ring/50` ring. **Error:** `border-destructive` + `ring-destructive/20`. **Disabled:** 50% opacity, not-allowed cursor.
+
+### Active Selection Pills (Rail & Lists)
+- **Style:** Floating frosted card (`.glass-active-pill`) with `rounded-md` (6px), complete 4-sided `1px solid var(--glass-border)`, and `backdrop-filter: blur(10px) saturate(150%)`.
+- **Geometry Rule:** Always maintain inset breathing room (e.g. `inset-x-1.5 inset-y-0.5` or container padding). Never use `inset-y-0` against dividing lines, ensuring zero edge-clipping artifacts across list rows and sidebars.
 
 ### Navigation (sidebar rail)
 - **Style:** a grouped rail of `rounded-md` items, `text-sm`, 8px padding, 16px gaps. Inactive items are `text-sidebar-foreground/70`; hover adds a raised-surface wash (`hover:bg-sidebar-accent`).

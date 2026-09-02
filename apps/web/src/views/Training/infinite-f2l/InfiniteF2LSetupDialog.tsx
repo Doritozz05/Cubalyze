@@ -37,7 +37,7 @@ export interface InfiniteF2LSetupDialogProps {
 }
 
 const CROSS_COLORS: { id: CrossColor; labelKey: ParseKeys<"training">; color: string; bgClass: string }[] = [
-  { id: "white", labelKey: "infiniteF2l.crossColors.white", color: "#ffffff", bgClass: "bg-white border-zinc-300 dark:border-zinc-700" },
+  { id: "white", labelKey: "infiniteF2l.crossColors.white", color: "#ffffff", bgClass: "bg-white border-line-2" },
   { id: "yellow", labelKey: "infiniteF2l.crossColors.yellow", color: "#eab308", bgClass: "bg-amber-400" },
   { id: "green", labelKey: "infiniteF2l.crossColors.green", color: "#22c55e", bgClass: "bg-emerald-500" },
   { id: "blue", labelKey: "infiniteF2l.crossColors.blue", color: "#3b82f6", bgClass: "bg-blue-500" },

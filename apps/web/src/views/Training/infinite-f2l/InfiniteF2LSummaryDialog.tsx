@@ -60,7 +60,7 @@ export function InfiniteF2LSummaryDialog({
   const content = (
     <div className="flex flex-col gap-6 p-6 max-sm:p-4">
       {/* Hero Time Display */}
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-line bg-surface-2/40 py-6 px-4 text-center">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-line bg-surface py-6 px-4 text-center">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-3">
           <Clock className="size-3.5" />
           <span>{t("infiniteF2l.summary.finalTime")}</span>

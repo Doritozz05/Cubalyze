@@ -241,8 +241,9 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
         ) : null}
 
         {/* Moves overlay at bottom — pointer-events-none so drags on the label
-            pass through to the canvas; hidden when the panel is too narrow */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-3 py-2 hidden @xs:block">
+            pass through to the canvas; hidden when the panel is too narrow
+            (same size/layout as always; border only: hairline + rounded) */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 rounded-full border border-line bg-background/60 backdrop-blur-sm px-3 py-1.5 hidden @xs:block">
           {recentMoves.length === 0 ? (
             <p className="text-center text-[0.7rem] text-ink-3 italic select-none">{t("waitingForCube")}</p>
           ) : (
