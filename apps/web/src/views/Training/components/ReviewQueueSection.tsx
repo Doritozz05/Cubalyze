@@ -208,7 +208,9 @@ export function ReviewQueueSection({ onStartReview, onOpenInsights, onDueCountCh
                   </span>
                   <span
                     className={cn(
-                      "shrink-0 rounded-full border px-1.5 py-px text-[0.55rem] font-medium",
+                      // Solid fill only — no default hairline, it reads as
+                      // a white rim around the colored chip.
+                      "shrink-0 rounded-full px-1.5 py-px text-[0.55rem] font-medium",
                       meta.badge,
                     )}
                   >

@@ -119,13 +119,13 @@ function methodBadgeClass(entry: ReconIndexEntry): string {
   const group = (entry.methodGroup || "").toUpperCase();
 
   if (m === "CFOP" || group === "CFOP") {
-    return "border bg-phase-blue text-white";
+    return "bg-phase-blue text-white";
   }
   if (m === "ROUX" || group === "ROUX") {
-    return "border bg-phase-violet text-white";
+    return "bg-phase-violet text-white";
   }
   if (m.startsWith("EG") || m === "CLL" || m.includes("ORTEGA")) {
-    return "border bg-phase-emerald text-white";
+    return "bg-phase-emerald text-white";
   }
   if (
     m.startsWith("ZB") ||
@@ -136,10 +136,10 @@ function methodBadgeClass(entry: ReconIndexEntry): string {
     m === "ZZ" ||
     m === "PETRUS"
   ) {
-    return "border bg-caution text-surface";
+    return "bg-caution text-surface";
   }
   if (m.includes("MOVER")) {
-    return "border bg-phase-purple text-white";
+    return "bg-phase-purple text-white";
   }
   return "border-line bg-surface-2 text-ink-3";
 }
@@ -148,7 +148,7 @@ function MethodBadge({ entry }: { entry: ReconIndexEntry }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center w-fit max-w-full rounded border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider whitespace-nowrap",
+        "inline-flex items-center justify-center w-fit max-w-full rounded px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider whitespace-nowrap",
         methodBadgeClass(entry),
       )}
       title={entry.method}
