@@ -82,13 +82,13 @@ describe('last-layer probes across cross faces', () => {
 
   it('rejects a mixed LL (not assembled) instead of aliasing a PLL', () => {
     const dCross = CaseStateGenerator.generateFromScramble(JB_SETUP);
-    const cp = Array.from(dCross.cp as any) as number[];
+    const cp = Array.from(dCross.cp);
     [cp[0], cp[4]] = [cp[4], cp[0]];
     const broken = new CubeState(
       cp,
-      Array.from(dCross.co as any) as number[],
-      Array.from(dCross.ep as any) as number[],
-      Array.from(dCross.eo as any) as number[],
+      Array.from(dCross.co),
+      Array.from(dCross.ep),
+      Array.from(dCross.eo),
     );
     const res = pllDetector.detectWith(broken, {
       probe: 'last-layer-permutation',

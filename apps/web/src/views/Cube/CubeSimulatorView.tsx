@@ -157,19 +157,17 @@ export const CubeSimulatorView = memo(function CubeSimulatorView({
   );
 });
 
+/**
+ * Puzzle dispatcher — Pyraminx runs its own vertex-turning simulator
+ * (PyraminxVirtualView) and must NEVER enter the cube virtual core (a 3×3
+ * silently rendering with a pyraminx scramble). This component holds NO
+ * hooks, so switching puzzles between hook-bearing branches can never break
+ * the Rules of Hooks.
+ */
 const CubeSimulatorCore = memo(function CubeSimulatorCore({
   puzzle,
   onVirtualSolveComplete,
 }: CubeSimulatorCoreProps) {
-  const order = puzzle === "2x2" ? 2 : 3;
-  const puzzleType = puzzleCategoryToType(puzzle);
-  const solvedCanonical =
-    order === 2 ? SOLVED_CANONICAL_2X2 : SOLVED_CANONICAL_3X3;
-  const { t } = useTranslation("cube");
-
-  // Pyraminx runs its own vertex-turning simulator (PyraminxVirtualView):
-  // the cube virtual below is 2×2/3×3/OH only and must NEVER silently render
-  // a 3×3 with a pyraminx scramble.
   if (puzzle === "Pyraminx") {
     return (
       <PyraminxVirtualView
@@ -178,6 +176,24 @@ const CubeSimulatorCore = memo(function CubeSimulatorCore({
       />
     );
   }
+  return <CubeVirtualCore puzzle={puzzle} onVirtualSolveComplete={onVirtualSolveComplete} />;
+});
+
+/**
+ * 2×2 / 3×3 / OH virtual cube core — owns ALL cube hooks (engine, session,
+ * keyboard) and renders the csTimer-style cube. Remounts per puzzle via the
+ * dispatcher above, so every hook call order is fixed for the component's
+ * lifetime.
+ */
+const CubeVirtualCore = memo(function CubeVirtualCore({
+  puzzle,
+  onVirtualSolveComplete,
+}: CubeSimulatorCoreProps) {
+  const order = puzzle === "2x2" ? 2 : 3;
+  const puzzleType = puzzleCategoryToType(puzzle);
+  const solvedCanonical =
+    order === 2 ? SOLVED_CANONICAL_2X2 : SOLVED_CANONICAL_3X3;
+  const { t } = useTranslation("cube");
 
   const {
     canvasRef,

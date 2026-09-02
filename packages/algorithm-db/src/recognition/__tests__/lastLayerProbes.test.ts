@@ -14,15 +14,10 @@ import { CaseStateGenerator } from '../../caseGenerator';
 import { OLL_CASES } from '../../seed/cfop-oll';
 import { PLL_CASES } from '../../seed/cfop-pll';
 import {
-  OLL_SUBSET_MANIFEST,
-  PLL_SUBSET_MANIFEST,
-  loadOLLCases,
-  loadPLLCases,
   createOLLDetector,
   createPLLDetector,
   createCFOPDetector,
 } from '../loaders/lastLayer';
-import { lastLayerOrientationProbe, lastLayerPermutationProbe } from '../probes/lastLayerProbes';
 
 /** The 4 U-turns — the AUF equivalence class of a last layer. */
 const AUFS = ['', 'U', 'U2', "U'"] as const;

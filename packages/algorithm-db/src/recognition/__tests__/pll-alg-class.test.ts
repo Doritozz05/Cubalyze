@@ -18,10 +18,10 @@ function llPermsOf(alg: string): { cp: string; ep: string } {
   const c = new CubeState();
   c.applySequence(alg);
   // For a canonical LL-on-U state: pieces 0-3 at positions 0-3.
-  const cp = Array.from(c.cp as any)
+  const cp = Array.from(c.cp)
     .slice(0, 4)
     .join('');
-  const ep = Array.from(c.ep as any)
+  const ep = Array.from(c.ep)
     .slice(0, 4)
     .join('');
   return { cp, ep };
@@ -31,11 +31,11 @@ function llPermsRelabeled(alg: string): { cp: string; ep: string } {
   const c = new CubeState();
   c.applySequence(alg);
   // LL on physical D: pieces 4-7 at positions 4-7 -> relabel to 0-3.
-  const cp = (Array.from(c.cp as any) as number[])
+  const cp = Array.from(c.cp)
     .slice(4, 8)
     .map((p) => p - 4)
     .join('');
-  const ep = (Array.from(c.ep as any) as number[])
+  const ep = Array.from(c.ep)
     .slice(4, 8)
     .map((p) => p - 4)
     .join('');
@@ -52,8 +52,8 @@ describe('pll alg class', () => {
     const groundTruth = llPermsRelabeled(invert(BLOCK.split(' ')).join(' '));
     console.log('ground-truth pre-PLL LL (relabeled):', JSON.stringify(groundTruth));
 
-    let matches: string[] = [];
-    let near: string[] = [];
+    const matches: string[] = [];
+    const near: string[] = [];
     for (const e of entries) {
       const seed = llPermsOf(e.setup);
       if (seed.cp === groundTruth.cp && seed.ep === groundTruth.ep) {
@@ -110,8 +110,8 @@ describe('pll alg class', () => {
     const phys = llPermsRelabeled(conj);
     console.log('pipeline-conjugated PLL LL (relabeled):', JSON.stringify(phys));
     // Compare both against the 21 seeds.
-    let ownMatch: string[] = [];
-    let physMatch: string[] = [];
+    const ownMatch: string[] = [];
+    const physMatch: string[] = [];
     for (const e of entries) {
       const seed = llPermsOf(e.setup);
       if (own.cp === seed.cp && own.ep === seed.ep) ownMatch.push(e.caseNumber);
