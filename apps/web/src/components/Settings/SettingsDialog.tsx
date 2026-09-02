@@ -197,8 +197,12 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
           </Select>
         </div>
 
-        {/* Desktop section header (>=768px) */}
-        <div className="shrink-0 border-b border-line px-8 py-6 max-lg:hidden">
+        {/* Desktop section header (>=768px) — same tint as the sidebar so
+            the column doesn't read as a different surface */}
+        <div
+          className="shrink-0 border-b border-line bg-surface-2/30 px-8 py-6 max-lg:hidden"
+          data-modal-header
+        >
           <h2 className="text-[0.95rem] font-semibold leading-5 text-ink">
             {activeMeta ? t(activeMeta.labelKey) : t('title')}
           </h2>
