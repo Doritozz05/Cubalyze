@@ -4,14 +4,13 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import { useTranslation } from "react-i18next";
 import { History, Menu } from "lucide-react";
 import { useStore } from "zustand";
-import { connectionStore, preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import { dockBarState, useDockRevealRequested } from "@/widgets/dock/dockZoneState";
-import { BatteryIcon } from "@/components/Hardware/BatteryIcon";
 import {
   BatteryPiece,
   ClockPiece,
@@ -28,7 +27,6 @@ import {
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory, Solve } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
@@ -45,34 +43,9 @@ const DOCK_RETRACT_DELAY_MS = 6000;
 
 // ── Glass-dock sub-components (desktop) ───────────────────────────────────
 
-/** Smart Cube battery % chip — status-tray style, pinned to the header edge. */
-function BatteryStatusChip() {
-  const { t } = useTranslation("shell");
-  const connectionStatus = useStore(connectionStore, (s) => s.status);
-  const batteryLevel = useStore(connectionStore, (s) => s.batteryLevel);
-  const deviceName = useStore(connectionStore, (s) => s.deviceName);
-  const isCubeConnected = connectionStatus === "connected";
-
-  if (!isCubeConnected) return null;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex h-8 cursor-default items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs text-ink select-none">
-          <BatteryIcon level={batteryLevel} />
-          <span className="nums font-medium text-ink">
-            {batteryLevel !== null ? `${batteryLevel}%` : "--%"}
-          </span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        {batteryLevel !== null
-          ? t("batteryLevel", { device: deviceName ?? t("connected"), level: batteryLevel })
-          : t("smartCubeWithDevice", { device: deviceName ?? t("connected") })}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
+// The Smart Cube battery lives in the DOCK as the battery widget piece — the
+// former hardcoded status-tray chip (BatteryStatusChip) was removed so there
+// is exactly ONE battery indicator, wherever the user places it.
 
 export interface HeaderProps {
   /** Current session solve count, shown as a small chip. */
@@ -397,9 +370,9 @@ export function Header({
       )}
     >
       {/* Desktop (lg+): ONE centered glass dock — widgets, quick actions,
-          session and puzzle all live in the same bar (Option B), so the
-          header reads as a single macOS-dock / Windows-taskbar piece. The
-          battery is a status-tray chip pinned to the header's left edge. */}
+          session, puzzle and the smart-cube battery all live in the same
+          bar (Option B), so the header reads as a single macOS-dock /
+          Windows-taskbar piece. */}
       {/* The desktop header row doubles as the reveal band when the dock is
           in auto-hide mode: hovering it (mostly empty while retracted)
           slides the bar back down. */}
@@ -414,10 +387,6 @@ export function Header({
           dockAutoHide && !dockVisible ? "pointer-events-auto h-7" : "h-full",
         )}
       >
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 sm:left-6">
-          <BatteryStatusChip />
-        </div>
-
         <div className="flex min-w-0 flex-1 items-center justify-center">
           <motion.div
             ref={dockWrapRef}

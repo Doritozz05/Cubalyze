@@ -326,7 +326,13 @@ export function MainLayout({
         !isFocused && "transition-[padding-top] duration-500 ease-out",
         !isFocused && !hideHeader && cn(
           "max-lg:pt-[calc(3.5rem+env(safe-area-inset-top))]",
-          dockBarHidden ? "lg:pt-0" : "lg:pt-14",
+          // Desktop auto-hide: while REVEALED the content offsets by the full
+          // bar (pt-14). While RETRACTED it keeps a `pt-7` margin instead of
+          // filling the strip edge-to-edge: the collapsed dock still shows a
+          // thin reveal band + glow line at the top, and the stretched 3D
+          // cube panel would otherwise collide with it (and its hover zone
+          // would overlay the content). The band is h-7, so pt-7 is exact.
+          dockBarHidden ? "lg:pt-7" : "lg:pt-14",
         ),
         !isFocused && hideHeader && "max-lg:pt-safe",
         // Rail padding only where the desktop rail actually renders (>=768px).
@@ -403,10 +409,13 @@ export function MainLayout({
               className={cn(
                 "relative flex shrink-0 flex-col bg-surface overflow-hidden border-line border-t lg:border-l rounded-tl-xl max-lg:rounded-t-xl",
                 // When the dock is retracted the stage runs edge-to-edge, so
-                // the cube panel stretches to the full viewport height too.
+                // the cube panel stretches to the full viewport height too —
+                // but not INTO the collapsed reveal band: keep the same pt-7
+                // top offset as the main content so the stretched cube never
+                // collides with the shrunken dock bar.
                 !isFocused &&
                   (dockBarHidden
-                    ? "lg:sticky lg:top-0 lg:h-dvh"
+                    ? "lg:sticky lg:top-7 lg:h-[calc(100dvh-1.75rem)]"
                     : "lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)]"),
                 cubeShown && "min-h-0",
                 !rightVisible && "pointer-events-none",

@@ -101,7 +101,7 @@ export function InfiniteF2LSetupDialog({
   ];
 
   const content = (
-    <div className="flex flex-col gap-6 p-6 max-sm:p-4">
+    <div className="flex flex-col gap-4 p-5 max-sm:p-4">
       {/* 1. Cross Color Picker */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export function InfiniteF2LSetupDialog({
                 type="button"
                 onClick={() => setCrossColor(c.id)}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-all cursor-pointer",
+                  "flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-all cursor-pointer",
                   isSelected
                     ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
                     : "border-line bg-surface hover:bg-surface-2/60 text-ink-2",
@@ -131,6 +131,8 @@ export function InfiniteF2LSetupDialog({
         </div>
       </div>
 
+      {/* 2 + 2b. Two-column on md+ (pairs | case pool), stacked when narrow */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* 2. Number of Pairs */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
@@ -151,7 +153,7 @@ export function InfiniteF2LSetupDialog({
                 type="button"
                 onClick={() => setConcurrentPairs(num)}
                 className={cn(
-                  "flex h-11 items-center justify-center rounded-xl border text-sm font-semibold transition-all cursor-pointer",
+                  "flex h-10 items-center justify-center rounded-xl border text-sm font-semibold transition-all cursor-pointer",
                   isSelected
                     ? "border-ink bg-ink text-surface shadow-xs"
                     : "border-line bg-surface hover:bg-surface-2 text-ink-2",
@@ -179,7 +181,7 @@ export function InfiniteF2LSetupDialog({
                 type="button"
                 onClick={() => setSpawnMode(m.id)}
                 className={cn(
-                  "flex h-11 items-center justify-center gap-1.5 rounded-xl border text-[0.78rem] font-semibold transition-all cursor-pointer",
+                  "flex h-10 items-center justify-center gap-1.5 rounded-xl border text-[0.78rem] font-semibold transition-all cursor-pointer",
                   isSelected
                     ? "border-ink bg-ink text-surface shadow-xs"
                     : "border-line bg-surface hover:bg-surface-2 text-ink-2",
@@ -192,7 +194,7 @@ export function InfiniteF2LSetupDialog({
         </div>
 
         {/* AUF switch — same Switch pill as the Widget Explorer cards */}
-        <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4 cursor-pointer select-none">
+        <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 cursor-pointer select-none">
           <div className="flex items-center gap-2 min-w-0">
             <ShieldCheck className="size-4 shrink-0 text-ink-3" />
             <div className="flex flex-col">
@@ -207,7 +209,10 @@ export function InfiniteF2LSetupDialog({
           />
         </label>
       </div>
+      </div>
 
+      {/* 3 + 4. Two-column on md+ (target goal | slots + trapped), stacked when narrow */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Target Goal (Target Pairs Slider) */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
@@ -219,7 +224,7 @@ export function InfiniteF2LSetupDialog({
             {targetPairs === 0 ? `∞ ${t("infiniteF2l.setup.infiniteMode")}` : `${targetPairs} ${t("infiniteF2l.setup.pairUnitPlural")}`}
           </span>
         </div>
-        <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-3.5">
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-3">
             <span className="text-xs text-ink-3 font-semibold">∞</span>
             <input
@@ -255,9 +260,9 @@ export function InfiniteF2LSetupDialog({
       </div>
 
       {/* 3. Slot Filter & Trapped Options */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex flex-col gap-4">
         {/* Slot selector */}
-        <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-2">
             <Box className="size-4 text-ink-3" />
             <span className="text-[0.78rem] font-semibold text-ink">{t("infiniteF2l.setup.activeSlots")}</span>
@@ -271,7 +276,7 @@ export function InfiniteF2LSetupDialog({
                   type="button"
                   onClick={() => toggleSlot(s.id)}
                   className={cn(
-                    "flex h-9 items-center justify-center rounded-lg border text-xs font-medium transition-all cursor-pointer",
+                    "flex h-8 items-center justify-center rounded-lg border text-xs font-medium transition-all cursor-pointer",
                     isActive
                       ? "border-ink/30 bg-surface-2 text-ink font-semibold"
                       : "border-line/60 bg-transparent text-ink-3 opacity-60 hover:opacity-100",
@@ -285,7 +290,7 @@ export function InfiniteF2LSetupDialog({
         </div>
 
         {/* Trapped pieces mode */}
-        <div className="flex flex-col justify-center gap-2.5 rounded-xl border border-line bg-surface p-4">
+        <div className="flex flex-col justify-center gap-2 rounded-xl border border-line bg-surface p-3">
           <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
             <div className="flex items-center gap-2 min-w-0">
               <ShieldCheck className="size-4 shrink-0 text-ink-3" />
@@ -303,26 +308,29 @@ export function InfiniteF2LSetupDialog({
           </label>
         </div>
       </div>
-
-      {/* Start Button */}
-      <div className="pt-2">
-        <Button
-          type="button"
-          onClick={handleStart}
-          className="w-full h-11 gap-2 rounded-xl bg-ink text-surface font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          <Play className="size-4 fill-current" />
-          {t("infiniteF2l.setup.start")}
-        </Button>
       </div>
+
     </div>
+  );
+
+  // Start button — rendered in a FIXED footer outside the scroll area so it
+  // is always visible, never hidden below the fold.
+  const startButton = (
+    <Button
+      type="button"
+      onClick={handleStart}
+      className="w-full h-11 gap-2 rounded-xl bg-ink text-surface font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer"
+    >
+      <Play className="size-4 fill-current" />
+      {t("infiniteF2l.setup.start")}
+    </Button>
   );
 
   if (isTouch) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh] bg-surface">
-          <DrawerHeader className="border-b border-line px-6 py-4">
+        <DrawerContent className="flex max-h-[90vh] flex-col bg-surface">
+          <DrawerHeader className="shrink-0 border-b border-line px-6 py-4 max-sm:px-4">
             <DrawerTitle className="flex items-center gap-2 text-base font-semibold text-ink">
               <InfinityIcon className="size-5 text-ink" />
               {t("infiniteF2l.title")}
@@ -331,7 +339,11 @@ export function InfiniteF2LSetupDialog({
               {t("infiniteF2l.subtitle")}
             </DrawerDescription>
           </DrawerHeader>
-          <div className="overflow-y-auto">{content}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{content}</div>
+          {/* Fixed footer — the Start button is never hidden behind the scroll. */}
+          <div className="shrink-0 border-t border-line px-6 py-3.5 max-sm:px-4">
+            {startButton}
+          </div>
         </DrawerContent>
       </Drawer>
     );
@@ -339,8 +351,10 @@ export function InfiniteF2LSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl">
-        <DialogHeader className="border-b border-line px-6 py-4">
+      {/* Same professional panel as the app SettingsDialog: wide (960px),
+          solid surface (no transparency), full height with internal scroll. */}
+      <DialogContent className="flex flex-col sm:max-w-[960px] h-145 max-h-[85vh] max-lg:h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line shadow-2xl">
+        <DialogHeader className="shrink-0 border-b border-line px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             <InfinityIcon className="size-5 text-ink" />
             {t("infiniteF2l.title")}
@@ -349,7 +363,11 @@ export function InfiniteF2LSetupDialog({
             {t("infiniteF2l.subtitle")}
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto max-h-[80vh]">{content}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto">{content}</div>
+        {/* Fixed footer — the Start button is never hidden behind the scroll. */}
+        <div className="shrink-0 border-t border-line px-6 py-3.5">
+          {startButton}
+        </div>
       </DialogContent>
     </Dialog>
   );
