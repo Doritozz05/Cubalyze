@@ -908,7 +908,41 @@
       "pauseByCauseEyebrow": "{{total}} in pauses this session",
       "pauseByCauseEmpty": "No pauses detected in this session yet. Solve with a Smart Cube or the Virtual Cube to accumulate pause data.",
       "pauseTime": "Pause time"
-    },      "caseIntelligence": {
+    },
+    "skillRadar": {
+      "title": "Skill Radar",
+      "eyebrow": "6 universal dimensions",
+      "emptyTitle": "No skill data yet",
+      "emptyDescription": "Complete analysed solves (Smart Cube or Virtual) to build your universal skill profile.",
+      "overallScore": "Skill index",
+      "primaryStrength": "Primary strength",
+      "primaryBottleneck": "Key bottleneck",
+      "singleSolveEyebrow": "Solve #{{number}} vs session",
+      "legendSolve": "Selected solve",
+      "legendSession": "Session average",
+      "strengthBadge": "Strength",
+      "balancedBadge": "Balanced",
+      "bottleneckBadge": "Bottleneck",
+      "axes": {
+        "tps": "Turning speed",
+        "lookahead": "Lookahead",
+        "economy": "Move economy",
+        "ergonomics": "Ergonomics",
+        "recognition": "Recognition",
+        "consistency": "Consistency"
+      },
+      "hints": {
+        "tps": "Global turning speed and solve execution cadence",
+        "lookahead": "Continuous flow and minimization of pause time",
+        "economy": "Move count efficiency and absence of over-turning",
+        "ergonomics": "Orientation control and cube rotation minimization",
+        "recognition": "Mental agility and rapid reaction to algorithm cases",
+        "consistency": "Timing stability and variance across session solves"
+      },
+      "benchmark": "Benchmark",
+      "actual": "Actual"
+    },
+    "caseIntelligence": {
       "title": "Case intelligence",
       "bestOfEach": "slowest & fastest per phase",
       "slowest": "Slowest",

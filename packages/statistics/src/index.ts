@@ -196,6 +196,7 @@ export {
   deriveSessionTechnicalStats,
   deriveMoveMetrics,
   deriveCaseIntelligence,
+  deriveSkillRadarProfile,
 } from "./technical";
 export type {
   TechnicalSolveInput,
@@ -209,5 +210,8 @@ export type {
   MoveMetrics,
   CaseIntelligence,
   CaseIntelligencePhase,
+  SkillAxisId,
+  SkillAxisData,
+  SkillRadarProfile,
 } from "./technical";
 

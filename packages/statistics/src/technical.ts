@@ -648,3 +648,285 @@ export function deriveCaseIntelligence(
   }
   return out.sort((a, b) => b.count - a.count || a.phase.localeCompare(b.phase));
 }
+
+// ─── Skill Radar Profile (Universal 6 Axes) ────────────────────────────────
+
+export type SkillAxisId =
+  | "tps"
+  | "lookahead"
+  | "economy"
+  | "ergonomics"
+  | "recognition"
+  | "consistency";
+
+export interface SkillAxisData {
+  id: SkillAxisId;
+  labelKey: string;
+  score: number; // 0–100 integer
+  rawValue: number | null;
+  formattedValue: string;
+  unit: string;
+  benchmark: string;
+  status: "strength" | "balanced" | "bottleneck";
+}
+
+export interface SkillRadarProfile {
+  axes: SkillAxisData[];
+  overallScore: number;
+  primaryStrength: SkillAxisData | null;
+  primaryBottleneck: SkillAxisData | null;
+  analysedCount: number;
+}
+
+function clampScore(n: number): number {
+  if (!Number.isFinite(n)) return 50;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function sigmoid(x: number, mid: number, k: number): number {
+  return 100 / (1 + Math.exp(-k * (x - mid)));
+}
+
+/**
+ * Pure calculation of the 6 universal speedcubing skill dimensions for a session.
+ * Method-agnostic: evaluates TPS, Lookahead, Economy, Ergonomics, Recognition, and Session Consistency.
+ */
+export function deriveSkillRadarProfile(
+  input: TechnicalSolveInput[] | TechnicalSolveInput,
+): SkillRadarProfile {
+  const solves = (Array.isArray(input) ? input : [input]).filter((s) => s != null);
+  const stats = deriveSessionTechnicalStats(solves);
+  const totalCount = solves.length;
+
+  if (totalCount === 0) {
+    const defaultAxes: SkillAxisData[] = [
+      { id: "tps", labelKey: "radar.tps", score: 0, rawValue: null, formattedValue: "—", unit: "TPS", benchmark: "> 4.0", status: "balanced" },
+      { id: "lookahead", labelKey: "radar.lookahead", score: 0, rawValue: null, formattedValue: "—", unit: "% pausas", benchmark: "< 30%", status: "balanced" },
+      { id: "economy", labelKey: "radar.economy", score: 0, rawValue: null, formattedValue: "—", unit: "movs", benchmark: "< 65", status: "balanced" },
+      { id: "ergonomics", labelKey: "radar.ergonomics", score: 0, rawValue: null, formattedValue: "—", unit: "rot", benchmark: "≤ 3.0", status: "balanced" },
+      { id: "recognition", labelKey: "radar.recognition", score: 0, rawValue: null, formattedValue: "—", unit: "s", benchmark: "< 0.75s", status: "balanced" },
+      { id: "consistency", labelKey: "radar.consistency", score: 0, rawValue: null, formattedValue: "—", unit: "% var", benchmark: "< 18%", status: "balanced" },
+    ];
+    return {
+      axes: defaultAxes,
+      overallScore: 0,
+      primaryStrength: null,
+      primaryBottleneck: null,
+      analysedCount: 0,
+    };
+  }
+
+  // 1. TPS (Global solve speed: total moves / total solve duration in seconds)
+  const tpsValues: number[] = [];
+  for (const s of solves) {
+    const a = analysisOf(s);
+    if (a?.tps?.global && Number.isFinite(a.tps.global) && a.tps.global > 0) {
+      tpsValues.push(a.tps.global);
+    } else if (a?.totalMoves && a.totalTimeMs > 0) {
+      tpsValues.push((a.totalMoves / a.totalTimeMs) * 1000);
+    } else if (
+      typeof s === "object" &&
+      "moves" in s &&
+      Array.isArray((s as { moves?: unknown[] }).moves) &&
+      "time" in s &&
+      typeof (s as { time?: number }).time === "number" &&
+      (s as { time: number }).time > 0
+    ) {
+      const moveCount = (s as { moves: unknown[] }).moves.length;
+      if (moveCount > 0) {
+        tpsValues.push((moveCount / (s as { time: number }).time) * 1000);
+      }
+    }
+  }
+  const avgTps = mean(tpsValues);
+  // Permissive speedcubing curve: 1.5 TPS -> 28, 2.5 -> 48, 3.2 -> 62, 4.2 -> 79, 5.5 -> 92, 7.0+ -> 98
+  const tpsScore = avgTps != null ? clampScore(sigmoid(avgTps, 2.6, 0.75)) : 50;
+
+  // 2. Lookahead (Pause reduction & Continuous Flow)
+  const pauseRatio = stats.lookahead.avgPauseRatio;
+  let lookaheadScore = 50;
+  if (pauseRatio != null) {
+    // 15% pause -> 86, 25% -> 76, 35% -> 62, 45% -> 45, 60% -> 23
+    lookaheadScore = clampScore(100 - sigmoid(pauseRatio, 0.42, 6.8));
+    if (stats.lookahead.avgPauseTimeMs && stats.lookahead.avgPauseTimeMs > 1500) {
+      lookaheadScore = Math.max(0, lookaheadScore - 6);
+    }
+  }
+
+  // 3. Economy (Move efficiency & minimal redundancies)
+  // Extract moves from economy stats or direct solve moves
+  const moveCounts: number[] = [];
+  for (const s of solves) {
+    const a = analysisOf(s);
+    if (a?.totalMoves && Number.isFinite(a.totalMoves) && a.totalMoves > 0) {
+      moveCounts.push(a.totalMoves);
+    } else if (typeof s === "object" && "moves" in s && Array.isArray((s as { moves?: unknown[] }).moves)) {
+      const l = (s as { moves: unknown[] }).moves.length;
+      if (l > 0) moveCounts.push(l);
+    }
+  }
+  const avgMoves = mean(moveCounts) ?? stats.economy.avgMoves;
+  let economyScore = 50;
+  if (avgMoves != null) {
+    // 45 moves -> 87, 55 -> 78, 65 -> 66, 75 -> 50, 88 -> 30, 105 -> 12
+    economyScore = clampScore(100 - sigmoid(avgMoves, 75, 0.065));
+    if (stats.economy.avgRedundancyRate != null && stats.economy.avgRedundancyRate > 0.06) {
+      economyScore = Math.max(0, economyScore - Math.round(stats.economy.avgRedundancyRate * 35));
+    }
+  }
+
+  // 4. Ergonomics (Rotations & orientation control)
+  const rotCounts: number[] = [];
+  for (const s of solves) {
+    const a = analysisOf(s);
+    if (a?.rotation?.totalCount != null && Number.isFinite(a.rotation.totalCount)) {
+      rotCounts.push(a.rotation.totalCount);
+    }
+  }
+  const avgRot = mean(rotCounts) ?? stats.rotations.avgPerSolve;
+  let ergonomicsScore = 50;
+  if (avgRot != null) {
+    if (avgRot === 0) {
+      ergonomicsScore = 100;
+    } else {
+      // 0 rot -> 100, 1 -> 87, 2 -> 79, 3 -> 70, 4 -> 57, 6 -> 31, 8+ -> 13
+      ergonomicsScore = clampScore(100 - sigmoid(avgRot, 4.5, 0.55));
+    }
+  }
+
+  // 5. Recognition (Mental perception & reaction speed)
+  const recTimes: number[] = [];
+  for (const rc of stats.recognition) {
+    if (rc.avgRecognitionMs != null && Number.isFinite(rc.avgRecognitionMs)) {
+      recTimes.push(rc.avgRecognitionMs);
+    }
+  }
+  for (const ph of stats.phases) {
+    if (ph.avgRecognitionMs != null && Number.isFinite(ph.avgRecognitionMs)) {
+      recTimes.push(ph.avgRecognitionMs);
+    }
+  }
+  const avgRecMs = mean(recTimes);
+  let recognitionScore = 50;
+  if (avgRecMs != null) {
+    // 0.30s -> 88, 0.50s -> 79, 0.75s -> 67, 1.00s -> 50, 1.40s -> 25
+    recognitionScore = clampScore(100 - sigmoid(avgRecMs, 1000, 0.0028));
+  } else if (stats.cross.avgCrossMoves != null) {
+    recognitionScore = 65;
+  }
+
+  // 6. Consistency (Session Stability / Variance between solve times)
+  const solveTimes: number[] = [];
+  for (const s of solves) {
+    if (!s) continue;
+    if (typeof s === "object" && "time" in s && typeof (s as { time: number }).time === "number" && (s as { time: number }).time > 0) {
+      solveTimes.push((s as { time: number }).time);
+    } else {
+      const a = analysisOf(s);
+      if (a?.totalTimeMs && a.totalTimeMs > 0) {
+        solveTimes.push(a.totalTimeMs);
+      }
+    }
+  }
+
+  let cv: number | null = null;
+  let consistencyScore = 80;
+  if (solveTimes.length >= 2) {
+    const meanTime = mean(solveTimes) ?? 0;
+    const stdTime = Math.sqrt(
+      solveTimes.reduce((acc, t) => acc + (t - meanTime) ** 2, 0) / solveTimes.length,
+    );
+    cv = meanTime > 0 ? stdTime / meanTime : 0;
+    // 8% variation -> 89, 14% -> 79, 20% -> 65, 28% -> 41, 40% -> 16
+    consistencyScore = clampScore(100 - sigmoid(cv, 0.25, 12.0));
+  } else if (solveTimes.length === 1) {
+    cv = 0;
+    consistencyScore = 85;
+  }
+
+  const classify = (score: number): "strength" | "balanced" | "bottleneck" => {
+    if (score >= 68) return "strength";
+    if (score <= 42) return "bottleneck";
+    return "balanced";
+  };
+
+  const axes: SkillAxisData[] = [
+    {
+      id: "tps",
+      labelKey: "radar.tps",
+      score: tpsScore,
+      rawValue: avgTps != null ? Number(avgTps.toFixed(2)) : null,
+      formattedValue: avgTps != null ? `${avgTps.toFixed(2)}` : "—",
+      unit: "TPS",
+      benchmark: "> 4.0",
+      status: classify(tpsScore),
+    },
+    {
+      id: "lookahead",
+      labelKey: "radar.lookahead",
+      score: lookaheadScore,
+      rawValue: pauseRatio != null ? Number((pauseRatio * 100).toFixed(1)) : null,
+      formattedValue: pauseRatio != null ? `${Math.round(pauseRatio * 100)}%` : "—",
+      unit: "pausas",
+      benchmark: "< 30%",
+      status: classify(lookaheadScore),
+    },
+    {
+      id: "economy",
+      labelKey: "radar.economy",
+      score: economyScore,
+      rawValue: avgMoves != null ? Number(avgMoves.toFixed(1)) : null,
+      formattedValue: avgMoves != null ? `${Math.round(avgMoves)}` : "—",
+      unit: "movs",
+      benchmark: "< 65",
+      status: classify(economyScore),
+    },
+    {
+      id: "ergonomics",
+      labelKey: "radar.ergonomics",
+      score: ergonomicsScore,
+      rawValue: avgRot != null ? Number(avgRot.toFixed(1)) : null,
+      formattedValue: avgRot != null ? `${avgRot.toFixed(1)}` : "—",
+      unit: "rot",
+      benchmark: "≤ 3.0",
+      status: classify(ergonomicsScore),
+    },
+    {
+      id: "recognition",
+      labelKey: "radar.recognition",
+      score: recognitionScore,
+      rawValue: avgRecMs != null ? Number((avgRecMs / 1000).toFixed(2)) : null,
+      formattedValue: avgRecMs != null ? `${(avgRecMs / 1000).toFixed(2)}s` : "—",
+      unit: "rec",
+      benchmark: "< 0.75s",
+      status: classify(recognitionScore),
+    },
+    {
+      id: "consistency",
+      labelKey: "radar.consistency",
+      score: consistencyScore,
+      rawValue: cv != null ? Number((cv * 100).toFixed(1)) : null,
+      formattedValue: cv != null ? `${(cv * 100).toFixed(0)}%` : "—",
+      unit: "var",
+      benchmark: "< 18%",
+      status: classify(consistencyScore),
+    },
+  ];
+
+  const overallScore = Math.round(
+    axes.reduce((acc, ax) => acc + ax.score, 0) / axes.length,
+  );
+
+  const sortedByScore = [...axes].sort((a, b) => b.score - a.score);
+  const primaryStrength = sortedByScore[0].score >= 58 ? sortedByScore[0] : null;
+  const primaryBottleneck = sortedByScore[sortedByScore.length - 1].score <= 50 ? sortedByScore[sortedByScore.length - 1] : null;
+
+  return {
+    axes,
+    overallScore,
+    primaryStrength,
+    primaryBottleneck,
+    analysedCount: totalCount,
+  };
+}
+

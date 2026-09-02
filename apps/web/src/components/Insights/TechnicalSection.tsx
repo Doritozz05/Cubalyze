@@ -18,9 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 
-import { deriveMoveMetrics } from "@/utils/insights";
+import { deriveMoveMetrics, deriveSkillRadarProfile } from "@/utils/insights";
 import { phaseColorHex } from "@/utils/phaseColors";
-import { SectionHeader } from "./atoms";
+import { SectionHeader, SkillRadarChart } from "./atoms";
 import { FACE_HEX } from "./atoms/faceColors";
 import type { Solve } from "@/types";
 
@@ -158,6 +158,12 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
     return { latest, moves, gaps, maxGap };
   }, [solves]);
 
+  // ── Skill Radar Profile: 6 Universal Dimensions ─────────────────────
+  const skillRadar = useMemo(
+    () => deriveSkillRadarProfile(solves),
+    [solves],
+  );
+
   if (analysed.length === 0) {
     return (
       <div className={cn(CARD, className)}>
@@ -179,6 +185,17 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
           title={t("overview.technical")}
           eyebrow={t("overview.technicalEyebrow", { count: analysed.length })}
         />
+      </div>
+
+      {/* ── Skill Radar: 6 Universal Dimensions ────────────────────────── */}
+      <div className={CARD}>
+        <SectionHeader
+          title={t("skillRadar.title")}
+          eyebrow={t("skillRadar.eyebrow")}
+        />
+        <div className="mt-4">
+          <SkillRadarChart sessionProfile={skillRadar} />
+        </div>
       </div>
 
       {/* ── Stacked area: % of time per phase over the session ─────────── */}

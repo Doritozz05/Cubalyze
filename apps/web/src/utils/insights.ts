@@ -41,6 +41,7 @@ export {
   deriveRecognitionCosts,
   deriveMoveMetrics,
   deriveCaseIntelligence,
+  deriveSkillRadarProfile,
 } from "@cubeforge/statistics";
 export type {
   SessionTechnicalStats,
@@ -52,4 +53,8 @@ export type {
   RecognitionCost,
   MoveMetrics,
   CaseIntelligence,
+  SkillAxisId,
+  SkillAxisData,
+  SkillRadarProfile,
 } from "@cubeforge/statistics";
+

@@ -1483,6 +1483,7 @@ function MetricRingsSection({ metrics }: { metrics: SolveMetrics }) {
   );
 }
 
+
 // ─── Phase breakdown ───────────────────────────────────────────────────────
 
 function PhaseBreakdownSection({

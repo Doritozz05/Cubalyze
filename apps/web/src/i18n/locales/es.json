@@ -908,7 +908,41 @@
       "pauseByCauseEyebrow": "{{total}} en pausas esta sesión",
       "pauseByCauseEmpty": "Aún no hay pausas detectadas en esta sesión. Resuelve con un Smart Cube o el Cubo Virtual para acumular datos de pausas.",
       "pauseTime": "Tiempo de pausa"
-    },      "caseIntelligence": {
+    },
+    "skillRadar": {
+      "title": "Radar de habilidad",
+      "eyebrow": "6 dimensiones universales",
+      "emptyTitle": "Sin datos de habilidad",
+      "emptyDescription": "Completa resoluciones analizadas (Smart Cube o Virtual) para construir tu perfil de habilidad universal.",
+      "overallScore": "Índice de habilidad",
+      "primaryStrength": "Principal fortaleza",
+      "primaryBottleneck": "Cuello de botella clave",
+      "singleSolveEyebrow": "Solve #{{number}} vs sesión",
+      "legendSolve": "Resolución seleccionada",
+      "legendSession": "Media de la sesión",
+      "strengthBadge": "Fortaleza",
+      "balancedBadge": "Equilibrado",
+      "bottleneckBadge": "A mejorar",
+      "axes": {
+        "tps": "Velocidad de giro",
+        "lookahead": "Lookahead",
+        "economy": "Economía de giros",
+        "ergonomics": "Ergonomía",
+        "recognition": "Reconocimiento",
+        "consistency": "Consistencia"
+      },
+      "hints": {
+        "tps": "Velocidad global de giro y cadencia de resolución",
+        "lookahead": "Fluidez continua y minimización de tiempo en pausa",
+        "economy": "Eficiencia en conteo de movimientos y ausencia de sobregiros",
+        "ergonomics": "Control de orientación y reducción de rotaciones",
+        "recognition": "Percepción mental ágil y tiempo de reacción ante casos",
+        "consistency": "Estabilidad y regularidad de tiempos entre resoluciones"
+      },
+      "benchmark": "Referencia",
+      "actual": "Actual"
+    },
+    "caseIntelligence": {
       "title": "Inteligencia de casos",
       "bestOfEach": "más lento y más rápido por fase",
       "slowest": "Más lento",
