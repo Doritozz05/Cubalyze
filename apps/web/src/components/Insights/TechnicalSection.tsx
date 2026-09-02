@@ -297,11 +297,11 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
           )}
         </div>
 
-        <div className={cn(CARD, "max-lg:px-4 max-lg:py-3")}>
+        <div className={cn(CARD, "flex flex-col max-lg:px-4 max-lg:py-3")}>
           <SectionHeader title={t("overview.techFingerprint")} eyebrow={t("overview.techFingerprintEyebrow")} />
           {fingerprint ? (
-            <>
-              <div className="mt-3 flex h-6 w-full gap-px overflow-hidden rounded-md">
+            <div className="my-auto flex flex-1 flex-col justify-center py-2">
+              <div className="flex h-6 w-full gap-px overflow-hidden rounded-md">
                 {fingerprint.moves.map((m, i) => (
                   <div
                     key={i}
@@ -322,9 +322,9 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
                 })}
               </div>
               <p className="mt-2 text-[0.6rem] text-ink-3/70">{t("overview.techFingerprintHint")}</p>
-            </>
+            </div>
           ) : (
-            <div className="mt-4 flex h-20 items-center justify-center text-[0.7rem] text-ink-3">
+            <div className="flex flex-1 items-center justify-center text-[0.7rem] text-ink-3 min-h-[5rem]">
               {t("overview.technicalNoData")}
             </div>
           )}
