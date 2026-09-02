@@ -64,6 +64,9 @@ export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as 
  *     the backplate instead of rendering solid white/gray;
  *   - hover raises to `var(--glass-btn-bg-hover)` (+1px hairline shadow).
  *
+ * Label text is never glass: text-surface / text-sidebar / text-accent
+ * read the remapped tokens, so the engine restores their solid originals
+ * for text usages only (inverted buttons stay readable).
  * Buttons NEVER get backdrop-filter under glass (nested blur → milky);
  * panels nested inside glass panels instead get a standard HALF-POWER
  * liquid (--glass-nested-bg + --glass-nested-blur, engine rule in

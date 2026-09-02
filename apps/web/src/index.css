@@ -351,6 +351,29 @@ html.liquid-glass.dark {
   --sidebar-accent-foreground: #e9ecef;
 }
 
+/* ── Solid label text (inverted fills) ──────────────────────────────
+   `text-surface` / `text-sidebar` / `text-accent` — the paper label of
+   solid chips and the classic "solid fill + light label" buttons (Full
+   Solve "bg-ink text-surface", selected tree rows, dark pills) — read
+   the REMAPPED glass tokens, so under liquid glass the label itself
+   turns translucent: white-on-black becomes invisible, and in dark the
+   inverse. TEXT IS NEVER GLASS — restore the solid original palette
+   for text usages only (backgrounds keep the glass remap). */
+html.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
+html.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
+  color: #ffffff !important;
+}
+html.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
+  color: #f1f3f5 !important;
+}
+html.dark.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
+html.dark.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
+  color: #1b1f23 !important;
+}
+html.dark.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
+  color: #24292e !important;
+}
+
 html.liquid-glass [data-slot="card"],
 html.liquid-glass [data-slot="dialog-content"],
 html.liquid-glass [data-slot="alert-dialog-content"],
