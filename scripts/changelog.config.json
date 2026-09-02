@@ -2548,6 +2548,11 @@
           "type": "new",
           "en": "Looping video & animated GIF backgrounds (<10s) with IndexedDB persistence, resting as a static frame and looping during inspection and solve.",
           "es": "Fondos en vídeo y GIFs animados (<10s) con almacenamiento en IndexedDB, estáticos en reposo y en bucle continuo durante la inspección y resolución."
+        },
+        {
+          "type": "new",
+          "en": "Experimental 'Background on all views' setting allowing custom backgrounds across all tabs (Insights, Algorithms, Training, Skill Tree, Profile).",
+          "es": "Ajuste experimental 'Fondo en todas las vistas' que permite mostrar el fondo personalizado en todas las pestañas (Insights, Algoritmos, Entrenamiento, Árbol, Perfil)."
         }
       ],
       "moral": {

@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   validateAndProcessBackgroundMedia,
   MediaValidationError,
@@ -44,6 +45,8 @@ export function CustomBackgroundSetting() {
   const setTimerBackgroundFit = useStore(preferencesStore, (s) => s.setTimerBackgroundFit);
   const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
   const setTimerBackgroundOverlay = useStore(preferencesStore, (s) => s.setTimerBackgroundOverlay);
+  const timerBackgroundAllViews = useStore(preferencesStore, (s) => s.timerBackgroundAllViews);
+  const setTimerBackgroundAllViews = useStore(preferencesStore, (s) => s.setTimerBackgroundAllViews);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
@@ -389,6 +392,27 @@ export function CustomBackgroundSetting() {
                   <SelectItem value="tile">{t('appearance.fitTile')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Experimental: Background on all views */}
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-ink">
+                    {t('appearance.backgroundAllViews')}
+                  </span>
+                  <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-amber-500 uppercase border border-amber-500/20">
+                    {t('appearance.experimentalBadge', { defaultValue: 'EXPERIMENTAL' })}
+                  </span>
+                </div>
+                <span className="text-[0.72rem] text-ink-3 leading-4">
+                  {t('appearance.backgroundAllViewsHint')}
+                </span>
+              </div>
+              <Switch
+                checked={timerBackgroundAllViews}
+                onCheckedChange={setTimerBackgroundAllViews}
+              />
             </div>
           </div>
         </div>

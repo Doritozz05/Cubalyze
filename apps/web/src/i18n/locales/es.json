@@ -231,7 +231,10 @@
       "fit": "Ajuste de imagen",
       "fitCover": "Cubrir (Cover)",
       "fitContain": "Ajustar (Contain)",
-      "fitTile": "Mosaico (Tile)"
+      "fitTile": "Mosaico (Tile)",
+      "backgroundAllViews": "Fondo en todas las vistas",
+      "backgroundAllViewsHint": "Muestra el fondo personalizado en todas las pestañas de la aplicación (Insights, Algoritmos, Entrenamiento, Árbol, Perfil) y no solo en el Cronómetro y Cubo Virtual.",
+      "experimentalBadge": "EXPERIMENTAL"
     },
     "timer": {
       "header": "Configura cómo debe comenzar una resolución. Estos ajustes también se aplican cuando no hay un Smart Cube conectado.",

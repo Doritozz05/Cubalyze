@@ -231,7 +231,10 @@
       "fit": "Image fit",
       "fitCover": "Cover",
       "fitContain": "Contain",
-      "fitTile": "Tile"
+      "fitTile": "Tile",
+      "backgroundAllViews": "Background on all views",
+      "backgroundAllViewsHint": "Display custom background across all tabs in the app (Insights, Algorithms, Training, Skill Tree, Profile) instead of only Timer and Virtual Cube.",
+      "experimentalBadge": "EXPERIMENTAL"
     },
     "timer": {
       "header": "Configure how a solve should begin. These settings also apply when no Smart Cube is connected.",

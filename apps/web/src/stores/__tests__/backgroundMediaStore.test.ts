@@ -53,4 +53,14 @@ describe("useBackgroundMediaStore", () => {
     expect(state.mediaType).toBe("image");
     expect(state.posterUrl).toBe(legacyDataUrl);
   });
+
+  it("defaults timerBackgroundAllViews to false and allows toggling", () => {
+    expect(preferencesStore.getState().timerBackgroundAllViews).toBe(false);
+
+    preferencesStore.getState().setTimerBackgroundAllViews(true);
+    expect(preferencesStore.getState().timerBackgroundAllViews).toBe(true);
+
+    preferencesStore.getState().setTimerBackgroundAllViews(false);
+    expect(preferencesStore.getState().timerBackgroundAllViews).toBe(false);
+  });
 });

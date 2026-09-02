@@ -185,6 +185,10 @@ export interface PreferencesState {
   timerBackgroundOverlay: number;
   setTimerBackgroundOverlay: (value: number) => void;
 
+  /** Experimental: display background across all views/tabs instead of only timer and virtual cube. Default false. */
+  timerBackgroundAllViews: boolean;
+  setTimerBackgroundAllViews: (value: boolean) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -287,6 +291,7 @@ const DEFAULT_VALUES = {
   timerBackgroundBlur: 0,
   timerBackgroundFit: 'cover' as const,
   timerBackgroundOverlay: 0,
+  timerBackgroundAllViews: false,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -344,6 +349,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundBlur: (timerBackgroundBlur) => set({ timerBackgroundBlur }),
         setTimerBackgroundFit: (timerBackgroundFit) => set({ timerBackgroundFit }),
         setTimerBackgroundOverlay: (timerBackgroundOverlay) => set({ timerBackgroundOverlay }),
+        setTimerBackgroundAllViews: (timerBackgroundAllViews) => set({ timerBackgroundAllViews }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -393,6 +399,7 @@ export const createPreferencesStore = () => {
           timerBackgroundBlur: state.timerBackgroundBlur,
           timerBackgroundFit: state.timerBackgroundFit,
           timerBackgroundOverlay: state.timerBackgroundOverlay,
+          timerBackgroundAllViews: state.timerBackgroundAllViews,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

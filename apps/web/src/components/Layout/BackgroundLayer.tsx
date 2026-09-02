@@ -17,6 +17,7 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
   const timerBackgroundBlur = useStore(preferencesStore, (s) => s.timerBackgroundBlur);
   const timerBackgroundFit = useStore(preferencesStore, (s) => s.timerBackgroundFit);
   const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
+  const timerBackgroundAllViews = useStore(preferencesStore, (s) => s.timerBackgroundAllViews);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const posterUrl = useBackgroundMediaStore((s) => s.posterUrl);
@@ -46,7 +47,9 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
   }, [isAnimating, mediaType, animationKey]);
 
   const effectiveMediaUrl = mediaUrl || (timerBackgroundImage?.startsWith("data:") ? timerBackgroundImage : null);
-  const isVisible = !!effectiveMediaUrl && (activeView === "timer" || activeView === "cube");
+  const isVisible =
+    !!effectiveMediaUrl &&
+    (timerBackgroundAllViews || activeView === "timer" || activeView === "cube");
 
   if (!isVisible) return null;
 
