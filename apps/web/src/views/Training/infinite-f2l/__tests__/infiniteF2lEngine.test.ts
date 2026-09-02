@@ -22,6 +22,30 @@ import {
   type F2LSlotId,
 } from "../infiniteF2lEngine";
 
+/**
+ * Solve a slot on `state` by SWAPPING its pieces home (like a real solve):
+ * the occupant is displaced to the pair's current position instead of
+ * being clobbered — a raw `cp[pos] = id` assignment would destroy the
+ * piece the random spawner left at the home position and break the
+ * in-flight pair checks (the pre-existing flake: "expected -1 to be 4").
+ */
+function solveSlot(state: CubeState, def: { cornerId: number; edgeId: number }): void {
+  const cornerPos = Array.from(state.cp).indexOf(def.cornerId);
+  if (cornerPos !== def.cornerId) {
+    const occupant = state.cp[def.cornerId];
+    state.cp[def.cornerId] = def.cornerId;
+    state.cp[cornerPos] = occupant;
+  }
+  state.co[def.cornerId] = 0;
+  const edgePos = Array.from(state.ep).indexOf(def.edgeId);
+  if (edgePos !== def.edgeId) {
+    const edgeOccupant = state.ep[def.edgeId];
+    state.ep[def.edgeId] = def.edgeId;
+    state.ep[edgePos] = edgeOccupant;
+  }
+  state.eo[def.edgeId] = 0;
+}
+
 describe("infiniteF2lEngine", () => {
   it("correctly identifies a solved White F2L slot on a solved cube", () => {
     const solved = new CubeState();
@@ -104,10 +128,7 @@ describe("infiniteF2lEngine", () => {
     
     // Artificially solve the FR slot
     const frDef = CROSS_COLOR_CONFIGS.white.slots.FR;
-    state.cp[frDef.cornerId] = frDef.cornerId;
-    state.co[frDef.cornerId] = 0;
-    state.ep[frDef.edgeId] = frDef.edgeId;
-    state.eo[frDef.edgeId] = 0;
+    solveSlot(state, frDef);
 
     const solved = checkSolvedPairs(state, activePairs);
     expect(solved).toContain("FR");
@@ -137,19 +158,20 @@ describe("infiniteF2lEngine", () => {
   it("preserves exact positions of in-flight active pairs on respawn (lookahead preservation)", () => {
     const { state, activePairs } = spawnInfiniteF2LState("yellow", ["FR", "BL"]);
     
-    // Record where BL's pieces currently are
     const blDef = CROSS_COLOR_CONFIGS.yellow.slots.BL;
+    const frDef = CROSS_COLOR_CONFIGS.yellow.slots.FR;
+
+    // Artificially solve FR by SWAPPING its pieces home — the occupant
+    // parked at FR's home (possibly BL's corner/edge, per the random
+    // spawn) is legitimately displaced by the solve itself.
+    solveSlot(state, frDef);
+
+    // Record where BL's pieces are AFTER the solve, just before respawn:
+    // the invariant is that RESPAWN leaves in-flight pairs untouched.
     const initialBlCornerPos = Array.from(state.cp).indexOf(blDef.cornerId);
     const initialBlCornerOri = state.co[initialBlCornerPos];
     const initialBlEdgePos = Array.from(state.ep).indexOf(blDef.edgeId);
     const initialBlEdgeOri = state.eo[initialBlEdgePos];
-
-    // Artificially solve FR
-    const frDef = CROSS_COLOR_CONFIGS.yellow.slots.FR;
-    state.cp[frDef.cornerId] = frDef.cornerId;
-    state.co[frDef.cornerId] = 0;
-    state.ep[frDef.edgeId] = frDef.edgeId;
-    state.eo[frDef.edgeId] = 0;
 
     // Respawn FR with a new pair
     const { nextActivePairs } = respawnPair(
@@ -162,7 +184,7 @@ describe("infiniteF2lEngine", () => {
 
     expect(nextActivePairs.length).toBe(2);
 
-    // BL pieces must NOT have moved at all
+    // BL pieces must NOT have moved during respawn
     expect(Array.from(state.cp).indexOf(blDef.cornerId)).toBe(initialBlCornerPos);
     expect(state.co[initialBlCornerPos]).toBe(initialBlCornerOri);
     expect(Array.from(state.ep).indexOf(blDef.edgeId)).toBe(initialBlEdgePos);
@@ -218,6 +240,29 @@ describe("infiniteF2lEngine", () => {
       // configurations (e.g. pair trapped across two non-home slots) are
       // outside it. Keep the bar comfortably below the measured ~85%.
       expect(exact / total).toBeGreaterThan(0.5);
+    });
+
+    it("history parity: the case shown in the history is reproducible from the recorded start state", () => {
+      // The session's PairRecord stores the spawn-time annotation
+      // (detectedCase) plus the serialized spawn state (startFacelets).
+      // The history dialog renders record.detectedCase — re-detecting the
+      // pair from the recorded facelets must reproduce exactly the case
+      // the history shows, for every cross color and slot.
+      const CROSS_COLORS: CrossColor[] = ["white", "yellow", "green", "blue", "red", "orange"];
+      for (let s = 0; s < 24; s++) {
+        const crossColor = CROSS_COLORS[s % CROSS_COLORS.length];
+        const all: F2LSlotId[] = ["FR", "FL", "BL", "BR"];
+        const { state, activePairs } = spawnInfiniteF2LState(
+          crossColor,
+          all.sort(() => Math.random() - 0.5).slice(0, 2),
+        );
+        for (const p of activePairs) {
+          const recordDetectedCase = p.detectedCase;
+          const startState = FaceletStringConverter.fromFaceletString(p.startFacelets);
+          expect(detectPairCase(startState, crossColor, p.slotId)).toEqual(recordDetectedCase);
+        }
+        expect(state).toBeDefined();
+      }
     });
 
     it("pairSideFaceColors returns the corner's two side faces ordered like the canonical FR render", () => {

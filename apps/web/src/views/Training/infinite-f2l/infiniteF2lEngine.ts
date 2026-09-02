@@ -53,8 +53,21 @@ export function detectPairCase(
   const config = CROSS_COLOR_CONFIGS[crossColor] ?? CROSS_COLOR_CONFIGS.white;
   const detectorSlot =
     SLOT_TO_DETECTOR_SLOT[crossColor]?.[slotId] ?? slotId;
+  const def = config.slots[slotId];
   try {
-    const result = getF2LDetector().detect(state, config.face, detectorSlot);
+    // PIECE-ANCHORED contract: the engine injected this pair BY PIECE ID,
+    // so it passes the real pieces (and the cross sticker's face letter)
+    // to the detector instead of relying on the frame-color resolution.
+    // The canonical states this engine builds are letter-consistent, so
+    // the resolution would find the same pieces anyway — the explicit
+    // contract is what makes the annotation independent of the detector's
+    // color reading (see F2LPairPieces in algorithm-db).
+    const result = getF2LDetector().detectWith(state, {
+      probe: "f2l-slot",
+      crossFace: config.face,
+      slotName: detectorSlot,
+      pieces: { C: def.cornerId, E: def.edgeId, crossColor: config.face },
+    });
     if (result.entry && result.confidence === "exact") {
       return {
         caseNumber: result.entry.caseNumber,

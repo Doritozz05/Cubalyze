@@ -82,6 +82,40 @@ segmentF2LPairs → por cada par: estado @ corte (índice completionIndex - len 
 - UI: `OurDetectionPanel` muestra `caseName` + `caseNumber` en la
   columna "Case" de cada par.
 
+### El contrato anclado por piezas (seis frames + AUF)
+
+El motor reconoce el caso del CUBO, no del frame: la firma relacional sola
+no es invariante bajo la rotación física de la cámara (x2 no pertenece a la
+órbita interna y×U — sus conjugados aterrizan como giros-D en el ancla, y
+barrer esa órbita destruye la discriminación: colisiones medidas como
+`F2L 5+U ≡ F2L 21`). La verificación anclada por piezas cierra el hueco con
+un contrato explícito (`detectWith`):
+
+- `pieces` — las piezas físicas del par (la instancia ancla 4/8 en el
+  catálogo D-cross; cualquier consumidor que inyecte/rastree su par pasa las
+  suyas). La firma se calcula sobre ESAS piezas, sin resolución por color.
+- `auf` — el AUF del solver en su notación ('U'/'U2'/"U'"); el probe lo
+  deshace conjugado en el espacio de letras antes de firmar.
+
+Con piezas+auf el detector es 984/984 (41 casos × 6 frames × 4 AUF,
+validado en `__tests__/pieceAnchorMatrix.test.ts`) y 246/246 canónico.
+Sin piezas, el camino de frame (resolución por color, producción) se
+ejecuta primero — cero cambios de comportamiento para entradas
+scheme-consistentes (pipeline con recolor) — y el fallback ancla
+(`anchorSignature`, la lectura de la instancia ancla tras normalizar al
+D-cross) rescata los casos que el camino de frame no resuelve.
+
+**El fallback ancla solo se ejecuta SIN `pieces`**: cuando el caller pasa
+las piezas del par (el trainer inyecta por pieza ID), el camino de frame
+ya es la lectura del par, y la instancia ancla es OTRO conjunto de piezas
+(las 4/8 del slot FR D-cross) — caer en ella respondería sobre el par
+equivocado. Medido: un par FL spawnado fuera del catálogo se etiquetaba
+con el caso de las piezas FR (F2L 28) en vez de `undefined`. Con el guard,
+la anotación del motor es determinista por configuración del par (paridad
+reproducible desde `startFacelets`). Los F/B/R/L con AUF sin piezas+auf
+quedan en el límite informativo (los giros-D en el ancla son casos D-cross
+distintos): la única vía limpia es el contrato, no el barrido.
+
 ## Cómo añadir un subset nuevo (OLL, PLL, Advanced F2L…)
 
 El patrón es siempre el mismo — **cero cambios en el motor**:
