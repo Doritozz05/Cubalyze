@@ -83,7 +83,11 @@ export function SessionPiece({
             <span className="nums text-ink-3 leading-none">{sessionCount ?? 0}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuContent
+          align="end"
+          className="w-60"
+          data-context-zone="session"
+        >
           <DropdownMenuLabel className="text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
             {t("sessions")}
           </DropdownMenuLabel>

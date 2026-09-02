@@ -464,6 +464,7 @@ export function Header({
             type="button"
             onClick={() => setSessionDrawerOpen(true)}
             aria-label={t("switchSession")}
+            data-context-zone="session"
             className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
           >
             <History className="size-5" />

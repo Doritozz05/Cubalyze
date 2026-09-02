@@ -66,10 +66,11 @@ export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as 
  *
  * Buttons NEVER get backdrop-filter under glass (nested blur → milky).
  * Primary / destructive / semantic state buttons keep their solid fills.
- * The dock and the context menu are the designed exceptions: their buttons
- * are flat (icon-only pills / menu items), so the engine zeroes their rest
- * fill inside [data-context-zone="dock"] and
- * [data-context-zone="context-menu"] (only the hover chip remains).
+ * The dock, the context menu and the session switcher are the designed
+ * exceptions: their buttons are flat (icon-only pills / menu items), so
+ * the engine zeroes their rest fill inside [data-context-zone="dock"],
+ * [data-context-zone="context-menu"] and [data-context-zone="session"]
+ * (only the hover chip remains).
  */
 
 /**
