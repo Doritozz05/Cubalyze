@@ -215,7 +215,7 @@ export function InfiniteF2LSetupDialog({
             <span className="text-xs text-ink-3 font-semibold">∞</span>
             <input
               type="range"
-              min={5}
+              min={0}
               max={100}
               step={1}
               value={targetPairs}

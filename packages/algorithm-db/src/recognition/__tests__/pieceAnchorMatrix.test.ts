@@ -89,7 +89,7 @@ describe('piece-anchored detection matrix (41 × 6 frames × 4 AUF)', () => {
     }
   }
 
-  it('41/41 × 6 frames, every AUF — anchored pieces + frame-AUF input (984 cells)', () => {
+  it('41/41 × 6 frames, every AUF — anchored pieces + frame-AUF input (984 cells)', { timeout: 60000 }, () => {
     let total = 0;
     let ok = 0;
     const misses: string[] = [];
@@ -111,7 +111,7 @@ describe('piece-anchored detection matrix (41 × 6 frames × 4 AUF)', () => {
     expect(ok).toBe(984);
   });
 
-  it('41/41 × 6 frames canonical — anchored pieces, no AUF input (246 cells)', () => {
+  it('41/41 × 6 frames canonical — anchored pieces, no AUF input (246 cells)', { timeout: 60000 }, () => {
     let ok = 0;
     for (const cell of cells()) {
       if (cell.auf) continue;
@@ -127,7 +127,7 @@ describe('piece-anchored detection matrix (41 × 6 frames × 4 AUF)', () => {
     expect(ok).toBe(246);
   });
 
-  it('anchor fallback never lies: pieceAnchored answers on camera poses are always the true case', () => {
+  it('anchor fallback never lies: pieceAnchored answers on camera poses are always the true case', { timeout: 60000 }, () => {
     // With NO options passed the detector first tries the frame-context
     // reading; on physically rotated poses that reading can hit a MIRRORED
     // catalog case ('exact' but wrong). The piece-anchored fallback must

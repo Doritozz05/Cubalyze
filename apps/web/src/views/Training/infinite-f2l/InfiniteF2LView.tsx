@@ -131,9 +131,16 @@ export function InfiniteF2LView({
       setIsConnectorOpen(true);
       return;
     }
-    setIsStarted(true);
+    if (!isStarted) {
+      // Fresh start: useInfiniteF2LSession auto-starts when isStarted flips
+      // to true (with the just-updated options) — calling restart() here too
+      // would initialize the session twice.
+      setIsStarted(true);
+      return;
+    }
+    // Already running: apply the new options immediately.
     restart(newOptions);
-  }, [restart, isConnected]);
+  }, [restart, isConnected, isStarted]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-ink select-none">

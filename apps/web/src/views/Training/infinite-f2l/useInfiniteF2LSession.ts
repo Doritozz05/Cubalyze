@@ -318,11 +318,9 @@ export function useInfiniteF2LSession({
       moveTimestampsRef.current = recent;
 
       if (recent.length < 2) {
-        // If no turns in the last 700ms, live TPS is 0
-        const lastMove = recent[recent.length - 1];
-        if (!lastMove || nowPerf - lastMove > 700) {
-          setLiveTps(0);
-        }
+        // Fewer than 2 turns in the window: not enough data for a rolling
+        // TPS — show 0 instead of a stale value from a previous burst.
+        setLiveTps(0);
         return;
       }
 

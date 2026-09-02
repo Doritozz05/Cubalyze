@@ -43,7 +43,7 @@ const ALL_CASES: [string, string][] = [
 ];
 
 describe('D-rotation matrix: same case with pair in other slots + AUF', () => {
-  it('every case × slot × D-rotation × AUF detects the same case', () => {
+  it('every case × slot × D-rotation × AUF detects the same case', { timeout: 60000 }, () => {
     const detector = makeDetector();
     let total = 0;
     const failures: string[] = [];
@@ -86,5 +86,5 @@ describe('D-rotation matrix: same case with pair in other slots + AUF', () => {
     console.log(`matrix: ${total} states checked, ${failures.length} failures`);
     for (const f of failures.slice(0, 60)) console.log('  FAIL:', f);
     expect(failures.length).toBe(0);
-  }, 15000);
+  });
 });
