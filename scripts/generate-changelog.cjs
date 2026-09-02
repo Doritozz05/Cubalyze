@@ -243,7 +243,7 @@ function writeMasterMarkdown(versions, total, dates) {
     'Política del repositorio (`docs/08-standards/Versioning_and_Dependency_Management.md`, `docs/17-releases/RELEASE_PROCESS.md`): en `0.x` el salto **minor** marca funcionalidad nueva y el **patch** arreglos; `1.0.0` solo cuando la API de los paquetes se estabilice (hoy los paquetes son privados, las cuentas acaban de llegar y el sync está en fase de endurecimiento → **sigue siendo 0.x**).',
   );
   lines.push(
-    'Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` (22 de agosto) marca el corte de la ola "nube"; después aterrizó una ola completa de features (inteligencia de casos unificada #26, replay de cine, Infinite F2L #29/#30, Pyraminx y multi-puzzle #27/#28) → **la versión actual es `0.9.0`**.',
+    'Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` (22 de agosto) marca el corte de la ola "nube"; después aterrizó una ola completa de features (inteligencia de casos unificada #26, replay de cine, Infinite F2L #29/#30, Pyraminx y multi-puzzle #27/#28) → **la versión actual es `0.9.1`**.',
     '',
   );
   lines.push('| Versión | Periodo | Commits | Ola |', '|---|---|---|---|');

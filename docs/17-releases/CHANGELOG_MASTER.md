@@ -1,11 +1,11 @@
 # Lista maestra de commits — CubeForge
 
 > Generado automáticamente el 2026-09-02 por `scripts/generate-changelog.cjs`.
-> **1101 commits** · 2026-07-12 → 2026-09-02 · repositorio https://github.com/Doritozz05/Cubeforge
+> **1102 commits** · 2026-07-12 → 2026-09-02 · repositorio undefined
 
 ## Metodología
 
-- **Total real de commits: 1101**, verificado con `git rev-list --count HEAD` (contaba 1.100 al inicio del análisis; entró un commit nuevo (2739e3c6, TechnicalSection) durante la sesión, por lo que el número verificado final es 1101). Las cifras "1000" y "1080" que circularon antes no coinciden con el valor real del repositorio; este documento usa el valor verificado.
+- **Total real de commits: 1102**, verificado con `git rev-list --count HEAD` (contaba 1.100 al inicio del análisis; entró un commit nuevo (2739e3c6, TechnicalSection) durante la sesión, por lo que el número verificado final es 1102). Las cifras "1000" y "1080" que circularon antes no coinciden con el valor real del repositorio; este documento usa el valor verificado.
 - Cada commit se revisó en orden cronológico (del más antiguo al más reciente). Se registran hash, fecha exacta, mensaje original y archivos tocados.
 - **Categoría:** si el mensaje sigue Conventional Commits (convención adoptada en las fases posteriores), el prefijo es la categoría. Si el mensaje es genérico ("fix", "fixes", "Update X.ts", …), la categoría se infiere de los archivos modificados con una heurística conservadora (solo markdown → `docs`; solo tests → `test`; solo manifests → `chore`). Sin evidencia suficiente se marca **sin clasificar** (`other`) — nunca se adivina.
 - Las descripciones por versión (resúmenes y destacados) están respaldadas por los mensajes y archivos de sus commits, los documentos del repositorio (`docs/`, PRD, roadmap, auditorías) y los PR fusionados (#4–#30).
@@ -14,31 +14,97 @@
 ## Determinación de la versión actual (SemVer)
 
 Política del repositorio (`docs/08-standards/Versioning_and_Dependency_Management.md`, `docs/17-releases/RELEASE_PROCESS.md`): en `0.x` el salto **minor** marca funcionalidad nueva y el **patch** arreglos; `1.0.0` solo cuando la API de los paquetes se estabilice (hoy los paquetes son privados, las cuentas acaban de llegar y el sync está en fase de endurecimiento → **sigue siendo 0.x**).
-Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` (22 de agosto) marca el corte de la ola "nube"; después aterrizó una ola completa de features (inteligencia de casos unificada #26, replay de cine, Infinite F2L #29/#30, Pyraminx y multi-puzzle #27/#28) → **la versión actual es `0.9.0`**.
+Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` (22 de agosto) marca el corte de la ola "nube"; después aterrizó una ola completa de features (inteligencia de casos unificada #26, replay de cine, Infinite F2L #29/#30, Pyraminx y multi-puzzle #27/#28) → **la versión actual es `0.9.1`**.
 
 | Versión | Periodo | Commits | Ola |
 |---|---|---|---|
-| v0.1.0 | 2026-07-12 → 2026-07-13 | 84 | The Seed / La semilla |
-| v0.2.0 | 2026-07-14 → 2026-07-20 | 113 | The First Solve / El primer solve |
-| v0.3.0 | 2026-07-21 → 2026-07-27 | 192 | The Gym / El gimnasio |
-| v0.4.0 | 2026-07-28 → 2026-08-03 | 245 | The Dock Era / La era del dock |
-| v0.5.0 | 2026-08-04 → 2026-08-10 | 197 | Two Languages / Dos idiomas |
-| v0.6.0 | 2026-08-11 → 2026-08-17 | 144 | The Studio / El estudio |
-| v0.7.0 | 2026-08-18 → 2026-08-24 | 56 | The Cloud / La nube |
-| v0.8.0 | 2026-08-25 → 2026-08-31 | 55 | Case Intelligence / Inteligencia de casos |
-| v0.9.0 ⭐ (actual) | 2026-09-01 → 2026-09-02 | 15 | More Puzzles / Más puzzles |
+| v0.1.0 | 2026-07-12 → 2026-07-12 | 42 | Monorepo & Core Engine Architecture / Arquitectura monorepo y motor central |
+| v0.1.1 | 2026-07-12 → 2026-07-12 | 0 | Offscreen Canvas & Render Worker / Offscreen Canvas y worker de render |
+| v0.1.2 | 2026-07-13 → 2026-07-13 | 42 | WCA Timer State Machine & Penalties / Estados de timer WCA y penalizaciones |
+| v0.1.3 | 2026-07-13 → 2026-07-13 | 0 | Design Tokens & Responsive Layout / Tokens de diseño y diseño adaptativo |
+| v0.2.0 | 2026-07-14 → 2026-07-14 | 16 | Timer Stage & Responsive Display / Timer Stage y pantalla adaptativa |
+| v0.2.1 | 2026-07-14 → 2026-07-14 | 0 | Smart Cube Web Bluetooth / Smart Cube y Web Bluetooth |
+| v0.2.2 | 2026-07-15 → 2026-07-15 | 10 | Gyroscope & Quaternion Tracking / Giroscopio y seguimiento de cuaterniones |
+| v0.2.3 | 2026-07-16 → 2026-07-16 | 6 | Orientation Auto-Calibration / Auto-calibración de orientación |
+| v0.2.4 | 2026-07-17 → 2026-07-17 | 21 | CFOP Solver Engine & Phase Split / Motor de resolución CFOP y fases |
+| v0.2.5 | 2026-07-17 → 2026-07-17 | 0 | Color Neutrality & Face Mapping / Neutralidad de color y mapeo de caras |
+| v0.2.6 | 2026-07-18 → 2026-07-18 | 16 | PB Milestones & Session Bests / Hitos PB y mejores de sesión |
+| v0.2.7 | 2026-07-19 → 2026-07-19 | 15 | 2D Scramble Net & Verification / Red 2D de mezcla y verificación |
+| v0.2.8 | 2026-07-20 → 2026-07-20 | 29 | 3D Gyroscope Replay / Replay giroscópico 3D |
+| v0.2.9 | 2026-07-20 → 2026-07-20 | 0 | Solve History & Quick Stats Panel / Historial de solves y panel de stats |
+| v0.3.0 | 2026-07-21 → 2026-07-21 | 84 | Cube Skins & Texture Studio / Skins de cubo y estudio de texturas |
+| v0.3.1 | 2026-07-21 → 2026-07-21 | 0 | 3D Diagram Generator / Generador de diagramas 3D |
+| v0.3.2 | 2026-07-22 → 2026-07-22 | 10 | Algorithm Database Modeling / Modelado de base de algoritmos |
+| v0.3.3 | 2026-07-23 → 2026-07-23 | 32 | Cross Trainer & Optimal Solver / Entrenador de cruz y solver óptimo |
+| v0.3.4 | 2026-07-23 → 2026-07-23 | 0 | Training Engine Architecture / Arquitectura del motor de entrenamiento |
+| v0.3.5 | 2026-07-24 → 2026-07-24 | 27 | Algorithm Drills & Flash Recall / Drills de algoritmos y recuerdo rápido |
+| v0.3.6 | 2026-07-24 → 2026-07-24 | 0 | Practice Calendar & Habit Tracker / Calendario de práctica y hábitos |
+| v0.3.7 | 2026-07-25 → 2026-07-25 | 6 | Skill Tree Graph Canvas / Lienzo del árbol de habilidades |
+| v0.3.8 | 2026-07-26 → 2026-07-26 | 26 | Spaced Repetition (SRS) Engine / Motor de repetición espaciada (SRS) |
+| v0.3.9 | 2026-07-27 → 2026-07-27 | 7 | F2L 41 Case Modeling & Full Solve / Modelado de los 41 F2L y full solve |
+| v0.4.0 | 2026-07-28 → 2026-07-28 | 11 | Draggable Dock & Floating Architecture / Dock arrastrable y arquitectura flotante |
+| v0.4.1 | 2026-07-28 → 2026-07-28 | 0 | Metronome & Scratchpad Notes / Metrónomo y bloc de notas |
+| v0.4.2 | 2026-07-29 → 2026-07-29 | 11 | csTimer Manual Entry Parser / Parser de entrada manual csTimer |
+| v0.4.3 | 2026-07-29 → 2026-07-29 | 0 | 2×2 Cube Mathematical Engine / Motor matemático de cubo 2×2 |
+| v0.4.4 | 2026-07-30 → 2026-07-30 | 64 | Layout Organizer & Snap-to-Grid / Organizador de layouts y ajuste magnético |
+| v0.4.5 | 2026-07-30 → 2026-07-30 | 0 | 2×2 Algorithm Database & Time Histogram / Base de algoritmos 2×2 e histograma |
+| v0.4.6 | 2026-07-31 → 2026-07-31 | 52 | PB Progression & BPA/WPA Projections / Evolución de PB y proyecciones BPA/WPA |
+| v0.4.7 | 2026-08-01 → 2026-08-01 | 58 | Skill Node Detail & Custom Algorithm Editor / Detalle de skill y editor de algoritmos |
+| v0.4.8 | 2026-08-02 → 2026-08-02 | 26 | PWA Deployment & COOP/COEP Headers / Despliegue PWA y cabeceras COOP/COEP |
+| v0.4.9 | 2026-08-03 → 2026-08-03 | 23 | Manual Focus Mode & Confirmation Dialogs / Modo foco manual y diálogos de borrado |
+| v0.5.0 | 2026-08-04 → 2026-08-05 | 71 | Typed i18n Foundation & Bilingual Support / Infraestructura i18n tipada y bilingüe |
+| v0.5.1 | 2026-08-05 → 2026-08-05 | 0 | Configurable Precision & Timer Preferences / Precisión configurable y preferencias |
+| v0.5.2 | 2026-08-06 → 2026-08-06 | 18 | SCDB Seed Merge & COLL/WV Algorithms / Integración SCDB y algoritmos COLL/WV |
+| v0.5.3 | 2026-08-06 → 2026-08-06 | 0 | BirdF2L Advanced Notation Codes / Códigos de notación avanzada BirdF2L |
+| v0.5.4 | 2026-08-07 → 2026-08-07 | 21 | Automated Case Verification Pipeline / Pipeline de verificación de casos |
+| v0.5.5 | 2026-08-08 → 2026-08-08 | 23 | Solve Re-analysis Pipeline / Pipeline de reanálisis de solves |
+| v0.5.6 | 2026-08-08 → 2026-08-08 | 0 | Replay Move Grip Smooth Timeline / Cronología de replay y transiciones de agarre |
+| v0.5.7 | 2026-08-09 → 2026-08-09 | 27 | Color-Neutral Scrambler & Standard Deviation / Mezclador color-neutral y desviación estándar |
+| v0.5.8 | 2026-08-10 → 2026-08-10 | 37 | Algorithm Creator Credits Attribution / Atribución de créditos a creadores |
+| v0.5.9 | 2026-08-10 → 2026-08-10 | 0 | Complete Typed Translation Sweep / Barrido completo de traducción tipada |
+| v0.6.0 | 2026-08-11 → 2026-08-11 | 34 | Virtual Cube Simulator csTimer Style / Simulador de cubo virtual estilo csTimer |
+| v0.6.1 | 2026-08-11 → 2026-08-11 | 0 | Web Audio Mechanical Turn Sounds / Sonidos mecánicos Web Audio |
+| v0.6.2 | 2026-08-12 → 2026-08-12 | 36 | Modular Dock Pieces Architecture / Arquitectura de piezas modulares del dock |
+| v0.6.3 | 2026-08-12 → 2026-08-12 | 0 | DockExplorer Catalog & Virtual Solve Tag / Catálogo DockExplorer y tag virtual |
+| v0.6.4 | 2026-08-13 → 2026-08-13 | 36 | Dock Edit Mode & Removal Badges / Modo edición del dock e insignias de borrado |
+| v0.6.5 | 2026-08-13 → 2026-08-13 | 0 | Modular Bottom Layout Templates / Plantillas modulares de layout inferior |
+| v0.6.6 | 2026-08-14 → 2026-08-14 | 19 | Dock Auto-Hide Tri-State Top Bar / Auto-hide del dock y barra tri-estado |
+| v0.6.7 | 2026-08-14 → 2026-08-14 | 0 | Trackball Orbit Camera & Tablet Layout / Cámara trackball y layout para tablet |
+| v0.6.8 | 2026-08-15 → 2026-08-15 | 8 | WCA Event Registry & Solid UI Surfaces / Registro de eventos WCA y superficies sólidas |
+| v0.6.9 | 2026-08-16 → 2026-08-17 | 11 | 2×2 Virtual Cube & iOS Ghost Click Filter / Cubo virtual 2×2 y filtro anticlic iOS |
+| v0.7.0 | 2026-08-18 → 2026-08-18 | 6 | Supabase User Accounts & Authentication / Cuentas de usuario y auth Supabase |
+| v0.7.1 | 2026-08-19 → 2026-08-19 | 3 | Offline-First Cloud Sync Service / Servicio de sync offline-first |
+| v0.7.2 | 2026-08-20 → 2026-08-20 | 17 | OPFS Storage Worker & Fallbacks / Worker de almacenamiento OPFS y fallbacks |
+| v0.7.3 | 2026-08-21 → 2026-08-21 | 19 | Crash Diagnostics & Settings SHA Footer / Diagnósticos de caídas y pie SHA en ajustes |
+| v0.7.4 | 2026-08-21 → 2026-08-21 | 0 | Solve Multi-Select & Bulk Operations / Selección múltiple de solves y acciones en bloque |
+| v0.7.5 | 2026-08-22 → 2026-08-22 | 7 | Profile View & 52-Week Activity Heatmap / Vista de perfil y heatmap de 52 semanas |
+| v0.7.6 | 2026-08-22 → 2026-08-22 | 0 | Sub-X Milestone Badges & 5 Performance Tabs / Insignias Sub-X y 5 pestañas de rendimiento |
+| v0.7.7 | 2026-08-23 → 2026-08-23 | 1 | Zero-Latency SoundManager / SoundManager de latencia cero |
+| v0.7.8 | 2026-08-24 → 2026-08-24 | 3 | Advanced F2L Slot Views & Fixed Pair Geometry / Vistas de slot F2L avanzado y geometría fija |
+| v0.7.9 | 2026-08-24 → 2026-08-24 | 0 | BirdF2L Notation Badges & Profile Country Sorting / Insignias BirdF2L y orden de países en perfil |
+| v0.8.0 | 2026-08-25 → 2026-08-25 | 0 | Slot-Agnostic Relational Signatures / Signaturas relacionales independientes del slot |
+| v0.8.1 | 2026-08-26 → 2026-08-26 | 9 | Mini 3D Case Cubes with Real Sticker Colors / Mini-cubos 3D con colores reales |
+| v0.8.2 | 2026-08-26 → 2026-08-26 | 0 | Unified CFOP Case Analysis Architecture / Arquitectura unificada de análisis CFOP |
+| v0.8.3 | 2026-08-27 → 2026-08-27 | 0 | 100% Color-Neutral Recognition Engine / Motor de reconocimiento 100% color-neutral |
+| v0.8.4 | 2026-08-28 → 2026-08-28 | 17 | Floating Stickers & Direct Replay Seek / Stickers flotantes y salto en replay |
+| v0.8.5 | 2026-08-28 → 2026-08-28 | 0 | Reconstruction Detail Redesign & Vertical Layout / Rediseño de detalle de reconstrucción |
+| v0.8.6 | 2026-08-29 → 2026-08-29 | 21 | In-App Theater Fullscreen Replay / Replay de cine en pantalla completa |
+| v0.8.7 | 2026-08-29 → 2026-08-29 | 0 | Spherical Turntable Orbit Camera / Cámara orbital esférica tipo turntable |
+| v0.8.8 | 2026-08-30 → 2026-08-30 | 7 | Professional Pause Analytics & Case Intelligence / Analítica de pausas e inteligencia de casos |
+| v0.8.9 | 2026-08-31 → 2026-08-31 | 1 | Puzzle Roulette & Reconstruction Table Polish / Ruleta de puzzles y tablas de reconstrucción |
+| v0.9.0 | 2026-09-01 → 2026-09-01 | 1 | 3D Pyraminx Engine & Face Simulator / Motor 3D de Pyraminx y simulador |
+| v0.9.1 ⭐ (actual) | 2026-09-02 → 2026-09-02 | 15 | Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog |
 
 ## Changelog completo
 
-### v0.1.0 — The Seed / La semilla — 2026-07-12 → 2026-07-13 — 84 commits
+### v0.1.0 — Monorepo & Core Engine Architecture / Arquitectura monorepo y motor central — 2026-07-12 → 2026-07-12 — 42 commits
 
-**Resumen:** CubeForge nace como monorepo en blanco: documento de producto, decisiones de arquitectura, kit de UI shadcn/Tailwind y los primeros paquetes. Aún no se ha girado ni una cara, pero la sala ya tiene paredes.
+**Resumen:** Configuración del monorepo con pnpm workspaces, máquina de estados WCA y motor 3D Three.js.
 
 **Destacados:**
-- pnpm monorepo with 19 packages, a design system and CI from day one.
-- PRD, roadmap and architecture governance (ADRs + RFCs).
-- First packages: models, database, state and the timer engine.
-- Custom UI kit with shadcn/Tailwind and the bone/carbon theme.
+- Monorepo structure with pnpm workspaces and isolated packages.
+- WCA inspection and solve timing state machine with high-precision timestamping.
+- Core Three.js 3D cube engine with sticker mapping and orbit controls.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -84,6 +150,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-12 | [`cef956a`](https://github.com/Doritozz05/Cubeforge/commit/cef956a) | sin clasificar | Create LICENSE | packages/gan-protocol/LICENSE |
 | 2026-07-12 | [`48ea895`](https://github.com/Doritozz05/Cubeforge/commit/48ea895) | docs | Create TDD-0006-3D-Engine.md | docs/05-tdd/TDD-0006-3D-Engine.md |
 | 2026-07-12 | [`b61d673`](https://github.com/Doritozz05/Cubeforge/commit/b61d673) | sin clasificar | Integrate 3D cube engine with Web Workers and improve Bluetooth UX | apps/web/package.json · apps/web/src/App.tsx · packages/cube-3d-engine/package.json · packages/cube-3d-engine/src/animation/RotationEngine.ts · … (15 en total) |
+
+### v0.1.1 — Offscreen Canvas & Render Worker / Offscreen Canvas y worker de render — 2026-07-12 → 2026-07-12 — 0 commits
+
+**Resumen:** Web Worker dedicado para el renderizado 3D mediante OffscreenCanvas para fluidez a 60fps.
+
+**Destacados:**
+- OffscreenCanvas worker rendering to prevent UI thread frame drops during fast solves.
+- Modular geometry allocation reusing buffers across scramble changes.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.1.2 — WCA Timer State Machine & Penalties / Estados de timer WCA y penalizaciones — 2026-07-13 → 2026-07-13 — 42 commits
+
+**Resumen:** Cuenta atrás precisa de 15 segundos WCA, barra de retención y evaluación de penalizaciones +2/DNF.
+
+**Destacados:**
+- Strict WCA inspection protocol with color transitions (orange 8s, red 12s, +2 at 15s, DNF at 17s).
+- Hold-to-start timing mechanism with spacebar and multi-touch support.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-13 | [`de6e11a`](https://github.com/Doritozz05/Cubeforge/commit/de6e11a) | sin clasificar | Extract types pkg and fix cube rotation precision | apps/web/package.json · apps/web/src/App.tsx · packages/cube-3d-engine/package.json · packages/cube-3d-engine/src/animation/Easing.ts · … (19 en total) |
 | 2026-07-13 | [`ba75361`](https://github.com/Doritozz05/Cubeforge/commit/ba75361) | sin clasificar | Fix worker exports and app imports | apps/web/package.json · apps/web/src/App.tsx · packages/cube-3d-engine/package.json · packages/cube-3d-engine/src/core/CubeMeshFactory.ts · … (6 en total) |
 | 2026-07-13 | [`19805e0`](https://github.com/Doritozz05/Cubeforge/commit/19805e0) | sin clasificar | Fix rotation math and improve position snapping | packages/cube-3d-engine/src/animation/RotationEngine.ts · packages/cube-3d-engine/src/core/CubeMeshFactory.ts · packages/cube-3d-engine/src/core/CubeModel.ts · packages/cube-3d-engine/src/hardware/GyroFusion.ts · … (5 en total) |
@@ -127,15 +215,24 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-13 | [`90a5b9d`](https://github.com/Doritozz05/Cubeforge/commit/90a5b9d) | docs | Create TDD-04-Solver-Engine.md | docs/05-tdd/TDD-04-Solver-Engine.md |
 | 2026-07-13 | [`8ff225c`](https://github.com/Doritozz05/Cubeforge/commit/8ff225c) | sin clasificar | Add cube state math core | packages/math-core/package.json · packages/math-core/src/Constants.ts · packages/math-core/src/CubeState.test.ts · packages/math-core/src/CubeState.ts · … (6 en total) |
 
-### v0.2.0 — The First Solve / El primer solve — 2026-07-14 → 2026-07-20 — 113 commits
+### v0.1.3 — Design Tokens & Responsive Layout / Tokens de diseño y diseño adaptativo — 2026-07-13 → 2026-07-13 — 0 commits
 
-**Resumen:** El cronómetro late: inspección WCA, sesiones, scrambles y estadísticas, más el primer motor de análisis — detección de fases CFOP, métricas de solve y el cubo inteligente GAN vía Web Bluetooth.
+**Resumen:** Escala tipográfica, tokens CSS personalizados, paleta de tema oscuro y estructura responsive.
 
 **Destacados:**
-- Timer with WCA inspection, sessions, scrambles and penalties.
-- CFOP phase analysis with per-solve metrics.
-- GAN smart cube over Web Bluetooth with auto-arm and gyro reset.
-- 3D engine, solver and a floating times panel.
+- Custom design system with semantic color tokens, monospaced tabular numerals and smooth transitions.
+- Adaptive sidebar navigation for mobile and desktop screens.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.2.0 — Timer Stage & Responsive Display / Timer Stage y pantalla adaptativa — 2026-07-14 → 2026-07-14 — 16 commits
+
+**Resumen:** Layout de timer con tipografía clamp adaptable e indicadores de inicio WCA.
+
+**Destacados:**
+- Responsive timer display using viewport clamp scaling to fit mobile, tablet, and ultra-wide screens.
+- Hold-to-start tactile feedback with visual state transitions (IDLE → ARMED → READY).
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -155,6 +252,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-14 | [`8fe0483`](https://github.com/Doritozz05/Cubeforge/commit/8fe0483) | sin clasificar | Update shared UI utilities | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/ui/calendar.tsx · … (20 en total) |
 | 2026-07-14 | [`24ff9ed`](https://github.com/Doritozz05/Cubeforge/commit/24ff9ed) | sin clasificar | Revert recent unstable changes and restore stable state | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/ui/calendar.tsx · … (27 en total) |
 | 2026-07-14 | [`4aed01a`](https://github.com/Doritozz05/Cubeforge/commit/4aed01a) | sin clasificar | Prevent timer start from unscrambled state | apps/web/src/hooks/useScrambleValidator.ts · apps/web/src/hooks/useTimerUI.ts |
+
+### v0.2.1 — Smart Cube Web Bluetooth / Smart Cube y Web Bluetooth — 2026-07-14 → 2026-07-14 — 0 commits
+
+**Resumen:** Integración de Web Bluetooth API para cubos inteligentes GAN y GoCube con sincronización de estado.
+
+**Destacados:**
+- Smart Cube Bluetooth connectivity layer with auto-reconnection and battery monitoring.
+- Move packet decoding pipeline mapping physical rotations to standard move notation.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.2.2 — Gyroscope & Quaternion Tracking / Giroscopio y seguimiento de cuaterniones — 2026-07-15 → 2026-07-15 — 10 commits
+
+**Resumen:** Telemetría de giroscopio en tiempo real, normalizador de cuaterniones y seguimiento sin deriva.
+
+**Destacados:**
+- Real-time 3D gyroscope tracking with quaternion filtering and gimbal-lock elimination.
+- Smooth 60fps orientation interpolation matching physical cube orientation on screen.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-15 | [`70327f5`](https://github.com/Doritozz05/Cubeforge/commit/70327f5) | sin clasificar | Update MainLayout.tsx | apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-07-15 | [`929b223`](https://github.com/Doritozz05/Cubeforge/commit/929b223) | sin clasificar | Update Header.tsx | apps/web/src/components/Layout/Header.tsx |
 | 2026-07-15 | [`b353ada`](https://github.com/Doritozz05/Cubeforge/commit/b353ada) | sin clasificar | Update Cube3DPanel.tsx | apps/web/src/components/Cube3D/Cube3DPanel.tsx |
@@ -165,12 +284,34 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-15 | [`d546ace`](https://github.com/Doritozz05/Cubeforge/commit/d546ace) | sin clasificar | Update useScrambleValidator.ts | apps/web/src/hooks/useScrambleValidator.ts |
 | 2026-07-15 | [`0636e2a`](https://github.com/Doritozz05/Cubeforge/commit/0636e2a) | sin clasificar | Handle unsolved start in scramble validation | apps/web/src/App.tsx · apps/web/src/components/Scramble/ScrambleDisplay.tsx · apps/web/src/hooks/useScrambleValidator.ts |
 | 2026-07-15 | [`fbc2ef9`](https://github.com/Doritozz05/Cubeforge/commit/fbc2ef9) | sin clasificar | Refactor useScrambleValidator error handling | apps/web/src/App.tsx · apps/web/src/hooks/useScrambleValidator.ts |
+
+### v0.2.3 — Orientation Auto-Calibration / Auto-calibración de orientación — 2026-07-16 → 2026-07-16 — 6 commits
+
+**Resumen:** Reinicio de orientación en un toque, auto-calibración de caras e indicador de estado de hardware.
+
+**Destacados:**
+- Quick-tap orientation reset button and keyboard shortcut to align the virtual and physical cube.
+- Visual connection pill showing signal strength and hardware telemetry.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-16 | [`cee2c88`](https://github.com/Doritozz05/Cubeforge/commit/cee2c88) | sin clasificar | Handle worker canvas reconnect on remount | apps/web/src/components/Cube3D/Cube3DPanel.tsx · packages/cube-3d-engine/package.json · packages/cube-3d-engine/src/workers/EngineWorker.ts · pnpm-lock.yaml |
 | 2026-07-16 | [`dd5b1a1`](https://github.com/Doritozz05/Cubeforge/commit/dd5b1a1) | sin clasificar | Standardize linting and tighten TS types | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Stats/TrendChart.tsx · apps/web/src/components/ui/calendar.tsx · … (38 en total) |
 | 2026-07-16 | [`d1a1165`](https://github.com/Doritozz05/Cubeforge/commit/d1a1165) | sin clasificar | Use .cjs/.mjs outputs in package builds | packages/gan-protocol/package.json · packages/gan-protocol/tsup.config.ts · packages/hardware-hal/package.json · packages/hardware-hal/tsup.config.ts · … (8 en total) |
 | 2026-07-16 | [`bae9c20`](https://github.com/Doritozz05/Cubeforge/commit/bae9c20) | sin clasificar | Keep Cube3D mounted after first activation | apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-07-16 | [`e49494b`](https://github.com/Doritozz05/Cubeforge/commit/e49494b) | sin clasificar | Add responsive left nav and HTTPS dev support | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Layout/Header.tsx · … (10 en total) |
 | 2026-07-16 | [`efbdcae`](https://github.com/Doritozz05/Cubeforge/commit/efbdcae) | sin clasificar | Update MainLayout.tsx | apps/web/src/components/Layout/MainLayout.tsx |
+
+### v0.2.4 — CFOP Solver Engine & Phase Split / Motor de resolución CFOP y fases — 2026-07-17 → 2026-07-17 — 21 commits
+
+**Resumen:** Segmentación automática del solve en fases de Cross, 4 pares de F2L, OLL y PLL.
+
+**Destacados:**
+- Real-time CFOP solver engine breaking down solves into phase splits.
+- Detailed metrics for TPS (turns per second) and move counts per phase.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-17 | [`aa0b359`](https://github.com/Doritozz05/Cubeforge/commit/aa0b359) | docs | Create Dynamic_Notation_Orientation_System.md | docs/02-architecture/Dynamic_Notation_Orientation_System.md |
 | 2026-07-17 | [`ad141b2`](https://github.com/Doritozz05/Cubeforge/commit/ad141b2) | sin clasificar | Add cube orientation table and move remapping | packages/math-core/src/index.ts · packages/math-core/src/orientation/MoveTransformer.ts · packages/math-core/src/orientation/OrientationTable.ts · packages/math-core/src/orientation/__tests__/MoveTransformer.test.ts · … (7 en total) |
 | 2026-07-17 | [`7f002a1`](https://github.com/Doritozz05/Cubeforge/commit/7f002a1) | sin clasificar | Update OrientationTable.ts | packages/math-core/src/orientation/OrientationTable.ts |
@@ -192,6 +333,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-17 | [`772b4a8`](https://github.com/Doritozz05/Cubeforge/commit/772b4a8) | sin clasificar | Update index.css | apps/web/src/index.css |
 | 2026-07-17 | [`f1d4519`](https://github.com/Doritozz05/Cubeforge/commit/f1d4519) | sin clasificar | Unify timer flow with ARMED state support | apps/web/src/App.tsx · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/sections/TimerSection.tsx · apps/web/src/components/Settings/settings.constants.ts · … (17 en total) |
 | 2026-07-17 | [`5662477`](https://github.com/Doritozz05/Cubeforge/commit/5662477) | sin clasificar | Bypass scramble validation when disabled | apps/web/src/App.tsx · apps/web/src/components/Timer/TimerContainer.tsx · apps/web/src/components/Timer/TimerDisplay.tsx · apps/web/src/components/Timer/hintFor.test.ts · … (11 en total) |
+
+### v0.2.5 — Color Neutrality & Face Mapping / Neutralidad de color y mapeo de caras — 2026-07-17 → 2026-07-17 — 0 commits
+
+**Resumen:** Detección de cruz en cualquier color permitiendo resolver CFOP en cualquiera de las 6 caras.
+
+**Destacados:**
+- Cross solver supporting all 6 starting colors (White, Yellow, Green, Blue, Red, Orange).
+- Automatic face color remapping for consistent Last Layer recognition.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.2.6 — PB Milestones & Session Bests / Hitos PB y mejores de sesión — 2026-07-18 → 2026-07-18 — 16 commits
+
+**Resumen:** Celebración instantánea de récords personales (PB) de single, Ao5 y Ao12 con insignias conmemorativas.
+
+**Destacados:**
+- Automatic PB milestone detection comparing current solves against all-time session history.
+- Celebratory visual badges and sound alerts on breaking Single and Average PBs.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-18 | [`7252a98`](https://github.com/Doritozz05/Cubeforge/commit/7252a98) | docs | Create EPIC5_Audit_Report.md | docs/auditorias/EPIC5_Audit_Report.md |
 | 2026-07-18 | [`a614778`](https://github.com/Doritozz05/Cubeforge/commit/a614778) | sin clasificar | Add analysis engine and solve metric pipeline | packages/analysis-engine/package.json · packages/analysis-engine/src/index.ts · packages/analysis-engine/src/metrics/CFOPMetricsCalculator.ts · packages/analysis-engine/src/metrics/EfficiencyCalculator.ts · … (22 en total) |
 | 2026-07-18 | [`23d2937`](https://github.com/Doritozz05/Cubeforge/commit/23d2937) | sin clasificar | Add smart-cube solve analysis and method settings | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/sections/AnalysisSection.tsx · … (11 en total) |
@@ -208,6 +371,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-18 | [`0f7066f`](https://github.com/Doritozz05/Cubeforge/commit/0f7066f) | sin clasificar | Stabilize GAN sync and solve state analysis | apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/hooks/useSolveSession.ts · apps/web/vite.config.ts · … (8 en total) |
 | 2026-07-18 | [`0f8110f`](https://github.com/Doritozz05/Cubeforge/commit/0f8110f) | docs | Create Auditoria_Tecnica_Integral_2026-07-18.md | auditorias/Auditoria_Tecnica_Integral_2026-07-18.md |
 | 2026-07-18 | [`d5e0061`](https://github.com/Doritozz05/Cubeforge/commit/d5e0061) | sin clasificar | Extract solver engine and align packages | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/hooks/usePersistentSession.ts · … (44 en total) |
+
+### v0.2.7 — 2D Scramble Net & Verification / Red 2D de mezcla y verificación — 2026-07-19 → 2026-07-19 — 15 commits
+
+**Resumen:** Vista interactiva en red 2D del cubo desplegado mostrando el estado exacto de la mezcla.
+
+**Destacados:**
+- 2D flat cube net preview illustrating the scrambled state for quick inspection verification.
+- Clickable 2D net modal for enlarged examination of scramble patterns.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-19 | [`2c9cb61`](https://github.com/Doritozz05/Cubeforge/commit/2c9cb61) | test | Expand CubeState test coverage for refactor | packages/math-core/src/CubeState.test.ts · packages/math-core/src/__tests__/CubeState.applySequence.test.ts · packages/math-core/src/__tests__/CubeState.binaryRoundtrip.test.ts · packages/math-core/src/__tests__/CubeState.clone.test.ts · … (8 en total) |
 | 2026-07-19 | [`33d7c99`](https://github.com/Doritozz05/Cubeforge/commit/33d7c99) | test | Create CubeState.preRefactor.test.ts | packages/math-core/src/__tests__/CubeState.preRefactor.test.ts |
 | 2026-07-19 | [`cc48e96`](https://github.com/Doritozz05/Cubeforge/commit/cc48e96) | test | Expand CubeState validation test coverage | packages/math-core/src/__tests__/CubeState.binaryRoundtrip.test.ts · packages/math-core/src/__tests__/CubeState.externalOracle.test.ts · packages/math-core/src/__tests__/CubeState.preRefactor.test.ts |
@@ -223,6 +397,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-19 | [`1ef47a8`](https://github.com/Doritozz05/Cubeforge/commit/1ef47a8) | sin clasificar | Update useScrambleValidator.ts | apps/web/src/hooks/useScrambleValidator.ts |
 | 2026-07-19 | [`8ae99b6`](https://github.com/Doritozz05/Cubeforge/commit/8ae99b6) | sin clasificar | Update useScrambleValidator.ts | apps/web/src/hooks/useScrambleValidator.ts |
 | 2026-07-19 | [`1aa2a72`](https://github.com/Doritozz05/Cubeforge/commit/1aa2a72) | sin clasificar | Add state-based F2L pair and phase rotation UI | apps/web/src/components/Stats/SolveAnalysisPanel.tsx · docs/14-ai/CFOP_Analysis_Status_2026-07-19.md · packages/analysis-engine/src/metrics/CFOPMetricsCalculator.ts · packages/math-core/src/methods/cfop/cfopMasks.ts |
+
+### v0.2.8 — 3D Gyroscope Replay / Replay giroscópico 3D — 2026-07-20 → 2026-07-20 — 29 commits
+
+**Resumen:** Replay 3D del solve con giros de capa sincronizados, rotaciones físicas y barra temporal.
+
+**Destacados:**
+- Full 3D replay engine animating layer rotations and physical cube orientation synchronously.
+- Playback controls with Play, Pause, Step-Forward, Step-Backward and speed multiplier (0.5x, 1x, 2x).
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-20 | [`43f6716`](https://github.com/Doritozz05/Cubeforge/commit/43f6716) | sin clasificar | Add floating cube/times panels and nav views | apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/FloatingCubeButton.tsx · apps/web/src/components/Hardware/CubeConnector.tsx · … (12 en total) |
 | 2026-07-20 | [`4cc7526`](https://github.com/Doritozz05/Cubeforge/commit/4cc7526) | sin clasificar | fix bugs | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/FloatingCubeButton.tsx · apps/web/src/components/Layout/Header.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · … (6 en total) |
 | 2026-07-20 | [`5812e1c`](https://github.com/Doritozz05/Cubeforge/commit/5812e1c) | sin clasificar | fixes | apps/web/src/App.tsx · apps/web/src/components/Layout/LeftSidebar.tsx |
@@ -253,16 +438,24 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-20 | [`0f763fd`](https://github.com/Doritozz05/Cubeforge/commit/0f763fd) | sin clasificar | fix | apps/web/src/components/Insights/ReplaySection.tsx · packages/cube-3d-engine/src/core/CubeMeshFactory.ts |
 | 2026-07-20 | [`be27875`](https://github.com/Doritozz05/Cubeforge/commit/be27875) | sin clasificar | fix | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/utils/insights.ts |
 
-### v0.3.0 — The Gym / El gimnasio — 2026-07-21 → 2026-07-27 — 192 commits
+### v0.2.9 — Solve History & Quick Stats Panel / Historial de solves y panel de stats — 2026-07-20 → 2026-07-20 — 0 commits
 
-**Resumen:** La app se convierte en sala de entrenamiento: base de algoritmos, drills y recall, repaso SRS, árbol de habilidades interactivo, diagramas 3D de casos y un plan del sistema de entrenamiento v2.
+**Resumen:** Panel flotante de historial con acciones de penalización, estadísticas de sesión (Ao5, Ao12) y borrado.
 
 **Destacados:**
-- CFOP algorithm database with a case editor.
-- Drills, recall and SRS review, integrated with the smart cube.
-- Interactive skill tree.
-- 3D case diagrams and a full-solve view.
-- PB detection, practice calendar and training plans.
+- Solve history list with single-click +2 and DNF penalty toggles.
+- Live calculation of Rolling Average of 5 (Ao5) and Average of 12 (Ao12) according to WCA regulations.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.3.0 — Cube Skins & Texture Studio / Skins de cubo y estudio de texturas — 2026-07-21 → 2026-07-21 — 84 commits
+
+**Resumen:** Skins visuales personalizadas en 3D, materiales mate y brillantes y presets de iluminación.
+
+**Destacados:**
+- Cube Skins system supporting classic, pastel, carbon fiber, and dark fluorescent sticker palettes.
+- PBR material shaders with adjustable roughness, bevel rounding, and subtle specular reflections.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -350,6 +543,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-21 | [`5c68c14`](https://github.com/Doritozz05/Cubeforge/commit/5c68c14) | sin clasificar | fix | apps/web/src/components/Cube3D/FloatingCubeButton.tsx · apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/previews/TimeDistributionPreview.tsx · apps/web/src/widgets/widgetStore.ts |
 | 2026-07-21 | [`824f9be`](https://github.com/Doritozz05/Cubeforge/commit/824f9be) | sin clasificar | widget community | apps/web/src/App.tsx · apps/web/src/widgets/WidgetHostProps.ts · apps/web/src/widgets/WidgetRegistry.ts · apps/web/src/widgets/explorer/WidgetExplorer.tsx · … (32 en total) |
 | 2026-07-21 | [`a377df2`](https://github.com/Doritozz05/Cubeforge/commit/a377df2) | sin clasificar | fixes | apps/web/src/widgets/registerAllWidgets.ts · apps/web/src/widgets/sdk/HostAPI.ts |
+
+### v0.3.1 — 3D Diagram Generator / Generador de diagramas 3D — 2026-07-21 → 2026-07-21 — 0 commits
+
+**Resumen:** Generación de diagramas 3D en alta resolución para previsualización de algoritmos y tarjetas de práctica.
+
+**Destacados:**
+- 3D Case Diagram Factory rendering top-down and perspective case snapshots with custom maskings.
+- Dynamic sticker masking highlighting only relevant pieces for F2L, OLL and PLL cases.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.3.2 — Algorithm Database Modeling / Modelado de base de algoritmos — 2026-07-22 → 2026-07-22 — 10 commits
+
+**Resumen:** Catálogo completo de algoritmos CFOP con triggers alternativos, normalizador AUF y recuento de giros.
+
+**Destacados:**
+- Comprehensive algorithm database covering all 57 OLL cases and 21 PLL cases with alternative fingertrick triggers.
+- AUF (Adjust Upper Face) normalizer standardizing algorithm execution notation.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-22 | [`ab77ce0`](https://github.com/Doritozz05/Cubeforge/commit/ab77ce0) | sin clasificar | fix | apps/web/src/components/Layout/Header.tsx · apps/web/src/hooks/useDraggable.ts · apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/dock/WidgetDock.tsx · … (10 en total) |
 | 2026-07-22 | [`9b41258`](https://github.com/Doritozz05/Cubeforge/commit/9b41258) | sin clasificar | fix | apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/dock/WidgetDock.tsx · apps/web/src/widgets/explorer/WidgetHost.tsx |
 | 2026-07-22 | [`5b491ff`](https://github.com/Doritozz05/Cubeforge/commit/5b491ff) | sin clasificar | Update WidgetDock.tsx | apps/web/src/widgets/dock/WidgetDock.tsx |
@@ -360,6 +575,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-22 | [`9a7a939`](https://github.com/Doritozz05/Cubeforge/commit/9a7a939) | sin clasificar | fix | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/components/Layout/sidebar.constants.ts · apps/web/src/views/Practice/PracticeDashboard.tsx · … (16 en total) |
 | 2026-07-22 | [`77a20cb`](https://github.com/Doritozz05/Cubeforge/commit/77a20cb) | sin clasificar | fix | apps/web/src/components/Layout/MainLayout.tsx · apps/web/src/views/Practice/PracticeDashboard.tsx |
 | 2026-07-22 | [`4efe174`](https://github.com/Doritozz05/Cubeforge/commit/4efe174) | sin clasificar | Create test-moves.mjs | test-moves.mjs |
+
+### v0.3.3 — Cross Trainer & Optimal Solver / Entrenador de cruz y solver óptimo — 2026-07-23 → 2026-07-23 — 32 commits
+
+**Resumen:** Entrenador de Cruz dedicado que genera mezclas específicas con soluciones óptimas paso a paso.
+
+**Destacados:**
+- Cross Trainer with move-distance difficulty filters (2 to 8 optimal moves).
+- Optimal cross solver showing all shortest paths across any chosen starting color.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-23 | [`3606816`](https://github.com/Doritozz05/Cubeforge/commit/3606816) | sin clasificar | pll broken | apps/web/src/components/Stats/TimesList.tsx · apps/web/src/views/Practice/PracticeDashboard.tsx · apps/web/src/views/Practice/components/CaseDetailPanel.tsx · apps/web/src/views/Practice/components/CaseDiagram.tsx · … (33 en total) |
 | 2026-07-23 | [`66c3ae9`](https://github.com/Doritozz05/Cubeforge/commit/66c3ae9) | sin clasificar | fixes | apps/web/src/views/Practice/components/CaseDiagram.tsx · packages/algorithm-db/src/__tests__/caseGenerator.test.ts · packages/algorithm-db/src/caseGenerator.ts · packages/algorithm-db/src/seed/cfop-pll.ts |
 | 2026-07-23 | [`94399d0`](https://github.com/Doritozz05/Cubeforge/commit/94399d0) | sin clasificar | fixes | packages/algorithm-db/src/__tests__/caseGenerator.test.ts · packages/algorithm-db/src/caseGenerator.ts · packages/algorithm-db/src/seed/cfop-oll.ts · packages/config-typescript/tsconfig.base.json · … (7 en total) |
@@ -392,6 +618,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-23 | [`d65a386`](https://github.com/Doritozz05/Cubeforge/commit/d65a386) | sin clasificar | cross | apps/web/src/views/Training/PhaseTrainerView.tsx · apps/web/src/views/Training/TrainingDashboard.tsx |
 | 2026-07-23 | [`6780d14`](https://github.com/Doritozz05/Cubeforge/commit/6780d14) | sin clasificar | recall ui | apps/web/src/views/Training/AlgorithmRecallView.tsx · apps/web/src/views/Training/TrainingDashboard.tsx |
 | 2026-07-23 | [`f5c8058`](https://github.com/Doritozz05/Cubeforge/commit/f5c8058) | sin clasificar | stats and fullsolve | apps/web/src/views/Training/FullSolveView.tsx · apps/web/src/views/Training/PhaseStatsView.tsx · apps/web/src/views/Training/TrainingDashboard.tsx |
+
+### v0.3.4 — Training Engine Architecture / Arquitectura del motor de entrenamiento — 2026-07-23 → 2026-07-23 — 0 commits
+
+**Resumen:** Paquete de motor de entrenamiento que gestiona sesiones de drill, tiempos de reacción y precisión.
+
+**Destacados:**
+- Headless training state machine coordinating drills, recognition challenges and timing.
+- Reaction time measurement isolating recognition pause from algorithm execution.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.3.5 — Algorithm Drills & Flash Recall / Drills de algoritmos y recuerdo rápido — 2026-07-24 → 2026-07-24 — 27 commits
+
+**Resumen:** Modo de práctica con tarjetas interactivas para poner a prueba el recuerdo rápido bajo presión.
+
+**Destacados:**
+- Flash Recall mode presenting scrambled cases with instant pass/fail validation.
+- Execution speed tracking comparing personal best drill times against community benchmarks.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-24 | [`c8ef30d`](https://github.com/Doritozz05/Cubeforge/commit/c8ef30d) | sin clasificar | algorithms training | apps/web/src/App.tsx · apps/web/src/views/Practice/PracticeDashboard.tsx · apps/web/src/views/Practice/components/CaseDetailPanel.tsx · apps/web/src/views/Training/TrainingDashboard.tsx |
 | 2026-07-24 | [`ff2f51c`](https://github.com/Doritozz05/Cubeforge/commit/ff2f51c) | sin clasificar | Update TrainingDashboard.tsx | apps/web/src/views/Training/TrainingDashboard.tsx |
 | 2026-07-24 | [`e38542c`](https://github.com/Doritozz05/Cubeforge/commit/e38542c) | sin clasificar | icon | apps/web/src/views/Training/AlgorithmDrillView.tsx · apps/web/src/views/Training/AlgorithmRecallView.tsx |
@@ -419,12 +667,45 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-24 | [`b32e25e`](https://github.com/Doritozz05/Cubeforge/commit/b32e25e) | sin clasificar | fixes | apps/web/src/views/SkillTree/SkillGraphCanvas.tsx · apps/web/src/views/SkillTree/SkillNodeModal.tsx |
 | 2026-07-24 | [`2d0beeb`](https://github.com/Doritozz05/Cubeforge/commit/2d0beeb) | sin clasificar | Update skillTreeData.ts | apps/web/src/views/SkillTree/skillTreeData.ts |
 | 2026-07-24 | [`cb13d02`](https://github.com/Doritozz05/Cubeforge/commit/cb13d02) | sin clasificar | layout | apps/web/src/views/SkillTree/SkillGraphCanvas.tsx · apps/web/src/views/SkillTree/skillTreeData.ts · apps/web/src/views/SkillTree/skillTreeLayout.ts |
+
+### v0.3.6 — Practice Calendar & Habit Tracker / Calendario de práctica y hábitos — 2026-07-24 → 2026-07-24 — 0 commits
+
+**Resumen:** Calendario de hábitos que visualiza la constancia de práctica diaria y el volumen de entrenamiento.
+
+**Destacados:**
+- Interactive practice habit calendar highlighting active streak days and solve counts.
+- Streak counter encouraging daily consistency with motivational milestone badges.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.3.7 — Skill Tree Graph Canvas / Lienzo del árbol de habilidades — 2026-07-25 → 2026-07-25 — 6 commits
+
+**Resumen:** Grafo interactivo de habilidades con zoom/paneo, 16 ramas de progresión y desbloqueo por prerrequisitos.
+
+**Destacados:**
+- UltraSkillTreeView with GPU-accelerated interactive canvas, SVG Bezier connectors, and smooth pan/zoom.
+- 16 specialized skill branches covering Fundamentals, Cross, F2L, Last Layer, Lookahead, Finger Tricks and more.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-25 | [`c840992`](https://github.com/Doritozz05/Cubeforge/commit/c840992) | sin clasificar | Update AlgorithmRecognizeView.tsx | apps/web/src/views/Training/AlgorithmRecognizeView.tsx |
 | 2026-07-25 | [`fbda71a`](https://github.com/Doritozz05/Cubeforge/commit/fbda71a) | sin clasificar | quickwins | apps/web/src/App.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/components/ColorPicker.tsx · … (18 en total) |
 | 2026-07-25 | [`88bb632`](https://github.com/Doritozz05/Cubeforge/commit/88bb632) | sin clasificar | sentence casing | apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/components/Layout/CubeforgeCommandPalette.tsx · apps/web/src/components/ui/command.tsx · … (19 en total) |
 | 2026-07-25 | [`8da5c08`](https://github.com/Doritozz05/Cubeforge/commit/8da5c08) | sin clasificar | sentence fixes | apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/components/Settings/sections/DataSection.tsx · apps/web/src/components/Settings/sections/ScrambleSection.tsx · … (10 en total) |
 | 2026-07-25 | [`057db67`](https://github.com/Doritozz05/Cubeforge/commit/057db67) | sin clasificar | fixes | apps/web/src/hooks/usePersistentSession.ts · apps/web/src/views/Training/AlgorithmDrillView.tsx · apps/web/src/views/Training/FullSolveView.tsx · apps/web/src/views/Training/PhaseTrainerView.tsx · … (5 en total) |
 | 2026-07-25 | [`292095e`](https://github.com/Doritozz05/Cubeforge/commit/292095e) | sin clasificar | Merge pull request #1 from Doritozz05/refactor | — |
+
+### v0.3.8 — Spaced Repetition (SRS) Engine / Motor de repetición espaciada (SRS) — 2026-07-26 → 2026-07-26 — 26 commits
+
+**Resumen:** Algoritmo de repetición espaciada SM-2 que prioriza algoritmos débiles y olvidados para una retención óptima.
+
+**Destacados:**
+- Integrated SM-2 spaced repetition algorithm scheduling reviews based on recall speed and difficulty.
+- SRS review queue organizing cases into Overdue, Weak, Due and New categories.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-26 | [`7a08971`](https://github.com/Doritozz05/Cubeforge/commit/7a08971) | sin clasificar | fase 0 | packages/training/eslint.config.js · packages/training/package.json · packages/training/src/index.ts · packages/training/src/types/exercise.ts · … (11 en total) |
 | 2026-07-26 | [`3a93702`](https://github.com/Doritozz05/Cubeforge/commit/3a93702) | sin clasificar | fase 1 | apps/web/src/lib/training/setupGenerator.ts · packages/training/package.json · packages/training/src/engine/index.ts · packages/training/src/engine/training-timer.ts · … (12 en total) |
 | 2026-07-26 | [`d765a1d`](https://github.com/Doritozz05/Cubeforge/commit/d765a1d) | sin clasificar | fase 3 | apps/web/package.json · apps/web/src/views/Training/AlgorithmDrillView.tsx · apps/web/src/views/Training/AlgorithmRecognizeView.tsx · apps/web/src/views/Training/components/StatChip.tsx · … (9 en total) |
@@ -451,6 +732,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-26 | [`83319f8`](https://github.com/Doritozz05/Cubeforge/commit/83319f8) | sin clasificar | 3d | apps/web/src/views/Practice/components/Case3DDiagram.tsx · apps/web/src/views/Practice/components/Case3DPanel.tsx · apps/web/src/views/Practice/components/CaseGrid.tsx |
 | 2026-07-26 | [`5c81b09`](https://github.com/Doritozz05/Cubeforge/commit/5c81b09) | sin clasificar | fixes | apps/web/src/views/Practice/components/CaseGrid.tsx · packages/algorithm-db/src/schema.ts |
 | 2026-07-26 | [`3e6abb4`](https://github.com/Doritozz05/Cubeforge/commit/3e6abb4) | sin clasificar | performance | apps/web/src/services/Global3DSnapshotService.ts · apps/web/src/views/Practice/components/Case3DDiagram.tsx |
+
+### v0.3.9 — F2L 41 Case Modeling & Full Solve / Modelado de los 41 F2L y full solve — 2026-07-27 → 2026-07-27 — 7 commits
+
+**Resumen:** Modelado completo de los 41 casos básicos de F2L con vistas 3D de ángulo de slot y desglose de full solve.
+
+**Destacados:**
+- Basic F2L case recognition modeling (41 cases) with 3D slot perspective angles.
+- Full Solve practice mode combining Cross, F2L, OLL and PLL with automated phase transitions.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-27 | [`1f96cd7`](https://github.com/Doritozz05/Cubeforge/commit/1f96cd7) | sin clasificar | fix | apps/web/src/services/Global3DSnapshotService.ts · apps/web/src/views/Practice/components/Case3DDiagram.tsx · packages/cube-3d-engine/src/core/Cube3DEngine.ts |
 | 2026-07-27 | [`21724c6`](https://github.com/Doritozz05/Cubeforge/commit/21724c6) | sin clasificar | Update Global3DSnapshotService.ts | apps/web/src/services/Global3DSnapshotService.ts |
 | 2026-07-27 | [`0ce0112`](https://github.com/Doritozz05/Cubeforge/commit/0ce0112) | sin clasificar | Update Case3DDiagram.tsx | apps/web/src/views/Practice/components/Case3DDiagram.tsx |
@@ -459,15 +751,13 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-27 | [`424735f`](https://github.com/Doritozz05/Cubeforge/commit/424735f) | sin clasificar | fix | apps/web/src/views/Training/PhaseStatsView.tsx · apps/web/src/views/Training/TrainingDashboard.tsx |
 | 2026-07-27 | [`e0821c0`](https://github.com/Doritozz05/Cubeforge/commit/e0821c0) | sin clasificar | fixes | apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/hooks/useCrossScramble.ts · … (18 en total) |
 
-### v0.4.0 — The Dock Era / La era del dock — 2026-07-28 → 2026-08-03 — 245 commits
+### v0.4.0 — Draggable Dock & Floating Architecture / Dock arrastrable y arquitectura flotante — 2026-07-28 → 2026-07-28 — 11 commits
 
-**Resumen:** Widgets flotantes y dock arrastrable, perfiles locales con CubeMark, entrada manual de tiempos, importación de datos — y el primer despliegue: PWA en Vercel con SEO y cabeceras COOP/COEP.
+**Resumen:** Sistema de widgets flotantes con dock arrastrable, anclaje de ventanas y generador CubeMark.
 
 **Destacados:**
-- Floating widget system with a draggable dock.
-- Local profiles with CubeMark, avatar and country.
-- Manual time entry and solve import (CSV).
-- PWA with icons, SEO and COOP/COEP headers — first deploy on Vercel.
+- Floating widget architecture with draggable windows and customizable dock mounting.
+- Local user profiles with CubeMark SVG identicon generation and country flags.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -482,6 +772,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-28 | [`b6214f1`](https://github.com/Doritozz05/Cubeforge/commit/b6214f1) | sin clasificar | fixes | apps/web/src/widgets/implementations/algorithm-db/definition.ts · apps/web/src/widgets/implementations/notes/NotesPreview.tsx |
 | 2026-07-28 | [`3fdebbf`](https://github.com/Doritozz05/Cubeforge/commit/3fdebbf) | sin clasificar | Update AlgorithmViewerCard.tsx | apps/web/src/widgets/implementations/algorithm-db/components/AlgorithmViewerCard.tsx |
 | 2026-07-28 | [`ad59155`](https://github.com/Doritozz05/Cubeforge/commit/ad59155) | sin clasificar | fixes | apps/web/src/components/Stats/atoms/MetricTile.tsx · apps/web/src/widgets/implementations/solve-timeline/SolveTimelinePreview.tsx · apps/web/src/widgets/implementations/time-distribution/FloatingTimeDistribution.tsx · apps/web/src/widgets/implementations/time-distribution/TimeDistributionPreview.tsx |
+
+### v0.4.1 — Metronome & Scratchpad Notes / Metrónomo y bloc de notas — 2026-07-28 → 2026-07-28 — 0 commits
+
+**Resumen:** Widget de Metrónomo de audio con control de BPM para drills de ritmo de giro, y widget de notas.
+
+**Destacados:**
+- Audio Metronome widget with configurable BPM for smooth turning pacing drills.
+- Notes scratchpad widget for session observations, algorithms, and reminders.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.4.2 — csTimer Manual Entry Parser / Parser de entrada manual csTimer — 2026-07-29 → 2026-07-29 — 11 commits
+
+**Resumen:** Entrada manual de tiempos con sintaxis csTimer (ej. 1450 → 14.50s, 90s, DNF) y pegado por lotes.
+
+**Destacados:**
+- Manual time entry parser supporting csTimer shorthand syntax and bulk solve paste.
+- Post-solve quick action bar with +2, DNF, and solve note editor pills.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-29 | [`16b4e0e`](https://github.com/Doritozz05/Cubeforge/commit/16b4e0e) | sin clasificar | settings | apps/web/src/components/Settings/sections/AnalysisSection.tsx · apps/web/src/components/Settings/sections/GeneralSection.tsx · apps/web/src/components/Settings/sections/TimerSection.tsx · apps/web/src/components/Stats/SessionStats.tsx · … (13 en total) |
 | 2026-07-29 | [`fddbda2`](https://github.com/Doritozz05/Cubeforge/commit/fddbda2) | sin clasificar | Update App.tsx | apps/web/src/App.tsx |
 | 2026-07-29 | [`6476d0f`](https://github.com/Doritozz05/Cubeforge/commit/6476d0f) | sin clasificar | 2x2 | apps/web/src/App.tsx · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Insights/InsightsDashboard.tsx · apps/web/src/components/Insights/SolveListPanel.tsx · … (27 en total) |
@@ -493,6 +805,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-29 | [`cc18901`](https://github.com/Doritozz05/Cubeforge/commit/cc18901) | sin clasificar | fixes | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/MiniCube3DPanel.tsx · apps/web/src/components/Stats/SessionStats.tsx · apps/web/src/components/Stats/TimesList.tsx · … (6 en total) |
 | 2026-07-29 | [`57c83c1`](https://github.com/Doritozz05/Cubeforge/commit/57c83c1) | sin clasificar | fixes | apps/web/public/stackmat-processor.js · apps/web/src/App.tsx · apps/web/src/components/Insights/OverviewPanel.tsx · apps/web/src/components/Stats/SessionStats.tsx · … (13 en total) |
 | 2026-07-29 | [`56c1937`](https://github.com/Doritozz05/Cubeforge/commit/56c1937) | sin clasificar | fixes | apps/web/src/components/Timer/hintFor.test.ts · apps/web/src/components/Timer/hintFor.ts · apps/web/src/hooks/__tests__/useScrambleValidator.test.ts · apps/web/src/hooks/useScrambleValidator.ts · … (6 en total) |
+
+### v0.4.3 — 2×2 Cube Mathematical Engine / Motor matemático de cubo 2×2 — 2026-07-29 → 2026-07-29 — 0 commits
+
+**Resumen:** Modelo de estado matemático para cubo 2×2, arquitectura de renderizado 3D y aplicación de giros.
+
+**Destacados:**
+- 2×2 cube state representation with permutation and orientation tracking.
+- 3D visual engine for 2×2 cube with realistic bevels and sticker geometry.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.4.4 — Layout Organizer & Snap-to-Grid / Organizador de layouts y ajuste magnético — 2026-07-30 → 2026-07-30 — 64 commits
+
+**Resumen:** Widget de Organizador de Layouts con guardado/carga de presets y ajuste a cuadrícula.
+
+**Destacados:**
+- Floating Layout Organizer widget allowing solvers to save, name and switch custom widget arrangements.
+- Snap-to-grid alignment when dragging floating widgets near edges or other panels.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-30 | [`1fec3ae`](https://github.com/Doritozz05/Cubeforge/commit/1fec3ae) | sin clasificar | Merge pull request #2 from Doritozz05/training | — |
 | 2026-07-30 | [`7e9385d`](https://github.com/Doritozz05/Cubeforge/commit/7e9385d) | sin clasificar | fixes | packages/analysis-engine/src/__tests__/diagnostic-phase-detection.test.ts · packages/analysis-engine/src/metrics/MetricsAggregator.ts · packages/analysis-engine/src/phases/PhaseSplitter.ts |
 | 2026-07-30 | [`d241f7d`](https://github.com/Doritozz05/Cubeforge/commit/d241f7d) | sin clasificar | tests | packages/algorithm-db/src/__tests__/invertMove.edgeCases.test.ts · packages/analysis-engine/src/__tests__/PhaseSplitter.validate.test.ts · packages/math-core/src/Cube2x2State.ts · packages/math-core/src/__tests__/CubeState.edgeCases.test.ts · … (8 en total) |
@@ -557,6 +891,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-30 | [`7aae161`](https://github.com/Doritozz05/Cubeforge/commit/7aae161) | sin clasificar | fix bug | apps/web/src/hooks/useDraggable.ts · apps/web/src/index.css · apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/dock/WidgetDock.tsx · … (6 en total) |
 | 2026-07-30 | [`3a84db3`](https://github.com/Doritozz05/Cubeforge/commit/3a84db3) | sin clasificar | Update WidgetDock.tsx | apps/web/src/widgets/dock/WidgetDock.tsx |
 | 2026-07-30 | [`4c1f0ce`](https://github.com/Doritozz05/Cubeforge/commit/4c1f0ce) | sin clasificar | Update WidgetDock.tsx | apps/web/src/widgets/dock/WidgetDock.tsx |
+
+### v0.4.5 — 2×2 Algorithm Database & Time Histogram / Base de algoritmos 2×2 e histograma — 2026-07-30 → 2026-07-30 — 0 commits
+
+**Resumen:** Base de algoritmos 2×2 (métodos Ortega, CLL, EG) e histograma flotante de distribución de tiempos.
+
+**Destacados:**
+- 2×2 algorithm database with Ortega, CLL and EG method sets.
+- Floating Time Distribution histogram widget with customizable duration binning.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.4.6 — PB Progression & BPA/WPA Projections / Evolución de PB y proyecciones BPA/WPA — 2026-07-31 → 2026-07-31 — 52 commits
+
+**Resumen:** Gráfica escalonada de evolución de PB y proyecciones de Mejor/Peor Media Posible (BPA/WPA).
+
+**Destacados:**
+- PB Progression step-chart charting historical personal best milestones over time.
+- Best Possible Average (BPA) and Worst Possible Average (WPA) live countdown calculations during an active Ao5.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-07-31 | [`6ba1c9c`](https://github.com/Doritozz05/Cubeforge/commit/6ba1c9c) | sin clasificar | fixes | apps/web/src/hooks/useDraggable.ts · apps/web/src/widgets/dock/WidgetDock.tsx · apps/web/src/widgets/dock/dockZoneState.ts · apps/web/src/widgets/explorer/WidgetHost.tsx · … (11 en total) |
 | 2026-07-31 | [`f11a91f`](https://github.com/Doritozz05/Cubeforge/commit/f11a91f) | sin clasificar | FIX | apps/web/src/App.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/debug.ts · … (7 en total) |
 | 2026-07-31 | [`44c9880`](https://github.com/Doritozz05/Cubeforge/commit/44c9880) | sin clasificar | Update index.css | apps/web/src/index.css |
@@ -609,6 +965,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-07-31 | [`02f1042`](https://github.com/Doritozz05/Cubeforge/commit/02f1042) | sin clasificar | practice | apps/web/src/views/Practice/components/Case3DPanel.tsx · apps/web/src/views/Practice/components/CaseDetailPanel.tsx |
 | 2026-07-31 | [`8d744fc`](https://github.com/Doritozz05/Cubeforge/commit/8d744fc) | sin clasificar | fixes | apps/web/src/views/Practice/components/Case2x2Diagram.tsx · apps/web/src/views/Practice/components/Case3DDiagram.tsx · apps/web/src/views/Practice/components/Case3DPanel.tsx · apps/web/src/views/Practice/components/CaseDetailPanel.tsx · … (8 en total) |
 | 2026-07-31 | [`c7259d2`](https://github.com/Doritozz05/Cubeforge/commit/c7259d2) | sin clasificar | fix | apps/web/src/services/Global3DSnapshotService.ts · apps/web/src/views/Practice/components/Case3DDiagram.tsx · packages/algorithm-db/src/seed/ortega.ts |
+
+### v0.4.7 — Skill Node Detail & Custom Algorithm Editor / Detalle de skill y editor de algoritmos — 2026-08-01 → 2026-08-01 — 58 commits
+
+**Resumen:** Modal interactivo de nodo de habilidad, botón directo de práctica y editor de algoritmos de usuario.
+
+**Destacados:**
+- SkillNodeModal displaying mastery criteria, practice tips, linked prerequisites, and direct drill launcher.
+- AlgorithmEditorDialog allowing solvers to input and save their own preferred custom algorithms.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-01 | [`a26cd91`](https://github.com/Doritozz05/Cubeforge/commit/a26cd91) | sin clasificar | initial | apps/web/package.json · apps/web/src/hooks/useCaseAlgorithms.ts · apps/web/src/views/Practice/PracticeDashboard.tsx · apps/web/src/views/Practice/components/AlgorithmEditorDialog.tsx · … (26 en total) |
 | 2026-08-01 | [`196dd3a`](https://github.com/Doritozz05/Cubeforge/commit/196dd3a) | sin clasificar | custom | apps/web/src/services/Case3DRenderAdapter.ts · apps/web/src/services/Global3DSnapshotService.ts · apps/web/src/views/Practice/PracticeDashboard.tsx · apps/web/src/views/Practice/components/AlgorithmEditorDialog.tsx · … (21 en total) |
 | 2026-08-01 | [`a44722e`](https://github.com/Doritozz05/Cubeforge/commit/a44722e) | sin clasificar | fixes | apps/web/src/index.css · apps/web/src/views/Practice/PracticeDashboard.tsx · apps/web/src/views/Practice/components/AlgorithmEditorDialog.tsx · apps/web/src/views/Practice/components/Case3DDiagram.tsx · … (6 en total) |
@@ -667,6 +1034,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-01 | [`84c1914`](https://github.com/Doritozz05/Cubeforge/commit/84c1914) | sin clasificar | fix | apps/web/src/hooks/useCube3D.ts · apps/web/src/services/Global3DSnapshotService.ts · packages/cube-3d-engine/src/__tests__/SceneManager.edgeCases.test.ts · packages/cube-3d-engine/src/core/SceneManager.ts |
 | 2026-08-01 | [`f251224`](https://github.com/Doritozz05/Cubeforge/commit/f251224) | sin clasificar | fix | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-08-01 | [`be44fb2`](https://github.com/Doritozz05/Cubeforge/commit/be44fb2) | sin clasificar | Update Cube3DPanel.tsx | apps/web/src/components/Cube3D/Cube3DPanel.tsx |
+
+### v0.4.8 — PWA Deployment & COOP/COEP Headers / Despliegue PWA y cabeceras COOP/COEP — 2026-08-02 → 2026-08-02 — 26 commits
+
+**Resumen:** Manifiesto PWA, caché offline con service worker y cabeceras de aislamiento de origen cruzado.
+
+**Destacados:**
+- PWA offline support with service worker asset caching and install prompts.
+- Configured COOP and COEP cross-origin isolation headers for high-resolution SharedArrayBuffer timers.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-02 | [`93b7165`](https://github.com/Doritozz05/Cubeforge/commit/93b7165) | sin clasificar | fix grande | apps/web/src/App.tsx · apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Layout/MainLayout.tsx · apps/web/src/components/Settings/sections/DataSection.tsx · … (23 en total) |
 | 2026-08-02 | [`6080774`](https://github.com/Doritozz05/Cubeforge/commit/6080774) | feat | feat(webgl): mitigate iOS Safari context-limit risk + sidebar layout polish | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/MiniCube3DPanel.tsx · apps/web/src/components/Settings/SettingsSidebar.tsx · apps/web/src/hooks/useCube3D.ts · … (14 en total) |
 | 2026-08-02 | [`bda35ec`](https://github.com/Doritozz05/Cubeforge/commit/bda35ec) | sin clasificar | bd fix | apps/web/src/hooks/usePracticeSession.ts · apps/web/src/hooks/useTrainingProgress.ts · apps/web/src/views/Training/AlgorithmDrillView.tsx · apps/web/src/views/Training/AlgorithmRecognizeView.tsx · … (14 en total) |
@@ -693,6 +1071,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-02 | [`2a3e323`](https://github.com/Doritozz05/Cubeforge/commit/2a3e323) | sin clasificar | fix | apps/web/src/App.tsx · apps/web/src/hooks/useSolveSession.ts |
 | 2026-08-02 | [`d3de8b7`](https://github.com/Doritozz05/Cubeforge/commit/d3de8b7) | sin clasificar | limpieza knip | apps/desktop/package.json · apps/desktop/src/env.ts · apps/web/package.json · apps/web/src/App.css · … (34 en total) |
 | 2026-08-02 | [`a6778ae`](https://github.com/Doritozz05/Cubeforge/commit/a6778ae) | sin clasificar | fixes | apps/desktop/src/database-override.ts · apps/web/src/views/Training/FullSolveView.tsx |
+
+### v0.4.9 — Manual Focus Mode & Confirmation Dialogs / Modo foco manual y diálogos de borrado — 2026-08-03 → 2026-08-03 — 23 commits
+
+**Resumen:** Modo foco que oculta elementos distractores al cronometrar y diálogos de confirmación de borrado.
+
+**Destacados:**
+- Manual focus mode dimming secondary panels to maximize attention on the timer.
+- Destructive solve deletion protected by modal confirmation to prevent accidental loss.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-03 | [`f160592`](https://github.com/Doritozz05/Cubeforge/commit/f160592) | docs | Create README.md | docs/plan_profile/README.md |
 | 2026-08-03 | [`2e7efd6`](https://github.com/Doritozz05/Cubeforge/commit/2e7efd6) | sin clasificar | init | apps/web/src/App.tsx · apps/web/src/hooks/useProfile.ts · docs/plan_profile/README.md · packages/database/src/__tests__/db.test.ts · … (14 en total) |
 | 2026-08-03 | [`70290df`](https://github.com/Doritozz05/Cubeforge/commit/70290df) | sin clasificar | fase 1 | apps/desktop/package.json · apps/desktop/src/database-override.ts · apps/web/package.json · apps/web/src/App.tsx · … (24 en total) |
@@ -717,16 +1106,13 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-03 | [`2ec83b8`](https://github.com/Doritozz05/Cubeforge/commit/2ec83b8) | sin clasificar | fixes | apps/web/src/hooks/useTrainingEngine.ts · packages/database/src/migrations/migrations.ts · packages/database/src/repositories/training.repository.ts · packages/training/src/progress/__tests__/progress-tracker.test.ts · … (8 en total) |
 | 2026-08-03 | [`7212dcf`](https://github.com/Doritozz05/Cubeforge/commit/7212dcf) | test | Update progress-tracker.test.ts | packages/training/src/progress/__tests__/progress-tracker.test.ts |
 
-### v0.5.0 — Two Languages / Dos idiomas — 2026-08-04 → 2026-08-10 — 197 commits
+### v0.5.0 — Typed i18n Foundation & Bilingual Support / Infraestructura i18n tipada y bilingüe — 2026-08-04 → 2026-08-05 — 71 commits
 
-**Resumen:** i18n tipado (en/es) en toda la app, una base de algoritmos ampliada (COLL/WV, BirdF2L, X-cross), un panel profesional de análisis de solves y una carga inicial mucho más rápida gracias a los chunks lazy.
+**Resumen:** Infraestructura bilingüe completa (español e inglés) con claves de traducción estrictamente tipadas.
 
 **Destacados:**
-- The whole app in Spanish and English with typed i18n.
-- Algorithm database growth: COLL/WV, BirdF2L and X-cross.
-- A professional solve-analysis panel.
-- First load ~40% lighter (lazy chunks).
-- CSP headers, desktop app and enforced commit convention.
+- Typed internationalization (i18n) foundation with Spanish and English translations.
+- Dynamic language switcher updating all active panels, timers and tooltips instantly.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -801,6 +1187,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-05 | [`82748ae`](https://github.com/Doritozz05/Cubeforge/commit/82748ae) | sin clasificar | fix | apps/web/src/components/Settings/components/SettingToggle.tsx · packages/ui/src/components/switch.tsx |
 | 2026-08-05 | [`2f8d101`](https://github.com/Doritozz05/Cubeforge/commit/2f8d101) | sin clasificar | Update ProfileHero.tsx | apps/web/src/components/Identity/ProfileHero.tsx |
 | 2026-08-05 | [`dcf6260`](https://github.com/Doritozz05/Cubeforge/commit/dcf6260) | sin clasificar | fix | apps/web/index.html · apps/web/src/index.css |
+
+### v0.5.1 — Configurable Precision & Timer Preferences / Precisión configurable y preferencias — 2026-08-05 → 2026-08-05 — 0 commits
+
+**Resumen:** Selector de precisión decimal (0.00 vs 0.000), control de inicio por espacio y avisos de audio.
+
+**Destacados:**
+- Configurable decimal display precision (2 decimal places 0.00 vs 3 decimal places 0.000).
+- Timer start key configuration (Spacebar, Any Key, or Touch Only).
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.5.2 — SCDB Seed Merge & COLL/WV Algorithms / Integración SCDB y algoritmos COLL/WV — 2026-08-06 → 2026-08-06 — 18 commits
+
+**Resumen:** Fusión de bases de algoritmos de SpeedSolving y SCDB incluyendo sets de COLL y Winter Variation.
+
+**Destacados:**
+- Merged SpeedSolving and SCDB algorithm databases with COLL and Winter Variation (WV) sets.
+- Deduplicated algorithm triggers showing community popularity rankings.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-06 | [`ad54b5b`](https://github.com/Doritozz05/Cubeforge/commit/ad54b5b) | sin clasificar | Update ProfileHero.tsx | apps/web/src/components/Identity/ProfileHero.tsx |
 | 2026-08-06 | [`d288a39`](https://github.com/Doritozz05/Cubeforge/commit/d288a39) | sin clasificar | Update ProfileHero.tsx | apps/web/src/components/Identity/ProfileHero.tsx |
 | 2026-08-06 | [`7817017`](https://github.com/Doritozz05/Cubeforge/commit/7817017) | sin clasificar | Update ProfileHero.tsx | apps/web/src/components/Identity/ProfileHero.tsx |
@@ -819,6 +1227,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-06 | [`e468a0e`](https://github.com/Doritozz05/Cubeforge/commit/e468a0e) | sin clasificar | Update DashboardSections.tsx | apps/web/src/views/Training/components/DashboardSections.tsx |
 | 2026-08-06 | [`a06016a`](https://github.com/Doritozz05/Cubeforge/commit/a06016a) | sin clasificar | birdf2l | packages/algorithm-db/src/__tests__/f2l.test.ts · packages/algorithm-db/src/__tests__/scdb-alg-verification.test.ts · packages/algorithm-db/src/__tests__/scdb-import-comparison.test.ts · packages/algorithm-db/src/__tests__/scdb-seed-catalog.test.ts · … (9 en total) |
 | 2026-08-06 | [`ef938f0`](https://github.com/Doritozz05/Cubeforge/commit/ef938f0) | sin clasificar | fix | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/MiniCube3DPanel.tsx · apps/web/src/hooks/useCube3D.ts · apps/web/src/services/Case3DRenderAdapter.ts · … (10 en total) |
+
+### v0.5.3 — BirdF2L Advanced Notation Codes / Códigos de notación avanzada BirdF2L — 2026-08-06 → 2026-08-06 — 0 commits
+
+**Resumen:** Códigos de notación corta BirdF2L en casos básicos y avanzados con rotación de slot.
+
+**Destacados:**
+- BirdF2L notation code system integrated across all F2L case recognition cards.
+- Rotatable slot perspective view for inspecting F2L cases from any angle.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.5.4 — Automated Case Verification Pipeline / Pipeline de verificación de casos — 2026-08-07 → 2026-08-07 — 21 commits
+
+**Resumen:** Suite de tests automatizada que verifica la exactitud matemática de cada algoritmo e inversa.
+
+**Destacados:**
+- Automated algorithm verification verifying 100% of cases solve into expected states.
+- Corrected inverse scramble setups for complex OLL dot cases and F2L awkward insertions.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-07 | [`93b9f8a`](https://github.com/Doritozz05/Cubeforge/commit/93b9f8a) | sin clasificar | Update cfop-f2l.ts | packages/algorithm-db/src/seed/cfop-f2l.ts |
 | 2026-08-07 | [`713e614`](https://github.com/Doritozz05/Cubeforge/commit/713e614) | sin clasificar | fix | packages/algorithm-db/src/__tests__/casePresentation.test.ts · packages/algorithm-db/src/visualization/casePresentation.ts · packages/cube-3d-engine/src/core/Cube3DEngine.ts |
 | 2026-08-07 | [`d68ccf5`](https://github.com/Doritozz05/Cubeforge/commit/d68ccf5) | sin clasificar | Update CaseGrid.tsx | apps/web/src/views/Algorithms/components/CaseGrid.tsx |
@@ -840,6 +1270,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-07 | [`390b632`](https://github.com/Doritozz05/Cubeforge/commit/390b632) | sin clasificar | fase 2 | docs/plan_reconstruction/README.md · packages/analysis-engine/src/__tests__/analyzeSolveText.test.ts · packages/analysis-engine/src/__tests__/fase2-comparison.test.ts · packages/analysis-engine/src/index.ts · … (6 en total) |
 | 2026-08-07 | [`56052ca`](https://github.com/Doritozz05/Cubeforge/commit/56052ca) | sin clasificar | fix | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/views/Reconstructions/reconData.ts · apps/web/src/views/Training/CrossTrainerView.tsx · docs/plan_reconstruction/README.md · … (7 en total) |
 | 2026-08-07 | [`948e5bb`](https://github.com/Doritozz05/Cubeforge/commit/948e5bb) | sin clasificar | fix | apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · apps/web/src/views/Reconstructions/ReconstructionDetailView.tsx · docs/plan_reconstruction/README.md |
+
+### v0.5.5 — Solve Re-analysis Pipeline / Pipeline de reanálisis de solves — 2026-08-08 → 2026-08-08 — 23 commits
+
+**Resumen:** Botón de reanálisis de solves que reejecuta la detección CFOP actualizada en solves pasados sin perder datos.
+
+**Destacados:**
+- Solve re-analysis engine re-evaluating historical solves against latest algorithm recognition rules.
+- Non-destructive metadata updates preserving original solve timestamps and raw moves.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-08 | [`3e1b3e3`](https://github.com/Doritozz05/Cubeforge/commit/3e1b3e3) | sin clasificar | fix | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · apps/web/vite.config.http.ts · packages/analysis-engine/src/reconstruction/analyzeSolveText.ts · scripts/_scan-panel.cjs |
 | 2026-08-08 | [`e213967`](https://github.com/Doritozz05/Cubeforge/commit/e213967) | sin clasificar | fx | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · packages/analysis-engine/src/reconstruction/analyzeSolveText.ts |
 | 2026-08-08 | [`76e6309`](https://github.com/Doritozz05/Cubeforge/commit/76e6309) | sin clasificar | Update OurDetectionPanel.tsx | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx |
@@ -863,6 +1304,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-08 | [`8bba4e2`](https://github.com/Doritozz05/Cubeforge/commit/8bba4e2) | sin clasificar | Update ReplaySection.tsx | apps/web/src/components/Insights/ReplaySection.tsx |
 | 2026-08-08 | [`be06331`](https://github.com/Doritozz05/Cubeforge/commit/be06331) | sin clasificar | fix replay rotations | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/types/index.ts · apps/web/src/views/Reconstructions/reconData.ts · packages/cube-3d-engine/src/__tests__/ReplayEngine.test.ts · … (6 en total) |
 | 2026-08-08 | [`532d417`](https://github.com/Doritozz05/Cubeforge/commit/532d417) | sin clasificar | fix | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/views/Training/CrossTrainerView.tsx · packages/cube-3d-engine/src/__tests__/ReplayEngine.test.ts · packages/cube-3d-engine/src/replay/ReplayEngine.ts |
+
+### v0.5.6 — Replay Move Grip Smooth Timeline / Cronología de replay y transiciones de agarre — 2026-08-08 → 2026-08-08 — 0 commits
+
+**Resumen:** Transiciones suaves de posición de agarre en la cronología de replay 3D evitando saltos visuales.
+
+**Destacados:**
+- Smooth hand grip transition interpolation during 3D replay layer rotations.
+- Eliminated rotation jumping artifacts during consecutive slice and wide move executions.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.5.7 — Color-Neutral Scrambler & Standard Deviation / Mezclador color-neutral y desviación estándar — 2026-08-09 → 2026-08-09 — 27 commits
+
+**Resumen:** Reorientación de mezcla color-neutral, cálculo de desviación estándar (σ) de sesión y filtros.
+
+**Destacados:**
+- Color-neutral scramble orientation remapping to practice from any user-defined top/front color.
+- Standard deviation (σ) calculation in session statistics measuring consistency.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-09 | [`cd7aef6`](https://github.com/Doritozz05/Cubeforge/commit/cd7aef6) | sin clasificar | fix | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · apps/web/src/views/Reconstructions/reconData.ts · packages/analysis-engine/src/__tests__/analyzeSolveText.test.ts · packages/analysis-engine/src/reconstruction/analyzeSolveText.ts |
 | 2026-08-09 | [`d1973d8`](https://github.com/Doritozz05/Cubeforge/commit/d1973d8) | sin clasificar | fix | packages/cube-3d-engine/src/__tests__/recon11413Replay.test.ts · packages/cube-3d-engine/src/__tests__/recon11413ReplayAsync.test.ts · packages/cube-3d-engine/src/__tests__/scramblePlayRace.test.ts · packages/cube-3d-engine/src/replay/ReplayEngine.ts |
 | 2026-08-09 | [`0b976a5`](https://github.com/Doritozz05/Cubeforge/commit/0b976a5) | sin clasificar | fix scrmable | DATA_SOURCES.md · apps/web/public/reconstructions/data/chunk-000.json · apps/web/public/reconstructions/data/chunk-001.json · apps/web/public/reconstructions/data/chunk-002.json · … (51 en total) |
@@ -890,6 +1353,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-09 | [`7745d68`](https://github.com/Doritozz05/Cubeforge/commit/7745d68) | sin clasificar | ao fix | apps/web/src/components/Stats/SolveProgressionChart.tsx · apps/web/src/components/Stats/TrendChart.tsx · apps/web/src/utils/formatTime.ts · packages/statistics/src/__tests__/statistics.test.ts · … (5 en total) |
 | 2026-08-09 | [`3b91fe6`](https://github.com/Doritozz05/Cubeforge/commit/3b91fe6) | sin clasificar | fix | apps/web/src/components/Insights/OverviewPanel.tsx · apps/web/src/components/Stats/TrendChart.tsx |
 | 2026-08-09 | [`aa3e212`](https://github.com/Doritozz05/Cubeforge/commit/aa3e212) | sin clasificar | fix | apps/web/src/components/Timer/hintFor.test.ts · apps/web/src/components/Timer/hintFor.ts · apps/web/src/hooks/pressDispatch.test.ts · apps/web/src/hooks/pressDispatch.ts · … (5 en total) |
+
+### v0.5.8 — Algorithm Creator Credits Attribution / Atribución de créditos a creadores — 2026-08-10 → 2026-08-10 — 37 commits
+
+**Resumen:** Metadatos de atribución de autores honrando a los creadores y desarrolladores de la comunidad.
+
+**Destacados:**
+- Algorithm attribution metadata honoring creator credits (SpeedSolving Wiki, SCDB, community inventors).
+- Community credits section in settings acknowledging open-source speedcubing libraries.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-10 | [`1278f08`](https://github.com/Doritozz05/Cubeforge/commit/1278f08) | sin clasificar | fix | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · packages/analysis-engine/src/__tests__/reconz-12340-xcross.test.ts · packages/analysis-engine/src/phases/PhaseSplitter.ts · packages/analysis-engine/src/pipeline/analyzeSolve.ts · … (9 en total) |
 | 2026-08-10 | [`b736228`](https://github.com/Doritozz05/Cubeforge/commit/b736228) | sin clasificar | fix | apps/web/src/utils/seedDemoData.ts · docs/plan_analysis_unification/README.md · packages/analysis-engine/src/__tests__/phase-hardening.test.ts · packages/analysis-engine/src/phases/PhaseSplitter.ts · … (7 en total) |
 | 2026-08-10 | [`19426ae`](https://github.com/Doritozz05/Cubeforge/commit/19426ae) | sin clasificar | fix | packages/analysis-engine/src/__tests__/PhaseSplitter.xcross.test.ts · packages/analysis-engine/src/__tests__/phase-hardening.test.ts · packages/analysis-engine/src/phases/PhaseSplitter.ts · packages/types/src/analysis.ts |
@@ -928,16 +1402,24 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-10 | [`deb2eaa`](https://github.com/Doritozz05/Cubeforge/commit/deb2eaa) | feat | feat(i18n): migrate shell (tanda 2) to typed keys | apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/Header.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · … (11 en total) |
 | 2026-08-10 | [`eae61d8`](https://github.com/Doritozz05/Cubeforge/commit/eae61d8) | feat | feat(i18n): migrate global feedback (tanda 4) to typed keys | apps/web/src/App.tsx · apps/web/src/components/Hardware/CubeConnector.tsx · apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/components/Settings/sections/AdvancedSection.tsx · … (21 en total) |
 
-### v0.6.0 — The Studio / El estudio — 2026-08-11 → 2026-08-17 — 144 commits
+### v0.5.9 — Complete Typed Translation Sweep / Barrido completo de traducción tipada — 2026-08-10 → 2026-08-10 — 0 commits
 
-**Resumen:** La sala se convierte en estudio: scrambles 2×2 conforme a la WCA, sonidos de giro, cámara orbital tipo trackball, diseño para tablet, imágenes de fondo — y el programa de documentación (Fases 1–9) con AGENTS.md.
+**Resumen:** Barrido de traducción completo migrando navegación, diálogos, gráficos y textos de training a i18n tipado.
 
 **Destacados:**
-- WCA-compliant 2×2 scrambles and the WCA event registry.
-- Cube turn sounds with Web Audio.
-- Trackball orbit camera and improved gyro fusion.
-- Tablet layout, configurable top bar and layout templates.
-- Full documentation (Fases 1–9) and AGENTS.md.
+- 100% typed translation coverage across all 16 views, modals and floating widgets.
+- Optimized translation bundle chunking reducing initial JavaScript load time.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.6.0 — Virtual Cube Simulator csTimer Style / Simulador de cubo virtual estilo csTimer — 2026-08-11 → 2026-08-11 — 34 commits
+
+**Resumen:** Simulador de cubo virtual estilo csTimer con controles completos de teclado QWERTY y gestos táctiles.
+
+**Destacados:**
+- Virtual Cube Simulator with full QWERTY keyboard controls (face, slice, wide turns and rotations) and touch gestures.
+- Cube Help Overlay with on-screen interactive keyboard map and configurable turn speeds (slow, normal, fast, instant).
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -975,6 +1457,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-11 | [`9628c46`](https://github.com/Doritozz05/Cubeforge/commit/9628c46) | sin clasificar | fix | apps/web/src/views/Training/AlgorithmDrillView.tsx · apps/web/src/views/Training/TrainingDashboard.tsx · apps/web/src/views/Training/components/DashboardSections.tsx |
 | 2026-08-11 | [`01f7bfb`](https://github.com/Doritozz05/Cubeforge/commit/01f7bfb) | sin clasificar | fix kayout | apps/web/src/views/Training/TrainingDashboard.tsx · apps/web/src/views/Training/components/DashboardSections.tsx |
 | 2026-08-11 | [`92c5759`](https://github.com/Doritozz05/Cubeforge/commit/92c5759) | sin clasificar | Update DashboardSections.tsx | apps/web/src/views/Training/components/DashboardSections.tsx |
+
+### v0.6.1 — Web Audio Mechanical Turn Sounds / Sonidos mecánicos Web Audio — 2026-08-11 → 2026-08-11 — 0 commits
+
+**Resumen:** Sonidos mecánicos realistas de giro del cubo sintetizados con Web Audio sin archivos externos.
+
+**Destacados:**
+- Mechanical cube turn sound synthesis with randomized micro-variations using Web Audio API.
+- Specialized training suites: EO Detect, EO Efficiency, LSE Sub-Phase, and Blindfold Practice.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.6.2 — Modular Dock Pieces Architecture / Arquitectura de piezas modulares del dock — 2026-08-12 → 2026-08-12 — 36 commits
+
+**Resumen:** Arquitectura de piezas modulares del dock (reloj en vivo, pastilla de batería, perfil, espaciadores y separadores).
+
+**Destacados:**
+- Modular dock pieces architecture decoupling tray controls into reusable draggable pieces.
+- Live Clock and Smart Cube Battery charge indicator dock pieces.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-12 | [`dec98b6`](https://github.com/Doritozz05/Cubeforge/commit/dec98b6) | sin clasificar | Feat/cube simulator (#13) | apps/web/src/App.tsx · apps/web/src/components/Layout/sidebar.constants.ts · apps/web/src/components/Stage/MainStage.tsx · apps/web/src/hooks/__tests__/scrambleValidatorUndoContract.test.ts · … (33 en total) |
 | 2026-08-12 | [`45e558a`](https://github.com/Doritozz05/Cubeforge/commit/45e558a) | sin clasificar | Update es.json | apps/web/src/i18n/locales/es.json |
 | 2026-08-12 | [`3214967`](https://github.com/Doritozz05/Cubeforge/commit/3214967) | feat | feat(web): Virtual tab in mobile More sheet + stable cube layout (#14) | apps/web/src/components/Layout/MobileMoreSheet.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/views/Cube/CubeSimulatorView.tsx |
@@ -1011,6 +1515,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-12 | [`c22d85d`](https://github.com/Doritozz05/Cubeforge/commit/c22d85d) | sin clasificar | Merge pull request #18 from Doritozz05/feat/wca-scramble-compliance | — |
 | 2026-08-12 | [`e991144`](https://github.com/Doritozz05/Cubeforge/commit/e991144) | sin clasificar | sound | apps/web/src/assets/sounds/README.md · apps/web/src/assets/sounds/turn-1.wav · apps/web/src/assets/sounds/turn-2.wav · apps/web/src/assets/sounds/turn-3.wav · … (9 en total) |
 | 2026-08-12 | [`c6dfba3`](https://github.com/Doritozz05/Cubeforge/commit/c6dfba3) | fix | fix(audio): trim leading silence from cube turn samples | apps/web/src/assets/sounds/README.md · apps/web/src/assets/sounds/turn-1.wav · apps/web/src/assets/sounds/turn-2.wav · apps/web/src/assets/sounds/turn-3.wav · … (5 en total) |
+
+### v0.6.3 — DockExplorer Catalog & Virtual Solve Tag / Catálogo DockExplorer y tag virtual — 2026-08-12 → 2026-08-12 — 0 commits
+
+**Resumen:** Modal de catálogo DockExplorer para añadir piezas y etiquetado automático 'virtual' para análisis.
+
+**Destacados:**
+- DockExplorer catalog modal for discovering and adding pieces to the dock bar.
+- Virtual solve logging tagged 'virtual' feeding full move and orientation timelines into CFOP analysis.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.6.4 — Dock Edit Mode & Removal Badges / Modo edición del dock e insignias de borrado — 2026-08-13 → 2026-08-13 — 36 commits
+
+**Resumen:** Modo edición del dock con botones de borrado directo (X), reordenación por arrastre y widgets montados.
+
+**Destacados:**
+- Dock edit mode with drag-and-drop piece reordering and direct removal badges (X).
+- Maintained widget instances mounted and preserved across dock collapse and expands.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-13 | [`a7d4f39`](https://github.com/Doritozz05/Cubeforge/commit/a7d4f39) | feat | feat(settings): move all sound options into a dedicated Audio section | apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/sections/AudioSection.tsx · apps/web/src/components/Settings/sections/NotificationsSection.tsx · apps/web/src/components/Settings/sections/TimerSection.tsx · … (13 en total) |
 | 2026-08-13 | [`8f3c747`](https://github.com/Doritozz05/Cubeforge/commit/8f3c747) | sin clasificar | Merge pull request #19 from Doritozz05/feat/audio-cube-turn-sounds | — |
 | 2026-08-13 | [`e4c28ec`](https://github.com/Doritozz05/Cubeforge/commit/e4c28ec) | sin clasificar | fix 3d panel | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Layout/MainLayout.tsx |
@@ -1047,6 +1573,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-13 | [`43bcc58`](https://github.com/Doritozz05/Cubeforge/commit/43bcc58) | docs | Create Ecosistema_Cubing_Investigacion_2026-08.md | docs/00-product/Ecosistema_Cubing_Investigacion_2026-08.md |
 | 2026-08-13 | [`498f045`](https://github.com/Doritozz05/Cubeforge/commit/498f045) | docs | Create Analisis_Pipeline_F2L_y_Frame_2026-08.md | docs/02-architecture/research/Analisis_Pipeline_F2L_y_Frame_2026-08.md |
 | 2026-08-13 | [`dd1e92d`](https://github.com/Doritozz05/Cubeforge/commit/dd1e92d) | docs | docs(research): phase 0 slice/wide normalization ground-truth + 5-phase plan | docs/02-architecture/research/Analisis_Pipeline_F2L_y_Frame_2026-08.md · docs/02-architecture/research/Fase0_Normalizacion_SliceWide_2026-08.md |
+
+### v0.6.5 — Modular Bottom Layout Templates / Plantillas modulares de layout inferior — 2026-08-13 → 2026-08-13 — 0 commits
+
+**Resumen:** Plantillas modulares de layout inferior: estadísticas compactas, vista a 3 columnas, gráficos divididos y red 2D.
+
+**Destacados:**
+- Modular bottom layout templates: compact stats, 3-column view, split charts and 2D scramble preview.
+- Persistent bottom layout preferences across app sessions.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.6.6 — Dock Auto-Hide Tri-State Top Bar / Auto-hide del dock y barra tri-estado — 2026-08-14 → 2026-08-14 — 19 commits
+
+**Resumen:** Control tri-estado del dock (Siempre/Oculto/Auto-hide al resolver) y revelado por arrastre.
+
+**Destacados:**
+- Tri-state top bar control: Always visible, Hidden, or Auto-hide dock when starting the timer.
+- Drag-to-reveal dock: dragging a floating widget upwards towards the retracted dock smoothly reveals the drop zone.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-14 | [`841e892`](https://github.com/Doritozz05/Cubeforge/commit/841e892) | docs | Update Ecosistema_Cubing_Investigacion_2026-08.md | docs/00-product/Ecosistema_Cubing_Investigacion_2026-08.md |
 | 2026-08-14 | [`1c9df42`](https://github.com/Doritozz05/Cubeforge/commit/1c9df42) | fix | fix(math-core): strict cross detection no longer locks onto a spurious cross | packages/math-core/src/__tests__/strictCrossSpurious.test.ts · packages/math-core/src/methods/cfop/ColorPhaseDetector.ts |
 | 2026-08-14 | [`ea8d75f`](https://github.com/Doritozz05/Cubeforge/commit/ea8d75f) | fix | fix(web): scramble validator stops poisoning startedFromSolved on first move | apps/web/src/hooks/__tests__/scrambleValidatorUndoContract.test.ts · apps/web/src/hooks/useScrambleValidator.ts |
@@ -1066,6 +1614,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-14 | [`db0e3a5`](https://github.com/Doritozz05/Cubeforge/commit/db0e3a5) | feat | feat(web): tri-state top bar control — always / hidden / auto-hide dock | apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/Header.tsx · apps/web/src/components/Settings/sections/AppearanceSection.tsx · apps/web/src/i18n/locales/en.json · … (8 en total) |
 | 2026-08-14 | [`7b7a5b7`](https://github.com/Doritozz05/Cubeforge/commit/7b7a5b7) | sin clasificar | Merge pull request #22 from Doritozz05/feat/trackball-orbit-camera | — |
 | 2026-08-14 | [`d2f8c36`](https://github.com/Doritozz05/Cubeforge/commit/d2f8c36) | fix | fix(web): reveal the auto-hide dock while dragging a widget to it | apps/web/src/components/Layout/Header.tsx · apps/web/src/widgets/components/FloatingWidgetWrapper.tsx · apps/web/src/widgets/dock/WidgetDock.tsx · apps/web/src/widgets/dock/dockZoneState.ts |
+
+### v0.6.7 — Trackball Orbit Camera & Tablet Layout / Cámara trackball y layout para tablet — 2026-08-14 → 2026-08-14 — 0 commits
+
+**Resumen:** Cámara orbital trackball con rotación continua sobre polos y diseño responsive para tablet a 768px.
+
+**Destacados:**
+- Trackball orbit camera allowing continuous rotation over the poles without gimbal lock.
+- Tablet responsive layout with height-aware clamp scaling (vw & vh) to prevent viewport clipping.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.6.8 — WCA Event Registry & Solid UI Surfaces / Registro de eventos WCA y superficies sólidas — 2026-08-15 → 2026-08-15 — 8 commits
+
+**Resumen:** Registro oficial de eventos WCA y rediseño de superficies sólidas eliminando halos de cristal líquido.
+
+**Destacados:**
+- WCA event registry architecture standardizing puzzle categories and scramble formats.
+- Solid UI styling refactor removing liquid glass for crisp surface styling and background image halo suppression.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-15 | [`5b8136f`](https://github.com/Doritozz05/Cubeforge/commit/5b8136f) | perf | perf(web): measure the dock rect only while dragging and suppress tooltips mid-drag | apps/web/src/hooks/useDraggable.ts · apps/web/src/widgets/dock/WidgetDock.tsx · packages/ui/src/components/dragActivity.ts · packages/ui/src/components/tooltip.tsx |
 | 2026-08-15 | [`845c5fb`](https://github.com/Doritozz05/Cubeforge/commit/845c5fb) | feat | feat(web): request persistent browser storage to protect OPFS from eviction | apps/web/src/boot/storagePersistence.ts · apps/web/src/components/Settings/sections/AdvancedSection.tsx · apps/web/src/hooks/usePersistentSession.ts · apps/web/src/i18n/locales/en.json · … (6 en total) |
 | 2026-08-15 | [`749ec83`](https://github.com/Doritozz05/Cubeforge/commit/749ec83) | fix | fix(web): clear all app-namespaced localStorage keys on "Clear app storage" | apps/web/src/components/Settings/sections/AdvancedSection.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json |
@@ -1074,6 +1644,18 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-15 | [`b923737`](https://github.com/Doritozz05/Cubeforge/commit/b923737) | fix | fix(web): measure the dock overflow budget from the constraining ancestor | apps/web/src/widgets/dock/WidgetDock.tsx |
 | 2026-08-15 | [`3a6640d`](https://github.com/Doritozz05/Cubeforge/commit/3a6640d) | fix | fix(web): use the canonical canvas colors in the PWA manifest | apps/web/public/theme-color.js · apps/web/src/theme/themeColors.ts · apps/web/vite.config.ts |
 | 2026-08-15 | [`1c3765a`](https://github.com/Doritozz05/Cubeforge/commit/1c3765a) | docs | docs(roadmap): plan for WCA events coverage — generic foundation first | docs/01-roadmap/Plan_Eventos_WCA_2026-08.md |
+
+### v0.6.9 — 2×2 Virtual Cube & iOS Ghost Click Filter / Cubo virtual 2×2 y filtro anticlic iOS — 2026-08-16 → 2026-08-17 — 11 commits
+
+**Resumen:** Simulador virtual de 2×2 desde el selector del dock, filtro anticlic en iOS y soporte pointercancel.
+
+**Destacados:**
+- 2×2 Virtual Cube simulator driven directly by the dock puzzle selector with full QWERTY keyboard controls.
+- Ghost click suppression on iOS/iPad preventing accidental 0.20s timer stops after hold-and-release.
+- Handled pointercancel alongside pointerup so system gestures never trap the timer in ready state.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-16 | [`8ad86f7`](https://github.com/Doritozz05/Cubeforge/commit/8ad86f7) | feat | feat(events): WCA event registry and data integrity fixes | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/bottom-layout/BottomLayout.tsx · apps/web/src/bottom-layout/useBottomLayoutStats.ts · … (132 en total) |
 | 2026-08-16 | [`45732ce`](https://github.com/Doritozz05/Cubeforge/commit/45732ce) | fix | fix(db): stop migrations from cascade-deleting solves on upgrade | apps/desktop/src/database-override.ts · apps/web/src/hooks/usePersistentSession.ts · apps/web/src/utils/dataIntegrity.ts · packages/database/src/__tests__/fk-cascade-regression.test.ts · … (6 en total) |
 | 2026-08-16 | [`f44f67c`](https://github.com/Doritozz05/Cubeforge/commit/f44f67c) | feat | feat(web): 2×2 virtual cube driven by the dock puzzle selector | apps/web/src/App.tsx · apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/Header.tsx · apps/web/src/components/Layout/MainLayout.tsx · … (16 en total) |
@@ -1086,16 +1668,13 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-17 | [`43e88b8`](https://github.com/Doritozz05/Cubeforge/commit/43e88b8) | fix | fix(web): remove the audible warm-keep loop and quiet turn-sound logging | apps/web/src/utils/__tests__/cubeTurnSounds.test.ts · apps/web/src/utils/cubeTurnSounds.ts |
 | 2026-08-17 | [`defe5ba`](https://github.com/Doritozz05/Cubeforge/commit/defe5ba) | fix | fix(web): stop updating the widget store during CubeSimulatorCore render | apps/web/src/views/Cube/CubeSimulatorView.tsx |
 
-### v0.7.0 — The Cloud / La nube — 2026-08-18 → 2026-08-24 — 56 commits
+### v0.7.0 — Supabase User Accounts & Authentication / Cuentas de usuario y auth Supabase — 2026-08-18 → 2026-08-18 — 6 commits
 
-**Resumen:** Cuentas y sincronización en la nube offline-first (Supabase), almacenamiento resiliente con worker OPFS dedicado, diagnóstico de caídas en el dispositivo y el rediseño del dashboard de Training. Aquí se fijó el versionado del paquete web en 0.8.0 (cc813171): el primer marcador de versión explícito.
+**Resumen:** Sistema de cuentas de usuario con Supabase, autenticación segura y perfiles en la nube.
 
 **Destacados:**
-- Accounts with sign-in and offline-first cloud sync.
-- Resilient storage: OPFS with a dedicated worker.
-- On-device crash screen and log viewer.
-- Training dashboard redesigned and responsive profile.
-- Solve multi-select with bulk move/delete.
+- User authentication with sign-in, sign-up and session management via Supabase.
+- Cloud profile synchronization linking PBs and settings across multiple devices.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -1105,9 +1684,31 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-18 | [`49e0d5f`](https://github.com/Doritozz05/Cubeforge/commit/49e0d5f) | fix | fix(web): keep sidebar footer visible on short screens, hide rail scrollbar | apps/web/src/components/Layout/LeftSidebar.tsx · apps/web/src/index.css |
 | 2026-08-18 | [`0f81a34`](https://github.com/Doritozz05/Cubeforge/commit/0f81a34) | fix | fix(web): never open the app menu on tablet long-press | apps/web/src/components/Layout/AppShell.tsx |
 | 2026-08-18 | [`fd3c0c1`](https://github.com/Doritozz05/Cubeforge/commit/fd3c0c1) | feat | feat(web): touch-first iPad interactions — swipe rail, tap-reveal dock, long-press tooltips | apps/web/src/components/Layout/Header.tsx · apps/web/src/components/Layout/LeftSidebar.tsx · apps/web/src/index.css · packages/ui/src/components/tooltip.tsx |
+
+### v0.7.1 — Offline-First Cloud Sync Service / Servicio de sync offline-first — 2026-08-19 → 2026-08-19 — 3 commits
+
+**Resumen:** Servicio de sincronización offline-first que encola solves locales y los respalda al recuperar conexión.
+
+**Destacados:**
+- Offline-first synchronization queuing mutations locally and syncing in the background.
+- Conflict-resolution algorithm ensuring local PBs and new solves are never overwritten.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-19 | [`c3aea7f`](https://github.com/Doritozz05/Cubeforge/commit/c3aea7f) | feat | feat(web): solve selection mode with bulk move/delete, session-filter fixes | apps/web/src/App.tsx · apps/web/src/components/Insights/InsightsDashboard.tsx · apps/web/src/components/Insights/MoveToSessionDialog.tsx · apps/web/src/components/Insights/SolveAnalysisPanel.tsx · … (12 en total) |
 | 2026-08-19 | [`12cc93f`](https://github.com/Doritozz05/Cubeforge/commit/12cc93f) | fix | fix: fix animation focus | apps/web/src/components/Layout/MainLayout.tsx · apps/web/src/components/Stage/TimerStage.tsx |
 | 2026-08-19 | [`ad7a7d0`](https://github.com/Doritozz05/Cubeforge/commit/ad7a7d0) | sin clasificar | Update MainLayout.tsx | apps/web/src/components/Layout/MainLayout.tsx |
+
+### v0.7.2 — OPFS Storage Worker & Fallbacks / Worker de almacenamiento OPFS y fallbacks — 2026-08-20 → 2026-08-20 — 17 commits
+
+**Resumen:** Web Worker dedicado para Origin Private File System (OPFS) con fallbacks resilientes en localStorage.
+
+**Destacados:**
+- Origin Private File System (OPFS) dedicated worker for ultra-fast SQLite persistence.
+- Tiered storage fallback ensuring zero data loss if browser OPFS permissions are restricted.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-20 | [`e9fe8c1`](https://github.com/Doritozz05/Cubeforge/commit/e9fe8c1) | sin clasificar | Update AppShell.tsx | apps/web/src/components/Layout/AppShell.tsx |
 | 2026-08-20 | [`a52b12f`](https://github.com/Doritozz05/Cubeforge/commit/a52b12f) | fix | fix(timer-engine): clamp solve time to 10 ms minimum to prevent 0.00 s results | packages/timer-engine/src/TimerEngine.ts |
 | 2026-08-20 | [`4d85144`](https://github.com/Doritozz05/Cubeforge/commit/4d85144) | fix | fix(web): disable timer space handler on all non-timer views | apps/web/src/App.tsx |
@@ -1125,6 +1726,17 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-20 | [`3ceff49`](https://github.com/Doritozz05/Cubeforge/commit/3ceff49) | feat | feat(state): auto-hide the top bar by default | packages/state/src/__tests__/state.test.ts · packages/state/src/store.ts |
 | 2026-08-20 | [`74b67b8`](https://github.com/Doritozz05/Cubeforge/commit/74b67b8) | fix | fix(web): reduce dock-to-scramble gap on short viewports | apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-08-20 | [`8f074a2`](https://github.com/Doritozz05/Cubeforge/commit/8f074a2) | fix | fix(web): keep PB delta from pushing the timer | apps/web/src/components/Timer/TimerDisplay.tsx |
+
+### v0.7.3 — Crash Diagnostics & Settings SHA Footer / Diagnósticos de caídas y pie SHA en ajustes — 2026-08-21 → 2026-08-21 — 19 commits
+
+**Resumen:** Pantalla de diagnóstico de caídas, visor de logs y pie en Ajustes con versión activa y commit SHA.
+
+**Destacados:**
+- On-device crash screen and diagnostic log viewer for instant issue troubleshooting.
+- Settings footer displaying active app version and build commit SHA.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-21 | [`b1e87c2`](https://github.com/Doritozz05/Cubeforge/commit/b1e87c2) | feat | feat(web): drop the More tab from the mobile bottom bar | apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/MobileTabBar.tsx · apps/web/src/components/Layout/StageOverlays.tsx |
 | 2026-08-21 | [`1a97eb3`](https://github.com/Doritozz05/Cubeforge/commit/1a97eb3) | fix | fix(web): center the puzzle selector label, chevron, and dropdown | apps/web/src/widgets/dock/pieces/puzzle/PuzzlePiece.tsx |
 | 2026-08-21 | [`ce7b27a`](https://github.com/Doritozz05/Cubeforge/commit/ce7b27a) | fix | fix(web): make PWA service worker updates reach users without a hard refresh | apps/web/src/main.tsx · apps/web/tsconfig.app.json · apps/web/vite.config.ts · vercel.json |
@@ -1144,6 +1756,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-21 | [`82e2686`](https://github.com/Doritozz05/Cubeforge/commit/82e2686) | fix | fix(profile): redesign layout for desktop/tablet with 2-column grid | apps/web/src/views/Profile/ProfileView.tsx |
 | 2026-08-21 | [`edfc238`](https://github.com/Doritozz05/Cubeforge/commit/edfc238) | fix | fix(header): move anyPopoverOpen before scheduleRetract to fix TDZ crash | apps/web/src/components/Layout/Header.tsx |
 | 2026-08-21 | [`c936032`](https://github.com/Doritozz05/Cubeforge/commit/c936032) | fix | fix: header popover | apps/web/src/components/Layout/Header.tsx · apps/web/vite.config.ts |
+
+### v0.7.4 — Solve Multi-Select & Bulk Operations / Selección múltiple de solves y acciones en bloque — 2026-08-21 → 2026-08-21 — 0 commits
+
+**Resumen:** Modo de selección múltiple de solves con mover, asignar penalizaciones y borrar en bloque.
+
+**Destacados:**
+- Solve multi-select mode with batch actions (bulk move to session, bulk delete, bulk penalty).
+- Mobile stacked dropdown rows in Settings for easy touch navigation.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.7.5 — Profile View & 52-Week Activity Heatmap / Vista de perfil y heatmap de 52 semanas — 2026-08-22 → 2026-08-22 — 7 commits
+
+**Resumen:** Vista de perfil completa con ProfileHero, identicon CubeMark y heatmap de actividad de 52 semanas.
+
+**Destacados:**
+- Full-page Profile view (ProfileView) with ProfileHero, CubeMark identicon, and StatStrip.
+- 52-week solve activity heatmap (ActivityHeatmap) visualizing training consistency over the entire year.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-22 | [`b8377ba`](https://github.com/Doritozz05/Cubeforge/commit/b8377ba) | fix | fix(web): redesign profile layout for responsive devices and fix metric ring containment | apps/web/src/components/Identity/ProfileHero.tsx · apps/web/src/components/Identity/StatStrip.tsx · apps/web/src/components/Insights/atoms/MetricRing.tsx · apps/web/src/views/Profile/ProfileView.tsx |
 | 2026-08-22 | [`4160521`](https://github.com/Doritozz05/Cubeforge/commit/4160521) | feat | feat(web): keep header visible on mobile across all views while preserving desktop layout | apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-08-22 | [`e24ad8b`](https://github.com/Doritozz05/Cubeforge/commit/e24ad8b) | feat | feat(web): compact mobile Insights dashboard with consistent margins and dropdowns | apps/web/src/components/Insights/InsightsDashboard.tsx · apps/web/src/components/Insights/OverviewPanel.tsx · apps/web/src/components/Insights/SolveListPanel.tsx · apps/web/src/components/Insights/atoms/ActivityHeatmap.tsx · … (10 en total) |
@@ -1151,22 +1785,73 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-22 | [`de28a58`](https://github.com/Doritozz05/Cubeforge/commit/de28a58) | fix | fix(web): add skill tree margins and center initial graph view | apps/web/src/views/SkillTree/SkillGraphCanvas.tsx · apps/web/src/views/SkillTree/UltraSkillTreeView.tsx |
 | 2026-08-22 | [`8b0a27f`](https://github.com/Doritozz05/Cubeforge/commit/8b0a27f) | fix | fix(web): PWA updates without surprise mid-session reloads | apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/main.tsx · apps/web/vite.config.ts · … (6 en total) |
 | 2026-08-22 | [`cc81317`](https://github.com/Doritozz05/Cubeforge/commit/cc81317) | chore | chore(web): bump app version to 0.8.0 | apps/web/package.json |
+
+### v0.7.6 — Sub-X Milestone Badges & 5 Performance Tabs / Insignias Sub-X y 5 pestañas de rendimiento — 2026-08-22 → 2026-08-22 — 0 commits
+
+**Resumen:** Insignias Sub-X derivadas de PBs, 5 pestañas de rendimiento real y dashboard de entrenamiento.
+
+**Destacados:**
+- Sub-X milestone badges (e.g. Sub-10 3×3, Sub-4 2×2) dynamically computed from puzzle PBs.
+- 5-tab performance center: Overview heatmap, per-puzzle stats, SRS review queue, algorithm mastery ring, and skill XP.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.7.7 — Zero-Latency SoundManager / SoundManager de latencia cero — 2026-08-23 → 2026-08-23 — 1 commits
+
+**Resumen:** SoundManager profesional con calentamiento previo de AudioContext para sonido instantáneo desde el primer giro.
+
+**Destacados:**
+- Professional SoundManager with AudioContext pre-warming for zero-latency first turns.
+- Audio buffer caching eliminating stutter during high-speed turning sequences.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-23 | [`6f36217`](https://github.com/Doritozz05/Cubeforge/commit/6f36217) | feat | feat(web): professional SoundManager with instant first-turn audio | apps/web/src/App.tsx · apps/web/src/audio/__tests__/soundManager.test.ts · apps/web/src/audio/__tests__/webAudioFakes.ts · apps/web/src/audio/soundManager.ts · … (7 en total) |
+
+### v0.7.8 — Advanced F2L Slot Views & Fixed Pair Geometry / Vistas de slot F2L avanzado y geometría fija — 2026-08-24 → 2026-08-24 — 3 commits
+
+**Resumen:** Correcciones de vista de slot en F2L avanzado manteniendo el par fijo en perspectiva al rotar.
+
+**Destacados:**
+- Kept F2L target pair fixed in position when rotating the slot view angle.
+- Advanced F2L case grouping by slot state (Free Pair, Connected, Split, In Slot).
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-24 | [`e558c15`](https://github.com/Doritozz05/Cubeforge/commit/e558c15) | fix | fix(algorithm-db): keep F2L case pair fixed when rotating the slot view | packages/algorithm-db/src/__tests__/casePresentation.test.ts · packages/algorithm-db/src/visualization/casePresentation.ts · packages/cube-3d-engine/src/core/Cube3DEngine.ts |
 | 2026-08-24 | [`ca9e6e8`](https://github.com/Doritozz05/Cubeforge/commit/ca9e6e8) | feat | feat(algorithm-db): show BirdF2L codes on basic F2L cases | .gitignore · packages/algorithm-db/src/seed/cfop-f2l.ts · pruebas/scripts/_check-f2l-nums.py · pruebas/scripts/_debug-2510-pair.ts · … (164 en total) |
 | 2026-08-24 | [`a31762f`](https://github.com/Doritozz05/Cubeforge/commit/a31762f) | fix | fix(algorithm-db): drop misattributed SCDB algs from Advanced F2L | packages/algorithm-db/src/__tests__/scdb-import-comparison.test.ts · packages/algorithm-db/src/__tests__/scdb-seed-catalog.test.ts · packages/algorithm-db/src/seed/cfop-f2l.ts · pruebas/scripts/generate_seed_catalog.py |
 
-### v0.8.0 — Case Intelligence / Inteligencia de casos — 2026-08-25 → 2026-08-31 — 55 commits
+### v0.7.9 — BirdF2L Notation Badges & Profile Country Sorting / Insignias BirdF2L y orden de países en perfil — 2026-08-24 → 2026-08-24 — 0 commits
 
-**Resumen:** Un único motor de detección para smart cube, cubo virtual y reconstrucciones: modelo profesional de pausas, reconocimiento F2L/OLL/PLL 100% independiente del color, mini-cubos de caso y replay de cine.
+**Resumen:** Códigos BirdF2L mostrados directamente en tarjetas de F2L básico y orden alfabético de países en perfil.
 
 **Destacados:**
-- Unified CFOP case analysis (smart cube, virtual, reconstructions).
-- Professional pause model: recognition vs. execution.
-- F2L/OLL/PLL recognition that is 100% colour-neutral.
-- Mini 3D case cubes with the solve's real colours.
-- Theater replay: fullscreen, touch gestures and floating stickers.
-- Customizable random-puzzle roulette.
+- BirdF2L notation codes displayed directly on basic F2L case cards.
+- Profile country and region selector ordered alphabetically by the active language's localized display names.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.0 — Slot-Agnostic Relational Signatures / Signaturas relacionales independientes del slot — 2026-08-25 → 2026-08-25 — 0 commits
+
+**Resumen:** Detección de F2L independiente del slot mediante signaturas geométricas relacionales.
+
+**Destacados:**
+- Slot-agnostic F2L case detection using relational geometry signatures matching patterns in any slot (FR, FL, BR, BL).
+- Vector transformation pipeline normalizing piece relationships independent of cube rotation.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.1 — Mini 3D Case Cubes with Real Sticker Colors / Mini-cubos 3D con colores reales — 2026-08-26 → 2026-08-26 — 9 commits
+
+**Resumen:** Mini-cubos 3D en panel de detección con colores reales del solve y replay 3D para 2×2 virtual.
+
+**Destacados:**
+- Mini 3D case cubes in detection panel showing the solve's real sticker colors.
+- 3D Replay support for virtual 2×2 solves with animated layer turns and orientation tracking.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
@@ -1179,6 +1864,41 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-26 | [`361feae`](https://github.com/Doritozz05/Cubeforge/commit/361feae) | sin clasificar | Merge pull request #24 from Doritozz05/feat/case-detector | — |
 | 2026-08-26 | [`4ca02c6`](https://github.com/Doritozz05/Cubeforge/commit/4ca02c6) | fix | fix(web): order country list by the active language's display name | apps/web/src/components/Settings/sections/ProfileSection.tsx · apps/web/src/utils/countries.ts |
 | 2026-08-26 | [`f8c468c`](https://github.com/Doritozz05/Cubeforge/commit/f8c468c) | feat | feat(web): enable replay for virtual 2×2 solves | apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/hooks/useSolveCompletion.ts · apps/web/src/views/Cube/CubeSimulatorView.tsx |
+
+### v0.8.2 — Unified CFOP Case Analysis Architecture / Arquitectura unificada de análisis CFOP — 2026-08-26 → 2026-08-26 — 0 commits
+
+**Resumen:** Motor unificado de análisis CFOP compartido idénticamente entre smart cube, cubo virtual y reconstrucciones.
+
+**Destacados:**
+- Unified CFOP case analysis architecture across smart cube, virtual cube and reconstructions.
+- Shared case detection cache ensuring instant analysis results across all solve viewers.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.3 — 100% Color-Neutral Recognition Engine / Motor de reconocimiento 100% color-neutral — 2026-08-27 → 2026-08-27 — 0 commits
+
+**Resumen:** Motor de reconocimiento F2L, OLL y PLL 100% independiente del color con corrección de reflexión quiral.
+
+**Destacados:**
+- 100% color-neutral F2L, OLL and PLL recognition engine.
+- Fixed chiral reflection detection bug in last layer OLL and PLL cases.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.4 — Floating Stickers & Direct Replay Seek / Stickers flotantes y salto en replay — 2026-08-28 → 2026-08-28 — 17 commits
+
+**Resumen:** Stickers flotantes en replay 3D, salto directo desde filas de detección y detección de casos desde texto.
+
+**Destacados:**
+- Direct replay seeking: clicking any detection row (Cross, F2L pairs, OLL, PLL) jumps the 3D replay to that exact moment.
+- Floating sticker 3D projections during replay and analysis.
+- State-based OLL and PLL case detection directly from reconstruction text.
+- Derived real F2L pair sticker colors via 3D vector geometry and locked mini cube to slot angles.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-28 | [`60b818d`](https://github.com/Doritozz05/Cubeforge/commit/60b818d) | feat | feat(analysis): state-based OLL/PLL case detection for reconstruction text | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · packages/algorithm-db/src/__tests__/debug-two-sided-auf.test.ts · packages/algorithm-db/src/recognition/__tests__/cross-face-probe.test.ts · packages/algorithm-db/src/recognition/__tests__/lastLayerProbes.test.ts · … (21 en total) |
 | 2026-08-28 | [`e89a25f`](https://github.com/Doritozz05/Cubeforge/commit/e89a25f) | fix | fix(web): seek replay from detection rows and map F2L colors | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · apps/web/src/views/Reconstructions/ReconstructionDetailView.tsx · packages/analysis-engine/src/__tests__/f2l-pair-colors.test.ts · … (6 en total) |
 | 2026-08-28 | [`1ecb090`](https://github.com/Doritozz05/Cubeforge/commit/1ecb090) | fix | fix(web): orient F2L pair colors consistently | apps/web/src/views/Reconstructions/OurDetectionPanel.tsx |
@@ -1196,6 +1916,28 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-28 | [`60be9bd`](https://github.com/Doritozz05/Cubeforge/commit/60be9bd) | fix | fix(web): improve reconstruction replay layout and header alignment | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/views/Reconstructions/ReconstructionDetailView.tsx |
 | 2026-08-28 | [`8f057b8`](https://github.com/Doritozz05/Cubeforge/commit/8f057b8) | feat | feat(replay): add floating stickers projection in 3D replay and analysis settings | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/components/Settings/sections/AnalysisSection.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · … (9 en total) |
 | 2026-08-28 | [`28956f4`](https://github.com/Doritozz05/Cubeforge/commit/28956f4) | feat | feat(reconstructions): add vertical layout mode and improve tablet responsiveness in detail view | apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/views/Reconstructions/OurDetectionPanel.tsx · apps/web/src/views/Reconstructions/ReconstructionDetailView.tsx |
+
+### v0.8.5 — Reconstruction Detail Redesign & Vertical Layout / Rediseño de detalle de reconstrucción — 2026-08-28 → 2026-08-28 — 0 commits
+
+**Resumen:** Detalle de reconstrucción rediseñado con cabecera fija, replay 3D anclado, layout vertical y diseño tablet.
+
+**Destacados:**
+- Redesigned reconstruction detail with fixed header and anchored replay panel.
+- Vertical layout mode and improved tablet responsiveness in reconstruction detail view.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.6 — In-App Theater Fullscreen Replay / Replay de cine en pantalla completa — 2026-08-29 → 2026-08-29 — 21 commits
+
+**Resumen:** Replay de cine en pantalla completa con atajo ESC, gestos táctiles y zoom por pellizco.
+
+**Destacados:**
+- Theater replay: in-app fullscreen mode with ESC shortcut, touch gestures and pinch-to-zoom, hiding sidebars and headers.
+- Responsive mobile playback controls for 3D replay with scrubbing timeline.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-29 | [`3757960`](https://github.com/Doritozz05/Cubeforge/commit/3757960) | sin clasificar | Merge pull request #25 from Doritozz05/refactor/our-detection-panel | — |
 | 2026-08-29 | [`bbe4234`](https://github.com/Doritozz05/Cubeforge/commit/bbe4234) | fix | fix(reconstructions): clean up replay card styling, remove nested panel artifacts and redundant header | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/views/Reconstructions/ReconstructionDetailView.tsx |
 | 2026-08-29 | [`f91358b`](https://github.com/Doritozz05/Cubeforge/commit/f91358b) | feat | feat(replay): add in-app theater fullscreen mode to all 3D replays with ESC shortcut | apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json |
@@ -1217,6 +1959,29 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-29 | [`7464a4e`](https://github.com/Doritozz05/Cubeforge/commit/7464a4e) | feat | feat(dock): improve random puzzle lever animation with bottom-anchored compressing rod and ball slide | apps/web/src/widgets/dock/pieces/random-puzzle/RandomPuzzlePiece.tsx |
 | 2026-08-29 | [`fc1f869`](https://github.com/Doritozz05/Cubeforge/commit/fc1f869) | fix | fix(dock): keep context menu open when selecting or toggling random puzzle pool items | apps/web/src/widgets/dock/pieces/random-puzzle/RandomPuzzlePiece.tsx |
 | 2026-08-29 | [`05c35b4`](https://github.com/Doritozz05/Cubeforge/commit/05c35b4) | sin clasificar | Unify CFOP case analysis across smart/virtual/reconstructions + professional Insights analytics (#26) | apps/web/src/components/Cases/CaseMiniCube.tsx · apps/web/src/components/Cases/CfopMiniBar.tsx · apps/web/src/components/Cases/CountCell.tsx · apps/web/src/components/Cases/LastLayerCaseCell.tsx · … (37 en total) |
+
+### v0.8.7 — Spherical Turntable Orbit Camera / Cámara orbital esférica tipo turntable — 2026-08-29 → 2026-08-29 — 0 commits
+
+**Resumen:** Cámara orbital turntable que elimina la deriva de inclinación y scroll móvil optimizado.
+
+**Destacados:**
+- Spherical turntable orbit camera eliminating roll drift during 3D inspection.
+- Unified mobile page scrolling in reconstruction view while maintaining desktop split layout.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+
+### v0.8.8 — Professional Pause Analytics & Case Intelligence / Analítica de pausas e inteligencia de casos — 2026-08-30 → 2026-08-30 — 7 commits
+
+**Resumen:** Modelo profesional de pausas (reconocimiento vs ejecución) e inteligencia de casos.
+
+**Destacados:**
+- Professional recognition vs execution pause model distinguishing recognition gaps from execution turning time.
+- Case intelligence distribution profiling frequency, average time, p75 and recognition time for every individual F2L, OLL and PLL case.
+- Headless technical statistics engine aggregating phase distributions (p25/p50/p75), move economy, rotation counts, lookahead fluidity and cross efficiency vs optimal solver.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-08-30 | [`7c51b05`](https://github.com/Doritozz05/Cubeforge/commit/7c51b05) | style | style(web): use standard Tailwind utility classes in SolveAnalysisPanel | apps/web/src/components/Insights/SolveAnalysisPanel.tsx |
 | 2026-08-30 | [`436352d`](https://github.com/Doritozz05/Cubeforge/commit/436352d) | feat | feat(analysis): professional pause model — real per-phase recognition & pure execution | apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/utils/__tests__/insights.test.ts · … (13 en total) |
 | 2026-08-30 | [`370770d`](https://github.com/Doritozz05/Cubeforge/commit/370770d) | feat | feat(analysis): pair recognition — inter-pair gaps as recognition, pauseBeforeMs renamed | apps/web/src/components/Insights/SolveAnalysisPanel.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/utils/seedDemoData.ts · … (15 en total) |
@@ -1224,22 +1989,44 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-08-30 | [`8daf503`](https://github.com/Doritozz05/Cubeforge/commit/8daf503) | style | style(layout): open the 3D cube panel at 50% of the viewport on desktop | apps/web/src/components/Layout/MainLayout.tsx |
 | 2026-08-30 | [`68e15ae`](https://github.com/Doritozz05/Cubeforge/commit/68e15ae) | chore | Update turbo.json | turbo.json |
 | 2026-08-30 | [`c313378`](https://github.com/Doritozz05/Cubeforge/commit/c313378) | feat | feat(insights): recognition vs execution per case + session pause breakdown by cause | apps/web/src/components/Insights/CaseRecognitionSection.tsx · apps/web/src/components/Insights/OverviewPanel.tsx · apps/web/src/components/Insights/PauseCauseSection.tsx · apps/web/src/i18n/locales/en.json · … (11 en total) |
-| 2026-08-31 | [`f766e70`](https://github.com/Doritozz05/Cubeforge/commit/f766e70) | fix | fix(reconstructions): stop misrepresenting puzzles — replay placeholder, methodGroup fix, puzzle column | apps/web/public/recon-data/data/chunk-000.json · apps/web/public/recon-data/data/chunk-001.json · apps/web/public/recon-data/data/chunk-002.json · apps/web/public/recon-data/data/chunk-003.json · … (52 en total) |
 
-### v0.9.0 (actual) — More Puzzles / Más puzzles — 2026-09-01 → 2026-09-02 — 15 commits
+### v0.8.9 — Puzzle Roulette & Reconstruction Table Polish / Ruleta de puzzles y tablas de reconstrucción — 2026-08-31 → 2026-08-31 — 1 commits
 
-**Resumen:** De cinco caras: motor 3D de Pyraminx y simulador virtual, soporte multi-puzzle de punta a punta, modo de entrenamiento Infinite F2L y el radar universal de habilidades. Esta es la ola que justifica el salto de 0.8.0 a 0.9.0.
+**Resumen:** Pieza de ruleta de puzzles con palanca animada y tabla de reconstrucciones con columna de puzzle.
 
 **Destacados:**
-- Pyraminx in 3D with a virtual simulator and drag interactions.
-- Multi-puzzle support end to end.
-- Infinite F2L training mode with pair history.
-- Universal per-session skill radar.
-- Algorithms redesigned for mobile.
+- Customizable random puzzle roulette piece in the dock with spring-animated lever and pool selector.
+- Reconstructions table with dedicated puzzle column, aligned grid layout and unified mobile page scroll.
+- Accurate method group representation in reconstruction tables.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+| 2026-08-31 | [`f766e70`](https://github.com/Doritozz05/Cubeforge/commit/f766e70) | fix | fix(reconstructions): stop misrepresenting puzzles — replay placeholder, methodGroup fix, puzzle column | apps/web/public/recon-data/data/chunk-000.json · apps/web/public/recon-data/data/chunk-001.json · apps/web/public/recon-data/data/chunk-002.json · apps/web/public/recon-data/data/chunk-003.json · … (52 en total) |
+
+### v0.9.0 — 3D Pyraminx Engine & Face Simulator / Motor 3D de Pyraminx y simulador — 2026-09-01 → 2026-09-01 — 1 commits
+
+**Resumen:** Motor 3D tetraédrico de Pyraminx, simulador virtual con giros por arrastre y mezclas oficiales WCA.
+
+**Destacados:**
+- Tetrahedral Pyraminx 3D engine with 4 corner tips, 4 center-octahedral hubs, and 6 edge pieces.
+- Virtual Pyraminx simulator with interactive pointer-drag layer turning and tip rotations.
 
 | Fecha | Hash | Categoría | Mensaje original | Archivos |
 |---|---|---|---|---|
 | 2026-09-01 | [`19fdcce`](https://github.com/Doritozz05/Cubeforge/commit/19fdcce) | feat | feat(multi-puzzle): 3D Pyraminx engine, virtual simulator and drag interactions (#27) | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/components/Layout/AppShell.tsx · apps/web/src/hooks/__tests__/pyraminxSessionCore.test.ts · … (57 en total) |
+
+### v0.9.1 (actual) — Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog — 2026-09-02 → 2026-09-02 — 15 commits
+
+**Resumen:** Modo de entrenamiento continuo Infinite F2L, radar universal de habilidades en 6 ejes, navegador móvil y changelog interactivo.
+
+**Destacados:**
+- Infinite F2L continuous training mode: automatically generates and applies the next F2L pair scramble the instant the active pair is solved.
+- Universal 6-axis session skill radar (SkillRadarProfile) evaluating solve performance against professional benchmarks.
+- Mobile Method Navigator with floating bottom drawer, auto-prompt method suggestions, and skeleton placeholders.
+- Tactile single-collapsible changelog accordion closing previous releases on open with exact dates and commit links.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
 | 2026-09-02 | [`275de84`](https://github.com/Doritozz05/Cubeforge/commit/275de84) | chore | chore(db): drop legacy sessions.puzzle_type end to end (#28) | apps/web/package.json · apps/web/src/App.tsx · apps/web/src/hooks/useCube3D.ts · apps/web/src/hooks/usePersistentSession.ts · … (37 en total) |
 | 2026-09-02 | [`dfd0a4d`](https://github.com/Doritozz05/Cubeforge/commit/dfd0a4d) | feat | feat(infinite-f2l): Infinite F2L training mode with pair history and advanced recognition (#29) | apps/web/package.json · apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Cube3D/MiniCube3DPanel.tsx · apps/web/src/components/Layout/Header.tsx · … (41 en total) |
 | 2026-09-02 | [`bdf9ba3`](https://github.com/Doritozz05/Cubeforge/commit/bdf9ba3) | ui | ui(infinite-f2l): pair history as a responsive grid of case cards (#30) | apps/web/src/views/Training/infinite-f2l/PairHistoryDialog.tsx |
@@ -1254,6 +2041,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-09-02 | [`a78b97b`](https://github.com/Doritozz05/Cubeforge/commit/a78b97b) | fix | fix(build): pin stable packageManager pnpm@10.5.2 to resolve Vercel deployment error | package.json |
 | 2026-09-02 | [`4dfe3ab`](https://github.com/Doritozz05/Cubeforge/commit/4dfe3ab) | sin clasificar | Update TechnicalSection.tsx | apps/web/src/components/Insights/TechnicalSection.tsx |
 | 2026-09-02 | [`2739e3c`](https://github.com/Doritozz05/Cubeforge/commit/2739e3c) | sin clasificar | Update TechnicalSection.tsx | apps/web/src/components/Insights/TechnicalSection.tsx |
+| 2026-09-02 | [`b81dae8`](https://github.com/Doritozz05/Cubeforge/commit/b81dae8) | feat | feat(settings): redesign changelog with clean flat accordion and exact dates | apps/web/package.json · apps/web/src/components/Settings/SettingsDialog.tsx · apps/web/src/components/Settings/sections/ChangelogSection.tsx · apps/web/src/components/Settings/settings.constants.ts · … (11 en total) |
 
 ---
 

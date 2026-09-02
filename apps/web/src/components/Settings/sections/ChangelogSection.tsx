@@ -84,7 +84,7 @@ export function ChangelogSection() {
 
   // Display newest versions first
   const versions = [...data.versions].reverse();
-  const defaultOpenVersions = [data.currentVersion || versions[0]?.version].filter(Boolean);
+  const defaultOpenVersion = data.currentVersion || versions[0]?.version;
 
   return (
     <div className="w-full flex flex-col">
@@ -99,7 +99,7 @@ export function ChangelogSection() {
       </div>
 
       {/* Accordion List */}
-      <Accordion type="multiple" defaultValue={defaultOpenVersions}>
+      <Accordion type="single" collapsible defaultValue={defaultOpenVersion}>
         {versions.map((v) => {
           const isCurrent = v.version === data.currentVersion || v.isCurrent;
           const hasBreaking = v.items.some((item) => item.type === "breaking");
@@ -138,7 +138,11 @@ export function ChangelogSection() {
               <AccordionContent className="pb-4 pt-1">
                 <ul className="flex flex-col gap-2.5">
                   {v.items.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
+                    <li
+                      key={idx}
+                      style={{ "--item-idx": idx } as React.CSSProperties}
+                      className="changelog-item flex items-start gap-2.5"
+                    >
                       <span
                         className={cn(
                           "inline-flex h-5 shrink-0 items-center justify-center rounded px-2 text-[10px] font-semibold leading-none tracking-wide",
@@ -152,6 +156,14 @@ export function ChangelogSection() {
                       </span>
                     </li>
                   ))}
+                  {v.moral?.[lang] && (
+                    <li
+                      style={{ "--item-idx": v.items.length } as React.CSSProperties}
+                      className="changelog-item mt-1 rounded-md border border-line/40 bg-surface-2/40 px-3 py-2 text-[11px] italic text-ink-3"
+                    >
+                      “{v.moral[lang]}”
+                    </li>
+                  )}
                 </ul>
               </AccordionContent>
             </AccordionItem>

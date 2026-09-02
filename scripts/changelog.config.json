@@ -1,139 +1,797 @@
 {
-  "repoUrl": "https://github.com/Doritozz05/Cubeforge",
+  "currentVersion": "0.9.1",
   "commitUrlTemplate": "https://github.com/Doritozz05/Cubeforge/commit/{sha}",
-  "currentVersion": "0.9.0",
-  "finalMoral": {
-    "en": "A cube is solved layer by layer, and so is a product. If early saves had no name, it is because we did not yet know how to name what we were building. Now even the changelog has a moral.",
-    "es": "Un cubo se resuelve por capas, y un producto también. Si al principio guardábamos cambios sin nombre, fue porque aún no sabíamos nombrar lo que construíamos. Ahora hasta el changelog tiene moraleja."
-  },
   "versions": [
     {
       "version": "0.1.0",
       "startDate": "2026-07-12",
-      "endDate": "2026-07-13",
+      "endDate": "2026-07-12",
       "name": {
-        "en": "The Seed",
-        "es": "La semilla"
+        "en": "Monorepo & Core Engine Architecture",
+        "es": "Arquitectura monorepo y motor central"
       },
       "period": {
         "en": "Jul 2026",
         "es": "jul 2026"
       },
       "summary": {
-        "en": "CubeForge starts as a blank monorepo: product docs, architecture decisions, a shadcn/Tailwind UI kit and the first packages. No face has been turned yet, but the room already has walls.",
-        "es": "CubeForge nace como monorepo en blanco: documento de producto, decisiones de arquitectura, kit de UI shadcn/Tailwind y los primeros paquetes. Aún no se ha girado ni una cara, pero la sala ya tiene paredes."
+        "en": "Monorepo setup with pnpm workspaces, WCA timer state machine, and core 3D Three.js engine.",
+        "es": "Configuración del monorepo con pnpm workspaces, máquina de estados WCA y motor 3D Three.js."
       },
       "items": [
         {
           "type": "new",
-          "en": "pnpm monorepo with 19 packages, a design system and CI from day one.",
-          "es": "Monorepo pnpm con 19 paquetes, design system y CI desde el día uno."
+          "en": "Monorepo structure with pnpm workspaces and isolated packages.",
+          "es": "Estructura monorepo con workspaces pnpm y paquetes aislados."
         },
         {
           "type": "new",
-          "en": "PRD, roadmap and architecture governance (ADRs + RFCs).",
-          "es": "PRD, roadmap y gobernanza de arquitectura (ADRs + RFCs)."
+          "en": "WCA inspection and solve timing state machine with high-precision timestamping.",
+          "es": "Máquina de estados de inspección y resolución WCA con marcas de tiempo de alta precisión."
         },
         {
           "type": "new",
-          "en": "First packages: models, database, state and the timer engine.",
-          "es": "Primeros paquetes: modelos, base de datos, estado y motor de cronómetro."
-        },
-        {
-          "type": "new",
-          "en": "Custom UI kit with shadcn/Tailwind and the bone/carbon theme.",
-          "es": "Kit de UI propio con shadcn/Tailwind y el tema bone/carbon."
+          "en": "Core Three.js 3D cube engine with sticker mapping and orbit controls.",
+          "es": "Motor 3D central en Three.js con mapeo de stickers y controles orbitales."
         }
       ],
       "moral": {
-        "en": "Every big cube starts with the lower layers: plan first, pieces after.",
-        "es": "Todo cubo grande empieza por las capas de abajo: primero el plan, luego las piezas."
+        "en": "Every complex system begins as a single solid cornerstone.",
+        "es": "Todo sistema complejo empieza por una única piedra angular bien colocada."
+      }
+    },
+    {
+      "version": "0.1.1",
+      "startDate": "2026-07-12",
+      "endDate": "2026-07-12",
+      "name": {
+        "en": "Offscreen Canvas & Render Worker",
+        "es": "Offscreen Canvas y worker de render"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Dedicated Web Worker for 3D cube rendering via OffscreenCanvas for 60fps timer fluidity.",
+        "es": "Web Worker dedicado para el renderizado 3D mediante OffscreenCanvas para fluidez a 60fps."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "OffscreenCanvas worker rendering to prevent UI thread frame drops during fast solves.",
+          "es": "Renderizado en worker con OffscreenCanvas para evitar caídas de frames en el hilo principal."
+        },
+        {
+          "type": "improved",
+          "en": "Modular geometry allocation reusing buffers across scramble changes.",
+          "es": "Asignación modular de geometrías reutilizando buffers al cambiar de mezcla."
+        }
+      ],
+      "moral": {
+        "en": "Separating render threads gives your timer the precision of a Swiss watch.",
+        "es": "Separar hilos de render le da al cronómetro la precisión de un reloj suizo."
+      }
+    },
+    {
+      "version": "0.1.2",
+      "startDate": "2026-07-13",
+      "endDate": "2026-07-13",
+      "name": {
+        "en": "WCA Timer State Machine & Penalties",
+        "es": "Estados de timer WCA y penalizaciones"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Precise 15-second WCA inspection countdown, hold-to-ready bar, and +2/DNF penalty evaluation.",
+        "es": "Cuenta atrás precisa de 15 segundos WCA, barra de retención y evaluación de penalizaciones +2/DNF."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Strict WCA inspection protocol with color transitions (orange 8s, red 12s, +2 at 15s, DNF at 17s).",
+          "es": "Protocolo de inspección WCA estricto con transiciones de color (naranja 8s, rojo 12s, +2 a 15s, DNF a 17s)."
+        },
+        {
+          "type": "new",
+          "en": "Hold-to-start timing mechanism with spacebar and multi-touch support.",
+          "es": "Mecanismo de inicio mantenido con soporte para barra espaciadora y multitáctil."
+        }
+      ],
+      "moral": {
+        "en": "True competition rules start with exact millisecond inspection tracking.",
+        "es": "Las verdaderas reglas de competición empiezan con un control exacto de la inspección al milisegundo."
+      }
+    },
+    {
+      "version": "0.1.3",
+      "startDate": "2026-07-13",
+      "endDate": "2026-07-13",
+      "name": {
+        "en": "Design Tokens & Responsive Layout",
+        "es": "Tokens de diseño y diseño adaptativo"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Typography scale, custom CSS design tokens, dark theme palette, and responsive shell.",
+        "es": "Escala tipográfica, tokens CSS personalizados, paleta de tema oscuro y estructura responsive."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Custom design system with semantic color tokens, monospaced tabular numerals and smooth transitions.",
+          "es": "Sistema de diseño propio con tokens semánticos de color, números monoespaciados tabulares y transiciones suaves."
+        },
+        {
+          "type": "improved",
+          "en": "Adaptive sidebar navigation for mobile and desktop screens.",
+          "es": "Navegación lateral adaptativa para pantallas móviles y de escritorio."
+        }
+      ],
+      "moral": {
+        "en": "A beautiful tool turns every practice session into an enjoyable routine.",
+        "es": "Una herramienta hermosa convierte cada sesión de práctica en una rutina agradable."
       }
     },
     {
       "version": "0.2.0",
       "startDate": "2026-07-14",
-      "endDate": "2026-07-20",
+      "endDate": "2026-07-14",
       "name": {
-        "en": "The First Solve",
-        "es": "El primer solve"
+        "en": "Timer Stage & Responsive Display",
+        "es": "Timer Stage y pantalla adaptativa"
       },
       "period": {
         "en": "Jul 2026",
         "es": "jul 2026"
       },
       "summary": {
-        "en": "The timer beats: WCA inspection, sessions, scrambles and session statistics, plus the first analysis engine — CFOP phase detection, solve metrics, and a GAN smart cube over Web Bluetooth.",
-        "es": "El cronómetro late: inspección WCA, sesiones, scrambles y estadísticas, más el primer motor de análisis — detección de fases CFOP, métricas de solve y el cubo inteligente GAN vía Web Bluetooth."
+        "en": "Timer stage layout with responsive clamp typography and WCA hold-to-start indicators.",
+        "es": "Layout de timer con tipografía clamp adaptable e indicadores de inicio WCA."
       },
       "items": [
         {
           "type": "new",
-          "en": "Timer with WCA inspection, sessions, scrambles and penalties.",
-          "es": "Cronómetro con inspección WCA, sesiones, scrambles y penalizaciones."
-        },
-        {
-          "type": "new",
-          "en": "CFOP phase analysis with per-solve metrics.",
-          "es": "Análisis por fases CFOP con métricas por solve."
-        },
-        {
-          "type": "new",
-          "en": "GAN smart cube over Web Bluetooth with auto-arm and gyro reset.",
-          "es": "Cubo inteligente GAN vía Web Bluetooth con auto-arm y recalibrado."
+          "en": "Responsive timer display using viewport clamp scaling to fit mobile, tablet, and ultra-wide screens.",
+          "es": "Pantalla del cronómetro adaptable usando clamp para móviles, tablets y monitores ultra-wide."
         },
         {
           "type": "improved",
-          "en": "3D engine, solver and a floating times panel.",
-          "es": "Motor 3D, solver y panel de tiempos flotante."
+          "en": "Hold-to-start tactile feedback with visual state transitions (IDLE → ARMED → READY).",
+          "es": "Feedback táctil para mantener pulsado con transiciones visuales (IDLE → ARMED → READY)."
         }
       ],
       "moral": {
-        "en": "That first solve was timed by hand and analysed by heart; now every move is recorded.",
-        "es": "Ese primer solve se cronometró con la mano y se analizó con el corazón; ahora cada movimiento queda registrado."
+        "en": "The timer is the heart of cubing: when it feels instantaneous, the solver enters the flow state.",
+        "es": "El cronómetro es el corazón del cubing: cuando se siente instantáneo, el cubero entra en estado de flujo."
+      }
+    },
+    {
+      "version": "0.2.1",
+      "startDate": "2026-07-14",
+      "endDate": "2026-07-14",
+      "name": {
+        "en": "Smart Cube Web Bluetooth",
+        "es": "Smart Cube y Web Bluetooth"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Web Bluetooth API integration for GAN and GoCube smart cubes with automatic state synchronization.",
+        "es": "Integración de Web Bluetooth API para cubos inteligentes GAN y GoCube con sincronización de estado."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Smart Cube Bluetooth connectivity layer with auto-reconnection and battery monitoring.",
+          "es": "Capa de conexión Bluetooth para cubos inteligentes con auto-reconexión y monitor de batería."
+        },
+        {
+          "type": "new",
+          "en": "Move packet decoding pipeline mapping physical rotations to standard move notation.",
+          "es": "Decodificación de paquetes de giros mapeando rotaciones físicas a notación estándar."
+        }
+      ],
+      "moral": {
+        "en": "Connecting hardware to software bridges the physical cube with digital intelligence.",
+        "es": "Conectar hardware y software une el cubo físico con la inteligencia digital."
+      }
+    },
+    {
+      "version": "0.2.2",
+      "startDate": "2026-07-15",
+      "endDate": "2026-07-15",
+      "name": {
+        "en": "Gyroscope & Quaternion Tracking",
+        "es": "Giroscopio y seguimiento de cuaterniones"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Real-time gyroscope telemetry, quaternion normalizer, and zero-drift orientation tracking.",
+        "es": "Telemetría de giroscopio en tiempo real, normalizador de cuaterniones y seguimiento sin deriva."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Real-time 3D gyroscope tracking with quaternion filtering and gimbal-lock elimination.",
+          "es": "Seguimiento giroscópico 3D en tiempo real con filtrado de cuaterniones y sin bloqueo de cardán."
+        },
+        {
+          "type": "improved",
+          "en": "Smooth 60fps orientation interpolation matching physical cube orientation on screen.",
+          "es": "Interpolación suave de orientación a 60fps replicando la posición física del cubo en pantalla."
+        }
+      ],
+      "moral": {
+        "en": "A stable gyroscope turns raw sensor noise into silky smooth 3D motion.",
+        "es": "Un giroscopio estable transforma el ruido de los sensores en movimiento 3D suave como la seda."
+      }
+    },
+    {
+      "version": "0.2.3",
+      "startDate": "2026-07-16",
+      "endDate": "2026-07-16",
+      "name": {
+        "en": "Orientation Auto-Calibration",
+        "es": "Auto-calibración de orientación"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Single-tap orientation reset, face alignment auto-calibration, and hardware status indicator.",
+        "es": "Reinicio de orientación en un toque, auto-calibración de caras e indicador de estado de hardware."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Quick-tap orientation reset button and keyboard shortcut to align the virtual and physical cube.",
+          "es": "Botón y atajo de teclado para resetear la orientación y alinear el cubo virtual y el físico."
+        },
+        {
+          "type": "improved",
+          "en": "Visual connection pill showing signal strength and hardware telemetry.",
+          "es": "Pastilla visual de conexión con intensidad de señal y telemetría de hardware."
+        }
+      ],
+      "moral": {
+        "en": "Calibrating your cube before starting is the secret to accurate analysis.",
+        "es": "Calibrar tu cubo antes de empezar es el secreto para un análisis preciso."
+      }
+    },
+    {
+      "version": "0.2.4",
+      "startDate": "2026-07-17",
+      "endDate": "2026-07-17",
+      "name": {
+        "en": "CFOP Solver Engine & Phase Split",
+        "es": "Motor de resolución CFOP y fases"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Automatic solve segmentation into Cross, F2L pairs, OLL and PLL phases.",
+        "es": "Segmentación automática del solve en fases de Cross, 4 pares de F2L, OLL y PLL."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Real-time CFOP solver engine breaking down solves into phase splits.",
+          "es": "Motor de resolución CFOP en tiempo real que desglosa el solve en tiempos por fase."
+        },
+        {
+          "type": "new",
+          "en": "Detailed metrics for TPS (turns per second) and move counts per phase.",
+          "es": "Métricas detalladas de TPS (giros por segundo) y recuento de movimientos por fase."
+        }
+      ],
+      "moral": {
+        "en": "Understanding where your time goes is the first step toward breaking your PB.",
+        "es": "Entender a dónde se va tu tiempo es el primer paso para pulverizar tu récord personal."
+      }
+    },
+    {
+      "version": "0.2.5",
+      "startDate": "2026-07-17",
+      "endDate": "2026-07-17",
+      "name": {
+        "en": "Color Neutrality & Face Mapping",
+        "es": "Neutralidad de color y mapeo de caras"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Multi-color cross detection allowing full CFOP solving on any of the 6 starting faces.",
+        "es": "Detección de cruz en cualquier color permitiendo resolver CFOP en cualquiera de las 6 caras."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Cross solver supporting all 6 starting colors (White, Yellow, Green, Blue, Red, Orange).",
+          "es": "Solver de cruz compatible con los 6 colores iniciales (blanco, amarillo, verde, azul, rojo, naranja)."
+        },
+        {
+          "type": "improved",
+          "en": "Automatic face color remapping for consistent Last Layer recognition.",
+          "es": "Reasignación automática de colores para un reconocimiento consistente de la última capa."
+        }
+      ],
+      "moral": {
+        "en": "True color neutrality begins when the engine treats all six faces with equal reverence.",
+        "es": "La auténtica neutralidad de color empieza cuando el motor trata las seis caras con igual respeto."
+      }
+    },
+    {
+      "version": "0.2.6",
+      "startDate": "2026-07-18",
+      "endDate": "2026-07-18",
+      "name": {
+        "en": "PB Milestones & Session Bests",
+        "es": "Hitos PB y mejores de sesión"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Instant Personal Best (PB) single and Ao5/Ao12 milestone celebrations with celebratory badges.",
+        "es": "Celebración instantánea de récords personales (PB) de single, Ao5 y Ao12 con insignias conmemorativas."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Automatic PB milestone detection comparing current solves against all-time session history.",
+          "es": "Detección automática de récords personales comparando el solve con el historial de la sesión."
+        },
+        {
+          "type": "new",
+          "en": "Celebratory visual badges and sound alerts on breaking Single and Average PBs.",
+          "es": "Insignias visuales y alertas sonoras de celebración al batir PBs individuales y de media."
+        }
+      ],
+      "moral": {
+        "en": "Every milestone deserves a celebration: progress is measured in hundredths of a second.",
+        "es": "Cada hito merece una celebración: el progreso se mide en centésimas de segundo."
+      }
+    },
+    {
+      "version": "0.2.7",
+      "startDate": "2026-07-19",
+      "endDate": "2026-07-19",
+      "name": {
+        "en": "2D Scramble Net & Verification",
+        "es": "Red 2D de mezcla y verificación"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Interactive 2D net unfolded cube view showing the exact expected scramble state.",
+        "es": "Vista interactiva en red 2D del cubo desplegado mostrando el estado exacto de la mezcla."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "2D flat cube net preview illustrating the scrambled state for quick inspection verification.",
+          "es": "Previsualización desplegada en red 2D que ilustra la mezcla para verificarla rápidamente."
+        },
+        {
+          "type": "improved",
+          "en": "Clickable 2D net modal for enlarged examination of scramble patterns.",
+          "es": "Modal ampliado al pulsar la red 2D para examinar los patrones de mezcla en detalle."
+        }
+      ],
+      "moral": {
+        "en": "A clear scramble preview ensures you always start the solve from the true state.",
+        "es": "Una previsualización clara de la mezcla garantiza empezar siempre desde el estado correcto."
+      }
+    },
+    {
+      "version": "0.2.8",
+      "startDate": "2026-07-20",
+      "endDate": "2026-07-20",
+      "name": {
+        "en": "3D Gyroscope Replay",
+        "es": "Replay giroscópico 3D"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "3D solve replay with synchronized layer turns, physical cube rotations and scrub bar.",
+        "es": "Replay 3D del solve con giros de capa sincronizados, rotaciones físicas y barra temporal."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Full 3D replay engine animating layer rotations and physical cube orientation synchronously.",
+          "es": "Motor de replay 3D que anima los giros de capa y la orientación física de forma sincronizada."
+        },
+        {
+          "type": "new",
+          "en": "Playback controls with Play, Pause, Step-Forward, Step-Backward and speed multiplier (0.5x, 1x, 2x).",
+          "es": "Controles de reproducción con Play, Pausa, Paso adelante/atrás y selector de velocidad (0.5x, 1x, 2x)."
+        }
+      ],
+      "moral": {
+        "en": "Replaying your solve move by move is the quickest path to eliminating unnecessary rotations.",
+        "es": "Revisar tu solve movimiento a movimiento es el camino más rápido para eliminar rotaciones innecesarias."
+      }
+    },
+    {
+      "version": "0.2.9",
+      "startDate": "2026-07-20",
+      "endDate": "2026-07-20",
+      "name": {
+        "en": "Solve History & Quick Stats Panel",
+        "es": "Historial de solves y panel de stats"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Floating solve history panel with multi-penalty actions, session statistics (Ao5, Ao12) and solve delete.",
+        "es": "Panel flotante de historial con acciones de penalización, estadísticas de sesión (Ao5, Ao12) y borrado."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Solve history list with single-click +2 and DNF penalty toggles.",
+          "es": "Lista de historial de tiempos con alternancia de penalizaciones +2 y DNF en un clic."
+        },
+        {
+          "type": "improved",
+          "en": "Live calculation of Rolling Average of 5 (Ao5) and Average of 12 (Ao12) according to WCA regulations.",
+          "es": "Cálculo en vivo de medias rodantes Ao5 y Ao12 conforme al reglamento oficial WCA."
+        }
+      ],
+      "moral": {
+        "en": "Accurate statistics give solvers the clarity to trust their progress.",
+        "es": "Unas estadísticas exactas dan al cubero la claridad necesaria para confiar en su progreso."
       }
     },
     {
       "version": "0.3.0",
       "startDate": "2026-07-21",
-      "endDate": "2026-07-27",
+      "endDate": "2026-07-21",
       "name": {
-        "en": "The Gym",
-        "es": "El gimnasio"
+        "en": "Cube Skins & Texture Studio",
+        "es": "Skins de cubo y estudio de texturas"
       },
       "period": {
         "en": "Jul 2026",
         "es": "jul 2026"
       },
       "summary": {
-        "en": "The app becomes a training hall: algorithm database, drills and recall, SRS review, an interactive skill tree, 3D case diagrams and a training-system v2 plan.",
-        "es": "La app se convierte en sala de entrenamiento: base de algoritmos, drills y recall, repaso SRS, árbol de habilidades interactivo, diagramas 3D de casos y un plan del sistema de entrenamiento v2."
+        "en": "Custom 3D cube visual skins, matte/glossy plastic materials, and lighting presets.",
+        "es": "Skins visuales personalizadas en 3D, materiales mate y brillantes y presets de iluminación."
       },
       "items": [
         {
           "type": "new",
-          "en": "CFOP algorithm database with a case editor.",
-          "es": "Base de algoritmos CFOP con editor de casos."
-        },
-        {
-          "type": "new",
-          "en": "Drills, recall and SRS review, integrated with the smart cube.",
-          "es": "Drills, recall y repaso SRS, integrados con el smart cube."
-        },
-        {
-          "type": "new",
-          "en": "Interactive skill tree.",
-          "es": "Árbol de habilidades interactivo."
+          "en": "Cube Skins system supporting classic, pastel, carbon fiber, and dark fluorescent sticker palettes.",
+          "es": "Sistema de skins para el cubo con paletas clásica, pastel, fibra de carbono y fluorescentes oscuras."
         },
         {
           "type": "improved",
-          "en": "3D case diagrams and a full-solve view.",
-          "es": "Diagramas 3D de casos y vista de solve completo."
+          "en": "PBR material shaders with adjustable roughness, bevel rounding, and subtle specular reflections.",
+          "es": "Shaders PBR con rugosidad ajustable, bordes biselados y reflejos especulares sutiles."
+        }
+      ],
+      "moral": {
+        "en": "Personalizing your cube aesthetics makes hundreds of practice solves feel fresh.",
+        "es": "Personalizar la estética de tu cubo hace que cientos de solves se sientan frescos."
+      }
+    },
+    {
+      "version": "0.3.1",
+      "startDate": "2026-07-21",
+      "endDate": "2026-07-21",
+      "name": {
+        "en": "3D Diagram Generator",
+        "es": "Generador de diagramas 3D"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "High-resolution 3D case diagram generation for algorithm previews and training flashcards.",
+        "es": "Generación de diagramas 3D en alta resolución para previsualización de algoritmos y tarjetas de práctica."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "3D Case Diagram Factory rendering top-down and perspective case snapshots with custom maskings.",
+          "es": "Fábrica de diagramas 3D con capturas en perspectiva y cenitales con máscaras personalizadas."
         },
         {
           "type": "improved",
-          "en": "PB detection, practice calendar and training plans.",
-          "es": "Detección de PB, calendario de práctica y planes de entrenamiento."
+          "en": "Dynamic sticker masking highlighting only relevant pieces for F2L, OLL and PLL cases.",
+          "es": "Enmascarado dinámico de stickers que resalta únicamente las piezas relevantes de cada caso."
+        }
+      ],
+      "moral": {
+        "en": "A picture is worth a thousand moves: clear diagrams accelerate case recognition.",
+        "es": "Una imagen vale más que mil movimientos: los diagramas claros aceleran el reconocimiento."
+      }
+    },
+    {
+      "version": "0.3.2",
+      "startDate": "2026-07-22",
+      "endDate": "2026-07-22",
+      "name": {
+        "en": "Algorithm Database Modeling",
+        "es": "Modelado de base de algoritmos"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Complete CFOP algorithm dataset with alternative triggers, AUF normalizer, and move counts.",
+        "es": "Catálogo completo de algoritmos CFOP con triggers alternativos, normalizador AUF y recuento de giros."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Comprehensive algorithm database covering all 57 OLL cases and 21 PLL cases with alternative fingertrick triggers.",
+          "es": "Base de algoritmos completa con los 57 casos de OLL y 21 de PLL con variantes de fingertricks."
+        },
+        {
+          "type": "improved",
+          "en": "AUF (Adjust Upper Face) normalizer standardizing algorithm execution notation.",
+          "es": "Normalizador AUF que estandariza la notación de alineación de capa superior."
+        }
+      ],
+      "moral": {
+        "en": "Structured algorithm data is the backbone of intelligent speedcubing practice.",
+        "es": "Datos estructurados de algoritmos son la columna vertebral de una práctica inteligente."
+      }
+    },
+    {
+      "version": "0.3.3",
+      "startDate": "2026-07-23",
+      "endDate": "2026-07-23",
+      "name": {
+        "en": "Cross Trainer & Optimal Solver",
+        "es": "Entrenador de cruz y solver óptimo"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Dedicated Cross Trainer generating targeted scrambles with step-by-step optimal solutions.",
+        "es": "Entrenador de Cruz dedicado que genera mezclas específicas con soluciones óptimas paso a paso."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Cross Trainer with move-distance difficulty filters (2 to 8 optimal moves).",
+          "es": "Entrenador de Cruz con filtros de dificultad por distancia de movimientos (de 2 a 8 giros óptimos)."
+        },
+        {
+          "type": "new",
+          "en": "Optimal cross solver showing all shortest paths across any chosen starting color.",
+          "es": "Solver de cruz óptima que muestra todos los caminos más cortos para cualquier color elegido."
+        }
+      ],
+      "moral": {
+        "en": "Mastering the cross under 8 moves builds the foundation for sub-10 solves.",
+        "es": "Dominar la cruz en menos de 8 movimientos construye los cimientos para bajar de 10 segundos."
+      }
+    },
+    {
+      "version": "0.3.4",
+      "startDate": "2026-07-23",
+      "endDate": "2026-07-23",
+      "name": {
+        "en": "Training Engine Architecture",
+        "es": "Arquitectura del motor de entrenamiento"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Headless training engine package managing drill sessions, reaction time tracking, and accuracy metrics.",
+        "es": "Paquete de motor de entrenamiento que gestiona sesiones de drill, tiempos de reacción y precisión."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Headless training state machine coordinating drills, recognition challenges and timing.",
+          "es": "Máquina de estados de entrenamiento que coordina drills, retos de reconocimiento y cronometraje."
+        },
+        {
+          "type": "improved",
+          "en": "Reaction time measurement isolating recognition pause from algorithm execution.",
+          "es": "Medición del tiempo de reacción aislando la pausa de reconocimiento de la ejecución del algoritmo."
+        }
+      ],
+      "moral": {
+        "en": "Separating recognition from execution turns fuzzy practice into targeted improvement.",
+        "es": "Separar reconocimiento de ejecución convierte la práctica difusa en mejora enfocada."
+      }
+    },
+    {
+      "version": "0.3.5",
+      "startDate": "2026-07-24",
+      "endDate": "2026-07-24",
+      "name": {
+        "en": "Algorithm Drills & Flash Recall",
+        "es": "Drills de algoritmos y recuerdo rápido"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Interactive flashcard drill mode testing rapid algorithm recall under time pressure.",
+        "es": "Modo de práctica con tarjetas interactivas para poner a prueba el recuerdo rápido bajo presión."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Flash Recall mode presenting scrambled cases with instant pass/fail validation.",
+          "es": "Modo Flash Recall que presenta casos mezclados con validación instantánea de acierto o fallo."
+        },
+        {
+          "type": "new",
+          "en": "Execution speed tracking comparing personal best drill times against community benchmarks.",
+          "es": "Seguimiento de velocidad de ejecución comparando tiempos de drill con referencias de la comunidad."
+        }
+      ],
+      "moral": {
+        "en": "True recall is subconscious: you don't recite the letters, your hands simply move.",
+        "es": "El recuerdo auténtico es subconsciente: no recitas las letras, tus manos simplemente se mueven."
+      }
+    },
+    {
+      "version": "0.3.6",
+      "startDate": "2026-07-24",
+      "endDate": "2026-07-24",
+      "name": {
+        "en": "Practice Calendar & Habit Tracker",
+        "es": "Calendario de práctica y hábitos"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Habit streak calendar visualizing daily practice consistency and training volume.",
+        "es": "Calendario de hábitos que visualiza la constancia de práctica diaria y el volumen de entrenamiento."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Interactive practice habit calendar highlighting active streak days and solve counts.",
+          "es": "Calendario de hábitos interactivo que resalta los días con racha activa y número de solves."
+        },
+        {
+          "type": "improved",
+          "en": "Streak counter encouraging daily consistency with motivational milestone badges.",
+          "es": "Contador de racha que fomenta la constancia diaria con insignias motivacionales."
+        }
+      ],
+      "moral": {
+        "en": "Small daily habits compound into monumental breakthroughs.",
+        "es": "Los pequeños hábitos diarios se multiplican en avances monumentales."
+      }
+    },
+    {
+      "version": "0.3.7",
+      "startDate": "2026-07-25",
+      "endDate": "2026-07-25",
+      "name": {
+        "en": "Skill Tree Graph Canvas",
+        "es": "Lienzo del árbol de habilidades"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Interactive DAG skill graph with zoom/pan controls, 16 progression branches, and prerequisite unlocking.",
+        "es": "Grafo interactivo de habilidades con zoom/paneo, 16 ramas de progresión y desbloqueo por prerrequisitos."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "UltraSkillTreeView with GPU-accelerated interactive canvas, SVG Bezier connectors, and smooth pan/zoom.",
+          "es": "UltraSkillTreeView con lienzo interactivo acelerado por GPU, conectores Bezier SVG y paneo/zoom fluido."
+        },
+        {
+          "type": "new",
+          "en": "16 specialized skill branches covering Fundamentals, Cross, F2L, Last Layer, Lookahead, Finger Tricks and more.",
+          "es": "16 ramas de habilidades especializadas: Fundamentos, Cruz, F2L, Última Capa, Lookahead, Fingertricks y más."
+        }
+      ],
+      "moral": {
+        "en": "A visual roadmap turns a daunting mountain of skills into an inspiring journey.",
+        "es": "Un mapa visual convierte una montaña abrumadora de habilidades en un viaje inspirador."
+      }
+    },
+    {
+      "version": "0.3.8",
+      "startDate": "2026-07-26",
+      "endDate": "2026-07-26",
+      "name": {
+        "en": "Spaced Repetition (SRS) Engine",
+        "es": "Motor de repetición espaciada (SRS)"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "SM-2 spaced repetition algorithm prioritizing weak and forgotten algorithms for optimal retention.",
+        "es": "Algoritmo de repetición espaciada SM-2 que prioriza algoritmos débiles y olvidados para una retención óptima."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Integrated SM-2 spaced repetition algorithm scheduling reviews based on recall speed and difficulty.",
+          "es": "Algoritmo SM-2 de repetición espaciada integrado que programa repasos según la velocidad y dificultad."
+        },
+        {
+          "type": "new",
+          "en": "SRS review queue organizing cases into Overdue, Weak, Due and New categories.",
+          "es": "Cola de repaso SRS que organiza los casos en categorías: Retrasados, Débiles, Para repasar y Nuevos."
+        }
+      ],
+      "moral": {
+        "en": "Reviewing right before you forget permanently cements algorithms in muscle memory.",
+        "es": "Repasar justo antes de olvidar fija permanentemente los algoritmos en la memoria muscular."
+      }
+    },
+    {
+      "version": "0.3.9",
+      "startDate": "2026-07-27",
+      "endDate": "2026-07-27",
+      "name": {
+        "en": "F2L 41 Case Modeling & Full Solve",
+        "es": "Modelado de los 41 F2L y full solve"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Full recognition modeling for all 41 basic F2L cases with 3D slot angle views and full solve phase breakdown.",
+        "es": "Modelado completo de los 41 casos básicos de F2L con vistas 3D de ángulo de slot y desglose de full solve."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Basic F2L case recognition modeling (41 cases) with 3D slot perspective angles.",
+          "es": "Modelado de reconocimiento para los 41 casos básicos de F2L con ángulos de perspectiva 3D del slot."
+        },
+        {
+          "type": "improved",
+          "en": "Full Solve practice mode combining Cross, F2L, OLL and PLL with automated phase transitions.",
+          "es": "Modo de práctica Full Solve que combina Cross, F2L, OLL y PLL con transiciones automáticas de fase."
         }
       ],
       "moral": {
@@ -144,39 +802,29 @@
     {
       "version": "0.4.0",
       "startDate": "2026-07-28",
-      "endDate": "2026-08-03",
+      "endDate": "2026-07-28",
       "name": {
-        "en": "The Dock Era",
-        "es": "La era del dock"
+        "en": "Draggable Dock & Floating Architecture",
+        "es": "Dock arrastrable y arquitectura flotante"
       },
       "period": {
-        "en": "Jul–Aug 2026",
-        "es": "jul–ago 2026"
+        "en": "Jul 2026",
+        "es": "jul 2026"
       },
       "summary": {
-        "en": "Floating widgets and a draggable dock, local profiles with CubeMark, manual time entry, data import — and the first deploy: PWA on Vercel with SEO and COOP/COEP headers.",
-        "es": "Widgets flotantes y dock arrastrable, perfiles locales con CubeMark, entrada manual de tiempos, importación de datos — y el primer despliegue: PWA en Vercel con SEO y cabeceras COOP/COEP."
+        "en": "Floating widget system with draggable dock, window snapping, and CubeMark local profile generator.",
+        "es": "Sistema de widgets flotantes con dock arrastrable, anclaje de ventanas y generador CubeMark."
       },
       "items": [
         {
           "type": "new",
-          "en": "Floating widget system with a draggable dock.",
-          "es": "Sistema de widgets flotantes con dock arrastrable."
+          "en": "Floating widget architecture with draggable windows and customizable dock mounting.",
+          "es": "Arquitectura de widgets flotantes con ventanas arrastrables y anclaje personalizable al dock."
         },
         {
           "type": "new",
-          "en": "Local profiles with CubeMark, avatar and country.",
-          "es": "Perfiles locales con CubeMark, avatar y país."
-        },
-        {
-          "type": "new",
-          "en": "Manual time entry and solve import (CSV).",
-          "es": "Entrada manual de tiempos e importación de solves (CSV)."
-        },
-        {
-          "type": "improved",
-          "en": "PWA with icons, SEO and COOP/COEP headers — first deploy on Vercel.",
-          "es": "PWA con iconos, SEO y cabeceras COOP/COEP — primer despliegue en Vercel."
+          "en": "Local user profiles with CubeMark SVG identicon generation and country flags.",
+          "es": "Perfiles de usuario locales con identicons SVG CubeMark y banderas de país."
         }
       ],
       "moral": {
@@ -185,142 +833,1026 @@
       }
     },
     {
+      "version": "0.4.1",
+      "startDate": "2026-07-28",
+      "endDate": "2026-07-28",
+      "name": {
+        "en": "Metronome & Scratchpad Notes",
+        "es": "Metrónomo y bloc de notas"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Audio Metronome widget with BPM control for turning pacing drills, and Notes scratchpad widget.",
+        "es": "Widget de Metrónomo de audio con control de BPM para drills de ritmo de giro, y widget de notas."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Audio Metronome widget with configurable BPM for smooth turning pacing drills.",
+          "es": "Widget de Metrónomo de audio con BPM configurable para drills de ritmo de giro fluido."
+        },
+        {
+          "type": "new",
+          "en": "Notes scratchpad widget for session observations, algorithms, and reminders.",
+          "es": "Widget de bloc de notas para observaciones de sesión, algoritmos y recordatorios."
+        }
+      ],
+      "moral": {
+        "en": "Turning to a steady beat transforms chaotic solves into effortless lookahead.",
+        "es": "Girar a un ritmo constante transforma resoluciones caóticas en un lookahead fluido."
+      }
+    },
+    {
+      "version": "0.4.2",
+      "startDate": "2026-07-29",
+      "endDate": "2026-07-29",
+      "name": {
+        "en": "csTimer Manual Entry Parser",
+        "es": "Parser de entrada manual csTimer"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Manual time input parsing csTimer shorthand syntax (e.g. 1450 → 14.50s, 90s, DNF) with batch paste.",
+        "es": "Entrada manual de tiempos con sintaxis csTimer (ej. 1450 → 14.50s, 90s, DNF) y pegado por lotes."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Manual time entry parser supporting csTimer shorthand syntax and bulk solve paste.",
+          "es": "Parser de tiempos manual con sintaxis rápida csTimer y pegado masivo de solves."
+        },
+        {
+          "type": "improved",
+          "en": "Post-solve quick action bar with +2, DNF, and solve note editor pills.",
+          "es": "Barra de acción rápida post-solve con pastillas para alternar +2, DNF y editar notas."
+        }
+      ],
+      "moral": {
+        "en": "Typing a time should feel as effortless as stopping the timer.",
+        "es": "Escribir un tiempo debe ser tan fluido como parar el cronómetro."
+      }
+    },
+    {
+      "version": "0.4.3",
+      "startDate": "2026-07-29",
+      "endDate": "2026-07-29",
+      "name": {
+        "en": "2×2 Cube Mathematical Engine",
+        "es": "Motor matemático de cubo 2×2"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "2×2 cube mathematical state model, 3D rendering architecture, and move application.",
+        "es": "Modelo de estado matemático para cubo 2×2, arquitectura de renderizado 3D y aplicación de giros."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "2×2 cube state representation with permutation and orientation tracking.",
+          "es": "Representación de estado de cubo 2×2 con seguimiento de permutación y orientación."
+        },
+        {
+          "type": "new",
+          "en": "3D visual engine for 2×2 cube with realistic bevels and sticker geometry.",
+          "es": "Motor visual 3D para cubo 2×2 con biselado realista y geometría de stickers."
+        }
+      ],
+      "moral": {
+        "en": "Scaling beyond 3×3 proves the architecture is truly multi-puzzle ready.",
+        "es": "Escalar más allá del 3×3 demuestra que la arquitectura está preparada para múltiples puzzles."
+      }
+    },
+    {
+      "version": "0.4.4",
+      "startDate": "2026-07-30",
+      "endDate": "2026-07-30",
+      "name": {
+        "en": "Layout Organizer & Snap-to-Grid",
+        "es": "Organizador de layouts y ajuste magnético"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Floating Layout Organizer widget with preset saving/loading and snap-to-grid alignment.",
+        "es": "Widget de Organizador de Layouts con guardado/carga de presets y ajuste a cuadrícula."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Floating Layout Organizer widget allowing solvers to save, name and switch custom widget arrangements.",
+          "es": "Widget de Organizador de Layouts que permite guardar, nombrar y alternar configuraciones de widgets."
+        },
+        {
+          "type": "improved",
+          "en": "Snap-to-grid alignment when dragging floating widgets near edges or other panels.",
+          "es": "Ajuste magnético a cuadrícula al arrastrar widgets cerca de bordes u otros paneles."
+        }
+      ],
+      "moral": {
+        "en": "An organized workspace breeds a focused mind.",
+        "es": "Un espacio de trabajo ordenado propicia una mente enfocada."
+      }
+    },
+    {
+      "version": "0.4.5",
+      "startDate": "2026-07-30",
+      "endDate": "2026-07-30",
+      "name": {
+        "en": "2×2 Algorithm Database & Time Histogram",
+        "es": "Base de algoritmos 2×2 e histograma"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "2×2 algorithm database (Ortega, CLL, EG methods) and floating time distribution histogram widget.",
+        "es": "Base de algoritmos 2×2 (métodos Ortega, CLL, EG) e histograma flotante de distribución de tiempos."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "2×2 algorithm database with Ortega, CLL and EG method sets.",
+          "es": "Base de algoritmos 2×2 con los métodos Ortega, CLL y EG."
+        },
+        {
+          "type": "new",
+          "en": "Floating Time Distribution histogram widget with customizable duration binning.",
+          "es": "Widget flotante de histograma de distribución de tiempos con agrupación personalizable por segundos."
+        }
+      ],
+      "moral": {
+        "en": "Visualizing time distribution shows your true consistency beyond a single lucky solve.",
+        "es": "Visualizar la distribución de tiempos muestra tu verdadera consistencia más allá de un solve afortunado."
+      }
+    },
+    {
+      "version": "0.4.6",
+      "startDate": "2026-07-31",
+      "endDate": "2026-07-31",
+      "name": {
+        "en": "PB Progression & BPA/WPA Projections",
+        "es": "Evolución de PB y proyecciones BPA/WPA"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Step-line PB progression chart, Best/Worst Possible Average (BPA/WPA) projections in active average.",
+        "es": "Gráfica escalonada de evolución de PB y proyecciones de Mejor/Peor Media Posible (BPA/WPA)."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "PB Progression step-chart charting historical personal best milestones over time.",
+          "es": "Gráfico escalonado de evolución de PB trazando los hitos históricos a lo largo del tiempo."
+        },
+        {
+          "type": "new",
+          "en": "Best Possible Average (BPA) and Worst Possible Average (WPA) live countdown calculations during an active Ao5.",
+          "es": "Cálculo en vivo de Mejor Media Posible (BPA) y Peor Media Posible (WPA) durante un Ao5 activo."
+        }
+      ],
+      "moral": {
+        "en": "Knowing the exact time you need to beat your average turns pressure into laser focus.",
+        "es": "Saber el tiempo exacto que necesitas para batir tu media convierte la presión en concentración máxima."
+      }
+    },
+    {
+      "version": "0.4.7",
+      "startDate": "2026-08-01",
+      "endDate": "2026-08-01",
+      "name": {
+        "en": "Skill Node Detail & Custom Algorithm Editor",
+        "es": "Detalle de skill y editor de algoritmos"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Interactive Skill Node modal, direct drill launch button, and user custom algorithm editor.",
+        "es": "Modal interactivo de nodo de habilidad, botón directo de práctica y editor de algoritmos de usuario."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "SkillNodeModal displaying mastery criteria, practice tips, linked prerequisites, and direct drill launcher.",
+          "es": "SkillNodeModal con criterios de maestría, consejos de práctica, prerrequisitos y lanzador directo de drills."
+        },
+        {
+          "type": "new",
+          "en": "AlgorithmEditorDialog allowing solvers to input and save their own preferred custom algorithms.",
+          "es": "AlgorithmEditorDialog que permite a los cuberos registrar y guardar sus propios algoritmos favoritos."
+        }
+      ],
+      "moral": {
+        "en": "The best algorithm is the one that flows naturally in your hands.",
+        "es": "El mejor algoritmo es aquel que fluye de forma natural en tus manos."
+      }
+    },
+    {
+      "version": "0.4.8",
+      "startDate": "2026-08-02",
+      "endDate": "2026-08-02",
+      "name": {
+        "en": "PWA Deployment & COOP/COEP Headers",
+        "es": "Despliegue PWA y cabeceras COOP/COEP"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Progressive Web App (PWA) manifest, service worker offline caching, and cross-origin isolation headers.",
+        "es": "Manifiesto PWA, caché offline con service worker y cabeceras de aislamiento de origen cruzado."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "PWA offline support with service worker asset caching and install prompts.",
+          "es": "Soporte offline PWA con caché de assets en service worker y aviso de instalación."
+        },
+        {
+          "type": "fixed",
+          "en": "Configured COOP and COEP cross-origin isolation headers for high-resolution SharedArrayBuffer timers.",
+          "es": "Configuración de cabeceras COOP y COEP para temporizadores de alta resolución con SharedArrayBuffer."
+        }
+      ],
+      "moral": {
+        "en": "A web app that works offline in airplane mode is indistinguishable from native magic.",
+        "es": "Una app web que funciona sin conexión en modo avión es indistinguible de la magia nativa."
+      }
+    },
+    {
+      "version": "0.4.9",
+      "startDate": "2026-08-03",
+      "endDate": "2026-08-03",
+      "name": {
+        "en": "Manual Focus Mode & Confirmation Dialogs",
+        "es": "Modo foco manual y diálogos de borrado"
+      },
+      "period": {
+        "en": "Jul 2026",
+        "es": "jul 2026"
+      },
+      "summary": {
+        "en": "Focus mode hiding distracting UI elements during timing, and safety confirmation dialogs before solve deletion.",
+        "es": "Modo foco que oculta elementos distractores al cronometrar y diálogos de confirmación de borrado."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Manual focus mode dimming secondary panels to maximize attention on the timer.",
+          "es": "Modo foco manual que atenúa paneles secundarios para maximizar la atención en el cronómetro."
+        },
+        {
+          "type": "improved",
+          "en": "Destructive solve deletion protected by modal confirmation to prevent accidental loss.",
+          "es": "Borrado destructivo de solves protegido por modal de confirmación para evitar pérdidas accidentales."
+        }
+      ],
+      "moral": {
+        "en": "Eliminating distractions is half the battle when preparing for competition.",
+        "es": "Eliminar distracciones es la mitad de la batalla al prepararse para una competición."
+      }
+    },
+    {
       "version": "0.5.0",
       "startDate": "2026-08-04",
-      "endDate": "2026-08-10",
+      "endDate": "2026-08-05",
       "name": {
-        "en": "Two Languages",
-        "es": "Dos idiomas"
+        "en": "Typed i18n Foundation & Bilingual Support",
+        "es": "Infraestructura i18n tipada y bilingüe"
       },
       "period": {
         "en": "Aug 2026",
         "es": "ago 2026"
       },
       "summary": {
-        "en": "Typed i18n (en/es) across the whole app, a grown algorithm database (COLL/WV, BirdF2L, X-cross), a professional solve-analysis panel, and a much faster first load via lazy chunks.",
-        "es": "i18n tipado (en/es) en toda la app, una base de algoritmos ampliada (COLL/WV, BirdF2L, X-cross), un panel profesional de análisis de solves y una carga inicial mucho más rápida gracias a los chunks lazy."
+        "en": "Full bilingual infrastructure (Spanish and English) with strictly typed translation keys.",
+        "es": "Infraestructura bilingüe completa (español e inglés) con claves de traducción estrictamente tipadas."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Typed internationalization (i18n) foundation with Spanish and English translations.",
+          "es": "Infraestructura de internacionalización tipada (i18n) con soporte completo para español e inglés."
+        },
+        {
+          "type": "improved",
+          "en": "Dynamic language switcher updating all active panels, timers and tooltips instantly.",
+          "es": "Selector dinámico de idioma que actualiza todos los paneles, timers y tooltips al instante."
+        }
+      ],
+      "moral": {
+        "en": "Speaking every cuber's language unites the global speedcubing community.",
+        "es": "Hablar el idioma de cada cubero une a la comunidad global de speedcubing."
+      }
+    },
+    {
+      "version": "0.5.1",
+      "startDate": "2026-08-05",
+      "endDate": "2026-08-05",
+      "name": {
+        "en": "Configurable Precision & Timer Preferences",
+        "es": "Precisión configurable y preferencias"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Decimal precision toggle (0.00 vs 0.000), spacebar start controls, and inspection audio callouts.",
+        "es": "Selector de precisión decimal (0.00 vs 0.000), control de inicio por espacio y avisos de audio."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Configurable decimal display precision (2 decimal places 0.00 vs 3 decimal places 0.000).",
+          "es": "Precisión decimal configurable (2 decimales 0.00 vs 3 decimales 0.000)."
+        },
+        {
+          "type": "improved",
+          "en": "Timer start key configuration (Spacebar, Any Key, or Touch Only).",
+          "es": "Configuración de tecla de inicio del cronómetro (Espacio, Cualquier tecla o Solo táctil)."
+        }
+      ],
+      "moral": {
+        "en": "Control over precision gives solvers the exact data format they prefer.",
+        "es": "El control sobre la precisión da al cubero el formato exacto de datos que prefiere."
+      }
+    },
+    {
+      "version": "0.5.2",
+      "startDate": "2026-08-06",
+      "endDate": "2026-08-06",
+      "name": {
+        "en": "SCDB Seed Merge & COLL/WV Algorithms",
+        "es": "Integración SCDB y algoritmos COLL/WV"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Merged algorithm database from SpeedSolving and SCDB including COLL and Winter Variation sets.",
+        "es": "Fusión de bases de algoritmos de SpeedSolving y SCDB incluyendo sets de COLL y Winter Variation."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Merged SpeedSolving and SCDB algorithm databases with COLL and Winter Variation (WV) sets.",
+          "es": "Base de algoritmos unificada con datos de SpeedSolving y SCDB incluyendo COLL y Winter Variation (WV)."
+        },
+        {
+          "type": "improved",
+          "en": "Deduplicated algorithm triggers showing community popularity rankings.",
+          "es": "Triggers de algoritmos deduplicados con ranking de popularidad en la comunidad."
+        }
+      ],
+      "moral": {
+        "en": "Merging curated community databases gives solvers access to the world's best algorithms.",
+        "es": "Fusionar bases de datos comunitarias da a los cuberos acceso a los mejores algoritmos del mundo."
+      }
+    },
+    {
+      "version": "0.5.3",
+      "startDate": "2026-08-06",
+      "endDate": "2026-08-06",
+      "name": {
+        "en": "BirdF2L Advanced Notation Codes",
+        "es": "Códigos de notación avanzada BirdF2L"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "BirdF2L short notation codes on basic and advanced F2L cases with slot view rotation.",
+        "es": "Códigos de notación corta BirdF2L en casos básicos y avanzados con rotación de slot."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "BirdF2L notation code system integrated across all F2L case recognition cards.",
+          "es": "Sistema de códigos de notación BirdF2L integrado en todas las tarjetas de casos F2L."
+        },
+        {
+          "type": "improved",
+          "en": "Rotatable slot perspective view for inspecting F2L cases from any angle.",
+          "es": "Vista de perspectiva de slot rotatoria para inspeccionar casos F2L desde cualquier ángulo."
+        }
+      ],
+      "moral": {
+        "en": "Standardized notation codes turn complex slot patterns into concise memory triggers.",
+        "es": "Los códigos de notación estandarizados convierten patrones complejos en disparadores de memoria concisos."
+      }
+    },
+    {
+      "version": "0.5.4",
+      "startDate": "2026-08-07",
+      "endDate": "2026-08-07",
+      "name": {
+        "en": "Automated Case Verification Pipeline",
+        "es": "Pipeline de verificación de casos"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Automated test suite verifying mathematical correctness for every algorithm and inverse scramble.",
+        "es": "Suite de tests automatizada que verifica la exactitud matemática de cada algoritmo e inversa."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Automated algorithm verification verifying 100% of cases solve into expected states.",
+          "es": "Verificación automatizada de algoritmos que comprueba que el 100% de casos resuelve al estado esperado."
+        },
+        {
+          "type": "fixed",
+          "en": "Corrected inverse scramble setups for complex OLL dot cases and F2L awkward insertions.",
+          "es": "Corrección de configuraciones de mezclas inversas para casos de punto de OLL e inserciones complejas de F2L."
+        }
+      ],
+      "moral": {
+        "en": "A verified algorithm database guarantees your practice builds real muscle memory.",
+        "es": "Una base de algoritmos verificada garantiza que tu práctica construya memoria muscular real."
+      }
+    },
+    {
+      "version": "0.5.5",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-08",
+      "name": {
+        "en": "Solve Re-analysis Pipeline",
+        "es": "Pipeline de reanálisis de solves"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Solve re-analysis button re-running updated CFOP detection on past solves without loss of data.",
+        "es": "Botón de reanálisis de solves que reejecuta la detección CFOP actualizada en solves pasados sin perder datos."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Solve re-analysis engine re-evaluating historical solves against latest algorithm recognition rules.",
+          "es": "Motor de reanálisis que reevalúa solves históricos con las últimas reglas de reconocimiento de algoritmos."
+        },
+        {
+          "type": "improved",
+          "en": "Non-destructive metadata updates preserving original solve timestamps and raw moves.",
+          "es": "Actualizaciones de metadatos no destructivas que preservan las marcas de tiempo y movimientos originales."
+        }
+      ],
+      "moral": {
+        "en": "As detection intelligence grows, your past solves gain deeper insights.",
+        "es": "A medida que la inteligencia de detección crece, tus solves pasados ganan análisis más profundos."
+      }
+    },
+    {
+      "version": "0.5.6",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-08",
+      "name": {
+        "en": "Replay Move Grip Smooth Timeline",
+        "es": "Cronología de replay y transiciones de agarre"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Smooth grip hand position transitions in 3D replay timeline preventing visual jitter.",
+        "es": "Transiciones suaves de posición de agarre en la cronología de replay 3D evitando saltos visuales."
       },
       "items": [
         {
           "type": "improved",
-          "en": "The whole app in Spanish and English with typed i18n.",
-          "es": "Toda la app en español e inglés con i18n tipado."
+          "en": "Smooth hand grip transition interpolation during 3D replay layer rotations.",
+          "es": "Interpolación suave de agarre de mano durante las rotaciones de capa en replay 3D."
         },
         {
-          "type": "new",
-          "en": "Algorithm database growth: COLL/WV, BirdF2L and X-cross.",
-          "es": "Base de algoritmos ampliada: COLL/WV, BirdF2L y X-cross."
-        },
-        {
-          "type": "improved",
-          "en": "A professional solve-analysis panel.",
-          "es": "Panel de análisis de solves profesional."
-        },
-        {
-          "type": "improved",
-          "en": "First load ~40% lighter (lazy chunks).",
-          "es": "Carga inicial ~40% más ligera (chunks lazy)."
-        },
-        {
-          "type": "new",
-          "en": "CSP headers, desktop app and enforced commit convention.",
-          "es": "CSP, app de escritorio y convención de commits obligatoria."
+          "type": "fixed",
+          "en": "Eliminated rotation jumping artifacts during consecutive slice and wide move executions.",
+          "es": "Eliminados los saltos de rotación durante ejecuciones consecutivas de movimientos de slice y anchos."
         }
       ],
       "moral": {
-        "en": "Translating the app forced us to name things properly: the code understood first, the users after.",
-        "es": "Traducir la app nos obligó a nombrar bien las cosas: el código entendió primero, los usuarios después."
+        "en": "Smooth motion in replay reflects the natural fluidity of speedcubing hands.",
+        "es": "El movimiento fluido en el replay refleja la naturalidad de las manos al resolver."
+      }
+    },
+    {
+      "version": "0.5.7",
+      "startDate": "2026-08-09",
+      "endDate": "2026-08-09",
+      "name": {
+        "en": "Color-Neutral Scrambler & Standard Deviation",
+        "es": "Mezclador color-neutral y desviación estándar"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Color-neutral scramble orientation remapping, standard deviation (σ) session calculations, and filter pills.",
+        "es": "Reorientación de mezcla color-neutral, cálculo de desviación estándar (σ) de sesión y filtros."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Color-neutral scramble orientation remapping to practice from any user-defined top/front color.",
+          "es": "Reorientación de mezcla color-neutral para entrenar desde cualquier combinación de color superior/frontal."
+        },
+        {
+          "type": "new",
+          "en": "Standard deviation (σ) calculation in session statistics measuring consistency.",
+          "es": "Cálculo de desviación estándar (σ) en las estadísticas de sesión para medir la regularidad."
+        }
+      ],
+      "moral": {
+        "en": "A lower standard deviation is the hallmark of a truly mature speedcuber.",
+        "es": "Una menor desviación estándar es el sello distintivo de un speedcuber maduro."
+      }
+    },
+    {
+      "version": "0.5.8",
+      "startDate": "2026-08-10",
+      "endDate": "2026-08-10",
+      "name": {
+        "en": "Algorithm Creator Credits Attribution",
+        "es": "Atribución de créditos a creadores"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Algorithm author attribution metadata honoring speedcubing community creators and developers.",
+        "es": "Metadatos de atribución de autores honrando a los creadores y desarrolladores de la comunidad."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Algorithm attribution metadata honoring creator credits (SpeedSolving Wiki, SCDB, community inventors).",
+          "es": "Metadatos de atribución de algoritmos honrando a sus inventores (SpeedSolving Wiki, SCDB, comunidad)."
+        },
+        {
+          "type": "new",
+          "en": "Community credits section in settings acknowledging open-source speedcubing libraries.",
+          "es": "Sección de créditos comunitarios en ajustes reconociendo librerías de código abierto."
+        }
+      ],
+      "moral": {
+        "en": "Crediting algorithm creators honors the community that built speedcubing.",
+        "es": "Dar crédito a los creadores de algoritmos honra a la comunidad que construyó el speedcubing."
+      }
+    },
+    {
+      "version": "0.5.9",
+      "startDate": "2026-08-10",
+      "endDate": "2026-08-10",
+      "name": {
+        "en": "Complete Typed Translation Sweep",
+        "es": "Barrido completo de traducción tipada"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Full translation sweep converting all navigation, dialogs, charts and training text to typed i18n.",
+        "es": "Barrido de traducción completo migrando navegación, diálogos, gráficos y textos de training a i18n tipado."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "100% typed translation coverage across all 16 views, modals and floating widgets.",
+          "es": "100% de cobertura de traducción tipada en las 16 vistas, modales y widgets flotantes."
+        },
+        {
+          "type": "improved",
+          "en": "Optimized translation bundle chunking reducing initial JavaScript load time.",
+          "es": "División optimizada de bundles de traducción reduciendo el tiempo de carga inicial."
+        }
+      ],
+      "moral": {
+        "en": "Every label translated accurately makes the platform feel native to every user.",
+        "es": "Cada etiqueta traducida con precisión hace que la plataforma se sienta nativa para cada usuario."
       }
     },
     {
       "version": "0.6.0",
       "startDate": "2026-08-11",
-      "endDate": "2026-08-17",
+      "endDate": "2026-08-11",
       "name": {
-        "en": "The Studio",
-        "es": "El estudio"
+        "en": "Virtual Cube Simulator csTimer Style",
+        "es": "Simulador de cubo virtual estilo csTimer"
       },
       "period": {
         "en": "Aug 2026",
         "es": "ago 2026"
       },
       "summary": {
-        "en": "The room becomes a studio: WCA-compliant 2×2 scrambles, cube turn sounds, a trackball orbit camera, tablet layout, background images — and the docs program (Fases 1–9) with AGENTS.md.",
-        "es": "La sala se convierte en estudio: scrambles 2×2 conforme a la WCA, sonidos de giro, cámara orbital tipo trackball, diseño para tablet, imágenes de fondo — y el programa de documentación (Fases 1–9) con AGENTS.md."
+        "en": "csTimer-style virtual cube simulator with full QWERTY keyboard controls and touch gestures.",
+        "es": "Simulador de cubo virtual estilo csTimer con controles completos de teclado QWERTY y gestos táctiles."
       },
       "items": [
         {
           "type": "new",
-          "en": "WCA-compliant 2×2 scrambles and the WCA event registry.",
-          "es": "Scrambles 2×2 conforme a la WCA y registro de eventos."
+          "en": "Virtual Cube Simulator with full QWERTY keyboard controls (face, slice, wide turns and rotations) and touch gestures.",
+          "es": "Simulador de Cubo Virtual con control por teclado QWERTY completo (giros de cara, slice, anchos y rotaciones) y gestos táctiles."
         },
         {
           "type": "new",
-          "en": "Cube turn sounds with Web Audio.",
-          "es": "Sonidos de giro del cubo con Web Audio."
-        },
-        {
-          "type": "fixed",
-          "en": "Trackball orbit camera and improved gyro fusion.",
-          "es": "Cámara orbital tipo trackball y fusión giroscópica mejorada."
-        },
-        {
-          "type": "improved",
-          "en": "Tablet layout, configurable top bar and layout templates.",
-          "es": "Diseño para tablet, barra superior configurable y plantillas de layout."
-        },
-        {
-          "type": "improved",
-          "en": "Full documentation (Fases 1–9) and AGENTS.md.",
-          "es": "Documentación completa (Fases 1–9) y AGENTS.md."
+          "en": "Cube Help Overlay with on-screen interactive keyboard map and configurable turn speeds (slow, normal, fast, instant).",
+          "es": "Overlay de ayuda del cubo con mapa de teclado interactivo en pantalla y velocidades de giro configurables."
         }
       ],
       "moral": {
-        "en": "When a rotation goes wrong, it is almost never the rotation: it is the axis.",
-        "es": "Cuando un giro sale mal, casi nunca es culpa del giro: es del eje."
+        "en": "A virtual cube in your browser means you can practice anywhere, keyboard or touch.",
+        "es": "Un cubo virtual en tu navegador te permite practicar donde sea, con teclado o pantalla táctil."
+      }
+    },
+    {
+      "version": "0.6.1",
+      "startDate": "2026-08-11",
+      "endDate": "2026-08-11",
+      "name": {
+        "en": "Web Audio Mechanical Turn Sounds",
+        "es": "Sonidos mecánicos Web Audio"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Realistic mechanical cube turning sounds synthesized directly in Web Audio without external audio files.",
+        "es": "Sonidos mecánicos realistas de giro del cubo sintetizados con Web Audio sin archivos externos."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Mechanical cube turn sound synthesis with randomized micro-variations using Web Audio API.",
+          "es": "Síntesis de sonido de giro mecánico con micro-variaciones aleatorias mediante Web Audio API."
+        },
+        {
+          "type": "improved",
+          "en": "Specialized training suites: EO Detect, EO Efficiency, LSE Sub-Phase, and Blindfold Practice.",
+          "es": "Suites de entrenamiento especializadas: EO Detect, EO Efficiency, LSE Sub-Phase y Blindfold Practice."
+        }
+      ],
+      "moral": {
+        "en": "Audio feedback gives virtual cube turns the satisfying tactile feel of physical plastic.",
+        "es": "El feedback sonoro da a los giros virtuales el tacto satisfactorio del plástico físico."
+      }
+    },
+    {
+      "version": "0.6.2",
+      "startDate": "2026-08-12",
+      "endDate": "2026-08-12",
+      "name": {
+        "en": "Modular Dock Pieces Architecture",
+        "es": "Arquitectura de piezas modulares del dock"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Modular Dock pieces architecture (Live Clock, Smart Cube Battery pill, Profile, Spacers and Separators).",
+        "es": "Arquitectura de piezas modulares del dock (reloj en vivo, pastilla de batería, perfil, espaciadores y separadores)."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Modular dock pieces architecture decoupling tray controls into reusable draggable pieces.",
+          "es": "Arquitectura de piezas modulares del dock desacoplando controles en piezas reutilizables."
+        },
+        {
+          "type": "new",
+          "en": "Live Clock and Smart Cube Battery charge indicator dock pieces.",
+          "es": "Piezas de dock para reloj en tiempo real e indicador de carga de batería de smart cube."
+        }
+      ],
+      "moral": {
+        "en": "A modular dock adapts to every speedcuber's unique workflow.",
+        "es": "Un dock modular se adapta al flujo de trabajo único de cada speedcuber."
+      }
+    },
+    {
+      "version": "0.6.3",
+      "startDate": "2026-08-12",
+      "endDate": "2026-08-12",
+      "name": {
+        "en": "DockExplorer Catalog & Virtual Solve Tag",
+        "es": "Catálogo DockExplorer y tag virtual"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "DockExplorer catalog modal for adding pieces, and automatic 'virtual' solve tagging feeding the analysis pipeline.",
+        "es": "Modal de catálogo DockExplorer para añadir piezas y etiquetado automático 'virtual' para análisis."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "DockExplorer catalog modal for discovering and adding pieces to the dock bar.",
+          "es": "Modal de catálogo DockExplorer para descubrir y añadir nuevas piezas a la barra del dock."
+        },
+        {
+          "type": "new",
+          "en": "Virtual solve logging tagged 'virtual' feeding full move and orientation timelines into CFOP analysis.",
+          "es": "Registro de solves virtuales etiquetados 'virtual' alimentando cronología completa al análisis CFOP."
+        }
+      ],
+      "moral": {
+        "en": "Virtual solves deserve the exact same deep analysis as Bluetooth smart cubes.",
+        "es": "Los solves virtuales merecen el mismo análisis profundo que los cubos inteligentes Bluetooth."
+      }
+    },
+    {
+      "version": "0.6.4",
+      "startDate": "2026-08-13",
+      "endDate": "2026-08-13",
+      "name": {
+        "en": "Dock Edit Mode & Removal Badges",
+        "es": "Modo edición del dock e insignias de borrado"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Dock edit mode with direct removal badges (X), drag-and-drop reordering, and kept mounted widgets.",
+        "es": "Modo edición del dock con botones de borrado directo (X), reordenación por arrastre y widgets montados."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Dock edit mode with drag-and-drop piece reordering and direct removal badges (X).",
+          "es": "Modo de edición del dock con reordenación de piezas por arrastre y botones de eliminación directa (X)."
+        },
+        {
+          "type": "improved",
+          "en": "Maintained widget instances mounted and preserved across dock collapse and expands.",
+          "es": "Mantenimiento de instancias de widgets montadas y preservadas al colapsar y expandir el dock."
+        }
+      ],
+      "moral": {
+        "en": "Editing your workspace should be as quick as snapping a corner.",
+        "es": "Editar tu espacio de trabajo debe ser tan rápido como encajar una esquina."
+      }
+    },
+    {
+      "version": "0.6.5",
+      "startDate": "2026-08-13",
+      "endDate": "2026-08-13",
+      "name": {
+        "en": "Modular Bottom Layout Templates",
+        "es": "Plantillas modulares de layout inferior"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Modular bottom layout templates: compact stats, 3-column view, split charts and 2D scramble preview.",
+        "es": "Plantillas modulares de layout inferior: estadísticas compactas, vista a 3 columnas, gráficos divididos y red 2D."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Modular bottom layout templates: compact stats, 3-column view, split charts and 2D scramble preview.",
+          "es": "Plantillas modulares de layout inferior: estadísticas compactas, vista a 3 columnas, gráficos divididos y red 2D."
+        },
+        {
+          "type": "improved",
+          "en": "Persistent bottom layout preferences across app sessions.",
+          "es": "Persistencia de preferencias de layout inferior entre sesiones de la app."
+        }
+      ],
+      "moral": {
+        "en": "Layout flexibility lets you see the data you need without clutter.",
+        "es": "La flexibilidad de diseño te permite ver los datos que necesitas sin saturar."
+      }
+    },
+    {
+      "version": "0.6.6",
+      "startDate": "2026-08-14",
+      "endDate": "2026-08-14",
+      "name": {
+        "en": "Dock Auto-Hide Tri-State Top Bar",
+        "es": "Auto-hide del dock y barra tri-estado"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Tri-state top bar control (Always/Hidden/Auto-hide on timer), and drag-to-reveal dock drop zone.",
+        "es": "Control tri-estado del dock (Siempre/Oculto/Auto-hide al resolver) y revelado por arrastre."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Tri-state top bar control: Always visible, Hidden, or Auto-hide dock when starting the timer.",
+          "es": "Control tri-estado de barra superior: Siempre visible, Oculta, o Auto-hide al iniciar el cronómetro."
+        },
+        {
+          "type": "improved",
+          "en": "Drag-to-reveal dock: dragging a floating widget upwards towards the retracted dock smoothly reveals the drop zone.",
+          "es": "Revelado por arrastre: arrastrar un widget hacia el dock retraído despliega suavemente la zona de anclaje."
+        }
+      ],
+      "moral": {
+        "en": "A dock that disappears when you solve keeps your visual field completely clean.",
+        "es": "Un dock que desaparece al resolver mantiene tu campo visual completamente limpio."
+      }
+    },
+    {
+      "version": "0.6.7",
+      "startDate": "2026-08-14",
+      "endDate": "2026-08-14",
+      "name": {
+        "en": "Trackball Orbit Camera & Tablet Layout",
+        "es": "Cámara trackball y layout para tablet"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Trackball orbit camera with continuous pole rotation, and 768px tablet responsive layout.",
+        "es": "Cámara orbital trackball con rotación continua sobre polos y diseño responsive para tablet a 768px."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "Trackball orbit camera allowing continuous rotation over the poles without gimbal lock.",
+          "es": "Cámara orbital trackball con rotación continua sobre los polos sin bloqueo de cardán."
+        },
+        {
+          "type": "improved",
+          "en": "Tablet responsive layout with height-aware clamp scaling (vw & vh) to prevent viewport clipping.",
+          "es": "Diseño para tablet con escalado tipográfico bidimensional (vw y vh) para evitar desbordamientos."
+        }
+      ],
+      "moral": {
+        "en": "Smooth camera rotation makes 3D inspection intuitive from any vantage point.",
+        "es": "La rotación de cámara suave hace que la inspección 3D sea intuitiva desde cualquier ángulo."
+      }
+    },
+    {
+      "version": "0.6.8",
+      "startDate": "2026-08-15",
+      "endDate": "2026-08-15",
+      "name": {
+        "en": "WCA Event Registry & Solid UI Surfaces",
+        "es": "Registro de eventos WCA y superficies sólidas"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "WCA official event registry, and solid UI surface redesign eliminating liquid glass halos.",
+        "es": "Registro oficial de eventos WCA y rediseño de superficies sólidas eliminando halos de cristal líquido."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "WCA event registry architecture standardizing puzzle categories and scramble formats.",
+          "es": "Arquitectura de registro de eventos WCA estandarizando categorías de puzzles y formatos de mezcla."
+        },
+        {
+          "type": "improved",
+          "en": "Solid UI styling refactor removing liquid glass for crisp surface styling and background image halo suppression.",
+          "es": "Refactor de estilos UI sólidos sin brillos de cristal líquido y supresión de halos sobre fondos personalizados."
+        }
+      ],
+      "moral": {
+        "en": "Crisp solid surfaces let your cube colors shine without visual distraction.",
+        "es": "Superficies sólidas y nítidas permiten que los colores del cubo brillen sin distracciones visuales."
+      }
+    },
+    {
+      "version": "0.6.9",
+      "startDate": "2026-08-16",
+      "endDate": "2026-08-17",
+      "name": {
+        "en": "2×2 Virtual Cube & iOS Ghost Click Filter",
+        "es": "Cubo virtual 2×2 y filtro anticlic iOS"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "2×2 virtual cube simulator driven by dock puzzle selector, iOS ghost-click filter, and pointercancel handling.",
+        "es": "Simulador virtual de 2×2 desde el selector del dock, filtro anticlic en iOS y soporte pointercancel."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "2×2 Virtual Cube simulator driven directly by the dock puzzle selector with full QWERTY keyboard controls.",
+          "es": "Simulador de Cubo Virtual 2×2 controlado desde el selector del dock con atajos de teclado QWERTY completos."
+        },
+        {
+          "type": "fixed",
+          "en": "Ghost click suppression on iOS/iPad preventing accidental 0.20s timer stops after hold-and-release.",
+          "es": "Supresión de clics fantasma en iOS/iPad evitando paradas accidentales a los 0.20s tras soltar el cronómetro."
+        },
+        {
+          "type": "fixed",
+          "en": "Handled pointercancel alongside pointerup so system gestures never trap the timer in ready state.",
+          "es": "Manejo de pointercancel junto a pointerup para evitar que gestos del sistema dejen el cronómetro bloqueado en ready."
+        }
+      ],
+      "moral": {
+        "en": "Touch screens speak a different dialect than keyboards; listening to both makes the timer unbreakable.",
+        "es": "Las pantallas táctiles hablan un dialecto distinto al teclado; escuchar a ambos hace invencible al cronómetro."
       }
     },
     {
       "version": "0.7.0",
       "startDate": "2026-08-18",
-      "endDate": "2026-08-24",
+      "endDate": "2026-08-18",
       "name": {
-        "en": "The Cloud",
-        "es": "La nube"
+        "en": "Supabase User Accounts & Authentication",
+        "es": "Cuentas de usuario y auth Supabase"
       },
       "period": {
         "en": "Aug 2026",
         "es": "ago 2026"
       },
       "summary": {
-        "en": "Accounts and offline-first cloud sync (Supabase), resilient storage with a dedicated OPFS worker, on-device crash diagnostics and the redesigned Training dashboard. The web package version was set to 0.8.0 here (cc813171) — the first explicit app-version marker.",
-        "es": "Cuentas y sincronización en la nube offline-first (Supabase), almacenamiento resiliente con worker OPFS dedicado, diagnóstico de caídas en el dispositivo y el rediseño del dashboard de Training. Aquí se fijó el versionado del paquete web en 0.8.0 (cc813171): el primer marcador de versión explícito."
+        "en": "User account system powered by Supabase with secure authentication and cloud profiles.",
+        "es": "Sistema de cuentas de usuario con Supabase, autenticación segura y perfiles en la nube."
       },
       "items": [
         {
           "type": "new",
-          "en": "Accounts with sign-in and offline-first cloud sync.",
-          "es": "Cuentas con inicio de sesión y sync en la nube offline-first."
-        },
-        {
-          "type": "fixed",
-          "en": "Resilient storage: OPFS with a dedicated worker.",
-          "es": "Almacenamiento resiliente: OPFS con worker dedicado."
+          "en": "User authentication with sign-in, sign-up and session management via Supabase.",
+          "es": "Autenticación de usuarios con inicio de sesión, registro y gestión de sesiones mediante Supabase."
         },
         {
           "type": "new",
-          "en": "On-device crash screen and log viewer.",
-          "es": "Pantalla de error y visor de logs en el dispositivo."
+          "en": "Cloud profile synchronization linking PBs and settings across multiple devices.",
+          "es": "Sincronización de perfiles en la nube enlazando récords personales y ajustes entre dispositivos."
+        }
+      ],
+      "moral": {
+        "en": "Your solves should follow you everywhere you go, securely and automatically.",
+        "es": "Tus solves deben acompañarte a donde vayas, de forma segura y automática."
+      }
+    },
+    {
+      "version": "0.7.1",
+      "startDate": "2026-08-19",
+      "endDate": "2026-08-19",
+      "name": {
+        "en": "Offline-First Cloud Sync Service",
+        "es": "Servicio de sync offline-first"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Offline-first sync service queuing local solves and backing them up seamlessly when connectivity returns.",
+        "es": "Servicio de sincronización offline-first que encola solves locales y los respalda al recuperar conexión."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Offline-first synchronization queuing mutations locally and syncing in the background.",
+          "es": "Sincronización offline-first que encola mutaciones localmente y sincroniza en segundo plano."
         },
         {
           "type": "improved",
-          "en": "Training dashboard redesigned and responsive profile.",
-          "es": "Dashboard de Training rediseñado y perfil responsive."
-        },
-        {
-          "type": "improved",
-          "en": "Solve multi-select with bulk move/delete.",
-          "es": "Selección múltiple de solves con mover/borrar en bloque."
+          "en": "Conflict-resolution algorithm ensuring local PBs and new solves are never overwritten.",
+          "es": "Algoritmo de resolución de conflictos que garantiza que nunca se sobrescriban PBs o nuevos solves."
         }
       ],
       "moral": {
@@ -329,104 +1861,693 @@
       }
     },
     {
-      "version": "0.8.0",
-      "startDate": "2026-08-25",
-      "endDate": "2026-08-31",
+      "version": "0.7.2",
+      "startDate": "2026-08-20",
+      "endDate": "2026-08-20",
       "name": {
-        "en": "Case Intelligence",
-        "es": "Inteligencia de casos"
+        "en": "OPFS Storage Worker & Fallbacks",
+        "es": "Worker de almacenamiento OPFS y fallbacks"
       },
       "period": {
         "en": "Aug 2026",
         "es": "ago 2026"
       },
       "summary": {
-        "en": "One detection engine across smart cube, virtual cube and reconstructions: a professional pause model, 100% colour-neutral F2L/OLL/PLL recognition, mini case cubes and theater replay.",
-        "es": "Un único motor de detección para smart cube, cubo virtual y reconstrucciones: modelo profesional de pausas, reconocimiento F2L/OLL/PLL 100% independiente del color, mini-cubos de caso y replay de cine."
+        "en": "Dedicated Web Worker for Origin Private File System (OPFS) with resilient localStorage fallbacks.",
+        "es": "Web Worker dedicado para Origin Private File System (OPFS) con fallbacks resilientes en localStorage."
       },
       "items": [
         {
           "type": "new",
-          "en": "Unified CFOP case analysis (smart cube, virtual, reconstructions).",
-          "es": "Análisis de casos CFOP unificado (smart cube, virtual y reconstrucciones)."
-        },
-        {
-          "type": "new",
-          "en": "Professional pause model: recognition vs. execution.",
-          "es": "Modelo profesional de pausas: reconocimiento vs. ejecución."
-        },
-        {
-          "type": "fixed",
-          "en": "F2L/OLL/PLL recognition that is 100% colour-neutral.",
-          "es": "Reconocimiento F2L/OLL/PLL 100% independiente del color."
-        },
-        {
-          "type": "new",
-          "en": "Mini 3D case cubes with the solve's real colours.",
-          "es": "Mini-cubos 3D con los colores reales del solve."
-        },
-        {
-          "type": "new",
-          "en": "Theater replay: fullscreen, touch gestures and floating stickers.",
-          "es": "Replay de cine: pantalla completa, gestos táctiles y stickers flotantes."
+          "en": "Origin Private File System (OPFS) dedicated worker for ultra-fast SQLite persistence.",
+          "es": "Worker dedicado de Origin Private File System (OPFS) para persistencia SQLite ultrarrápida."
         },
         {
           "type": "improved",
-          "en": "Customizable random-puzzle roulette.",
-          "es": "Ruleta de puzzles aleatorios personalizable."
+          "en": "Tiered storage fallback ensuring zero data loss if browser OPFS permissions are restricted.",
+          "es": "Niveles de almacenamiento de reserva que garantizan cero pérdida de datos ante restricciones de OPFS."
         }
       ],
       "moral": {
-        "en": "Recognising the case is half the time; the other half is convincing the camera you did.",
-        "es": "Reconocer el caso es la mitad del tiempo; la otra mitad es convencer a la cámara de que lo hiciste."
+        "en": "Resilient storage means your data survives browser restarts, clear cache, and OS updates.",
+        "es": "El almacenamiento resiliente significa que tus datos sobreviven reinicios del navegador y limpiezas de caché."
+      }
+    },
+    {
+      "version": "0.7.3",
+      "startDate": "2026-08-21",
+      "endDate": "2026-08-21",
+      "name": {
+        "en": "Crash Diagnostics & Settings SHA Footer",
+        "es": "Diagnósticos de caídas y pie SHA en ajustes"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "On-device crash diagnostics screen, log viewer, and Settings footer showing active app version and commit SHA.",
+        "es": "Pantalla de diagnóstico de caídas, visor de logs y pie en Ajustes con versión activa y commit SHA."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "On-device crash screen and diagnostic log viewer for instant issue troubleshooting.",
+          "es": "Pantalla de error en dispositivo y visor de logs para resolución instantánea de problemas."
+        },
+        {
+          "type": "new",
+          "en": "Settings footer displaying active app version and build commit SHA.",
+          "es": "Pie de página en Ajustes que muestra la versión activa de la app y el commit SHA de la compilación."
+        }
+      ],
+      "moral": {
+        "en": "When something crashes, diagnostic logs turn mystery into a quick fix.",
+        "es": "Cuando algo falla, los logs de diagnóstico convierten el misterio en una solución rápida."
+      }
+    },
+    {
+      "version": "0.7.4",
+      "startDate": "2026-08-21",
+      "endDate": "2026-08-21",
+      "name": {
+        "en": "Solve Multi-Select & Bulk Operations",
+        "es": "Selección múltiple de solves y acciones en bloque"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Solve multi-select mode with bulk move, bulk penalty assign, and bulk deletion across sessions.",
+        "es": "Modo de selección múltiple de solves con mover, asignar penalizaciones y borrar en bloque."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Solve multi-select mode with batch actions (bulk move to session, bulk delete, bulk penalty).",
+          "es": "Modo de selección múltiple con acciones en bloque (mover a sesión, borrar y penalizar)."
+        },
+        {
+          "type": "improved",
+          "en": "Mobile stacked dropdown rows in Settings for easy touch navigation.",
+          "es": "Filas de selector apiladas en móvil en Ajustes para una navegación táctil sencilla."
+        }
+      ],
+      "moral": {
+        "en": "Bulk operations make organizing thousands of solves fast and satisfying.",
+        "es": "Las operaciones en bloque hacen que organizar miles de solves sea rápido y satisfactorio."
+      }
+    },
+    {
+      "version": "0.7.5",
+      "startDate": "2026-08-22",
+      "endDate": "2026-08-22",
+      "name": {
+        "en": "Profile View & 52-Week Activity Heatmap",
+        "es": "Vista de perfil y heatmap de 52 semanas"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Full-page Profile view with ProfileHero, CubeMark identicon, and 52-week GitHub-style activity heatmap.",
+        "es": "Vista de perfil completa con ProfileHero, identicon CubeMark y heatmap de actividad de 52 semanas."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Full-page Profile view (ProfileView) with ProfileHero, CubeMark identicon, and StatStrip.",
+          "es": "Vista de perfil completa (ProfileView) con ProfileHero, identicon CubeMark y StatStrip."
+        },
+        {
+          "type": "new",
+          "en": "52-week solve activity heatmap (ActivityHeatmap) visualizing training consistency over the entire year.",
+          "es": "Heatmap de actividad de 52 semanas (ActivityHeatmap) visualizando la constancia de todo el año."
+        }
+      ],
+      "moral": {
+        "en": "Seeing your consistency visualized over 52 weeks is the ultimate motivator.",
+        "es": "Ver tu constancia visualizada a lo largo de 52 semanas es la mayor motivación."
+      }
+    },
+    {
+      "version": "0.7.6",
+      "startDate": "2026-08-22",
+      "endDate": "2026-08-22",
+      "name": {
+        "en": "Sub-X Milestone Badges & 5 Performance Tabs",
+        "es": "Insignias Sub-X y 5 pestañas de rendimiento"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Sub-X milestone badges derived from PBs, 5 real-data performance tabs, and high-density Training dashboard.",
+        "es": "Insignias Sub-X derivadas de PBs, 5 pestañas de rendimiento real y dashboard de entrenamiento."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Sub-X milestone badges (e.g. Sub-10 3×3, Sub-4 2×2) dynamically computed from puzzle PBs.",
+          "es": "Insignias de hito Sub-X (ej. Sub-10 3×3, Sub-4 2×2) calculadas dinámicamente desde los récords personales."
+        },
+        {
+          "type": "new",
+          "en": "5-tab performance center: Overview heatmap, per-puzzle stats, SRS review queue, algorithm mastery ring, and skill XP.",
+          "es": "Centro de rendimiento en 5 pestañas: Heatmap general, stats por puzzle, cola SRS, anillo de maestría y XP de skills."
+        }
+      ],
+      "moral": {
+        "en": "When all your training tools live under one roof, consistency becomes second nature.",
+        "es": "Cuando todas tus herramientas de práctica viven bajo el mismo techo, la constancia surge sola."
+      }
+    },
+    {
+      "version": "0.7.7",
+      "startDate": "2026-08-23",
+      "endDate": "2026-08-23",
+      "name": {
+        "en": "Zero-Latency SoundManager",
+        "es": "SoundManager de latencia cero"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Professional SoundManager with AudioContext pre-warming for instantaneous first-turn audio.",
+        "es": "SoundManager profesional con calentamiento previo de AudioContext para sonido instantáneo desde el primer giro."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "Professional SoundManager with AudioContext pre-warming for zero-latency first turns.",
+          "es": "SoundManager profesional con calentamiento previo de AudioContext para sonido instantáneo desde el primer giro."
+        },
+        {
+          "type": "improved",
+          "en": "Audio buffer caching eliminating stutter during high-speed turning sequences.",
+          "es": "Caché de buffers de audio que elimina tirones durante secuencias de giro a alta velocidad."
+        }
+      ],
+      "moral": {
+        "en": "Audio should be immediate: a delayed click breaks the rhythm of the solve.",
+        "es": "El audio debe ser inmediato: un clic retrasado rompe el ritmo del solve."
+      }
+    },
+    {
+      "version": "0.7.8",
+      "startDate": "2026-08-24",
+      "endDate": "2026-08-24",
+      "name": {
+        "en": "Advanced F2L Slot Views & Fixed Pair Geometry",
+        "es": "Vistas de slot F2L avanzado y geometría fija"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Advanced F2L slot view orientation fixes keeping target pair fixed in perspective when rotating.",
+        "es": "Correcciones de vista de slot en F2L avanzado manteniendo el par fijo en perspectiva al rotar."
+      },
+      "items": [
+        {
+          "type": "fixed",
+          "en": "Kept F2L target pair fixed in position when rotating the slot view angle.",
+          "es": "Fijación del par de F2L en su posición al rotar el ángulo de vista del slot."
+        },
+        {
+          "type": "improved",
+          "en": "Advanced F2L case grouping by slot state (Free Pair, Connected, Split, In Slot).",
+          "es": "Agrupación de casos de F2L avanzado por estado (Par libre, conectado, separado, en slot)."
+        }
+      ],
+      "moral": {
+        "en": "Clear slot perspectives turn complex F2L solutions into intuitive patterns.",
+        "es": "Perspectivas claras del slot convierten soluciones complejas de F2L en patrones intuitivos."
+      }
+    },
+    {
+      "version": "0.7.9",
+      "startDate": "2026-08-24",
+      "endDate": "2026-08-24",
+      "name": {
+        "en": "BirdF2L Notation Badges & Profile Country Sorting",
+        "es": "Insignias BirdF2L y orden de países en perfil"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "BirdF2L notation codes displayed directly on basic F2L case cards, and localized country picker sorting.",
+        "es": "Códigos BirdF2L mostrados directamente en tarjetas de F2L básico y orden alfabético de países en perfil."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "BirdF2L notation codes displayed directly on basic F2L case cards.",
+          "es": "Códigos de notación BirdF2L mostrados directamente en las tarjetas de casos F2L básicos."
+        },
+        {
+          "type": "improved",
+          "en": "Profile country and region selector ordered alphabetically by the active language's localized display names.",
+          "es": "Selector de países y regiones en perfil ordenado alfabéticamente por los nombres traducidos del idioma activo."
+        }
+      ],
+      "moral": {
+        "en": "Notation badges and localized interfaces make the tool accessible across all borders.",
+        "es": "Las insignias de notación y las interfaces localizadas hacen que la herramienta sea accesible sin fronteras."
+      }
+    },
+    {
+      "version": "0.8.0",
+      "startDate": "2026-08-25",
+      "endDate": "2026-08-25",
+      "name": {
+        "en": "Slot-Agnostic Relational Signatures",
+        "es": "Signaturas relacionales independientes del slot"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Slot-agnostic F2L detection using relational geometry signatures regardless of slot orientation.",
+        "es": "Detección de F2L independiente del slot mediante signaturas geométricas relacionales."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Slot-agnostic F2L case detection using relational geometry signatures matching patterns in any slot (FR, FL, BR, BL).",
+          "es": "Detección de F2L independiente del slot mediante signaturas geométricas en cualquier posición (FR, FL, BR, BL)."
+        },
+        {
+          "type": "improved",
+          "en": "Vector transformation pipeline normalizing piece relationships independent of cube rotation.",
+          "es": "Transformación vectorial que normaliza las relaciones de piezas con independencia de la rotación del cubo."
+        }
+      ],
+      "moral": {
+        "en": "Recognizing patterns by their relationships rather than absolute positions is true speedcubing mastery.",
+        "es": "Reconocer patrones por sus relaciones y no por posiciones fijas es la verdadera maestría."
+      }
+    },
+    {
+      "version": "0.8.1",
+      "startDate": "2026-08-26",
+      "endDate": "2026-08-26",
+      "name": {
+        "en": "Mini 3D Case Cubes with Real Sticker Colors",
+        "es": "Mini-cubos 3D con colores reales"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Mini 3D case cubes in detection panel showing the solve's real sticker colors and 3D Replay for virtual 2×2 solves.",
+        "es": "Mini-cubos 3D en panel de detección con colores reales del solve y replay 3D para 2×2 virtual."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Mini 3D case cubes in detection panel showing the solve's real sticker colors.",
+          "es": "Mini-cubos 3D en el panel de detección con los colores reales de los stickers del solve."
+        },
+        {
+          "type": "new",
+          "en": "3D Replay support for virtual 2×2 solves with animated layer turns and orientation tracking.",
+          "es": "Soporte de Replay 3D para solves virtuales de 2×2 con giros de capa animados y seguimiento de orientación."
+        }
+      ],
+      "moral": {
+        "en": "Seeing your solve's exact colors in 3D miniatures makes case detection crystal clear.",
+        "es": "Ver los colores exactos de tu solve en miniaturas 3D hace que la detección de casos sea transparente."
+      }
+    },
+    {
+      "version": "0.8.2",
+      "startDate": "2026-08-26",
+      "endDate": "2026-08-26",
+      "name": {
+        "en": "Unified CFOP Case Analysis Architecture",
+        "es": "Arquitectura unificada de análisis CFOP"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Unified CFOP case analysis engine shared identically across smart cubes, virtual cubes and reconstructions.",
+        "es": "Motor unificado de análisis CFOP compartido idénticamente entre smart cube, cubo virtual y reconstrucciones."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Unified CFOP case analysis architecture across smart cube, virtual cube and reconstructions.",
+          "es": "Arquitectura unificada de análisis de casos CFOP para smart cube, cubo virtual y reconstrucciones."
+        },
+        {
+          "type": "improved",
+          "en": "Shared case detection cache ensuring instant analysis results across all solve viewers.",
+          "es": "Caché compartida de detección de casos para resultados de análisis instantáneos en todos los visores."
+        }
+      ],
+      "moral": {
+        "en": "One single source of truth for solve analysis guarantees absolute consistency across every view.",
+        "es": "Una única fuente de verdad para el análisis garantiza consistencia absoluta en todas las vistas."
+      }
+    },
+    {
+      "version": "0.8.3",
+      "startDate": "2026-08-27",
+      "endDate": "2026-08-27",
+      "name": {
+        "en": "100% Color-Neutral Recognition Engine",
+        "es": "Motor de reconocimiento 100% color-neutral"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "100% color-neutral F2L, OLL and PLL recognition engine with chiral reflection bug fixes.",
+        "es": "Motor de reconocimiento F2L, OLL y PLL 100% independiente del color con corrección de reflexión quiral."
+      },
+      "items": [
+        {
+          "type": "fixed",
+          "en": "100% color-neutral F2L, OLL and PLL recognition engine.",
+          "es": "Motor de reconocimiento F2L, OLL y PLL 100% independiente del color."
+        },
+        {
+          "type": "fixed",
+          "en": "Fixed chiral reflection detection bug in last layer OLL and PLL cases.",
+          "es": "Corrección de error de reflexión quiral en la detección de casos OLL y PLL de última capa."
+        }
+      ],
+      "moral": {
+        "en": "Color neutrality is not learning six cubes: it is learning that the cube has no color, only relationships.",
+        "es": "Ser color-neutral no es aprenderse seis cubos: es entender que el cubo no tiene colores fijos, solo relaciones."
+      }
+    },
+    {
+      "version": "0.8.4",
+      "startDate": "2026-08-28",
+      "endDate": "2026-08-28",
+      "name": {
+        "en": "Floating Stickers & Direct Replay Seek",
+        "es": "Stickers flotantes y salto en replay"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Floating sticker 3D projections during replay, direct seek from detection rows, and state-based case detection from text.",
+        "es": "Stickers flotantes en replay 3D, salto directo desde filas de detección y detección de casos desde texto."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Direct replay seeking: clicking any detection row (Cross, F2L pairs, OLL, PLL) jumps the 3D replay to that exact moment.",
+          "es": "Salto directo en replay: pulsar cualquier fila de detección (Cross, pares F2L, OLL, PLL) sitúa el replay 3D en ese momento exacto."
+        },
+        {
+          "type": "new",
+          "en": "Floating sticker 3D projections during replay and analysis.",
+          "es": "Proyección de stickers 3D flotantes durante el replay y el análisis."
+        },
+        {
+          "type": "new",
+          "en": "State-based OLL and PLL case detection directly from reconstruction text.",
+          "es": "Detección de casos OLL y PLL basada en estado directamente desde el texto de reconstrucciones."
+        },
+        {
+          "type": "fixed",
+          "en": "Derived real F2L pair sticker colors via 3D vector geometry and locked mini cube to slot angles.",
+          "es": "Cálculo de colores reales de pares F2L mediante geometría vectorial 3D y bloqueo del mini-cubo a los ángulos de slot."
+        }
+      ],
+      "moral": {
+        "en": "Clicking a phase to jump straight to the 3D replay turns review into an effortless conversation.",
+        "es": "Pulsar una fase para saltar directo al replay 3D convierte la revisión en una conversación fluida."
+      }
+    },
+    {
+      "version": "0.8.5",
+      "startDate": "2026-08-28",
+      "endDate": "2026-08-28",
+      "name": {
+        "en": "Reconstruction Detail Redesign & Vertical Layout",
+        "es": "Rediseño de detalle de reconstrucción"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Redesigned reconstruction detail with fixed header, anchored 3D replay, vertical layout mode, and tablet responsiveness.",
+        "es": "Detalle de reconstrucción rediseñado con cabecera fija, replay 3D anclado, layout vertical y diseño tablet."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "Redesigned reconstruction detail with fixed header and anchored replay panel.",
+          "es": "Detalle de reconstrucción rediseñado con cabecera fija y panel de replay anclado."
+        },
+        {
+          "type": "new",
+          "en": "Vertical layout mode and improved tablet responsiveness in reconstruction detail view.",
+          "es": "Modo de layout vertical y respuesta mejorada para tablet en la vista de detalle de reconstrucción."
+        }
+      ],
+      "moral": {
+        "en": "Anchoring the 3D replay while scrolling through notes lets solvers study master solves effortlessly.",
+        "es": "Anclar el replay 3D mientras te desplazas por las notas permite estudiar solves maestros sin esfuerzo."
+      }
+    },
+    {
+      "version": "0.8.6",
+      "startDate": "2026-08-29",
+      "endDate": "2026-08-29",
+      "name": {
+        "en": "In-App Theater Fullscreen Replay",
+        "es": "Replay de cine en pantalla completa"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "In-app theater fullscreen replay mode with ESC shortcut, touch gestures, and pinch-to-zoom.",
+        "es": "Replay de cine en pantalla completa con atajo ESC, gestos táctiles y zoom por pellizco."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Theater replay: in-app fullscreen mode with ESC shortcut, touch gestures and pinch-to-zoom, hiding sidebars and headers.",
+          "es": "Replay de cine: pantalla completa en la app con atajo ESC, gestos táctiles y zoom por pellizco, ocultando barras y menús."
+        },
+        {
+          "type": "improved",
+          "en": "Responsive mobile playback controls for 3D replay with scrubbing timeline.",
+          "es": "Controles responsive de reproducción para replay 3D en móvil con barra de desplazamiento temporal."
+        }
+      ],
+      "moral": {
+        "en": "A cinema-grade replay lets you review your solve like an esports broadcast.",
+        "es": "Un replay de cine te permite revisar tu solve como si fuera una retransmisión deportiva."
+      }
+    },
+    {
+      "version": "0.8.7",
+      "startDate": "2026-08-29",
+      "endDate": "2026-08-29",
+      "name": {
+        "en": "Spherical Turntable Orbit Camera",
+        "es": "Cámara orbital esférica tipo turntable"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Spherical turntable orbit camera eliminating roll drift, and mobile split page scrolling.",
+        "es": "Cámara orbital turntable que elimina la deriva de inclinación y scroll móvil optimizado."
+      },
+      "items": [
+        {
+          "type": "improved",
+          "en": "Spherical turntable orbit camera eliminating roll drift during 3D inspection.",
+          "es": "Cámara orbital esférica tipo turntable que elimina la deriva de inclinación en 3D."
+        },
+        {
+          "type": "fixed",
+          "en": "Unified mobile page scrolling in reconstruction view while maintaining desktop split layout.",
+          "es": "Scroll unificado en móvil en reconstrucciones manteniendo el diseño de pantalla dividida en escritorio."
+        }
+      ],
+      "moral": {
+        "en": "Eliminating camera roll drift keeps the horizon level no matter how fast you orbit.",
+        "es": "Eliminar la deriva de inclinación mantiene el horizonte nivelado sin importar lo rápido que gires."
+      }
+    },
+    {
+      "version": "0.8.8",
+      "startDate": "2026-08-30",
+      "endDate": "2026-08-30",
+      "name": {
+        "en": "Professional Pause Analytics & Case Intelligence",
+        "es": "Analítica de pausas e inteligencia de casos"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Professional pause model distinguishing recognition gaps from execution turning time, and case intelligence profiling.",
+        "es": "Modelo profesional de pausas (reconocimiento vs ejecución) e inteligencia de casos."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Professional recognition vs execution pause model distinguishing recognition gaps from execution turning time.",
+          "es": "Modelo profesional de pausas que diferencia pausas de reconocimiento frente a tiempo de giro de ejecución pura."
+        },
+        {
+          "type": "new",
+          "en": "Case intelligence distribution profiling frequency, average time, p75 and recognition time for every individual F2L, OLL and PLL case.",
+          "es": "Distribución de inteligencia de casos con frecuencia, tiempo medio, p75 y tiempo de reconocimiento por cada caso F2L, OLL y PLL."
+        },
+        {
+          "type": "new",
+          "en": "Headless technical statistics engine aggregating phase distributions (p25/p50/p75), move economy, rotation counts, lookahead fluidity and cross efficiency vs optimal solver.",
+          "es": "Motor headless de estadísticas técnicas que agrega distribuciones por fase (p25/p50/p75), economía de giros, recuento de rotaciones, fluidez de lookahead y eficiencia de cross frente a solver óptimo."
+        }
+      ],
+      "moral": {
+        "en": "A good replay is not just watching the solve: it is seeing what the solver was thinking.",
+        "es": "Un buen replay no es solo ver el solve: es ver qué estaba pensando quien resolvía."
+      }
+    },
+    {
+      "version": "0.8.9",
+      "startDate": "2026-08-31",
+      "endDate": "2026-08-31",
+      "name": {
+        "en": "Puzzle Roulette & Reconstruction Table Polish",
+        "es": "Ruleta de puzzles y tablas de reconstrucción"
+      },
+      "period": {
+        "en": "Aug 2026",
+        "es": "ago 2026"
+      },
+      "summary": {
+        "en": "Custom random puzzle roulette dock piece with spring-animated lever, and reconstructions table with dedicated puzzle columns.",
+        "es": "Pieza de ruleta de puzzles con palanca animada y tabla de reconstrucciones con columna de puzzle."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Customizable random puzzle roulette piece in the dock with spring-animated lever and pool selector.",
+          "es": "Pieza de ruleta de puzzles aleatorios personalizable en el dock con palanca animada por muelles y selector de bolsa."
+        },
+        {
+          "type": "improved",
+          "en": "Reconstructions table with dedicated puzzle column, aligned grid layout and unified mobile page scroll.",
+          "es": "Tabla de reconstrucciones con columna dedicada de puzzle, diseño alineado y scroll unificado en móvil."
+        },
+        {
+          "type": "fixed",
+          "en": "Accurate method group representation in reconstruction tables.",
+          "es": "Representación precisa de grupos de método en tablas de reconstrucciones."
+        }
+      ],
+      "moral": {
+        "en": "Injecting fun interactive details keeps the practice environment vibrant.",
+        "es": "Introducir detalles interactivos divertidos mantiene el entorno de práctica vibrante."
       }
     },
     {
       "version": "0.9.0",
       "startDate": "2026-09-01",
-      "endDate": "2026-09-02",
+      "endDate": "2026-09-01",
       "name": {
-        "en": "More Puzzles",
-        "es": "Más puzzles"
+        "en": "3D Pyraminx Engine & Face Simulator",
+        "es": "Motor 3D de Pyraminx y simulador"
       },
       "period": {
         "en": "Sep 2026",
         "es": "sep 2026"
       },
       "summary": {
-        "en": "Five-sided: 3D Pyraminx engine and virtual simulator, multi-puzzle support end to end, Infinite F2L training mode and the universal skill radar. This is the wave that justifies the jump from 0.8.0 to 0.9.0.",
-        "es": "De cinco caras: motor 3D de Pyraminx y simulador virtual, soporte multi-puzzle de punta a punta, modo de entrenamiento Infinite F2L y el radar universal de habilidades. Esta es la ola que justifica el salto de 0.8.0 a 0.9.0."
+        "en": "Tetrahedral 3D Pyraminx engine, virtual Pyraminx simulator with drag interactions, and WCA scramble support.",
+        "es": "Motor 3D tetraédrico de Pyraminx, simulador virtual con giros por arrastre y mezclas oficiales WCA."
       },
       "items": [
         {
           "type": "new",
-          "en": "Pyraminx in 3D with a virtual simulator and drag interactions.",
-          "es": "Pyraminx en 3D con simulador virtual y gestos de arrastre."
+          "en": "Tetrahedral Pyraminx 3D engine with 4 corner tips, 4 center-octahedral hubs, and 6 edge pieces.",
+          "es": "Motor 3D tetraédrico de Pyraminx con 4 puntas, 4 núcleos octaédricos y 6 aristas."
         },
         {
           "type": "new",
-          "en": "Multi-puzzle support end to end.",
-          "es": "Soporte multi-puzzle de punta a punta."
-        },
-        {
-          "type": "new",
-          "en": "Infinite F2L training mode with pair history.",
-          "es": "Modo de entrenamiento Infinite F2L con historial de pares."
-        },
-        {
-          "type": "new",
-          "en": "Universal per-session skill radar.",
-          "es": "Radar universal de habilidades por sesión."
-        },
-        {
-          "type": "improved",
-          "en": "Algorithms redesigned for mobile.",
-          "es": "Algoritmos rediseñados para móvil."
+          "en": "Virtual Pyraminx simulator with interactive pointer-drag layer turning and tip rotations.",
+          "es": "Simulador virtual de Pyraminx con giros de capa y puntas interactivos por arrastre del puntero."
         }
       ],
       "moral": {
-        "en": "Just when you master the 3×3, life hands you a Pyraminx: the tricks carry over, the ego does not.",
-        "es": "Justo cuando dominas el 3×3, la vida te regala un Pyraminx: los trucos se reutilizan, el orgullo casi nunca."
+        "en": "Stepping beyond cubic geometry unlocks a whole new dimension of speedsolving.",
+        "es": "Trascender la geometría cúbica abre una dimensión completamente nueva en el speedsolving."
+      }
+    },
+    {
+      "version": "0.9.1",
+      "startDate": "2026-09-02",
+      "endDate": "2026-09-02",
+      "name": {
+        "en": "Infinite F2L, Skill Radar & Changelog",
+        "es": "Infinite F2L, radar de skills y changelog"
+      },
+      "period": {
+        "en": "Sep 2026",
+        "es": "sep 2026"
+      },
+      "summary": {
+        "en": "Infinite F2L continuous training mode with auto-scramble, Universal 6-axis session skill radar, mobile method navigator, and single-collapsible changelog accordion.",
+        "es": "Modo de entrenamiento continuo Infinite F2L, radar universal de habilidades en 6 ejes, navegador móvil y changelog interactivo."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Infinite F2L continuous training mode: automatically generates and applies the next F2L pair scramble the instant the active pair is solved.",
+          "es": "Modo de entrenamiento Infinite F2L: genera y aplica la siguiente mezcla de par en el instante en que se resuelve el activo."
+        },
+        {
+          "type": "new",
+          "en": "Universal 6-axis session skill radar (SkillRadarProfile) evaluating solve performance against professional benchmarks.",
+          "es": "Radar universal de habilidades en 6 ejes (SkillRadarProfile) evaluando el rendimiento frente a benchmarks profesionales."
+        },
+        {
+          "type": "new",
+          "en": "Mobile Method Navigator with floating bottom drawer, auto-prompt method suggestions, and skeleton placeholders.",
+          "es": "Navegador móvil de métodos con cajón inferior flotante, sugerencias automáticas y placeholders esqueleto."
+        },
+        {
+          "type": "new",
+          "en": "Tactile single-collapsible changelog accordion closing previous releases on open with exact dates and commit links.",
+          "es": "Acordeón táctil de changelog con cierre automático de releases anteriores al abrir, fechas exactas y enlaces a commits."
+        }
+      ],
+      "moral": {
+        "en": "Continuous flow practice eliminates downtime between pairs, accelerating muscle memory.",
+        "es": "La práctica en flujo continuo elimina los tiempos muertos entre pares, acelerando la memoria muscular."
       }
     }
   ]
