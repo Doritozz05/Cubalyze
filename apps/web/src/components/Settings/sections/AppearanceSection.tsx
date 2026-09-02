@@ -2,11 +2,6 @@
 
 import { useStore } from 'zustand';
 import { preferencesStore, type HeaderMode } from '@cubeforge/state';
-// Import from the side-effect-free "/skins" subpath: the engine's main entry
-// pulls in three.js (~545 kB), which would otherwise land in the initial
-// bundle just for this settings list.
-import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
-import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
@@ -30,28 +25,10 @@ import { Switch } from '@/components/ui/switch';
 /**
  * Appearance settings section.
  *
- * Contains visual preferences like the interface theme, the 3D cube appearance, and
- * custom sticker colors. When the 'custom' skin is selected, per-face color pickers appear below.
+ * Contains visual preferences for the interface: theme, liquid glass, header
+ * visibility, custom background and dock editing. The 3D cube skin selector
+ * lives in the Smart Cube section.
  */
-type FaceLetter = 'U' | 'D' | 'F' | 'B' | 'R' | 'L';
-
-const FACE_LABEL_KEY: Record<FaceLetter, ParseKeys<'settings'>> = {
-  U: 'appearance.faceU',
-  D: 'appearance.faceD',
-  F: 'appearance.faceF',
-  B: 'appearance.faceB',
-  R: 'appearance.faceR',
-  L: 'appearance.faceL',
-};
-
-const SKIN_LABEL_KEY: Record<string, ParseKeys<'settings'>> = {
-  default: 'appearance.skinDefault',
-  stickerless: 'appearance.skinStickerless',
-  coreless: 'appearance.skinCoreless',
-  translucent: 'appearance.skinTranslucent',
-  custom: 'appearance.skinCustom',
-};
-
 const HEADER_MODES: HeaderMode[] = ['always', 'hidden', 'autohide'];
 
 const HEADER_MODE_LABEL_KEY: Record<HeaderMode, ParseKeys<'settings'>> = {
@@ -68,10 +45,6 @@ export function AppearanceSection() {
   const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
-  const appearance3d = useStore(preferencesStore, (s) => s.appearance3d);
-  const setAppearance3d = useStore(preferencesStore, (s) => s.setAppearance3d);
-  const customStickerColors = useStore(preferencesStore, (s) => s.customStickerColors);
-  const setCustomStickerColors = useStore(preferencesStore, (s) => s.setCustomStickerColors);
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
   const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
   const isTouch = useIsTouch();
@@ -221,47 +194,6 @@ export function AppearanceSection() {
         </div>
       </button>
 
-      {/* Skin selector */}
-      <SettingRow
-        title={t('appearance.appearance3d')}
-        description={t('appearance.appearance3dHint')}
-        control={
-          <Select value={appearance3d} onValueChange={setAppearance3d}>
-            <SelectTrigger className="w-40 max-lg:w-full">
-              <SelectValue placeholder={t('appearance.selectAppearance')} />
-            </SelectTrigger>
-            <SelectContent>
-              {CUBE_SKINS.map((skin) => (
-                <SelectItem key={skin.id} value={skin.id}>
-                  {t(SKIN_LABEL_KEY[skin.id])}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        }
-      />
-
-      {/* Custom sticker colors — only visible when 'custom' skin is selected */}
-      {appearance3d === 'custom' && (
-        <div className="rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-          <div className="mb-4">
-            <h4 className="text-[0.85rem] font-medium text-ink">{t('appearance.customStickers')}</h4>
-            <p className="mt-1 text-[0.72rem] text-ink-3">
-              {t('appearance.customStickersHint')}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {(Object.keys(FACE_LABEL_KEY) as FaceLetter[]).map((face) => (
-              <ColorPicker
-                key={face}
-                label={t(FACE_LABEL_KEY[face])}
-                value={customStickerColors[face]}
-                onChange={(color) => setCustomStickerColors({ [face]: color })}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
