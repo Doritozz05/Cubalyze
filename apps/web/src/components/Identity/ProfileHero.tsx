@@ -17,18 +17,18 @@ import { puzzleTypeLabel } from "@/utils/puzzleTypes";
  * Outer background gives the 3D bottom rim color, matching the phase hue.
  */
 const BADGE_COLOR_STYLES: Record<string, { bg: string }> = {
-  "phase-blue": { bg: "bg-[#60a5fa]" },
-  "phase-emerald": { bg: "bg-[#5cdb95]" },
-  "phase-teal": { bg: "bg-[#2dd4bf]" },
-  "phase-amber": { bg: "bg-[#fbbf24]" },
-  "phase-violet": { bg: "bg-[#a78bfa]" },
-  "phase-purple": { bg: "bg-[#c084fc]" },
-  "phase-indigo": { bg: "bg-[#818cf8]" },
-  "phase-rose": { bg: "bg-[#fb7185]" },
-  "phase-cyan": { bg: "bg-[#22d3ee]" },
-  "phase-orange": { bg: "bg-[#fb923c]" },
-  "phase-sky": { bg: "bg-[#38bdf8]" },
-  "phase-pink": { bg: "bg-[#f472b6]" },
+  "phase-blue": { bg: "bg-phase-blue" },
+  "phase-emerald": { bg: "bg-phase-emerald" },
+  "phase-teal": { bg: "bg-phase-teal" },
+  "phase-amber": { bg: "bg-phase-amber" },
+  "phase-violet": { bg: "bg-phase-violet" },
+  "phase-purple": { bg: "bg-phase-purple" },
+  "phase-indigo": { bg: "bg-phase-indigo" },
+  "phase-rose": { bg: "bg-phase-rose" },
+  "phase-cyan": { bg: "bg-phase-cyan" },
+  "phase-orange": { bg: "bg-phase-orange" },
+  "phase-sky": { bg: "bg-phase-sky" },
+  "phase-pink": { bg: "bg-phase-pink" },
 };
 
 const DEFAULT_BADGE_STYLE = BADGE_COLOR_STYLES["phase-emerald"];
@@ -160,7 +160,7 @@ export function ProfileHero({
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm text-ink-3">
               {chips.map((chip, i) => (
                 <span key={chip.key} className="inline-flex items-center gap-2">
-                  {i > 0 && <span aria-hidden="true" className="text-ink-4">·</span>}
+                  {i > 0 && <span aria-hidden="true" className="text-ink-3">·</span>}
                   {chip.key === "country" ? (
                     <CountryFlag country={chip.value} />
                   ) : (
