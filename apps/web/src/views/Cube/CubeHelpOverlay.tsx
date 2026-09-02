@@ -134,7 +134,7 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-xl"
+            className="relative max-h-full w-full max-w-lg overflow-y-auto rounded-xl border border-line bg-surface p-5 shadow-sm"
           >
             <div className="mb-1 flex items-start justify-between gap-4">
               <div>

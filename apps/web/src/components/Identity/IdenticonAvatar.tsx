@@ -23,7 +23,7 @@ export interface IdenticonAvatarProps {
  * The glyph is pure square cells (no frames/overlays). The avatar is
  * decorative: the display name renders next to it in text, so the wrapper is
  * `aria-hidden` and the SVG itself carries no role/label. Callers pass the
- * corner radius (e.g. `rounded-2xl`) on className for the frame.
+ * corner radius (e.g. `rounded-xl`) on className for the frame.
  */
 export function IdenticonAvatar({
   seed,

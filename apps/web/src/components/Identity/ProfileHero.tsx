@@ -80,12 +80,12 @@ export function ProfileHero({
     return (
       <div
         className={cn(
-          "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-2xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
+          "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
           className,
         )}
       >
         <Skeleton
-          className="shrink-0 rounded-2xl"
+          className="shrink-0 rounded-xl"
           style={{ width: avatarSize, height: avatarSize }}
         />
         <div className="min-w-0 flex-1 space-y-2.5">
@@ -119,7 +119,7 @@ export function ProfileHero({
     <div
       data-onboarding-target="profile"
       className={cn(
-        "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-2xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
+        "flex flex-col sm:flex-row items-start sm:items-center gap-5 rounded-xl border border-line bg-surface p-5 sm:gap-6 sm:p-6",
         className,
       )}
     >
@@ -128,14 +128,14 @@ export function ProfileHero({
           <img
             src={profile.avatarData}
             alt={t("hero.avatarAlt")}
-            className="shrink-0 rounded-2xl object-cover ring-1 ring-line shadow-sm"
+            className="shrink-0 rounded-xl object-cover ring-1 ring-line shadow-sm"
             style={{ width: avatarSize, height: avatarSize }}
           />
         ) : (
           <IdenticonAvatar
             seed={seed ?? profile.userId}
             size={avatarSize}
-            className="shrink-0 rounded-2xl ring-1 ring-line shadow-sm"
+            className="shrink-0 rounded-xl ring-1 ring-line shadow-sm"
           />
         )}
         {/* Mobile-only top edit button for quick tap */}

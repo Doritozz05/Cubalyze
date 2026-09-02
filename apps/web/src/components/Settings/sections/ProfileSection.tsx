@@ -211,13 +211,13 @@ export function ProfileSection() {
             <img
               src={profile.avatarData}
               alt={t("profile.avatarAlt")}
-              className="size-24 shrink-0 rounded-2xl object-cover ring-1 ring-line"
+              className="size-24 shrink-0 rounded-xl object-cover ring-1 ring-line"
             />
           ) : (
             <IdenticonAvatar
               seed={identiconSeed ?? profile.userId}
               size={96}
-              className="shrink-0 rounded-2xl ring-1 ring-line"
+              className="shrink-0 rounded-xl ring-1 ring-line"
             />
           )}
           <div className="min-w-0 sm:hidden">
