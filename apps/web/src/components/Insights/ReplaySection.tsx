@@ -1048,8 +1048,17 @@ function ReplaySection({
                   </div>
                 </div>
 
-                {/* Bottom row: transport buttons */}
-                <div className="flex items-center justify-between gap-1 sm:gap-2 rounded-xl bg-surface-2/50 border border-line/60 p-1.5 sm:px-2.5">
+                {/* Bottom row: transport buttons — flat mode drops the
+                    frosted chip too, so the horizontal column is 100%
+                    transparent (buttons keep their hover chips). */}
+                <div
+                  className={cn(
+                    "flex items-center justify-between gap-1 sm:gap-2 p-1.5 sm:px-2.5",
+                    flat
+                      ? "rounded-none bg-transparent border-0"
+                      : "rounded-xl bg-surface-2/50 border border-line/60",
+                  )}
+                >
                   {/* Left: Transport playback controls */}
                   <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     {/* Restart */}
