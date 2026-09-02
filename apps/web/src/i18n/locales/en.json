@@ -1310,6 +1310,7 @@
         "spawnModeAdvanced": "Advanced",
         "aufEnabled": "Random AUF",
         "aufEnabledHint": "Spawn each case pre-rotated 0-2 turns on the top layer (recognition in angle)",
+        "allowTrappedOnlyNormal": "Only applies to Normal mode — case pools define their own configurations",
         "enableSound": "Solve sound effect",
         "start": "Start Training"
       },

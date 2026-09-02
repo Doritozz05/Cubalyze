@@ -193,28 +193,14 @@ export function InfiniteF2LSetupDialog({
           })}
         </div>
 
-        {/* AUF switch — same Switch pill as the Widget Explorer cards */}
-        <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 cursor-pointer select-none">
-          <div className="flex items-center gap-2 min-w-0">
-            <ShieldCheck className="size-4 shrink-0 text-ink-3" />
-            <div className="flex flex-col">
-              <span className="text-[0.78rem] font-semibold text-ink">{t("infiniteF2l.setup.aufEnabled")}</span>
-              <span className="text-[0.68rem] text-ink-3">{t("infiniteF2l.setup.aufEnabledHint")}</span>
-            </div>
-          </div>
-          <Switch
-            checked={aufEnabled}
-            onCheckedChange={setAufEnabled}
-            aria-label={t("infiniteF2l.setup.aufEnabled")}
-          />
-        </label>
       </div>
       </div>
 
-      {/* 3 + 4. Two-column on md+ (target goal | slots + trapped), stacked when narrow */}
+      {/* 3 + 4. Two-column on md+ (target goal | AUF), stacked when narrow —
+          same height in both columns so the row reads balanced. */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Target Goal (Target Pairs Slider) */}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex h-full flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Target className="size-4 text-ink-3" />
@@ -224,7 +210,7 @@ export function InfiniteF2LSetupDialog({
             {targetPairs === 0 ? `∞ ${t("infiniteF2l.setup.infiniteMode")}` : `${targetPairs} ${t("infiniteF2l.setup.pairUnitPlural")}`}
           </span>
         </div>
-        <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3">
+        <div className="flex flex-1 flex-col justify-center gap-2 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-3">
             <span className="text-xs text-ink-3 font-semibold">∞</span>
             <input
@@ -259,8 +245,28 @@ export function InfiniteF2LSetupDialog({
         </div>
       </div>
 
-      {/* 3. Slot Filter & Trapped Options */}
-      <div className="flex flex-col gap-4">
+      {/* AUF switch — right column of the target row, stretched to the same
+          height (content centered) so both cards read as one balanced row. */}
+      <div className="flex h-full flex-col justify-center gap-2 rounded-xl border border-line bg-surface p-3">
+        <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className="size-4 shrink-0 text-ink-3" />
+            <div className="flex flex-col">
+              <span className="text-[0.78rem] font-semibold text-ink">{t("infiniteF2l.setup.aufEnabled")}</span>
+              <span className="text-[0.68rem] text-ink-3">{t("infiniteF2l.setup.aufEnabledHint")}</span>
+            </div>
+          </div>
+          <Switch
+            checked={aufEnabled}
+            onCheckedChange={setAufEnabled}
+            aria-label={t("infiniteF2l.setup.aufEnabled")}
+          />
+        </label>
+      </div>
+      </div>
+
+      {/* 5. Slot Filter & Trapped Options — side by side on md+ */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Slot selector */}
         <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-2">
@@ -289,9 +295,21 @@ export function InfiniteF2LSetupDialog({
           </div>
         </div>
 
-        {/* Trapped pieces mode */}
-        <div className="flex flex-col justify-center gap-2 rounded-xl border border-line bg-surface p-3">
-          <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
+        {/* Trapped pieces mode — only the random (normal) injector consults
+            it; the case pools define their own configurations, so the toggle
+            is disabled (grayed) outside Normal to avoid implying it works. */}
+        <div
+          className={cn(
+            "flex flex-col justify-center gap-1.5 rounded-xl border border-line bg-surface p-3 transition-opacity",
+            spawnMode !== "normal" && "opacity-60",
+          )}
+        >
+          <label
+            className={cn(
+              "flex items-center justify-between gap-3 select-none",
+              spawnMode !== "normal" ? "cursor-not-allowed" : "cursor-pointer",
+            )}
+          >
             <div className="flex items-center gap-2 min-w-0">
               <ShieldCheck className="size-4 shrink-0 text-ink-3" />
               <div className="flex flex-col">
@@ -302,12 +320,17 @@ export function InfiniteF2LSetupDialog({
             <input
               type="checkbox"
               checked={allowTrapped}
+              disabled={spawnMode !== "normal"}
               onChange={(e) => setAllowTrapped(e.target.checked)}
-              className="size-4 rounded accent-ink cursor-pointer"
+              className="size-4 rounded accent-ink cursor-pointer disabled:cursor-not-allowed"
             />
           </label>
+          {spawnMode !== "normal" && (
+            <p className="text-[0.65rem] leading-4 text-ink-3/80">
+              {t("infiniteF2l.setup.allowTrappedOnlyNormal")}
+            </p>
+          )}
         </div>
-      </div>
       </div>
 
     </div>
