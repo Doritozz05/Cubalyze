@@ -237,6 +237,9 @@
      of the old dry fill or milky blur-over-blur. */
   --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.5));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
+  /* Overlay surfaces (selection bars, chart tooltips, floating chips):
+     NEARLY OPAQUE glass — background text must never read through. */
+  --glass-bg-dense: rgba(255, 255, 255, 0.94);
 }
 
 .dark {
@@ -316,6 +319,8 @@
      light theme comment. Dark nudges a touch denser for legibility. */
   --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.65) * 0.55));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
+  /* Overlay surfaces: nearly opaque glass (see light theme comment). */
+  --glass-bg-dense: rgba(27, 31, 35, 0.96);
 }
 
 /* ───────────────────────────────────────────────────────────────────────

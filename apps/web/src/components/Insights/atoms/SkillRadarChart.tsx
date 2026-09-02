@@ -138,7 +138,7 @@ export const SkillRadarChart = memo(function SkillRadarChart({
                 const axis = isComparative && data.solveAxis ? data.solveAxis : data.sessionAxis;
                 const hint = getAxisHint(data.axisId);
                 return (
-                  <div className="rounded-md border border-line bg-surface p-2.5 shadow-none text-ink text-[0.7rem] max-w-56">
+                  <div className="rounded-md border border-line bg-[var(--glass-bg-dense)] p-2.5 shadow-none text-ink text-[0.7rem] max-w-56">
                     <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-1.5 font-medium">
                       <span className="text-ink">{data.name}</span>
                       <span className="font-mono font-semibold text-ink">

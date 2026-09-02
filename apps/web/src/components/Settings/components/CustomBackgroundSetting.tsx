@@ -298,7 +298,7 @@ export function CustomBackgroundSetting() {
               <button
                 type="button"
                 onClick={() => setPreviewPlaying((p) => !p)}
-                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface/90 hover:bg-surface backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60 transition-colors"
+                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-[var(--glass-bg-dense)] hover:bg-surface backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60 transition-colors"
                 title={previewPlaying ? t('appearance.previewPause') : t('appearance.previewPlay')}
               >
                 {previewPlaying ? (
@@ -317,7 +317,7 @@ export function CustomBackgroundSetting() {
 
             {/* Mock timer readout */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="rounded-md bg-surface/90 backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
+              <span className="rounded-md bg-[var(--glass-bg-dense)] backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
                 00:00.00
               </span>
             </div>

@@ -21,7 +21,7 @@ import type { Solve } from "@/types";
 const TOOLTIP_STYLE = {
   border: "1px solid var(--line)",
   borderRadius: "6px",
-  background: "var(--surface)",
+  background: "var(--glass-bg-dense)",
   color: "var(--ink)",
   fontSize: "0.7rem",
   padding: "4px 8px",
