@@ -830,30 +830,35 @@ export function deriveSkillRadarProfile(
     const s = solves[i];
     if (!s) continue;
     let t: number | undefined;
-    let ts = i;
-    if (typeof s === "object" && "time" in s && typeof (s as { time: number }).time === "number" && (s as { time: number }).time > 0) {
-      t = (s as { time: number }).time;
-      if ("timestamp" in s && typeof (s as { timestamp: number }).timestamp === "number") {
+    let ts: number | undefined;
+
+    if (typeof s === "object") {
+      if ("timestamp" in s && typeof (s as { timestamp?: number }).timestamp === "number" && (s as { timestamp: number }).timestamp > 0) {
         ts = (s as { timestamp: number }).timestamp;
       }
-    } else {
+      if ("time" in s && typeof (s as { time?: number }).time === "number" && (s as { time: number }).time > 0) {
+        t = (s as { time: number }).time;
+      }
+    }
+
+    if (t == null) {
       const a = analysisOf(s);
       if (a?.totalTimeMs && a.totalTimeMs > 0) {
         t = a.totalTimeMs;
       }
     }
+
     if (t != null && t > 0) {
-      timedSolves.push({ time: t, timestamp: ts });
+      timedSolves.push({ time: t, timestamp: ts ?? i });
     }
   }
 
-  // Sort chronological (oldest -> newest): solves passed in CubeForge are newest-first,
-  // so sorting by epoch timestamp or reversing ensures index 0 is oldest and index N-1 is newest.
-  const hasEpochTimestamps = timedSolves.some((s) => s.timestamp > 1000000);
-  if (hasEpochTimestamps) {
+  // Strictly sort chronologically by date/timestamp (oldest date -> newest date).
+  // Regardless of how the user sorts the table/list (by fastest, slowest, moves, etc.),
+  // the timestamp determines the true chronological timeline of the session.
+  const hasTimestamps = timedSolves.some((s) => s.timestamp > 0);
+  if (hasTimestamps) {
     timedSolves.sort((a, b) => a.timestamp - b.timestamp);
-  } else {
-    timedSolves.reverse();
   }
   const solveTimes = timedSolves.map((s) => s.time);
 

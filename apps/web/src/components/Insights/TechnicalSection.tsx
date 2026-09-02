@@ -66,7 +66,10 @@ export function TechnicalSection({ solves, className }: TechnicalSectionProps) {
   // Chronological (oldest first) solves with analysis — the ordering baseline
   // for every time-series chart in this section.
   const chrono = useMemo(
-    () => [...solves].reverse().filter((s) => s.analysis?.phases?.length),
+    () =>
+      [...solves]
+        .filter((s) => s.analysis?.phases?.length)
+        .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0)),
     [solves],
   );
   const analysed = useMemo(

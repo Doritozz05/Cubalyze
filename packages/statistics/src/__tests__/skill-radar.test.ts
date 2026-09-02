@@ -299,5 +299,31 @@ describe("deriveSkillRadarProfile", () => {
     expect(consistencyAxis?.formattedValue).not.toBe("—");
     expect(consistencyAxis?.formattedValue).toMatch(/%$/);
   });
+
+  it("produces identical consistency metrics regardless of UI filter sort order", () => {
+    const s1 = { time: 36130, timestamp: 1000, moves: [] }; // oldest
+    const s2 = { time: 20820, timestamp: 2000, moves: [] };
+    const s3 = { time: 31140, timestamp: 3000, moves: [] };
+    const s4 = { time: 17890, timestamp: 4000, moves: [] }; // newest
+
+    // Sorted by fastest (17s, 20s, 31s, 36s)
+    const sortedFastest = [s4, s2, s3, s1];
+    // Sorted by slowest (36s, 31s, 20s, 17s)
+    const sortedSlowest = [s1, s3, s2, s4];
+    // Random shuffle
+    const shuffled = [s3, s1, s4, s2];
+
+    const p1 = deriveSkillRadarProfile(sortedFastest);
+    const p2 = deriveSkillRadarProfile(sortedSlowest);
+    const p3 = deriveSkillRadarProfile(shuffled);
+
+    const c1 = p1.axes.find((a) => a.id === "consistency");
+    const c2 = p2.axes.find((a) => a.id === "consistency");
+    const c3 = p3.axes.find((a) => a.id === "consistency");
+
+    expect(c1?.score).toBe(c2?.score);
+    expect(c2?.score).toBe(c3?.score);
+    expect(c1?.formattedValue).toBe(c2?.formattedValue);
+  });
 });
 
