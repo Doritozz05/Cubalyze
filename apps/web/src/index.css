@@ -383,6 +383,22 @@ html.liquid-glass .glass-active-pill {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Inputs & search boxes: harmonize with liquid glass panels */
+html.liquid-glass [data-slot="input"],
+html.liquid-glass input[type="text"],
+html.liquid-glass input[type="search"],
+html.liquid-glass textarea {
+  background-color: var(--glass-bg-subtle) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass [data-slot="input"]:focus-visible,
+html.liquid-glass input[type="text"]:focus-visible,
+html.liquid-glass input[type="search"]:focus-visible,
+html.liquid-glass textarea:focus-visible {
+  border-color: var(--ink-3) !important;
+}
+
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */
 html.liquid-glass .grid[class*="bg-line"] {
   background-color: var(--glass-border) !important;

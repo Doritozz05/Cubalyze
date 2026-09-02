@@ -202,7 +202,12 @@ Each component is soft, restrained, and state-aware — tactile on hover, calm a
 
 ### Inputs / Fields
 - **Style:** transparent background, 1px Hairline border, `rounded-md` (6px), height 36px, 12px x-padding, `text-base`-at-`md:text-sm`.
+- **Liquid Glass Theme:** inputs adopt `var(--glass-bg-subtle)` fill and `var(--glass-border)` border so search fields harmonize seamlessly with the glass backplate without stark white lines.
 - **Focus:** border shifts to `border-ring` with a 3px `ring-ring/50` ring. **Error:** `border-destructive` + `ring-destructive/20`. **Disabled:** 50% opacity, not-allowed cursor.
+
+### Active Selection Pills (Rail & Lists)
+- **Style:** Floating frosted card (`.glass-active-pill`) with `rounded-md` (6px), complete 4-sided `1px solid var(--glass-border)`, and `backdrop-filter: blur(10px) saturate(150%)`.
+- **Geometry Rule:** Always maintain inset breathing room (e.g. `inset-x-1.5 inset-y-0.5` or container padding). Never use `inset-y-0` against dividing lines, ensuring zero edge-clipping artifacts across list rows and sidebars.
 
 ### Navigation (sidebar rail)
 - **Style:** a grouped rail of `rounded-md` items, `text-sm`, 8px padding, 16px gaps. Inactive items are `text-sidebar-foreground/70`; hover adds a raised-surface wash (`hover:bg-sidebar-accent`).

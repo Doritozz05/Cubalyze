@@ -43,8 +43,22 @@ export const PANEL_METRIC_GRID =
  * Used in SolveListPanel's ActivePill and the LeftSidebar active background.
  * Always combine with `bg-sidebar-accent` as the non-glass fallback color.
  *
+ * Selection Pill Geometry Rules (TDD / Visual Standard):
+ *   - NEVER use `inset-y-0` in packed lists (it touches cell dividers causing visual line artifacts).
+ *   - Use `inset-x-1.5 inset-y-0.5` (or padded floating rows) with `rounded-md`.
+ *   - All 4 sides must carry `border: 1px solid var(--glass-border)` so it reads as a true floating frosted card.
+ *
  * Example:
- *   <div className="rounded-md bg-sidebar-accent glass-active-pill" />
+ *   <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-sidebar-accent glass-active-pill" />
  */
 export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as const;
+
+/**
+ * Standard Input / Search Glass Integration:
+ * When liquid-glass is active, all standard `[data-slot="input"]`, `input[type="text"]`,
+ * and `textarea` elements inherit:
+ *   - background: `var(--glass-bg-subtle)`
+ *   - border: `1px solid var(--glass-border)`
+ * This ensures search fields match the panel's tint instead of showing stark solid borders.
+ */
 
