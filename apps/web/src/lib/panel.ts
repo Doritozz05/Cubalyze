@@ -54,6 +54,25 @@ export const PANEL_METRIC_GRID =
 export const GLASS_ACTIVE_PILL_CLASS = "bg-sidebar-accent glass-active-pill" as const;
 
 /**
+ * Liquid Glass Button / Chip Tokens (engine-owned, apps/web/src/index.css).
+ *
+ * When html.liquid-glass is active, neutral button fills are remapped:
+ *   - buttons with bg-surface / bg-card / bg-white / bg-background / bg-canvas
+ *     adopt `var(--glass-btn-bg)` (translucent frosted chip) + glass hairline;
+ *   - the secondary / muted / accent tokens point at the same chip token, so
+ *     shadcn secondary/outline/ghost variants and selected chips tint with
+ *     the backplate instead of rendering solid white/gray;
+ *   - hover raises to `var(--glass-btn-bg-hover)` (+1px hairline shadow).
+ *
+ * Buttons NEVER get backdrop-filter under glass (nested blur → milky).
+ * Primary / destructive / semantic state buttons keep their solid fills.
+ * The dock and the context menu are the designed exceptions: their buttons
+ * are flat (icon-only pills / menu items), so the engine zeroes their rest
+ * fill inside [data-context-zone="dock"] and
+ * [data-context-zone="context-menu"] (only the hover chip remains).
+ */
+
+/**
  * Standard Input / Search Glass Integration:
  * When liquid-glass is active, all standard `[data-slot="input"]`, `input[type="text"]`,
  * and `textarea` elements inherit:

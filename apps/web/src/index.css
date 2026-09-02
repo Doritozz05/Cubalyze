@@ -228,6 +228,10 @@
   --glass-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
   --glass-scrollbar-thumb: rgba(0, 0, 0, calc(0.14 + var(--glass-opacity, 0.65) * 0.10));
   --glass-scrollbar-thumb-hover: rgba(0, 0, 0, calc(0.24 + var(--glass-opacity, 0.65) * 0.14));
+  /* Buttons / chips: neutral fills become translucent frosted chips; hover
+     steps the alpha up instead of snapping to an opaque gray/white patch. */
+  --glass-btn-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.8));
+  --glass-btn-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.95));
 }
 
 .dark {
@@ -299,6 +303,10 @@
   --glass-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.45);
   --glass-scrollbar-thumb: rgba(255, 255, 255, calc(0.16 + var(--glass-opacity, 0.65) * 0.12));
   --glass-scrollbar-thumb-hover: rgba(255, 255, 255, calc(0.28 + var(--glass-opacity, 0.65) * 0.16));
+  /* Buttons / chips: brighter frosted fill for the low-glare canvas; hover
+     nudges toward the panel's light so the raise reads in both themes. */
+  --glass-btn-bg: rgba(38, 43, 49, calc(var(--glass-opacity, 0.65) * 0.8));
+  --glass-btn-bg-hover: rgba(48, 54, 61, calc(var(--glass-opacity, 0.65) * 0.95));
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -316,6 +324,12 @@ html.liquid-glass {
   --sidebar-accent: rgba(0, 0, 0, 0.08);
   --sidebar-accent-foreground: #212529;
   --line: var(--glass-border);
+  /* Buttons & chips: secondary / muted / accent (ghost hovers, selected
+     chips, steppers) inherit the frosted chip token so interactive fills
+     tint with the backplate instead of rendering solid white/gray. */
+  --secondary: var(--glass-btn-bg);
+  --muted: var(--glass-btn-bg);
+  --accent: var(--glass-btn-bg);
 }
 
 html.dark.liquid-glass,
@@ -397,6 +411,63 @@ html.liquid-glass input[type="text"]:focus-visible,
 html.liquid-glass input[type="search"]:focus-visible,
 html.liquid-glass textarea:focus-visible {
   border-color: var(--ink-3) !important;
+}
+
+/* ── Buttons & interactive chips: harmonize with liquid glass ────────────
+   Neutral fills (surface / surface-2 / card / white / background / canvas)
+   become translucent frosted chips via --glass-btn-bg. NO backdrop-filter
+   here on purpose: buttons nest inside already-blurred glass panels and
+   blur-over-blur turns them milky (DESIGN.md nesting rule). Hover raises
+   the chip by stepping the glass alpha up (--glass-btn-bg-hover) with a
+   hairline shadow instead of snapping to an opaque gray/white patch.
+   Token-driven fills (secondary / muted / accent — incl. ghost hovers and
+   selected chips) are remapped in the html.liquid-glass variable block
+   above; primary, destructive and the semantic state buttons (ready / hold
+   / dnf / +2 / caution, and bg-ink) keep their solid colors so emphasis
+   survives the glass. The dock is the one DESIGNED exception: its buttons
+   are flat icon-only pills (see block below), so they are never given a
+   persistent chip fill. */
+html.liquid-glass button[class*="bg-surface"],
+html.liquid-glass button[class*="bg-card"],
+html.liquid-glass button[class*="bg-white"],
+html.liquid-glass button[class*="bg-background"],
+html.liquid-glass button[class*="bg-canvas"],
+html.liquid-glass [data-slot="button"][class*="bg-surface"],
+html.liquid-glass [data-slot="button"][class*="bg-card"],
+html.liquid-glass [data-slot="button"][class*="bg-white"],
+html.liquid-glass [data-slot="button"][class*="bg-background"],
+html.liquid-glass [data-slot="button"][class*="bg-canvas"] {
+  background-color: var(--glass-btn-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass button[class*="bg-canvas"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Flat-button exceptions: dock pills & context-menu items ─────────────
+   The dock bar is a flat icon tray BY DESIGN (macOS style, see
+   WidgetDock.tsx) and the context menu renders flat icon+label items
+   (see ContextMenu/ContextMenu.tsx): their buttons never carry a
+   background at rest. The remap above keys off [class*="bg-surface"],
+   which also catches hover-only utilities (hover:bg-surface-2) — so
+   every dock pill / menu item would render as a persistent chip. Zero
+   the rest fill inside those zones; the engine's hover rule above still
+   supplies the raised hover chip, destructive items keep their own red
+   wash, and edit-mode badges (bare bg-surface fills) stay untouched. */
+html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"] {
+  background-color: transparent !important;
 }
 
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */

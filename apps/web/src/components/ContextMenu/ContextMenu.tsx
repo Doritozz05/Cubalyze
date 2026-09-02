@@ -85,6 +85,7 @@ export function ContextMenu() {
         <motion.div
             ref={menuRef}
             role="menu"
+            data-context-zone="context-menu"
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
