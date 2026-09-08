@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -13,6 +13,8 @@ import {
   RotateCcw,
   X,
   Check,
+  Eye,
+  Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
@@ -32,6 +34,28 @@ type StudioTab = 'presets' | 'colors' | 'liquid' | 'background' | 'reset';
 export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) {
   const { t } = useTranslation('settings');
   const [activeTab, setActiveTab] = useState<StudioTab>('presets');
+  // Mobile (<lg): preview and controls compete for 92dvh — show one at a
+  // time instead of stacking both into an unreadable squeeze.
+  const [mobileView, setMobileView] = useState<'preview' | 'customize'>('preview');
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  const handleTabKeyDown = (e: React.KeyboardEvent) => {
+    const order: StudioTab[] = ['presets', 'colors', 'liquid', 'background', 'reset'];
+    const idx = order.indexOf(activeTab);
+    let next: number | null = null;
+    if (e.key === 'ArrowRight') next = (idx + 1) % order.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + order.length) % order.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = order.length - 1;
+    if (next !== null) {
+      e.preventDefault();
+      const id = order[next] as StudioTab;
+      setActiveTab(id);
+      tabsRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-tab-id="${id}"]`)
+        ?.focus();
+    }
+  };
 
   // Preferences Store
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
@@ -72,7 +96,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92vh] max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92vh] h-[92dvh] max-h-[92vh] max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
       >
         <DialogTitle className="sr-only">
           {t('appearance.themeStudioTitle')}
@@ -104,17 +128,65 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
           </button>
         </div>
 
+        {/* Mobile view switcher: preview OR controls, never both squeezed */}
+        <div className="flex shrink-0 items-center gap-1 border-b border-line bg-surface-2/40 p-2 lg:hidden">
+          {(
+            [
+              { id: 'preview', label: t('appearance.viewPreview', 'Vista previa'), icon: Eye },
+              { id: 'customize', label: t('appearance.viewCustomize', 'Personalizar'), icon: Settings2 },
+            ] as const
+          ).map((v) => {
+            const Icon = v.icon;
+            const active = mobileView === v.id;
+            return (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setMobileView(v.id)}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
+                  active
+                    ? 'bg-surface text-ink shadow-xs font-semibold'
+                    : 'text-ink-3 hover:text-ink hover:bg-surface/50'
+                )}
+              >
+                <Icon className="size-3.5" />
+                <span>{v.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Studio Workspace Layout */}
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row overflow-hidden">
           {/* Left Column: Live Scaled Timer Preview */}
-          <div className="flex min-h-65 flex-1 flex-col border-b border-line p-3 lg:border-b-0 lg:border-r lg:p-5 overflow-hidden">
+          <div
+            className={cn(
+              'min-h-0 flex-1 flex-col border-b border-line p-3 lg:border-b-0 lg:border-r lg:p-5 overflow-hidden',
+              mobileView === 'preview' ? 'flex' : 'hidden',
+              'lg:flex'
+            )}
+          >
             <ScaledTimerPreview />
           </div>
 
           {/* Right Column: Settings Panel */}
-          <div className="flex h-full min-h-0 w-full flex-col lg:w-120 shrink-0 bg-surface">
+          <div
+            className={cn(
+              'min-h-0 w-full flex-col lg:w-120 shrink-0 bg-surface lg:flex-none',
+              mobileView === 'customize' ? 'flex flex-1' : 'hidden',
+              'lg:flex lg:self-stretch'
+            )}
+          >
             {/* Tabs Navigation */}
-            <div className="flex shrink-0 border-b border-line bg-surface-2/40 px-3 py-2 overflow-x-auto gap-1">
+            <div
+              ref={tabsRef}
+              role="tablist"
+              aria-label={t('appearance.tabsLabel', 'Theme sections')}
+              onKeyDown={handleTabKeyDown}
+              className="flex shrink-0 gap-1 border-b border-line bg-surface-2/40 px-3 py-2 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+            >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -122,9 +194,20 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab(tab.id)}
+                    role="tab"
+                    data-tab-id={tab.id}
+                    aria-selected={active}
+                    tabIndex={active ? 0 : -1}
+                    onClick={(e) => {
+                      setActiveTab(tab.id);
+                      e.currentTarget.scrollIntoView({
+                        inline: 'center',
+                        block: 'nearest',
+                        behavior: 'smooth',
+                      });
+                    }}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors',
+                      'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink',
                       active
                         ? 'bg-surface text-ink shadow-xs font-semibold'
                         : 'text-ink-3 hover:text-ink hover:bg-surface/50'
@@ -138,7 +221,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
             </div>
 
             {/* Scrollable Tab Content */}
-            <div className="flex-1 overflow-y-auto p-5">
+            <div
+              role="tabpanel"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 sm:p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            >
               {/* Tab 1: Presets */}
               {activeTab === 'presets' && (
                 <div className="flex flex-col gap-3">

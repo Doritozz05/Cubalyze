@@ -5,7 +5,7 @@ import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
-import { Smartphone, Tablet, Monitor } from 'lucide-react';
+import { Smartphone, Tablet, Monitor, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   resolveThemeColors,
@@ -46,6 +46,18 @@ export function ScaledTimerPreview({
   });
 
   const [timerState, setTimerState] = useState<TimerPreviewState>('idle');
+  // Expanded overlay (mobile "ver en grande"): the root becomes a fixed
+  // overlay reusing the same DOM — ResizeObserver rescales automatically.
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expanded]);
 
   // Store subscriptions
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
@@ -93,20 +105,28 @@ export function ScaledTimerPreview({
     const el = wrapperRef.current;
     if (!el) return;
 
+    let raf = 0;
     const updateScale = () => {
-      const availWidth = el.clientWidth - 16;
-      const availHeight = el.clientHeight - 16;
-      const scaleX = availWidth / targetDim.width;
-      const scaleY = availHeight / targetDim.height;
-      const calculated = Math.min(scaleX, scaleY, 0.95);
-      setScale(Math.max(calculated, 0.28));
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const availWidth = el.clientWidth - 16;
+        const availHeight = el.clientHeight - 16;
+        if (availWidth <= 0 || availHeight <= 0) return;
+        const scaleX = availWidth / targetDim.width;
+        const scaleY = availHeight / targetDim.height;
+        const calculated = Math.min(scaleX, scaleY, 0.95);
+        setScale(Math.max(calculated, 0.3));
+      });
     };
 
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [targetDim]);
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [targetDim, expanded]);
 
   // Timer state visuals
   const getTimerDisplay = () => {
@@ -139,9 +159,38 @@ export function ScaledTimerPreview({
   ];
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface-2/40 shadow-inner">
-      {/* Preview Header Toolbar */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/80 px-3.5 py-2.5 backdrop-blur-md">
+    <>
+      {expanded && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+          onClick={() => setExpanded(false)}
+          aria-hidden="true"
+        />
+      )}
+    <div
+      className={cn(
+        'flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface-2/40 shadow-inner',
+        expanded
+          ? 'fixed inset-3 z-[61] h-auto max-h-none sm:inset-6'
+          : 'h-full'
+      )}
+    >
+      {/* Preview Header Toolbar — rounded-t inherits the frame radius:
+          backdrop-filter breaks ancestor overflow+radius clipping in
+          Chromium, so the bar must carry the corner radius itself or its
+          square corners paint over the rounded frame. */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/80 px-3.5 py-2.5 backdrop-blur-md">
+        {/* Expand / collapse (mobile "ver en grande") */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          title={expanded ? t('appearance.previewCollapse', 'Ver más pequeño') : t('appearance.previewExpand', 'Ver en grande')}
+          aria-label={expanded ? t('appearance.previewCollapse', 'Ver más pequeño') : t('appearance.previewExpand', 'Ver en grande')}
+          aria-pressed={expanded}
+          className="flex size-7 items-center justify-center rounded-md border border-line bg-surface-2 text-ink-3 transition-colors hover:text-ink hover:bg-surface"
+        >
+          {expanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+        </button>
         {/* Device Switcher */}
         <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
           {(['mobile', 'tablet', 'desktop'] as DeviceMode[]).map((mode) => {
@@ -194,17 +243,25 @@ export function ScaledTimerPreview({
         </div>
       </div>
 
-      {/* Scaled Stage Area */}
+      {/* Scaled Stage Area — click / double-click opens the large view */}
       <div
         ref={wrapperRef}
-        className="relative flex flex-1 items-center justify-center overflow-hidden p-2 select-none"
+        onDoubleClick={() => setExpanded(true)}
+        title={t('appearance.previewExpand', 'Ver en grande')}
+        className={cn(
+          'relative flex flex-1 items-center justify-center overflow-hidden p-2 select-none',
+          !expanded && 'cursor-zoom-in'
+        )}
       >
         <div
           style={{
             width: targetDim.width * scale,
             height: targetDim.height * scale,
           }}
-          className="relative shrink-0 rounded-2xl shadow-2xl transition-all duration-300 ring-1 ring-line/70 overflow-hidden"
+          // border (not ring) + bg-canvas base + isolate: the transformed
+          // virtual screen inside can no longer paint square corners over
+          // the rounded frame (Chromium overflow+transform clipping bug).
+          className="relative isolate shrink-0 overflow-hidden rounded-2xl border border-line bg-canvas shadow-2xl transition-all duration-300"
         >
           {/* Scaled Virtual Screen */}
           <div
@@ -221,9 +278,10 @@ export function ScaledTimerPreview({
                 : {}),
             }}
             className={cn(
-              'absolute inset-0 flex flex-col bg-canvas text-ink overflow-hidden',
+              'absolute inset-0 flex flex-col overflow-hidden rounded-[inherit] bg-canvas text-ink [backface-visibility:hidden]',
               effectiveLiquid && 'liquid-glass'
             )}
+            data-glass-panel={effectiveLiquid || undefined}
           >
             {/* Background Media inside preview */}
             {effectiveMediaUrl && (
@@ -375,5 +433,6 @@ export function ScaledTimerPreview({
         </div>
       </div>
     </div>
+    </>
   );
 }
