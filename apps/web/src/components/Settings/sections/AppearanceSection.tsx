@@ -43,7 +43,7 @@ export function AppearanceSection() {
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
-  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 90);
+  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
   const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
