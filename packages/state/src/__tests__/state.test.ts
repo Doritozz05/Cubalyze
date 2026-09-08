@@ -43,6 +43,52 @@ describe('PreferencesStore', () => {
     preferencesStore.getState().setThemePreset('default');
   });
 
+  it('manages custom themes (save / rename / delete with cap)', () => {
+    const store = preferencesStore.getState();
+    expect(store.customThemes).toEqual([]);
+
+    const id = store.saveCustomTheme({
+      name: '  Mi tema  ',
+      base: 'dark',
+      colors: { '--canvas': '#000000' },
+    });
+    expect(typeof id).toBe('string');
+
+    let themes = preferencesStore.getState().customThemes;
+    expect(themes).toHaveLength(1);
+    expect(themes[0].name).toBe('Mi tema');
+    expect(themes[0].base).toBe('dark');
+    expect(themes[0].colors).toEqual({ '--canvas': '#000000' });
+
+    preferencesStore.getState().renameCustomTheme(id as string, 'Noche total');
+    expect(preferencesStore.getState().customThemes[0].name).toBe('Noche total');
+
+    // Empty renames are ignored.
+    preferencesStore.getState().renameCustomTheme(id as string, '   ');
+    expect(preferencesStore.getState().customThemes[0].name).toBe('Noche total');
+
+    preferencesStore.getState().deleteCustomTheme(id as string);
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
+  it('caps custom themes at MAX_CUSTOM_THEMES', () => {
+    const store = preferencesStore.getState();
+    for (let i = 0; i < 10; i++) {
+      expect(
+        store.saveCustomTheme({ name: `T${i}`, base: 'light', colors: {} }),
+      ).not.toBeNull();
+    }
+    expect(preferencesStore.getState().customThemes).toHaveLength(10);
+    expect(
+      store.saveCustomTheme({ name: 'overflow', base: 'light', colors: {} }),
+    ).toBeNull();
+    // Cleanup for other tests.
+    for (const t of preferencesStore.getState().customThemes) {
+      preferencesStore.getState().deleteCustomTheme(t.id);
+    }
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
   it('initializes language preference with auto default', () => {
     expect(preferencesStore.getState().language).toBe('auto');
   });

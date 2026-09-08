@@ -25,6 +25,29 @@ export type AppLanguage = 'auto' | 'en' | 'es';
 /** Visibility mode for the top bar (header + glass dock). */
 export type HeaderMode = 'always' | 'hidden' | 'autohide';
 
+/** Maximum number of user-created custom themes. */
+export const MAX_CUSTOM_THEMES = 10;
+
+/**
+ * User-created theme: a full snapshot of resolved color tokens plus the
+ * light/dark base it was built on. `colors` is a plain record on purpose —
+ * the canonical `ThemeColors` type lives in the web app, and this package
+ * must not import from it.
+ */
+export interface CustomTheme {
+  id: string;
+  name: string;
+  base: 'light' | 'dark';
+  colors: Record<string, string>;
+  createdAt: number;
+}
+
+export interface CustomThemeInput {
+  name: string;
+  base: 'light' | 'dark';
+  colors: Record<string, string>;
+}
+
 export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
@@ -38,6 +61,13 @@ export interface PreferencesState {
   setCustomThemeColor: (token: string, color: string) => void;
   setCustomThemeColors: (colors: Record<string, string> | null) => void;
   resetCustomThemeColors: () => void;
+
+  /** User-created full themes (snapshots). Persisted; capped at MAX_CUSTOM_THEMES. */
+  customThemes: CustomTheme[];
+  /** Saves a snapshot, returns its id (or null when the cap is reached). */
+  saveCustomTheme: (input: CustomThemeInput) => string | null;
+  renameCustomTheme: (id: string, name: string) => void;
+  deleteCustomTheme: (id: string) => void;
 
   /**
    * Top-bar (header + glass dock) visibility mode:
@@ -271,6 +301,7 @@ const DEFAULT_VALUES = {
   theme: 'light' as const,
   themePreset: 'default',
   customThemeColors: null as Record<string, string> | null,
+  customThemes: [] as CustomTheme[],
   headerMode: 'autohide' as const,
   appearance3d: 'default',
   scrambleFollowsCube: true,
@@ -334,7 +365,7 @@ const DEFAULT_VALUES = {
 export const createPreferencesStore = () => {
   return createStore<PreferencesState>()(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...DEFAULT_VALUES,
 
         setTheme: (theme) => set({ theme }),
@@ -345,6 +376,31 @@ export const createPreferencesStore = () => {
           })),
         setCustomThemeColors: (customThemeColors) => set({ customThemeColors }),
         resetCustomThemeColors: () => set({ customThemeColors: null }),
+        saveCustomTheme: (input) => {
+          const { customThemes } = get();
+          if (customThemes.length >= MAX_CUSTOM_THEMES) return null;
+          const name = input.name.trim().slice(0, 40) || 'Mi tema';
+          const theme: CustomTheme = {
+            id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name,
+            base: input.base,
+            colors: { ...input.colors },
+            createdAt: Date.now(),
+          };
+          set({ customThemes: [...customThemes, theme] });
+          return theme.id;
+        },
+        renameCustomTheme: (id, name) => {
+          const next = name.trim().slice(0, 40);
+          if (!next) return;
+          set((state) => ({
+            customThemes: state.customThemes.map((t) => (t.id === id ? { ...t, name: next } : t)),
+          }));
+        },
+        deleteCustomTheme: (id) =>
+          set((state) => ({
+            customThemes: state.customThemes.filter((t) => t.id !== id),
+          })),
         setHeaderMode: (headerMode) => set({ headerMode }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
@@ -407,6 +463,7 @@ export const createPreferencesStore = () => {
           theme: state.theme,
           themePreset: state.themePreset,
           customThemeColors: state.customThemeColors,
+          customThemes: state.customThemes,
           headerMode: state.headerMode,
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
@@ -458,10 +515,14 @@ export const createPreferencesStore = () => {
         // v3: `showHeader`/`dockAutoHide` booleans were replaced by the
         // `headerMode` tri-state ('always' | 'hidden' | 'autohide').
         // v4: `shortcuts.startTimer` (configurable timer start key) added.
-        version: 4,
+        // v5: `customThemes` (user-created full themes) added.
+        version: 5,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
           const migrated: Record<string, unknown> = { ...raw };
+          if (!Array.isArray(raw.customThemes)) {
+            migrated.customThemes = [];
+          }
           if (version < 2) {
             if (typeof raw.showSessionStats === 'boolean') {
               migrated.showBottomLayout = raw.showSessionStats;

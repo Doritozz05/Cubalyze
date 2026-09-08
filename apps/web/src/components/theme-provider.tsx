@@ -9,13 +9,14 @@ import {
   resolveThemeColors,
   getDerivedThemeTokens,
   getDerivedLiquidGlassTokens,
-  THEME_PRESETS,
 } from "@/theme/themePresets";
+import { findPreset } from "@/theme/customThemes";
 
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
   const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? "default");
   const customThemeColors = useStore(preferencesStore, (s) => s.customThemeColors);
+  const customThemes = useStore(preferencesStore, (s) => s.customThemes);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const { theme: nextTheme, setTheme } = useTheme();
@@ -35,7 +36,7 @@ function ThemeSync() {
   // - system  -> OS scheme mapped to the classic light/dark presets
   // - default preset -> follows the explicit base theme (light/dark)
   // - explicit preset -> its own isDark flag wins
-  const presetObj = THEME_PRESETS.find((p) => p.id === themePreset);
+  const presetObj = findPreset(themePreset, customThemes);
   const resolvedBase: "light" | "dark" =
     storeTheme === "system"
       ? osDark
@@ -65,7 +66,7 @@ function ThemeSync() {
       preferencesStore.getState().setTheme(resolvedBase);
     }
 
-    const resolved = resolveThemeColors(themePreset, resolvedBase, customThemeColors);
+    const resolved = resolveThemeColors(themePreset, resolvedBase, customThemeColors, customThemes);
     const derived = getDerivedThemeTokens(resolved);
     const allVars = { ...resolved, ...derived };
 
@@ -125,7 +126,7 @@ function ThemeSync() {
       root.style.removeProperty("--glass-btn-bg-hover");
       root.style.removeProperty("--glass-border");
     }
-  }, [themePreset, customThemeColors, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity]);
+  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity]);
 
   return null;
 }

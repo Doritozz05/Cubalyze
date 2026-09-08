@@ -18,9 +18,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
+import { findPreset } from '@/theme/customThemes';
 import { getPresetIcon } from '@/theme/themePresetIcons';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
 import { ThemeColorSection } from './ThemeColorSection';
+import { CustomThemesSection } from './CustomThemesSection';
+import { PresetDots } from './PresetDots';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -65,6 +68,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const customThemeColors = useStore(preferencesStore, (s) => s.customThemeColors);
   const setCustomThemeColor = useStore(preferencesStore, (s) => s.setCustomThemeColor);
   const resetCustomThemeColors = useStore(preferencesStore, (s) => s.resetCustomThemeColors);
+  const customThemes = useStore(preferencesStore, (s) => s.customThemes);
 
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
@@ -72,7 +76,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
 
   // Computed active colors
-  const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors);
+  const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors, customThemes);
 
   const tabs = [
     { id: 'presets' as const, label: t('appearance.tabs.presets'), icon: Palette },
@@ -83,12 +87,11 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   ];
 
   const handleSelectPreset = (presetId: string) => {
+    const preset = findPreset(presetId, customThemes);
+    // 'light' isn't in the preset list but resolves to the classic light theme.
+    const isDark = preset ? preset.isDark : presetId !== 'light';
     setThemePreset(presetId);
-    if (presetId === 'light') {
-      preferencesStore.getState().setTheme('light');
-    } else {
-      preferencesStore.getState().setTheme('dark');
-    }
+    preferencesStore.getState().setTheme(isDark ? 'dark' : 'light');
     // Clearing custom overrides when choosing an explicit preset ensures clean preset application
     resetCustomThemeColors();
   };
@@ -270,38 +273,13 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             {t(preset.descriptionKey, '')}
                           </p>
 
-                          {/* Color Swatch Dots — aria-labels, never native `title`
-                              (native tooltips clash with Radix + fullscreen) */}
-                          <div className="mt-1 flex items-center gap-1.5 rounded-lg border border-line/60 bg-surface/60 p-1.5">
-                            <div
-                              role="img"
-                              aria-label={t('appearance.colors.canvas')}
-                              className="size-4.5 rounded-full border border-black/10 shadow-xs"
-                              style={{ backgroundColor: preset.previewColors.canvas }}
-                            />
-                            <div
-                              role="img"
-                              aria-label={t('appearance.colors.surface')}
-                              className="size-4.5 rounded-full border border-black/10 shadow-xs"
-                              style={{ backgroundColor: preset.previewColors.surface }}
-                            />
-                            <div
-                              role="img"
-                              aria-label={t('appearance.colors.ink')}
-                              className="size-4.5 rounded-full border border-black/10 shadow-xs"
-                              style={{ backgroundColor: preset.previewColors.ink }}
-                            />
-                            <div
-                              role="img"
-                              aria-label={t('appearance.colors.ready')}
-                              className="size-4.5 rounded-full border border-black/10 shadow-xs ml-auto"
-                              style={{ backgroundColor: preset.previewColors.accent }}
-                            />
-                          </div>
+                          <PresetDots preset={preset} />
                         </button>
                       );
                     })}
                   </div>
+
+                  <CustomThemesSection />
                 </div>
               )}
 

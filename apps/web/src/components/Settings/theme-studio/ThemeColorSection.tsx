@@ -37,7 +37,6 @@ const ACCENT_GROUP: ColorGroupItem[] = [
   { token: '--dnf', labelKey: 'appearance.colors.dnf' },
   { token: '--plus2', labelKey: 'appearance.colors.plus2' },
   { token: '--caution', labelKey: 'appearance.colors.caution' },
-  { token: '--accent-emerald', labelKey: 'appearance.colors.accentEmerald' },
 ];
 
 export function ThemeColorSection({

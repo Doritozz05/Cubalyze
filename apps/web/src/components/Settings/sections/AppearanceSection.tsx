@@ -4,7 +4,7 @@ import { useStore } from 'zustand';
 import { preferencesStore, type HeaderMode } from '@cubeforge/state';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Palette, Monitor, LayoutGrid, Sliders } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dockEditStore } from '@/widgets/dock/dockEditStore';
@@ -12,6 +12,7 @@ import { useIsTouch } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import type { ParseKeys } from 'i18next';
 import { ThemeStudioModal } from '@/components/Settings/theme-studio/ThemeStudioModal';
+import { CubeAppearanceSection } from '@/components/Settings/components/CubeAppearanceSection';
 
 import {
   Select,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { THEME_PRESETS } from '@/theme/themePresets';
+import { findPreset, getAllPresets } from '@/theme/customThemes';
 import { getPresetIcon } from '@/theme/themePresetIcons';
 
 /**
@@ -44,6 +45,8 @@ export function AppearanceSection() {
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
   const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? 'default');
   const setThemePreset = useStore(preferencesStore, (s) => s.setThemePreset);
+  const customThemes = useStore(preferencesStore, (s) => s.customThemes);
+  const allPresets = useMemo(() => getAllPresets(customThemes), [customThemes]);
   // Selector mirrors the full Theme Studio catalog: system follows the OS
   // (classic light/dark), any other value is the active preset id.
   const selectorValue =
@@ -55,7 +58,7 @@ export function AppearanceSection() {
       setTheme('system');
       return;
     }
-    const preset = THEME_PRESETS.find((p) => p.id === value);
+    const preset = findPreset(value, customThemes);
     if (!preset) return;
     setThemePreset(preset.id);
     setTheme(preset.isDark ? 'dark' : 'light');
@@ -124,13 +127,13 @@ export function AppearanceSection() {
                   <span>{t('appearance.system')}</span>
                 </div>
               </SelectItem>
-              {THEME_PRESETS.map((preset) => {
-                const Icon = getPresetIcon(preset.id);
+              {allPresets.map((preset) => {
+                const Icon = preset.customName ? Palette : getPresetIcon(preset.id);
                 return (
                   <SelectItem key={preset.id} value={preset.id}>
                     <div className="flex items-center gap-2">
                       <Icon className="size-3.5 shrink-0 text-ink-2" aria-hidden="true" />
-                      <span>{t(preset.labelKey, preset.id)}</span>
+                      <span>{preset.customName ?? t(preset.labelKey, preset.id)}</span>
                     </div>
                   </SelectItem>
                 );
@@ -139,6 +142,9 @@ export function AppearanceSection() {
           </Select>
         }
       />
+
+      {/* 3D cube skin + custom stickers */}
+      <CubeAppearanceSection />
 
       {/* Header visibility — mobile keeps the simple on/off toggle; desktop
           gets the tri-state selector (always visible / hidden / auto-hide). */}

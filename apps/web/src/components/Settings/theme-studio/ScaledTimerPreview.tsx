@@ -64,6 +64,7 @@ export function ScaledTimerPreview({
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
   const storePreset = useStore(preferencesStore, (s) => s.themePreset ?? 'default');
   const storeCustomColors = useStore(preferencesStore, (s) => s.customThemeColors);
+  const storeCustomThemes = useStore(preferencesStore, (s) => s.customThemes);
   const storeLiquid = useStore(preferencesStore, (s) => s.liquidGlass);
   const storeLiquidOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
 
@@ -84,7 +85,7 @@ export function ScaledTimerPreview({
 
   // Compute CSS variable styles for preview container
   const containerTokens = useMemo(() => {
-    const resolved = resolveThemeColors(effectivePreset, storeTheme, effectiveCustomColors);
+    const resolved = resolveThemeColors(effectivePreset, storeTheme, effectiveCustomColors, storeCustomThemes);
     const derived = getDerivedThemeTokens(resolved);
     const isClassicPreset =
       effectivePreset === 'default' || effectivePreset === 'light' || effectivePreset === 'dark';
@@ -96,7 +97,7 @@ export function ScaledTimerPreview({
       ...derived,
       ...glass,
     };
-  }, [effectivePreset, storeTheme, effectiveCustomColors, effectiveLiquid, effectiveLiquidOpacity]);
+  }, [effectivePreset, storeTheme, effectiveCustomColors, storeCustomThemes, effectiveLiquid, effectiveLiquidOpacity]);
 
   // Scaled container calculations
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -362,7 +363,7 @@ export function ScaledTimerPreview({
                 {/* Header chips */}
                 <div className="flex w-full items-center justify-between">
                   <div className="flex items-center gap-2 rounded-lg border border-line bg-surface/90 px-2.5 py-1 text-xs font-semibold shadow-xs backdrop-blur-sm">
-                    <span className="size-2 rounded-full bg-accent-emerald" />
+                    <span className="size-2 rounded-full bg-ready" />
                     <span>3×3×3</span>
                     <span className="text-[0.65rem] text-ink-3">#42</span>
                   </div>

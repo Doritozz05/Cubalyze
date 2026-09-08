@@ -29,7 +29,6 @@ export interface ThemeColors {
   '--plus2-soft': string;
   '--caution': string;
   '--caution-soft': string;
-  '--accent-emerald': string;
 }
 
 export type ThemeTokenKey = keyof ThemeColors;
@@ -40,6 +39,8 @@ export interface ThemePreset {
   descriptionKey: string;
   isDark: boolean;
   colors: ThemeColors;
+  /** User-created themes carry their editable name here (wins over labelKey). */
+  customName?: string;
   previewColors: {
     canvas: string;
     surface: string;
@@ -67,7 +68,6 @@ export const DEFAULT_LIGHT_COLORS: ThemeColors = {
   '--plus2-soft': '#ffedd5',
   '--caution': '#d97706',
   '--caution-soft': '#fef3c7',
-  '--accent-emerald': '#047857',
 };
 
 export const DEFAULT_DARK_COLORS: ThemeColors = {
@@ -89,7 +89,6 @@ export const DEFAULT_DARK_COLORS: ThemeColors = {
   '--plus2-soft': 'rgba(217, 164, 65, 0.14)',
   '--caution': '#facc15',
   '--caution-soft': 'rgba(250, 204, 21, 0.14)',
-  '--accent-emerald': '#34d399',
 };
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -143,7 +142,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(251, 191, 36, 0.14)',
       '--caution': '#facc15',
       '--caution-soft': 'rgba(250, 204, 21, 0.14)',
-      '--accent-emerald': '#10b981',
     },
     previewColors: {
       canvas: '#000000',
@@ -176,7 +174,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(235, 203, 139, 0.15)',
       '--caution': '#ebcb8b',
       '--caution-soft': 'rgba(235, 203, 139, 0.15)',
-      '--accent-emerald': '#88c0d0',
     },
     previewColors: {
       canvas: '#2e3440',
@@ -209,7 +206,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(255, 230, 0, 0.16)',
       '--caution': '#ffe600',
       '--caution-soft': 'rgba(255, 230, 0, 0.16)',
-      '--accent-emerald': '#00f0ff',
     },
     previewColors: {
       canvas: '#090814',
@@ -242,7 +238,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(250, 204, 21, 0.15)',
       '--caution': '#facc15',
       '--caution-soft': 'rgba(250, 204, 21, 0.15)',
-      '--accent-emerald': '#34d399',
     },
     previewColors: {
       canvas: '#111814',
@@ -275,7 +270,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(251, 191, 36, 0.14)',
       '--caution': '#fbbf24',
       '--caution-soft': 'rgba(251, 191, 36, 0.14)',
-      '--accent-emerald': '#f97316',
     },
     previewColors: {
       canvas: '#181211',
@@ -308,7 +302,6 @@ export const THEME_PRESETS: ThemePreset[] = [
       '--plus2-soft': 'rgba(224, 175, 104, 0.15)',
       '--caution': '#e0af68',
       '--caution-soft': 'rgba(224, 175, 104, 0.15)',
-      '--accent-emerald': '#7aa2f7',
     },
     previewColors: {
       canvas: '#16161e',
@@ -331,14 +324,18 @@ export function getSystemBaseTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+import type { CustomTheme } from '@cubeforge/state';
+
 /**
  * Resolves the complete map of CSS variables given the preset, base light/dark mode,
- * and any user overrides.
+ * and any user overrides. `customThemes` lets user-created full themes resolve
+ * exactly like built-in presets.
  */
 export function resolveThemeColors(
   presetId: string,
   baseTheme: 'light' | 'dark' | 'system',
   customColors?: Record<string, string> | null,
+  customThemes: CustomTheme[] = [],
 ): ThemeColors {
   const base = baseTheme === 'system' ? getSystemBaseTheme() : baseTheme;
   let effectiveId = presetId;
@@ -347,11 +344,14 @@ export function resolveThemeColors(
   }
 
   const preset = THEME_PRESETS.find((p) => p.id === effectiveId);
+  const custom = !preset ? customThemes.find((c) => c.id === effectiveId) : undefined;
   const baseColors: ThemeColors = preset
     ? { ...preset.colors }
-    : effectiveId === 'light'
-      ? { ...DEFAULT_LIGHT_COLORS }
-      : { ...DEFAULT_DARK_COLORS };
+    : custom
+      ? ({ ...custom.colors } as unknown as ThemeColors)
+      : effectiveId === 'light'
+        ? { ...DEFAULT_LIGHT_COLORS }
+        : { ...DEFAULT_DARK_COLORS };
 
   if (customColors) {
     return {

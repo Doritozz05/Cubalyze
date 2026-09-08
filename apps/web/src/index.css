@@ -85,8 +85,6 @@
   --color-line: var(--line);
   --color-line-2: var(--line-2);
 
-  --color-accent-emerald: var(--accent-emerald);
-
   /* Phase / training accent dots — the "rainbow" used to colour-code
      exercises, calendar tasks and progress markers. Kept as first-class
      palette tokens (same Tailwind-400 values as before, so visuals don't
@@ -166,7 +164,6 @@
   /* Solid (non-glass) surface-2 — NEVER remapped by the liquid-glass
      engine, so small identity tiles (sidebar CubeMark frame) stay dry. */
   --surface-2-solid: #f1f3f5;
-  --accent-emerald: #047857;
   /* Phase dots (light) — identical hex values to the previous Tailwind-400
      classes so colours don't change, they're just tokenised now. */
   --phase-blue: #60a5fa;
@@ -282,7 +279,6 @@
   --surface-2-solid: #24292e;
   --card: #1f2429;
   --popover: #22282e;
-  --accent-emerald: #34d399;
   --ink: #e9ecef;
   --ink-2: #adb5bd;
   /* ink-3 brightened (gray-500 → #9099a3) so secondary text clears 4.5:1
