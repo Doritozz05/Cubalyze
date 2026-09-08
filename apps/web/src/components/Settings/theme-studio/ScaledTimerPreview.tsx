@@ -85,8 +85,10 @@ export function ScaledTimerPreview({
   const containerTokens = useMemo(() => {
     const resolved = resolveThemeColors(effectivePreset, storeTheme, effectiveCustomColors);
     const derived = getDerivedThemeTokens(resolved);
+    const isClassicPreset =
+      effectivePreset === 'default' || effectivePreset === 'light' || effectivePreset === 'dark';
     const glass = effectiveLiquid
-      ? getDerivedLiquidGlassTokens(resolved, effectiveLiquidOpacity)
+      ? getDerivedLiquidGlassTokens(resolved, effectiveLiquidOpacity, undefined, isClassicPreset)
       : {};
     return {
       ...resolved,

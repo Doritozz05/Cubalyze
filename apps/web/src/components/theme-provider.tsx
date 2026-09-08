@@ -69,16 +69,51 @@ function ThemeSync() {
     const derived = getDerivedThemeTokens(resolved);
     const allVars = { ...resolved, ...derived };
 
-    for (const [key, value] of Object.entries(allVars)) {
-      root.style.setProperty(key, value);
+    // Classic presets (light / dark / default) keep exact main parity: their
+    // values already match the static :root / .dark palettes, so under liquid
+    // glass NO inline variable is written — the static CSS plus the liquid
+    // engine own every token. Writing them inline would beat the engine's
+    // remaps (inline > stylesheet) and turn frosted surfaces (sidebar,
+    // selected pill, hairlines) opaque. Fancy presets keep dynamic tokens.
+    const isClassicPreset =
+      themePreset === "default" || themePreset === "light" || themePreset === "dark";
+    // Explicit user color overrides always win — they are written inline even
+    // under liquid glass (same as fancy presets).
+    const hasCustomOverrides =
+      !!customThemeColors && Object.keys(customThemeColors).length > 0;
+    const useStaticCascade = liquidGlass && isClassicPreset && !hasCustomOverrides;
+
+    if (useStaticCascade) {
+      for (const key of Object.keys(allVars)) {
+        root.style.removeProperty(key);
+      }
+    } else {
+      for (const [key, value] of Object.entries(allVars)) {
+        root.style.setProperty(key, value);
+      }
     }
 
     if (liquidGlass) {
       root.classList.add("liquid-glass");
       root.setAttribute("data-liquid-glass", "true");
-      const glassTokens = getDerivedLiquidGlassTokens(resolved, liquidGlassOpacity);
-      for (const [key, value] of Object.entries(glassTokens)) {
-        root.style.setProperty(key, value);
+      if (useStaticCascade) {
+        // Main wrote only --glass-opacity; the rest stays static.
+        root.style.setProperty("--glass-opacity", `${liquidGlassOpacity / 100}`);
+        root.style.removeProperty("--glass-bg");
+        root.style.removeProperty("--glass-bg-subtle");
+        root.style.removeProperty("--glass-btn-bg");
+        root.style.removeProperty("--glass-btn-bg-hover");
+        root.style.removeProperty("--glass-border");
+      } else {
+        const glassTokens = getDerivedLiquidGlassTokens(
+          resolved,
+          liquidGlassOpacity,
+          resolvedBase === "dark",
+          isClassicPreset,
+        );
+        for (const [key, value] of Object.entries(glassTokens)) {
+          root.style.setProperty(key, value);
+        }
       }
     } else {
       root.classList.remove("liquid-glass");

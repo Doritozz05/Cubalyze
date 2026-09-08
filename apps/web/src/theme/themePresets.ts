@@ -395,21 +395,61 @@ export function getDerivedThemeTokens(colors: ThemeColors): Record<string, strin
 }
 
 /**
- * Derives dynamic frosted glass colors from the active theme's surface and line tokens,
+ * Detects a dark canvas from its relative luminance. Used to pick the correct
+ * glass hairline color (white-on-dark, black-on-light) without threading
+ * preset metadata through every caller.
+ */
+function canvasIsDark(colors: ThemeColors): boolean {
+  const raw = (colors['--canvas'] ?? '').trim();
+  let r: number | undefined;
+  let g: number | undefined;
+  let b: number | undefined;
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(raw)?.[1];
+  if (hex) {
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+    r = parseInt(full.slice(0, 2), 16);
+    g = parseInt(full.slice(2, 4), 16);
+    b = parseInt(full.slice(4, 6), 16);
+  } else {
+    const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i.exec(raw);
+    if (m) {
+      r = Number(m[1]);
+      g = Number(m[2]);
+      b = Number(m[3]);
+    }
+  }
+  if (r === undefined || g === undefined || b === undefined) return false;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < 0.5;
+}
+
+/**
+ * Derives dynamic frosted glass colors from the active theme's surface tokens,
  * ensuring Liquid Glass looks native across Light, Dark, OLED, Nord, etc.
+ *
+ * For the classic presets (light / dark / default) the hairline border
+ * intentionally does NOT reuse the solid `--line` token: color-mixing an
+ * opaque line color yields a heavy gray/white frame. Instead it reproduces
+ * the original translucent hairline (black-on-light, white-on-dark) so
+ * panel, sidebar and dialog edges stay subtle. Non-classic presets keep
+ * their line-tinted glass border (`classicHairline: false`).
  */
 export function getDerivedLiquidGlassTokens(
   colors: ThemeColors,
   opacityPercent: number,
+  isDark: boolean = canvasIsDark(colors),
+  classicHairline: boolean = true,
 ): Record<string, string> {
   const op = Math.max(0.15, Math.min(0.95, opacityPercent / 100));
+  const borderAlpha = isDark ? 0.06 + op * 0.08 : 0.04 + op * 0.06;
   return {
     '--glass-opacity': `${op}`,
     '--glass-bg': `color-mix(in srgb, ${colors['--surface']} ${Math.round(op * 100)}%, transparent)`,
     '--glass-bg-subtle': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 75)}%, transparent)`,
     '--glass-btn-bg': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 80)}%, transparent)`,
     '--glass-btn-bg-hover': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 95)}%, transparent)`,
-    '--glass-border': `color-mix(in srgb, ${colors['--line']} ${Math.round((0.5 + op * 0.5) * 100)}%, transparent)`,
+    '--glass-border': classicHairline
+      ? `rgba(${isDark ? '255, 255, 255' : '0, 0, 0'}, ${borderAlpha.toFixed(3)})`
+      : `color-mix(in srgb, ${colors['--line']} ${Math.round((0.5 + op * 0.5) * 100)}%, transparent)`,
   };
 }
 
