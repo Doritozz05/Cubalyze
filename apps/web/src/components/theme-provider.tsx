@@ -8,7 +8,7 @@ import { preferencesStore } from "@cubeforge/state";
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
-  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
+  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 90);
   const { theme: nextTheme, setTheme } = useTheme();
 
   React.useEffect(() => {

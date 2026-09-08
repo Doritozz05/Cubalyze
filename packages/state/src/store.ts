@@ -197,7 +197,7 @@ export interface PreferencesState {
   liquidGlass: boolean;
   setLiquidGlass: (value: boolean) => void;
 
-  /** Opacity percentage for liquid glass effect (10 - 95, default 65). */
+  /** Opacity percentage for liquid glass effect (10 - 95, default 90). */
   liquidGlassOpacity: number;
   setLiquidGlassOpacity: (value: number) => void;
 
@@ -306,7 +306,7 @@ const DEFAULT_VALUES = {
   timerBackgroundAllViews: false,
   timerBackgroundAlwaysAnimate: false,
   liquidGlass: false,
-  liquidGlassOpacity: 65,
+  liquidGlassOpacity: 90,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,

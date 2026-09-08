@@ -84,8 +84,8 @@ describe("useBackgroundMediaStore", () => {
     expect(preferencesStore.getState().liquidGlass).toBe(false);
   });
 
-  it("defaults liquidGlassOpacity to 65 and allows updating", () => {
-    expect(preferencesStore.getState().liquidGlassOpacity).toBe(65);
+  it("defaults liquidGlassOpacity to 90 and allows updating", () => {
+    expect(preferencesStore.getState().liquidGlassOpacity).toBe(90);
 
     preferencesStore.getState().setLiquidGlassOpacity(40);
     expect(preferencesStore.getState().liquidGlassOpacity).toBe(40);

@@ -223,21 +223,21 @@
   --sidebar-ring: #adb5bd;
 
   /* ── Liquid Glass theme tokens (light) ── */
-  --glass-bg: rgba(255, 255, 255, var(--glass-opacity, 0.65));
-  --glass-bg-subtle: rgba(241, 243, 245, calc(var(--glass-opacity, 0.65) * 0.75));
-  --glass-border: rgba(0, 0, 0, calc(0.04 + var(--glass-opacity, 0.65) * 0.06));
-  --glass-blur: calc(10px + var(--glass-opacity, 0.65) * 14px);
+  --glass-bg: rgba(255, 255, 255, var(--glass-opacity, 0.9));
+  --glass-bg-subtle: rgba(241, 243, 245, calc(var(--glass-opacity, 0.9) * 0.75));
+  --glass-border: rgba(0, 0, 0, calc(0.04 + var(--glass-opacity, 0.9) * 0.06));
+  --glass-blur: calc(10px + var(--glass-opacity, 0.9) * 14px);
   --glass-saturate: 180%;
-  --glass-scrollbar-thumb: rgba(0, 0, 0, calc(0.14 + var(--glass-opacity, 0.65) * 0.10));
-  --glass-scrollbar-thumb-hover: rgba(0, 0, 0, calc(0.24 + var(--glass-opacity, 0.65) * 0.14));
+  --glass-scrollbar-thumb: rgba(0, 0, 0, calc(0.14 + var(--glass-opacity, 0.9) * 0.10));
+  --glass-scrollbar-thumb-hover: rgba(0, 0, 0, calc(0.24 + var(--glass-opacity, 0.9) * 0.14));
   /* Buttons / chips: neutral fills become translucent frosted chips; hover
      steps the alpha up instead of snapping to an opaque gray/white patch. */
-  --glass-btn-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.8));
-  --glass-btn-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.95));
+  --glass-btn-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.9) * 0.8));
+  --glass-btn-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity, 0.9) * 0.95));
   /* Nested panels (panel inside glass panel): HALF-POWER liquid — more
      see-through tint + half the blur, so nesting reads as depth instead
      of the old dry fill or milky blur-over-blur. */
-  --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.5));
+  --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.9) * 0.5));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
   /* Overlay surfaces (selection bars, chart tooltips, floating chips):
      NEARLY OPAQUE glass — background text must never read through. */
@@ -306,20 +306,20 @@
   --chart-ao12: #4ade80;
 
   /* ── Liquid Glass theme tokens (dark) ── */
-  --glass-bg: rgba(27, 31, 35, var(--glass-opacity, 0.65));
-  --glass-bg-subtle: rgba(36, 41, 46, calc(var(--glass-opacity, 0.65) * 0.75));
-  --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-opacity, 0.65) * 0.08));
-  --glass-blur: calc(12px + var(--glass-opacity, 0.65) * 16px);
+  --glass-bg: rgba(27, 31, 35, var(--glass-opacity, 0.9));
+  --glass-bg-subtle: rgba(36, 41, 46, calc(var(--glass-opacity, 0.9) * 0.75));
+  --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-opacity, 0.9) * 0.08));
+  --glass-blur: calc(12px + var(--glass-opacity, 0.9) * 16px);
   --glass-saturate: 190%;
-  --glass-scrollbar-thumb: rgba(255, 255, 255, calc(0.16 + var(--glass-opacity, 0.65) * 0.12));
-  --glass-scrollbar-thumb-hover: rgba(255, 255, 255, calc(0.28 + var(--glass-opacity, 0.65) * 0.16));
+  --glass-scrollbar-thumb: rgba(255, 255, 255, calc(0.16 + var(--glass-opacity, 0.9) * 0.12));
+  --glass-scrollbar-thumb-hover: rgba(255, 255, 255, calc(0.28 + var(--glass-opacity, 0.9) * 0.16));
   /* Buttons / chips: brighter frosted fill for the low-glare canvas; hover
      nudges toward the panel's light so the raise reads in both themes. */
-  --glass-btn-bg: rgba(38, 43, 49, calc(var(--glass-opacity, 0.65) * 0.8));
-  --glass-btn-bg-hover: rgba(48, 54, 61, calc(var(--glass-opacity, 0.65) * 0.95));
+  --glass-btn-bg: rgba(38, 43, 49, calc(var(--glass-opacity, 0.9) * 0.8));
+  --glass-btn-bg-hover: rgba(48, 54, 61, calc(var(--glass-opacity, 0.9) * 0.95));
   /* Nested panels (panel inside glass panel): HALF-POWER liquid — see
      light theme comment. Dark nudges a touch denser for legibility. */
-  --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.65) * 0.55));
+  --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.9) * 0.55));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
   /* Overlay surfaces: nearly opaque glass (see light theme comment). */
   --glass-bg-dense: rgba(27, 31, 35, 0.96);
