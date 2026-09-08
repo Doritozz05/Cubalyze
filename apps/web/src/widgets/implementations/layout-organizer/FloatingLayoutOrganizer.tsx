@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LayoutGrid, Save, Trash2, Check, ArrowDownToLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
@@ -12,9 +12,9 @@ import type { WidgetId } from "@/widgets/types";
 import type { CustomLayout } from "@/widgets/widgetStore";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-// ── Widget size registry ─────────────────────────────────────────────────
+// ── Widget size registry & DOM measurement ────────────────────────────────
 const WIDGET_SIZES: Record<string, { w: number; h: number }> = {
-  "times-log":         { w: 340, h: 340 },
+  "times-log":         { w: 340, h: 360 },
   "time-distribution": { w: 340, h: 280 },
   "pb-progression":    { w: 300, h: 320 },
   "solve-timeline":    { w: 340, h: 360 },
@@ -26,11 +26,37 @@ const WIDGET_SIZES: Record<string, { w: number; h: number }> = {
 };
 const DEFAULT_SIZE = { w: 340, h: 300 };
 
-function getSize(id: WidgetId) {
+/** Get real rendered DOM dimensions if mounted, falling back to registered sizes. */
+function getSize(id: WidgetId): { w: number; h: number } {
+  if (typeof document !== "undefined") {
+    const el = document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`);
+    if (el && el.offsetWidth > 60 && el.offsetHeight > 40) {
+      return { w: el.offsetWidth, h: el.offsetHeight };
+    }
+  }
   return WIDGET_SIZES[id] ?? DEFAULT_SIZE;
 }
 
-// ── Layout algorithms ────────────────────────────────────────────────────
+/**
+ * Accurately determines the bottom Y coordinate of the scramble display.
+ * The scramble display contains the header ('SCRAMBLE #1', 'Copy', 'New')
+ * and the wrap-around scramble tokens. Automatic layout presets MUST start
+ * strictly BELOW this boundary so the scramble is 100% visible and unobstructed.
+ */
+function getScrambleBottom(): number {
+  if (typeof document === "undefined") return 175;
+  const el = document.querySelector<HTMLElement>('[data-onboarding-target="timer"]');
+  if (el) {
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom > 60) {
+      return Math.round(rect.bottom);
+    }
+  }
+  // Fallback: header (60) + stage padding (32) + scramble header & 2 lines of tokens (80)
+  return 175;
+}
+
+// ── Viewport geometry & safe exclusion corridor ───────────────────────────
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -38,215 +64,441 @@ const HEADER_H = 60;
 const SIDEBAR_W = 56;
 const GAP = 16;
 
-function getArea() {
-  if (typeof window === "undefined") return { x: SIDEBAR_W + GAP, y: HEADER_H + GAP, w: 1280, h: 768 };
+interface ViewportInfo {
+  isMobile: boolean;
+  vw: number;
+  vh: number;
+  area: Rect;
+  centerCorridor: { x1: number; x2: number; y1: number; y2: number };
+}
+
+function getViewportInfo(): ViewportInfo {
+  if (typeof window === "undefined") {
+    return {
+      isMobile: false,
+      vw: 1280,
+      vh: 768,
+      area: { x: 72, y: 180, w: 1192, h: 572 },
+      centerCorridor: { x1: 440, x2: 840, y1: 180, y2: 480 },
+    };
+  }
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isMobile = vw < 768;
+  const scrambleBottom = getScrambleBottom();
+
+  if (isMobile) {
+    const margin = 12;
+    const topY = Math.max(72, scrambleBottom + 12);
+    const bottomY = vh - 64;
+    return {
+      isMobile: true,
+      vw,
+      vh,
+      area: {
+        x: margin,
+        y: topY,
+        w: Math.max(280, vw - margin * 2),
+        h: Math.max(200, bottomY - topY),
+      },
+      centerCorridor: { x1: margin, x2: vw - margin, y1: topY, y2: 320 },
+    };
+  }
+
+  const x = SIDEBAR_W + GAP;
+  // All desktop layouts MUST start strictly below the scramble display with a comfortable gap
+  const topY = Math.max(HEADER_H + GAP, scrambleBottom + 16);
+  const bottomMargin = 16;
+  const rawW = Math.max(400, vw - SIDEBAR_W - GAP * 2);
+  const h = Math.max(200, vh - bottomMargin - topY);
+
+  // If the 3D cube simulator panel is open on the right, respect its width
+  let rightReserved = 0;
+  const cubeAside = document.querySelector('aside[aria-hidden="false"]');
+  if (cubeAside && cubeAside.clientWidth > 0) {
+    rightReserved = cubeAside.clientWidth;
+  }
+
+  const effectiveW = Math.max(400, rawW - rightReserved);
+  const stageCenterX = x + effectiveW / 2;
+
+  // Center corridor (protect timer display from auto-layout encroachment)
+  const corridorHalfW = Math.min(320, effectiveW * 0.26);
+
   return {
-    x: SIDEBAR_W + GAP,
-    y: HEADER_H + GAP,
-    w: Math.max(400, window.innerWidth - SIDEBAR_W - GAP * 2),
-    h: Math.max(300, window.innerHeight - HEADER_H - GAP * 2),
+    isMobile: false,
+    vw,
+    vh,
+    area: { x, y: topY, w: effectiveW, h },
+    centerCorridor: {
+      x1: stageCenterX - corridorHalfW,
+      x2: stageCenterX + corridorHalfW,
+      y1: topY,
+      y2: Math.min(topY + 440, topY + h * 0.65),
+    },
   };
 }
 
 type LayoutFn = (ids: WidgetId[]) => Record<WidgetId, Rect>;
 
-const cascade: LayoutFn = (ids) => {
-  const a = getArea();
+// ── Desktop Layout Algorithms (Zero-Overlap, Scramble-Safe) ───────────────
+
+/**
+ * Sides (Laterales):
+ * Distributes open widgets cleanly into left and right columns, framing
+ * the timer and keeping the central corridor clear, strictly below the scramble.
+ */
+const sides: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
   const out: Record<WidgetId, Rect> = {};
-  const maxShiftX = Math.max(0, a.w - DEFAULT_SIZE.w);
-  const maxShiftY = Math.max(0, a.h - DEFAULT_SIZE.h);
-  const stepX = ids.length > 1 ? Math.min(30, maxShiftX / (ids.length - 1)) : 0;
-  const stepY = ids.length > 1 ? Math.min(30, maxShiftY / (ids.length - 1)) : 0;
+  if (!ids.length) return out;
+
+  const leftIds: WidgetId[] = [];
+  const rightIds: WidgetId[] = [];
+
   ids.forEach((id, i) => {
-    const s = getSize(id);
-    out[id] = {
-      x: Math.round(a.x + i * stepX),
-      y: Math.round(a.y + i * stepY),
-      w: s.w,
-      h: s.h,
-    };
+    if (i % 2 === 0) leftIds.push(id);
+    else rightIds.push(id);
   });
+
+  const packColumn = (colIds: WidgetId[], startX: (w: number) => number) => {
+    if (!colIds.length) return;
+    const totalH = colIds.reduce((sum, id) => sum + getSize(id).h, 0);
+    const neededGap = GAP * (colIds.length - 1);
+    const fits = totalH + neededGap <= a.h;
+    let currentY = a.y;
+
+    colIds.forEach((id, idx) => {
+      const s = getSize(id);
+      const x = startX(s.w);
+      if (fits) {
+        out[id] = { x, y: currentY, w: s.w, h: s.h };
+        currentY += s.h + GAP;
+      } else {
+        const stepY = colIds.length > 1 ? Math.max(0, (a.h - s.h) / (colIds.length - 1)) : 0;
+        out[id] = { x, y: Math.round(a.y + idx * Math.min(stepY, s.h + 8)), w: s.w, h: s.h };
+      }
+    });
+  };
+
+  packColumn(leftIds, () => a.x);
+  packColumn(rightIds, (w) => Math.round(a.x + a.w - w));
+
   return out;
 };
 
-const grid: LayoutFn = (ids) => {
-  const a = getArea();
-  const cols = Math.max(1, Math.min(ids.length, Math.floor(a.w / (DEFAULT_SIZE.w + GAP))));
-  const rows = Math.ceil(ids.length / cols);
-  const cellW = Math.floor((a.w - GAP * (cols - 1)) / cols);
+/**
+ * Corners (Cuatro esquinas):
+ * Positions widgets in the cardinal corners strictly below the scramble,
+ * leaving timer completely open in the middle.
+ */
+const corners: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
   const out: Record<WidgetId, Rect> = {};
+  if (!ids.length) return out;
+
   ids.forEach((id, i) => {
     const s = getSize(id);
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const stepY = rows > 1 ? Math.min(DEFAULT_SIZE.h + GAP, (a.h - s.h) / (rows - 1)) : 0;
-    out[id] = {
-      x: a.x + col * (cellW + GAP),
-      y: Math.round(a.y + (rows > 1 ? row * stepY : 0)),
-      w: Math.min(s.w, cellW),
-      h: s.h,
-    };
+    if (i === 0) {
+      // Top Left (below scramble)
+      out[id] = { x: a.x, y: a.y, w: s.w, h: s.h };
+    } else if (i === 1) {
+      // Top Right (below scramble)
+      out[id] = { x: Math.round(a.x + a.w - s.w), y: a.y, w: s.w, h: s.h };
+    } else if (i === 2) {
+      // Bottom Left
+      out[id] = { x: a.x, y: Math.round(a.y + a.h - s.h), w: s.w, h: s.h };
+    } else if (i === 3) {
+      // Bottom Right
+      out[id] = { x: Math.round(a.x + a.w - s.w), y: Math.round(a.y + a.h - s.h), w: s.w, h: s.h };
+    } else {
+      // 5th+ widgets: distribute along bottom shelf between bottom corners
+      const extraIdx = i - 4;
+      const extraCount = ids.length - 4;
+      const step = extraCount > 1 ? (a.w - s.w) / (extraCount + 1) : a.w / 2 - s.w / 2;
+      out[id] = {
+        x: Math.round(a.x + (extraIdx + 1) * step),
+        y: Math.round(a.y + a.h - s.h),
+        w: s.w,
+        h: s.h,
+      };
+    }
   });
+
   return out;
 };
 
-const colLeft: LayoutFn = (ids) => {
-  const a = getArea();
+/**
+ * Bottom row (Fila inferior):
+ * Aligns all widgets along the bottom edge of the screen, keeping
+ * the entire upper portion completely open for Scramble and Timer.
+ */
+const bottom: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
   const out: Record<WidgetId, Rect> = {};
+  if (!ids.length) return out;
+
+  const totalW = ids.reduce((acc, id) => acc + getSize(id).w, 0) + GAP * (ids.length - 1);
+  const fits = totalW <= a.w;
+  let currentX = a.x + (fits ? Math.max(0, Math.floor((a.w - totalW) / 2)) : 0);
+
+  ids.forEach((id, i) => {
+    const s = getSize(id);
+    const targetY = Math.round(a.y + a.h - s.h);
+    if (fits) {
+      out[id] = { x: currentX, y: targetY, w: s.w, h: s.h };
+      currentX += s.w + GAP;
+    } else {
+      const stepX = ids.length > 1 ? (a.w - s.w) / (ids.length - 1) : 0;
+      out[id] = { x: Math.round(a.x + i * stepX), y: targetY, w: s.w, h: s.h };
+    }
+  });
+
+  return out;
+};
+
+/**
+ * Left column (Columna izquierda):
+ * Stacks all widgets on the left flank strictly below the scramble,
+ * leaving 75% of the screen totally unobstructed.
+ */
+const left: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
+  const out: Record<WidgetId, Rect> = {};
+  if (!ids.length) return out;
+
   const totalH = ids.reduce((acc, id) => acc + getSize(id).h, 0) + GAP * (ids.length - 1);
   const fits = totalH <= a.h;
-  let y = a.y;
+  let currentY = a.y;
+
   ids.forEach((id, i) => {
     const s = getSize(id);
     if (fits) {
-      out[id] = { x: a.x, y, w: s.w, h: s.h };
-      y += s.h + GAP;
+      out[id] = { x: a.x, y: currentY, w: s.w, h: s.h };
+      currentY += s.h + GAP;
     } else {
       const stepY = ids.length > 1 ? Math.max(0, (a.h - s.h) / (ids.length - 1)) : 0;
       out[id] = { x: a.x, y: Math.round(a.y + i * stepY), w: s.w, h: s.h };
     }
   });
+
   return out;
 };
 
-const colRight: LayoutFn = (ids) => {
-  const a = getArea();
-  const out: Record<WidgetId, Rect> = {};
-  const totalH = ids.reduce((acc, id) => acc + getSize(id).h, 0) + GAP * (ids.length - 1);
-  const fits = totalH <= a.h;
-  let y = a.y;
-  ids.forEach((id, i) => {
-    const s = getSize(id);
-    if (fits) {
-      out[id] = { x: a.x + a.w - s.w, y, w: s.w, h: s.h };
-      y += s.h + GAP;
-    } else {
-      const stepY = ids.length > 1 ? Math.max(0, (a.h - s.h) / (ids.length - 1)) : 0;
-      out[id] = { x: a.x + a.w - s.w, y: Math.round(a.y + i * stepY), w: s.w, h: s.h };
-    }
-  });
-  return out;
-};
-
-const focus: LayoutFn = (ids) => {
-  const a = getArea();
+/**
+ * Right column (Columna derecha):
+ * Stacks all widgets on the right flank strictly below the scramble,
+ * leaving the left and center completely unobstructed.
+ */
+const right: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
   const out: Record<WidgetId, Rect> = {};
   if (!ids.length) return out;
+
+  const totalH = ids.reduce((acc, id) => acc + getSize(id).h, 0) + GAP * (ids.length - 1);
+  const fits = totalH <= a.h;
+  let currentY = a.y;
+
+  ids.forEach((id, i) => {
+    const s = getSize(id);
+    const x = Math.round(a.x + a.w - s.w);
+    if (fits) {
+      out[id] = { x, y: currentY, w: s.w, h: s.h };
+      currentY += s.h + GAP;
+    } else {
+      const stepY = ids.length > 1 ? Math.max(0, (a.h - s.h) / (ids.length - 1)) : 0;
+      out[id] = { x, y: Math.round(a.y + i * stepY), w: s.w, h: s.h };
+    }
+  });
+
+  return out;
+};
+
+// ── Mobile Layout Algorithms (< 768px) ───────────────────────────────────
+
+/**
+ * Mobile Focus: Centers primary widget in lower viewport, secondary widgets tucked.
+ */
+const mobileFocus: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
+  const out: Record<WidgetId, Rect> = {};
+  if (!ids.length) return out;
+
   const [primary, ...rest] = ids;
   const ps = getSize(primary);
-  out[primary] = { x: a.x + Math.floor((a.w - ps.w) / 2), y: a.y, w: ps.w, h: ps.h };
-  rest.forEach((id, i) => {
-    const pillW = 200;
-    out[id] = { x: a.x + i * (pillW + GAP), y: a.y + a.h - 48, w: pillW, h: 36 };
+  const targetW = Math.min(ps.w, a.w);
+  const targetX = Math.round(a.x + (a.w - targetW) / 2);
+  const targetY = Math.max(a.y + 120, Math.round(a.y + a.h - ps.h));
+
+  out[primary] = { x: targetX, y: targetY, w: targetW, h: ps.h };
+  rest.forEach((id) => {
+    out[id] = { x: a.x, y: a.y + a.h - 40, w: a.w, h: 36 };
   });
+
   return out;
 };
 
-const spread: LayoutFn = (ids) => {
-  const a = getArea();
+/**
+ * Mobile Stack: Arranges widgets in a vertical stack below the mobile timer.
+ */
+const mobileStack: LayoutFn = (ids) => {
+  const info = getViewportInfo();
+  const a = info.area;
   const out: Record<WidgetId, Rect> = {};
-  const totalW = ids.reduce((s, id) => s + getSize(id).w, 0) + GAP * (ids.length - 1);
-  const fits = totalW <= a.w;
-  let x = a.x + Math.max(0, Math.floor((a.w - totalW) / 2));
-  ids.forEach((id, i) => {
+  if (!ids.length) return out;
+
+  let currentY = a.y + 140;
+  ids.forEach((id) => {
     const s = getSize(id);
-    if (fits) {
-      out[id] = { x, y: a.y + (i % 2 === 0 ? 0 : Math.min(80, a.h * 0.15)), w: s.w, h: s.h };
-      x += s.w + GAP;
-    } else {
-      const stepX = ids.length > 1 ? (a.w - s.w) / (ids.length - 1) : 0;
-      out[id] = { x: Math.round(a.x + i * stepX), y: a.y + (i % 2 === 0 ? 0 : Math.min(80, a.h * 0.15)), w: s.w, h: s.h };
-    }
+    const targetW = Math.min(s.w, a.w);
+    const targetX = Math.round(a.x + (a.w - targetW) / 2);
+    out[id] = { x: targetX, y: currentY, w: targetW, h: s.h };
+    currentY += s.h + 12;
   });
+
   return out;
 };
 
-const splitColumns: LayoutFn = (ids) => {
-  const a = getArea();
-  const out: Record<WidgetId, Rect> = {};
-  const half = Math.ceil(ids.length / 2);
-  const colW = Math.floor((a.w - GAP) / 2);
-  const leftCount = half;
-  const rightCount = ids.length - half;
+export interface LayoutDef {
+  id: string;
+  label: string;
+  description: string;
+  fn: LayoutFn;
+}
 
-  ids.forEach((id, i) => {
-    const s = getSize(id);
-    const w = Math.min(s.w, colW);
-    if (i < half) {
-      const stepY = leftCount > 1 ? Math.max(0, (a.h - s.h) / (leftCount - 1)) : 0;
-      out[id] = { x: a.x, y: Math.round(a.y + i * stepY), w, h: s.h };
-    } else {
-      const rIdx = i - half;
-      const stepY = rightCount > 1 ? Math.max(0, (a.h - s.h) / (rightCount - 1)) : 0;
-      out[id] = { x: a.x + a.w - w, y: Math.round(a.y + rIdx * stepY), w, h: s.h };
-    }
-  });
-  return out;
-};
-
-const LAYOUTS: Array<{ id: string; label: string; description: string; fn: LayoutFn }> = [
-  { id: "cascade", label: "Cascade",     description: "Diagonal waterfall",          fn: cascade },
-  { id: "grid",    label: "Grid",         description: "Columns & rows",              fn: grid },
-  { id: "split",   label: "Split",        description: "Two equal columns",           fn: splitColumns },
-  { id: "left",    label: "Left column",  description: "Stacked on the left",         fn: colLeft },
-  { id: "right",   label: "Right column", description: "Stacked on the right",        fn: colRight },
-  { id: "focus",   label: "Focus",        description: "One prominent, rest aside",   fn: focus },
-  { id: "spread",  label: "Spread",       description: "Distributed with stagger",    fn: spread },
+const DESKTOP_LAYOUTS: LayoutDef[] = [
+  { id: "sides",   label: "Sides",        description: "Left & right of timer", fn: sides },
+  { id: "corners", label: "Four corners", description: "One in each corner",    fn: corners },
+  { id: "bottom",  label: "Bottom row",   description: "Aligned at the bottom", fn: bottom },
+  { id: "left",    label: "Left column",  description: "All on the left side",  fn: left },
+  { id: "right",   label: "Right column", description: "All on the right side", fn: right },
 ];
 
-// ── Layout i18n key maps (labels are UI; the LAYOUTS data stays English) ──
+const MOBILE_LAYOUTS: LayoutDef[] = [
+  { id: "mobileFocus", label: "Main widget",   description: "One open, rest in dock",  fn: mobileFocus },
+  { id: "mobileStack", label: "Vertical list", description: "Stacked one below another", fn: mobileStack },
+];
+
+// ── Layout i18n key maps ──────────────────────────────────────────────────
 const LAYOUT_LABEL_KEY: Record<string, ParseKeys<"widgets">> = {
-  cascade: "panel.layoutOrganizer.cascade",
-  grid: "panel.layoutOrganizer.grid",
-  split: "panel.layoutOrganizer.split",
+  sides: "panel.layoutOrganizer.sides",
+  corners: "panel.layoutOrganizer.corners",
+  bottom: "panel.layoutOrganizer.bottom",
   left: "panel.layoutOrganizer.left",
   right: "panel.layoutOrganizer.right",
-  focus: "panel.layoutOrganizer.focus",
-  spread: "panel.layoutOrganizer.spread",
+  mobileFocus: "panel.layoutOrganizer.mobileFocus",
+  mobileStack: "panel.layoutOrganizer.mobileStack",
+  // Legacy keys
+  wings: "panel.layoutOrganizer.sides",
+  bento: "panel.layoutOrganizer.corners",
+  bottomShelf: "panel.layoutOrganizer.bottom",
+  streamer: "panel.layoutOrganizer.left",
+  grid: "panel.layoutOrganizer.grid",
+  split: "panel.layoutOrganizer.split",
 };
 
 const LAYOUT_DESC_KEY: Record<string, ParseKeys<"widgets">> = {
-  cascade: "panel.layoutOrganizer.cascadeDesc",
-  grid: "panel.layoutOrganizer.gridDesc",
-  split: "panel.layoutOrganizer.splitDesc",
+  sides: "panel.layoutOrganizer.sidesDesc",
+  corners: "panel.layoutOrganizer.cornersDesc",
+  bottom: "panel.layoutOrganizer.bottomDesc",
   left: "panel.layoutOrganizer.leftDesc",
   right: "panel.layoutOrganizer.rightDesc",
-  focus: "panel.layoutOrganizer.focusDesc",
-  spread: "panel.layoutOrganizer.spreadDesc",
+  mobileFocus: "panel.layoutOrganizer.mobileFocusDesc",
+  mobileStack: "panel.layoutOrganizer.mobileStackDesc",
+  // Legacy keys
+  wings: "panel.layoutOrganizer.sidesDesc",
+  bento: "panel.layoutOrganizer.cornersDesc",
+  bottomShelf: "panel.layoutOrganizer.bottomDesc",
+  streamer: "panel.layoutOrganizer.leftDesc",
+  grid: "panel.layoutOrganizer.gridDesc",
+  split: "panel.layoutOrganizer.splitDesc",
 };
 
-// ── SVG miniature preview ────────────────────────────────────────────────
+// ── SVG miniature preview with central stage safe corridor ────────────────
 
 const SVG_W = 140;
 const SVG_H = 80;
 
-function LayoutPreviewSvg({ rects, ids }: { rects: Record<string, Rect>; ids: WidgetId[] }) {
+function LayoutPreviewSvg({
+  rects,
+  ids,
+  isMobile = false,
+}: {
+  rects: Record<string, Rect>;
+  ids: WidgetId[];
+  isMobile?: boolean;
+}) {
   const { t } = useTranslation("widgets");
-  const area = getArea();
+  const info = getViewportInfo();
+  const area = info.area;
+
+  // Dedicated height for the scramble strip at the top of the preview
+  const scrambleStripH = 14;
+  const widgetAreaH = SVG_H - scrambleStripH - 4;
   const scaleX = SVG_W / area.w;
-  const scaleY = SVG_H / area.h;
+  const scaleY = widgetAreaH / area.h;
 
   return (
     <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="block w-full h-auto">
+      {/* Top Scramble strip (always 100% unobstructed) */}
+      <rect
+        x={8}
+        y={4}
+        width={SVG_W - 16}
+        height={6}
+        rx={2}
+        className="fill-ink/15"
+      />
+
+      {/* Central Timer digits indicator */}
+      {!isMobile && (
+        <rect
+          x={SVG_W * 0.35}
+          y={scrambleStripH + widgetAreaH * 0.35}
+          width={SVG_W * 0.3}
+          height={10}
+          rx={2}
+          className="fill-ink/8"
+        />
+      )}
+
+      {/* Widget Rectangles */}
       {ids.map((id, i) => {
         const r = rects[id];
         if (!r) return null;
         const sx = Math.max(0, Math.min((r.x - area.x) * scaleX, SVG_W - 4));
-        const sy = Math.max(0, Math.min((r.y - area.y) * scaleY, SVG_H - 4));
+        const sy = Math.max(scrambleStripH, Math.min(scrambleStripH + (r.y - area.y) * scaleY, SVG_H - 4));
         const sw = Math.max(4, Math.min(r.w * scaleX, SVG_W - sx));
         const sh = Math.max(4, Math.min(r.h * scaleY, SVG_H - sy));
         const hue = (i * 53) % 360;
         return (
           <g key={id}>
-            <rect x={sx} y={sy} width={sw} height={sh} rx={2}
-              fill={`hsl(${hue} 50% 55% / 0.2)`}
-              stroke={`hsl(${hue} 50% 60% / 0.6)`}
+            <rect
+              x={sx}
+              y={sy}
+              width={sw}
+              height={sh}
+              rx={2}
+              fill={`hsl(${hue} 50% 55% / 0.25)`}
+              stroke={`hsl(${hue} 50% 60% / 0.7)`}
               strokeWidth={0.8}
             />
             {sw > 20 && sh > 10 && (
-              <text x={sx + sw / 2} y={sy + sh / 2 + 2.5} textAnchor="middle"
-                fontSize={5} fill={`hsl(${hue} 50% 80%)`}
-                style={{ pointerEvents: "none", userSelect: "none" }}>
+              <text
+                x={sx + sw / 2}
+                y={sy + sh / 2 + 2.5}
+                textAnchor="middle"
+                fontSize={5}
+                fill={`hsl(${hue} 50% 80%)`}
+                style={{ pointerEvents: "none", userSelect: "none" }}
+              >
                 {t(WIDGET_LABEL_KEY[id]).split(" ")[0] ?? id}
               </text>
             )}
@@ -289,9 +541,21 @@ export function FloatingLayoutOrganizer() {
 
   const openCount = openIds.length;
 
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const activePresets = isMobile ? MOBILE_LAYOUTS : DESKTOP_LAYOUTS;
+
   const layoutData = useMemo(() =>
-    LAYOUTS.map((l) => ({ ...l, rects: openIds.length ? l.fn(openIds) : {} })),
-  [openIds]);
+    activePresets.map((l) => ({ ...l, rects: openIds.length ? l.fn(openIds) : {} })),
+  [openIds, activePresets]);
 
   const applyBuiltInLayout = (rects: Record<WidgetId, Rect>, layoutId: string) => {
     const store = widgetStore.getState();
@@ -299,8 +563,9 @@ export function FloatingLayoutOrganizer() {
       const r = rects[id];
       if (!r) return;
       store.setPosition(id, { x: r.x, y: r.y });
-      if (layoutId === "focus" && i > 0) {
-        store.setStatus(id, "minimized");
+      if (layoutId === "mobileFocus" && i > 0) {
+        // On mobile focus layout, secondary widgets are tucked into the dock
+        store.setStatus(id, "docked");
       } else {
         // Auto undock / expand layout widgets to floating
         store.setStatus(id, "floating");
@@ -451,7 +716,7 @@ export function FloatingLayoutOrganizer() {
                           className="flex flex-col gap-1 p-2 text-left w-full cursor-pointer"
                         >
                           <div className="relative overflow-hidden rounded border border-line/50 bg-surface-2/50">
-                            <LayoutPreviewSvg rects={rects} ids={requiredIds} />
+                            <LayoutPreviewSvg rects={rects} ids={requiredIds} isMobile={isMobile} />
                           </div>
                           <div>
                             <p className="text-[0.68rem] font-semibold text-ink leading-tight truncate">
@@ -500,7 +765,7 @@ export function FloatingLayoutOrganizer() {
                       className="group flex flex-col gap-1 rounded-lg border border-line bg-surface p-2 text-left transition-all duration-150 hover:shadow-md hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       <div className="overflow-hidden rounded border border-line/50 bg-surface-2/50">
-                        <LayoutPreviewSvg rects={layout.rects} ids={openIds} />
+                        <LayoutPreviewSvg rects={layout.rects} ids={openIds} isMobile={isMobile} />
                       </div>
                       <div>
                         <p className="text-[0.68rem] font-semibold text-ink leading-tight">
