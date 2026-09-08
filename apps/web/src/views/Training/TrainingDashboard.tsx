@@ -557,7 +557,7 @@ export function TrainingDashboard({
         </aside>
 
         {/* Content panel — one scrollable page */}
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-canvas">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg">
           {/* Practice workspace — embedded so the panel owns the scroll */}
           <TrainingPractice
             embedded

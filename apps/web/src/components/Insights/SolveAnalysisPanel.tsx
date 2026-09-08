@@ -481,8 +481,8 @@ export function SolveAnalysisPanel({
     <div
       className={cn(
         detailMode
-          ? "flex min-h-0 flex-col gap-4 bg-canvas lg:h-full lg:flex-row lg:overflow-hidden lg:px-1 lg:pb-4"
-          : "flex flex-col gap-4 px-1 pb-4 bg-canvas",
+          ? "flex min-h-0 flex-col gap-4 lg:h-full lg:flex-row lg:overflow-hidden lg:px-1 lg:pb-4"
+          : "flex flex-col gap-4 px-1 pb-4",
         className,
       )}
     >

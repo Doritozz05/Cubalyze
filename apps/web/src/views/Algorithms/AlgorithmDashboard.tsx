@@ -115,7 +115,7 @@ export function AlgorithmDashboard({
         </aside>
 
         {/* Right panel: Case grid + optional detail panel */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-canvas">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg">
           {/* Touch (<768px): drill-down method navigator replaces the
               aside. CSS-gated (lg:hidden) — desktop never renders it. No
               surface strip behind it: the selector floats on the canvas
