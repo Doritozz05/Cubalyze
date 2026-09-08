@@ -4,13 +4,14 @@ import { useStore } from 'zustand';
 import { preferencesStore, type HeaderMode } from '@cubeforge/state';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
-import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
-import { Palette, Sun, Moon, Monitor, LayoutGrid } from 'lucide-react';
+import { useState } from 'react';
+import { Palette, Sun, Moon, Monitor, LayoutGrid, Sliders } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dockEditStore } from '@/widgets/dock/dockEditStore';
 import { useIsTouch } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import type { ParseKeys } from 'i18next';
+import { ThemeStudioModal } from '@/components/Settings/theme-studio/ThemeStudioModal';
 
 import {
   Select,
@@ -19,15 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 
 /**
  * Appearance settings section.
  *
- * Contains visual preferences for the interface: theme, liquid glass, header
- * visibility, custom background and dock editing. The 3D cube skin selector
- * lives in the Smart Cube section.
+ * Contains visual preferences for the interface: theme, header
+ * visibility and dock editing. Themes, colors, liquid glass and custom
+ * background now live in the Theme Studio with a live scaled timer preview.
  */
 const HEADER_MODES: HeaderMode[] = ['always', 'hidden', 'autohide'];
 
@@ -41,16 +40,47 @@ export function AppearanceSection() {
   const { t } = useTranslation('settings');
   const theme = useStore(preferencesStore, (s) => s.theme);
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
-  const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
-  const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
-  const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
-  const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
   const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
   const isTouch = useIsTouch();
+  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Theme Studio Banner Card */}
+      <div className="relative overflow-hidden rounded-xl border border-line bg-surface p-5 transition-all hover:border-ink/20 hover:shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-2 text-ink shadow-xs">
+              <Sliders className="size-5 text-ink" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-ink">
+                  {t('appearance.themeStudioBannerTitle', 'Estudio de temas y vista previa')}
+                </h4>
+                <span className="rounded-md border border-line bg-surface-2 px-2 py-0.5 text-[0.65rem] font-medium text-ink-2">
+                  {t('appearance.themeStudioBadge', 'Nuevo')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-ink-3 leading-relaxed">
+                {t('appearance.themeStudioBannerDesc', 'Personaliza los colores principales, temas predefinidos, fondo y liquid glass con vista previa del timer a escala idéntica.')}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setThemeStudioOpen(true)}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-xs font-semibold text-surface transition-all hover:bg-ink/90 active:scale-95 shadow-xs"
+          >
+            <Palette className="size-3.5" />
+            <span>{t('appearance.openThemeStudio', 'Abrir estudio de temas')}</span>
+          </button>
+        </div>
+      </div>
+
+      <ThemeStudioModal open={themeStudioOpen} onOpenChange={setThemeStudioOpen} />
+
       <div className="flex items-center gap-3 rounded-xl border border-line/40 bg-surface-2/50 p-4">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface">
           <Palette className="size-4 text-ink-2" />
@@ -91,51 +121,6 @@ export function AppearanceSection() {
         }
       />
 
-      {/* Liquid Glass UI Panels (Theme visual effect) */}
-      <div className="flex flex-col gap-3.5 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-        <div className="flex items-center justify-between gap-6">
-          <div className="min-w-0 flex-1">
-            <h4 className="text-[0.85rem] font-medium leading-5 text-ink">
-              {t('appearance.liquidGlass')}
-            </h4>
-            <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">
-              {t('appearance.liquidGlassHint')}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center">
-            <Switch
-              checked={liquidGlass}
-              onCheckedChange={setLiquidGlass}
-              aria-label={t('appearance.liquidGlass')}
-            />
-          </div>
-        </div>
-
-        {liquidGlass && (
-          <div className="mt-1 flex flex-col gap-2.5 rounded-lg border border-line/60 bg-surface-2/40 p-3.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-ink">
-                {t('appearance.liquidGlassOpacity')}
-              </span>
-              <span className="font-mono text-xs font-semibold text-ink">
-                {liquidGlassOpacity}%
-              </span>
-            </div>
-            <Slider
-              value={[liquidGlassOpacity]}
-              onValueChange={([val]) => setLiquidGlassOpacity(val)}
-              min={15}
-              max={95}
-              step={5}
-              className="w-full"
-            />
-            <p className="text-[0.7rem] text-ink-3">
-              {t('appearance.liquidGlassOpacityHint')}
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Header visibility — mobile keeps the simple on/off toggle; desktop
           gets the tri-state selector (always visible / hidden / auto-hide). */}
       {isTouch ? (
@@ -173,8 +158,6 @@ export function AppearanceSection() {
         </div>
       )}
 
-      {/* Custom Background Image */}
-      <CustomBackgroundSetting />
 
       {/* Edit dock */}
       <button

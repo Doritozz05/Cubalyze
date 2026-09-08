@@ -21,6 +21,28 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().theme).toBe('dark');
   });
 
+  it('manages themePreset and customThemeColors correctly', () => {
+    expect(preferencesStore.getState().themePreset).toBe('default');
+    expect(preferencesStore.getState().customThemeColors).toBeNull();
+
+    preferencesStore.getState().setThemePreset('nord');
+    expect(preferencesStore.getState().themePreset).toBe('nord');
+
+    preferencesStore.getState().setCustomThemeColor('--canvas', '#2e3440');
+    expect(preferencesStore.getState().customThemeColors).toEqual({ '--canvas': '#2e3440' });
+
+    preferencesStore.getState().setCustomThemeColor('--ready', '#a3be8c');
+    expect(preferencesStore.getState().customThemeColors).toEqual({
+      '--canvas': '#2e3440',
+      '--ready': '#a3be8c',
+    });
+
+    preferencesStore.getState().resetCustomThemeColors();
+    expect(preferencesStore.getState().customThemeColors).toBeNull();
+
+    preferencesStore.getState().setThemePreset('default');
+  });
+
   it('initializes language preference with auto default', () => {
     expect(preferencesStore.getState().language).toBe('auto');
   });

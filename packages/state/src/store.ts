@@ -29,6 +29,16 @@ export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
+  /** Active preset theme ('default' | 'midnight' | 'nord' | 'cyberpunk' | 'forest' | 'sunset' | 'tokyo-night' | 'custom'). */
+  themePreset: string;
+  setThemePreset: (preset: string) => void;
+
+  /** User overrides for web color tokens (e.g. { '--canvas': '#14171b', '--surface': '#1b1f23' }). */
+  customThemeColors: Record<string, string> | null;
+  setCustomThemeColor: (token: string, color: string) => void;
+  setCustomThemeColors: (colors: Record<string, string> | null) => void;
+  resetCustomThemeColors: () => void;
+
   /**
    * Top-bar (header + glass dock) visibility mode:
    * - `'always'`  — always visible (default);
@@ -259,6 +269,8 @@ export interface PreferencesState {
 
 const DEFAULT_VALUES = {
   theme: 'light' as const,
+  themePreset: 'default',
+  customThemeColors: null as Record<string, string> | null,
   headerMode: 'autohide' as const,
   appearance3d: 'default',
   scrambleFollowsCube: true,
@@ -326,6 +338,13 @@ export const createPreferencesStore = () => {
         ...DEFAULT_VALUES,
 
         setTheme: (theme) => set({ theme }),
+        setThemePreset: (themePreset) => set({ themePreset }),
+        setCustomThemeColor: (token, color) =>
+          set((state) => ({
+            customThemeColors: { ...(state.customThemeColors ?? {}), [token]: color },
+          })),
+        setCustomThemeColors: (customThemeColors) => set({ customThemeColors }),
+        resetCustomThemeColors: () => set({ customThemeColors: null }),
         setHeaderMode: (headerMode) => set({ headerMode }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
@@ -386,6 +405,8 @@ export const createPreferencesStore = () => {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
+          themePreset: state.themePreset,
+          customThemeColors: state.customThemeColors,
           headerMode: state.headerMode,
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
