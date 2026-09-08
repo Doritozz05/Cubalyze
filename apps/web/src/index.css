@@ -404,8 +404,8 @@ html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] {
   background-color: var(--glass-bg) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
 }
 
@@ -424,8 +424,8 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
   html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"][data-replay-flat] {
     background-color: transparent !important;
     box-shadow: none !important;
-    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 
@@ -433,8 +433,8 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
 @media (max-width: 1023px) {
   html.liquid-glass header {
     background-color: var(--glass-bg) !important;
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     border-color: var(--glass-border) !important;
   }
 }
@@ -442,8 +442,8 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
 @media (min-width: 1024px) {
   html.liquid-glass header {
     background-color: transparent !important;
-    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     box-shadow: none !important;
     border-color: transparent !important;
   }
@@ -454,8 +454,8 @@ html.liquid-glass [data-slot="sidebar"] .bg-sidebar-accent,
 html.liquid-glass aside[class*="bg-sidebar"] .bg-sidebar-accent,
 html.liquid-glass .glass-active-pill {
   background-color: var(--sidebar-accent) !important;
-  backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid var(--glass-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -599,8 +599,8 @@ html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] 
 html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"] div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
   background-color: var(--glass-nested-bg) !important;
-  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   border-color: var(--glass-border) !important;
 }
 
@@ -611,15 +611,15 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
    the glass like every other surface (pulse animation untouched). */
 html.liquid-glass [data-slot="skeleton"] {
   background-color: var(--glass-bg-subtle) !important;
-  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.35)) saturate(140%) !important;
 }
 
 /* Metric tile grids and sub-tiles (Insights / Stats overview) */
 html.liquid-glass .grid[class*="bg-line"] {
   background-color: var(--glass-border) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
 }
 
 html.liquid-glass .grid[class*="bg-line"] > div {
@@ -643,8 +643,8 @@ html.liquid-glass [data-slot="drawer-content"] nav,
 html.liquid-glass [data-slot="dialog-content"] [data-modal-header],
 html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
   background-color: var(--glass-bg-subtle) !important;
-  backdrop-filter: blur(var(--glass-blur)) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+  backdrop-filter: blur(var(--glass-blur)) !important;
 }
 
 html.liquid-glass [data-slot="dialog-content"] div[class*="bg-surface"][class*="border"][class*="rounded"],
@@ -670,8 +670,8 @@ html.liquid-glass *::-webkit-scrollbar-thumb {
   background-color: var(--glass-scrollbar-thumb) !important;
   border: 1px solid var(--glass-border);
   border-radius: 9999px;
-  backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(8px) saturate(140%);
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
