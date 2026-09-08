@@ -5,7 +5,7 @@ import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
-import { Smartphone, Tablet, Monitor, Maximize2, Minimize2 } from 'lucide-react';
+import { Smartphone, Tablet, Monitor, Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   resolveThemeColors,
@@ -169,27 +169,42 @@ export function ScaledTimerPreview({
       )}
     <div
       className={cn(
-        'flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface-2/40 shadow-inner',
+        'flex w-full flex-col overflow-hidden',
         expanded
-          ? 'fixed inset-3 z-[61] h-auto max-h-none sm:inset-6'
-          : 'h-full'
+          // Fullscreen: invisible chrome — no outer panel, only the device
+          // frame + floating close are visible over the dimmed backdrop.
+          ? 'fixed inset-0 z-[61] h-auto max-h-none rounded-none border-0 bg-transparent shadow-none'
+          : 'h-full rounded-2xl border border-line bg-surface-2/40 shadow-inner'
       )}
     >
+      {/* Fullscreen chrome: floating close only — no toolbar, no controls */}
+      {expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          title={t('appearance.previewCollapse', 'Cerrar vista previa')}
+          aria-label={t('appearance.previewCollapse', 'Cerrar vista previa')}
+          className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border border-line bg-surface/90 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-surface"
+        >
+          <X className="size-4" />
+        </button>
+      )}
       {/* Preview Header Toolbar — rounded-t inherits the frame radius:
           backdrop-filter breaks ancestor overflow+radius clipping in
           Chromium, so the bar must carry the corner radius itself or its
-          square corners paint over the rounded frame. */}
+          square corners paint over the rounded frame. Hidden in fullscreen:
+          only the live device preview is shown. */}
+      {!expanded && (
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/80 px-3.5 py-2.5 backdrop-blur-md">
-        {/* Expand / collapse (mobile "ver en grande") */}
+        {/* Expand (mobile "ver en grande") */}
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
-          title={expanded ? t('appearance.previewCollapse', 'Ver más pequeño') : t('appearance.previewExpand', 'Ver en grande')}
-          aria-label={expanded ? t('appearance.previewCollapse', 'Ver más pequeño') : t('appearance.previewExpand', 'Ver en grande')}
-          aria-pressed={expanded}
+          onClick={() => setExpanded(true)}
+          title={t('appearance.previewExpand', 'Ver en grande')}
+          aria-label={t('appearance.previewExpand', 'Ver en grande')}
           className="flex size-7 items-center justify-center rounded-md border border-line bg-surface-2 text-ink-3 transition-colors hover:text-ink hover:bg-surface"
         >
-          {expanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+          <Maximize2 className="size-3.5" />
         </button>
         {/* Device Switcher */}
         <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
@@ -242,15 +257,16 @@ export function ScaledTimerPreview({
           })}
         </div>
       </div>
+      )}
 
-      {/* Scaled Stage Area — click / double-click opens the large view */}
+      {/* Scaled Stage Area — double-click opens the fullscreen live preview */}
       <div
         ref={wrapperRef}
         onDoubleClick={() => setExpanded(true)}
         title={t('appearance.previewExpand', 'Ver en grande')}
         className={cn(
-          'relative flex flex-1 items-center justify-center overflow-hidden p-2 select-none',
-          !expanded && 'cursor-zoom-in'
+          'relative flex flex-1 items-center justify-center overflow-hidden select-none',
+          expanded ? 'min-h-0 p-4 sm:p-6' : 'p-2 cursor-zoom-in'
         )}
       >
         <div
