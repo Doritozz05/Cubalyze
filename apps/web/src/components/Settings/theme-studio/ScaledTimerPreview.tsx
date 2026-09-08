@@ -7,6 +7,7 @@ import { preferencesStore } from '@cubeforge/state';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { Smartphone, Tablet, Monitor, Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   resolveThemeColors,
   getDerivedThemeTokens,
@@ -179,12 +180,13 @@ export function ScaledTimerPreview({
           : 'h-full rounded-2xl border border-line bg-surface-2/40 shadow-inner'
       )}
     >
-      {/* Fullscreen chrome: floating close only — no toolbar, no controls */}
+      {/* Fullscreen chrome: floating close only — no toolbar, no controls.
+          No `title` here on purpose: native tooltips leak outside the
+          fullscreen overlay on mousemove. aria-label only. */}
       {expanded && (
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          title={t('appearance.previewCollapse', 'Cerrar vista previa')}
           aria-label={t('appearance.previewCollapse', 'Cerrar vista previa')}
           className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border border-line bg-surface/90 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-surface"
         >
@@ -198,16 +200,22 @@ export function ScaledTimerPreview({
           only the live device preview is shown. */}
       {!expanded && (
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/80 px-3.5 py-2.5 backdrop-blur-md">
-        {/* Expand (mobile "ver en grande") */}
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          title={t('appearance.previewExpand', 'Ver en grande')}
-          aria-label={t('appearance.previewExpand', 'Ver en grande')}
-          className="flex size-7 items-center justify-center rounded-md border border-line bg-surface-2 text-ink-3 transition-colors hover:text-ink hover:bg-surface"
-        >
-          <Maximize2 className="size-3.5" />
-        </button>
+        {/* Expand (mobile "ver en grande") — Radix tooltip, never `title` */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              aria-label={t('appearance.previewExpand', 'Ver en grande')}
+              className="flex size-7 items-center justify-center rounded-md border border-line bg-surface-2 text-ink-3 transition-colors hover:text-ink hover:bg-surface"
+            >
+              <Maximize2 className="size-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {t('appearance.previewExpand', 'Ver en grande')}
+          </TooltipContent>
+        </Tooltip>
         {/* Device Switcher */}
         <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
           {(['mobile', 'tablet', 'desktop'] as DeviceMode[]).map((mode) => {
@@ -215,21 +223,27 @@ export function ScaledTimerPreview({
             const active = deviceMode === mode;
             const deviceLabel = t(DEVICE_CONFIG[mode].nameKey, mode);
             return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setDeviceMode(mode)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                  active
-                    ? 'bg-surface text-ink shadow-xs'
-                    : 'text-ink-3 hover:text-ink hover:bg-surface/50'
-                )}
-                title={deviceLabel}
-              >
-                <Icon className="size-3.5" />
-                <span className="max-sm:hidden">{deviceLabel}</span>
-              </button>
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setDeviceMode(mode)}
+                    aria-label={deviceLabel}
+                    aria-pressed={active}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                      active
+                        ? 'bg-surface text-ink shadow-xs'
+                        : 'text-ink-3 hover:text-ink hover:bg-surface/50'
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    <span className="max-sm:hidden">{deviceLabel}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{deviceLabel}</TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -261,11 +275,12 @@ export function ScaledTimerPreview({
       </div>
       )}
 
-      {/* Scaled Stage Area — double-click opens the fullscreen live preview */}
+      {/* Scaled Stage Area — double-click opens the fullscreen live preview.
+          No `title`: it renders a native browser tooltip that leaks over the
+          fullscreen overlay on mousemove. */}
       <div
         ref={wrapperRef}
         onDoubleClick={() => setExpanded(true)}
-        title={t('appearance.previewExpand', 'Ver en grande')}
         className={cn(
           'relative flex flex-1 items-center justify-center overflow-hidden select-none',
           expanded ? 'min-h-0 p-4 sm:p-6' : 'p-2 cursor-zoom-in'

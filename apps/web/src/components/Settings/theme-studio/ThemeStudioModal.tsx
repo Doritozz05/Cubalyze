@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
+import { getPresetIcon } from '@/theme/themePresetIcons';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
 import { ThemeColorSection } from './ThemeColorSection';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
@@ -240,6 +241,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 mt-2">
                     {THEME_PRESETS.map((preset) => {
                       const isSelected = themePreset === preset.id;
+                      const PresetIcon = getPresetIcon(preset.id);
                       return (
                         <button
                           key={preset.id}
@@ -253,7 +255,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           )}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-ink">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                              <PresetIcon className="size-3.5 text-ink-2" aria-hidden="true" />
                               {t(preset.labelKey, preset.id)}
                             </span>
                             {isSelected && (
@@ -267,27 +270,32 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             {t(preset.descriptionKey, '')}
                           </p>
 
-                          {/* Color Swatch Dots */}
+                          {/* Color Swatch Dots — aria-labels, never native `title`
+                              (native tooltips clash with Radix + fullscreen) */}
                           <div className="mt-1 flex items-center gap-1.5 rounded-lg border border-line/60 bg-surface/60 p-1.5">
                             <div
+                              role="img"
+                              aria-label={t('appearance.colors.canvas')}
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.canvas }}
-                              title={t('appearance.colors.canvas')}
                             />
                             <div
+                              role="img"
+                              aria-label={t('appearance.colors.surface')}
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.surface }}
-                              title={t('appearance.colors.surface')}
                             />
                             <div
+                              role="img"
+                              aria-label={t('appearance.colors.ink')}
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.ink }}
-                              title={t('appearance.colors.ink')}
                             />
                             <div
+                              role="img"
+                              aria-label={t('appearance.colors.ready')}
                               className="size-4.5 rounded-full border border-black/10 shadow-xs ml-auto"
                               style={{ backgroundColor: preset.previewColors.accent }}
-                              title={t('appearance.colors.ready')}
                             />
                           </div>
                         </button>

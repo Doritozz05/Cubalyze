@@ -281,6 +281,21 @@
         "caution": "Warning 8s/12s (yellow)",
         "accentEmerald": "Emerald accent"
       },
+      "colorPicker": {
+        "saturationValue": "Saturation and brightness",
+        "hue": "Hue",
+        "hex": "Hex code",
+        "pickNative": "System picker",
+        "saveFavorite": "Save to favorites",
+        "removeFavorite": "Remove from favorites",
+        "invalidHex": "Invalid hex, use #rrggbb format",
+        "favorites": "Favorites",
+        "favoritesEmpty": "Save colors with + to reuse them in stickers and themes.",
+        "presets": "Presets",
+        "current": "Current",
+        "new": "New",
+        "done": "Done"
+      },
       "resetTitle": "Reset visual preferences",
       "resetSubtitle": "Restore default values or clean customizations",
       "resetColorsOnly": "Reset custom colors",

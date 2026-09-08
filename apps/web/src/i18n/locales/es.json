@@ -281,6 +281,21 @@
         "caution": "Aviso 8s/12s (amarillo)",
         "accentEmerald": "Acento esmeralda"
       },
+      "colorPicker": {
+        "saturationValue": "Saturación y brillo",
+        "hue": "Tono",
+        "hex": "Código hexadecimal",
+        "pickNative": "Selector del sistema",
+        "saveFavorite": "Guardar en favoritos",
+        "removeFavorite": "Quitar de favoritos",
+        "invalidHex": "Hex inválido, usa formato #rrggbb",
+        "favorites": "Favoritos",
+        "favoritesEmpty": "Guarda colores con + para reutilizarlos en stickers y temas.",
+        "presets": "Predefinidos",
+        "current": "Actual",
+        "new": "Nuevo",
+        "done": "Listo"
+      },
       "resetTitle": "Restablecer ajustes visuales",
       "resetSubtitle": "Restaura colores o valores por defecto",
       "resetColorsOnly": "Restablecer colores personalizados",

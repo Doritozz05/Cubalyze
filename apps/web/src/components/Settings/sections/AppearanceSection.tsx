@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { THEME_PRESETS } from '@/theme/themePresets';
+import { getPresetIcon } from '@/theme/themePresetIcons';
 
 /**
  * Appearance settings section.
@@ -123,18 +124,17 @@ export function AppearanceSection() {
                   <span>{t('appearance.system')}</span>
                 </div>
               </SelectItem>
-              {THEME_PRESETS.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id}>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="size-3.5 shrink-0 rounded-full border border-black/15"
-                      style={{ backgroundColor: preset.previewColors.accent }}
-                      aria-hidden="true"
-                    />
-                    <span>{t(preset.labelKey, preset.id)}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {THEME_PRESETS.map((preset) => {
+                const Icon = getPresetIcon(preset.id);
+                return (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="size-3.5 shrink-0 text-ink-2" aria-hidden="true" />
+                      <span>{t(preset.labelKey, preset.id)}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         }
