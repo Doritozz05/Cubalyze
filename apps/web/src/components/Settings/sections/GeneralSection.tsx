@@ -79,7 +79,7 @@ export function GeneralSection() {
         onCheckedChange={setHaptics}
       />
 
-      <div className="group flex items-start justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
+      <div className="group flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
         <div className="min-w-0 flex-1">
           <h4 className="text-[0.85rem] font-medium leading-5 text-ink">{t('general.onboarding')}</h4>
           <p className="mt-1.5 text-[0.78rem] leading-5 text-ink-3">

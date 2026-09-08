@@ -5,11 +5,16 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 
-import { resolveThemeColors, type ThemeColors } from "@/theme/themePresets";
+import {
+  resolveThemeColors,
+  getDerivedThemeTokens,
+  getDerivedLiquidGlassTokens,
+  THEME_PRESETS,
+} from "@/theme/themePresets";
 
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
-  const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? "default");
+  const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? "dark");
   const customThemeColors = useStore(preferencesStore, (s) => s.customThemeColors);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
@@ -21,48 +26,53 @@ function ThemeSync() {
     }
   }, [storeTheme, nextTheme, setTheme]);
 
-  // Synchronize theme preset and custom color tokens to :root
+  // Synchronize theme preset, derived tokens, and liquid glass to :root
   React.useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
 
-    if (themePreset !== "default" || (customThemeColors && Object.keys(customThemeColors).length > 0)) {
-      const resolved = resolveThemeColors(themePreset, storeTheme, customThemeColors);
-      for (const [key, value] of Object.entries(resolved)) {
-        root.style.setProperty(key, value);
-      }
-      // Non-default presets are dark-mode oriented; ensure .dark class if preset is dark
-      if (themePreset !== "default") {
-        root.classList.add("dark");
+    const presetObj = THEME_PRESETS.find((p) => p.id === themePreset);
+    const isLightPreset = themePreset === "light" || (presetObj && !presetObj.isDark);
+
+    // Synchronize .dark class on root
+    if (isLightPreset) {
+      root.classList.remove("dark");
+      if (storeTheme !== "light") {
+        preferencesStore.getState().setTheme("light");
       }
     } else {
-      // Clear inline overrides so index.css defaults take over
-      const allTokens: (keyof ThemeColors)[] = [
-        "--canvas", "--surface", "--surface-2", "--line", "--line-2",
-        "--ink", "--ink-2", "--ink-3",
-        "--ready", "--ready-soft", "--hold", "--hold-soft",
-        "--dnf", "--dnf-soft", "--plus2", "--plus2-soft",
-        "--caution", "--caution-soft", "--accent-emerald"
-      ];
-      for (const token of allTokens) {
-        root.style.removeProperty(token);
+      root.classList.add("dark");
+      if (storeTheme !== "dark") {
+        preferencesStore.getState().setTheme("dark");
       }
     }
-  }, [themePreset, customThemeColors, storeTheme]);
 
-  React.useEffect(() => {
-    if (typeof document === "undefined") return;
-    const root = document.documentElement;
+    const resolved = resolveThemeColors(themePreset, storeTheme, customThemeColors);
+    const derived = getDerivedThemeTokens(resolved);
+    const allVars = { ...resolved, ...derived };
+
+    for (const [key, value] of Object.entries(allVars)) {
+      root.style.setProperty(key, value);
+    }
+
     if (liquidGlass) {
       root.classList.add("liquid-glass");
       root.setAttribute("data-liquid-glass", "true");
-      root.style.setProperty("--glass-opacity", `${liquidGlassOpacity / 100}`);
+      const glassTokens = getDerivedLiquidGlassTokens(resolved, liquidGlassOpacity);
+      for (const [key, value] of Object.entries(glassTokens)) {
+        root.style.setProperty(key, value);
+      }
     } else {
       root.classList.remove("liquid-glass");
       root.removeAttribute("data-liquid-glass");
       root.style.removeProperty("--glass-opacity");
+      root.style.removeProperty("--glass-bg");
+      root.style.removeProperty("--glass-bg-subtle");
+      root.style.removeProperty("--glass-btn-bg");
+      root.style.removeProperty("--glass-btn-bg-hover");
+      root.style.removeProperty("--glass-border");
     }
-  }, [liquidGlass, liquidGlassOpacity]);
+  }, [themePreset, customThemeColors, storeTheme, liquidGlass, liquidGlassOpacity]);
 
   return null;
 }

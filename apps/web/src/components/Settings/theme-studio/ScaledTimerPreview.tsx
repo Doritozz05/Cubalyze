@@ -7,7 +7,11 @@ import { preferencesStore } from '@cubeforge/state';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { Smartphone, Tablet, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { resolveThemeColors } from '@/theme/themePresets';
+import {
+  resolveThemeColors,
+  getDerivedThemeTokens,
+  getDerivedLiquidGlassTokens,
+} from '@/theme/themePresets';
 
 export type DeviceMode = 'mobile' | 'tablet' | 'desktop';
 export type TimerPreviewState = 'idle' | 'inspection' | 'holding' | 'ready' | 'running' | 'penalty';
@@ -67,8 +71,17 @@ export function ScaledTimerPreview({
 
   // Compute CSS variable styles for preview container
   const containerTokens = useMemo(() => {
-    return resolveThemeColors(effectivePreset, storeTheme, effectiveCustomColors);
-  }, [effectivePreset, storeTheme, effectiveCustomColors]);
+    const resolved = resolveThemeColors(effectivePreset, storeTheme, effectiveCustomColors);
+    const derived = getDerivedThemeTokens(resolved);
+    const glass = effectiveLiquid
+      ? getDerivedLiquidGlassTokens(resolved, effectiveLiquidOpacity)
+      : {};
+    return {
+      ...resolved,
+      ...derived,
+      ...glass,
+    };
+  }, [effectivePreset, storeTheme, effectiveCustomColors, effectiveLiquid, effectiveLiquidOpacity]);
 
   // Scaled container calculations
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -99,30 +112,30 @@ export function ScaledTimerPreview({
   const getTimerDisplay = () => {
     switch (timerState) {
       case 'inspection':
-        return { time: '12', color: 'text-caution', hint: t('appearance.hintInspection', 'Inspección (15 s)') };
+        return { time: '12', color: 'text-caution', hint: t('appearance.hintInspection') };
       case 'holding':
-        return { time: '0.00', color: 'text-hold', hint: t('appearance.hintHolding', 'Mantén pulsado...') };
+        return { time: '0.00', color: 'text-hold', hint: t('appearance.hintHolding') };
       case 'ready':
-        return { time: '0.00', color: 'text-ready', hint: t('appearance.hintReady', '¡Listo! Suelta para iniciar') };
+        return { time: '0.00', color: 'text-ready', hint: t('appearance.hintReady') };
       case 'running':
-        return { time: '6.42', color: 'text-ink', hint: t('appearance.hintRunning', 'Resolviendo...') };
+        return { time: '6.42', color: 'text-ink', hint: t('appearance.hintRunning') };
       case 'penalty':
-        return { time: '11.85 +2', color: 'text-plus2', hint: t('appearance.hintPenalty', '+2 penalización') };
+        return { time: '11.85 +2', color: 'text-plus2', hint: t('appearance.hintPenalty') };
       case 'idle':
       default:
-        return { time: '9.84', color: 'text-ink', hint: t('appearance.hintIdle', 'Presiona espacio para empezar') };
+        return { time: '9.84', color: 'text-ink', hint: t('appearance.hintIdle') };
     }
   };
 
   const timerDisplay = getTimerDisplay();
 
   const timerStates = [
-    { id: 'idle' as const, label: t('appearance.stateIdle', 'Reposo') },
-    { id: 'inspection' as const, label: t('appearance.stateInspection', 'Inspección') },
-    { id: 'holding' as const, label: t('appearance.stateHolding', 'Mantener') },
-    { id: 'ready' as const, label: t('appearance.stateReady', 'Listo') },
-    { id: 'running' as const, label: t('appearance.stateRunning', 'Corriendo') },
-    { id: 'penalty' as const, label: t('appearance.statePenalty', '+2 / DNF') },
+    { id: 'idle' as const, label: t('appearance.stateIdle') },
+    { id: 'inspection' as const, label: t('appearance.stateInspection') },
+    { id: 'holding' as const, label: t('appearance.stateHolding') },
+    { id: 'ready' as const, label: t('appearance.stateReady') },
+    { id: 'running' as const, label: t('appearance.stateRunning') },
+    { id: 'penalty' as const, label: t('appearance.statePenalty') },
   ];
 
   return (
@@ -158,7 +171,7 @@ export function ScaledTimerPreview({
         {/* Timer State Simulator */}
         <div className="flex items-center gap-1">
           <span className="mr-1 text-[0.7rem] font-medium text-ink-3 max-md:hidden">
-            {t('appearance.timerStateLabel', 'Estado del temporizador:')}
+            {t('appearance.timerStateLabel')}
           </span>
           {timerStates.map((s) => {
             const active = timerState === s.id;
@@ -263,7 +276,7 @@ export function ScaledTimerPreview({
                     <span className="text-[0.65rem] text-ink-3">#42</span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface/90 px-2.5 py-1 text-[0.7rem] font-mono text-ink-2 shadow-xs backdrop-blur-sm">
-                    <span>{t('appearance.previewSession', 'Sesión 1')}</span>
+                    <span>{t('appearance.previewSession')}</span>
                   </div>
                 </div>
 
@@ -280,7 +293,7 @@ export function ScaledTimerPreview({
                 {/* PB Delta tag */}
                 <div className="mb-2 inline-flex items-center gap-1 rounded-full border border-line bg-surface/80 px-2.5 py-0.5 text-xs font-mono font-medium text-ready shadow-xs backdrop-blur-sm">
                   <span>-0.42</span>
-                  <span className="text-[0.65rem] text-ink-3">{t('appearance.previewVsPb', 'vs PB')}</span>
+                  <span className="text-[0.65rem] text-ink-3">{t('appearance.previewVsPb')}</span>
                 </div>
 
                 {/* Main Digits */}
@@ -304,7 +317,7 @@ export function ScaledTimerPreview({
                 {/* Stats Widget */}
                 <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface/90 p-2.5 shadow-xs backdrop-blur-sm">
                   <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3">
-                    {t('appearance.previewStats', 'Estadísticas')}
+                    {t('appearance.previewStats')}
                   </span>
                   <div className="flex justify-between text-xs font-mono">
                     <span className="text-ink-3">PB:</span>
@@ -323,7 +336,7 @@ export function ScaledTimerPreview({
                 {/* Times List Widget */}
                 <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface/90 p-2.5 shadow-xs backdrop-blur-sm">
                   <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3">
-                    {t('appearance.previewTimes', 'Tiempos')}
+                    {t('appearance.previewTimes')}
                   </span>
                   <div className="space-y-0.5 font-mono text-[0.7rem] text-ink-2">
                     <div className="flex justify-between">
@@ -344,7 +357,7 @@ export function ScaledTimerPreview({
                 {/* Scramble 2D Net Widget */}
                 <div className="flex flex-col items-center justify-center rounded-xl border border-line bg-surface/90 p-2 text-center shadow-xs backdrop-blur-sm">
                   <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3 mb-1">
-                    {t('appearance.previewCube2d', 'Cubo 2D')}
+                    {t('appearance.previewCube2d')}
                   </span>
                   <div className="grid grid-cols-4 gap-0.5">
                     {['#facc15', '#ffffff', '#22c55e', '#3b82f6', '#ef4444', '#f97316'].map((col, idx) => (

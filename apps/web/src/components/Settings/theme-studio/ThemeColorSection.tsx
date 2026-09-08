@@ -54,10 +54,10 @@ export function ThemeColorSection({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-sm font-semibold text-ink">
-            {t('appearance.colors.title', 'Personalización de colores')}
+            {t('appearance.colors.title')}
           </h4>
           <p className="mt-0.5 text-xs text-ink-3">
-            {t('appearance.colors.subtitle', 'Ajusta cada color individual del sistema')}
+            {t('appearance.colors.subtitle')}
           </p>
         </div>
         {hasCustomOverrides && (
@@ -67,7 +67,7 @@ export function ThemeColorSection({
             className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
           >
             <RotateCcw className="size-3.5" />
-            <span>{t('appearance.colors.reset', 'Restablecer colores')}</span>
+            <span>{t('appearance.colors.reset')}</span>
           </button>
         )}
       </div>
@@ -75,7 +75,7 @@ export function ThemeColorSection({
       {/* 1. Surfaces */}
       <div className="rounded-xl border border-line bg-surface p-4">
         <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-2">
-          {t('appearance.colors.groupSurfaces', 'Lienzo y superficies')}
+          {t('appearance.colors.groupSurfaces')}
         </h5>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {SURFACE_GROUP.map(({ token, labelKey }) => (
@@ -92,7 +92,7 @@ export function ThemeColorSection({
       {/* 2. Typography / Inks */}
       <div className="rounded-xl border border-line bg-surface p-4">
         <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-2">
-          {t('appearance.colors.groupTypography', 'Textos y tipografía')}
+          {t('appearance.colors.groupTypography')}
         </h5>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {TEXT_GROUP.map(({ token, labelKey }) => (
@@ -109,7 +109,7 @@ export function ThemeColorSection({
       {/* 3. Timer & Accents */}
       <div className="rounded-xl border border-line bg-surface p-4">
         <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-2">
-          {t('appearance.colors.groupAccents', 'Acentos y estados del temporizador')}
+          {t('appearance.colors.groupAccents')}
         </h5>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {ACCENT_GROUP.map(({ token, labelKey }) => (

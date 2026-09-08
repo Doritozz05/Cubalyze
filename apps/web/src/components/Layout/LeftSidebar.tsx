@@ -2,11 +2,8 @@
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "next-themes";
-import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
 import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
-import { Sun, Moon, Settings, UserRound } from "lucide-react";
+import { Palette, Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
@@ -35,6 +32,7 @@ const HOVER_SUPPRESS_MS = 500;
 const SettingsDialog = lazy(() =>
   import("@/components/Settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
 );
+import { ThemeStudioModal } from "@/components/Settings/theme-studio/ThemeStudioModal";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { Solve } from "@/types";
@@ -98,13 +96,11 @@ export function LeftSidebar({
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
-  const [mounted, setMounted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
   const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
   const [internalCubeConnectorOpen, setInternalCubeConnectorOpen] = useState(false);
+  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
 
   const settingsOpen = externalSettingsOpen ?? internalSettingsOpen;
   const setSettingsOpen = onSettingsOpenChange ?? setInternalSettingsOpen;
@@ -120,9 +116,6 @@ export function LeftSidebar({
   // regains focus after a native dialog, e.g. the Web Bluetooth chooser, closed).
   const suppressExpandUntilRef = useRef(0);
 
-  useEffect(() => setMounted(true), []);
-
-  const isDark = mounted && resolvedTheme === "dark";
   // Labels/titles are visible whenever the rail is expanded: on hover (desktop)
   // or always (the touch sheet has a fixed wide width). This also fixes a
   // pre-existing issue where the mobile sheet showed icon-only items.
@@ -427,10 +420,13 @@ export function LeftSidebar({
             onClick={() => setSettingsOpen(true)}
           />
           <SidebarFooterItem
-            icon={mounted && isDark ? Sun : Moon}
-            label={mounted && isDark ? tCommon("lightMode") : tCommon("darkMode")}
+            icon={Palette}
+            label={tCommon("theme")}
             labelVisible={labelVisible}
-            onClick={() => setStoreTheme(isDark ? "light" : "dark")}
+            onClick={() => {
+              setThemeStudioOpen(true);
+              if (isTouch) onMobileOpenChange?.(false);
+            }}
           />
         </div>
       </LayoutGroup>
@@ -475,6 +471,10 @@ export function LeftSidebar({
             sessionName={sessionName}
             onImportSolves={onImportSolves}
             onExportAllJSON={onExportAllJSON}
+          />
+          <ThemeStudioModal
+            open={themeStudioOpen}
+            onOpenChange={setThemeStudioOpen}
           />
         </Suspense>
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
@@ -540,6 +540,10 @@ export function LeftSidebar({
           sessionName={sessionName}
           onImportSolves={onImportSolves}
           onExportAllJSON={onExportAllJSON}
+        />
+        <ThemeStudioModal
+          open={themeStudioOpen}
+          onOpenChange={setThemeStudioOpen}
         />
       </Suspense>
     </>

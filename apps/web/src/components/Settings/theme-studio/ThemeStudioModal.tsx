@@ -50,15 +50,20 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors);
 
   const tabs = [
-    { id: 'presets' as const, label: t('appearance.tabs.presets', 'Temas'), icon: Palette },
-    { id: 'colors' as const, label: t('appearance.tabs.colors', 'Colores'), icon: Sliders },
-    { id: 'liquid' as const, label: t('appearance.tabs.liquid', 'Liquid glass'), icon: Droplets },
-    { id: 'background' as const, label: t('appearance.tabs.background', 'Fondo'), icon: ImageIcon },
-    { id: 'reset' as const, label: t('appearance.tabs.reset', 'Restablecer'), icon: RotateCcw },
+    { id: 'presets' as const, label: t('appearance.tabs.presets'), icon: Palette },
+    { id: 'colors' as const, label: t('appearance.tabs.colors'), icon: Sliders },
+    { id: 'liquid' as const, label: t('appearance.tabs.liquid'), icon: Droplets },
+    { id: 'background' as const, label: t('appearance.tabs.background'), icon: ImageIcon },
+    { id: 'reset' as const, label: t('appearance.tabs.reset'), icon: RotateCcw },
   ];
 
   const handleSelectPreset = (presetId: string) => {
     setThemePreset(presetId);
+    if (presetId === 'light') {
+      preferencesStore.getState().setTheme('light');
+    } else {
+      preferencesStore.getState().setTheme('dark');
+    }
     // Clearing custom overrides when choosing an explicit preset ensures clean preset application
     resetCustomThemeColors();
   };
@@ -70,7 +75,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92vh] max-h-[92vh] flex-col overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
       >
         <DialogTitle className="sr-only">
-          {t('appearance.themeStudioTitle', 'Estudio de temas')}
+          {t('appearance.themeStudioTitle')}
         </DialogTitle>
 
         {/* Modal Header */}
@@ -81,10 +86,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
             </div>
             <div>
               <h3 className="text-sm font-bold text-ink">
-                {t('appearance.themeStudioTitle', 'Estudio de temas')}
+                {t('appearance.themeStudioTitle')}
               </h3>
               <p className="text-[0.72rem] text-ink-3">
-                {t('appearance.themeStudioSubtitle', 'Personalizador de entorno, colores y efectos visuales')}
+                {t('appearance.themeStudioSubtitle')}
               </p>
             </div>
           </div>
@@ -93,7 +98,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
             type="button"
             onClick={() => onOpenChange(false)}
             className="flex size-8 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-3 transition-colors hover:bg-surface hover:text-ink"
-            aria-label={t('appearance.close', 'Cerrar')}
+            aria-label={t('appearance.close')}
           >
             <X className="size-4" />
           </button>
@@ -139,10 +144,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 <div className="flex flex-col gap-3">
                   <div>
                     <h4 className="text-sm font-semibold text-ink">
-                      {t('appearance.presetsTitle', 'Temas predefinidos')}
+                      {t('appearance.presetsTitle')}
                     </h4>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {t('appearance.presetsSubtitle', 'Selecciona una paleta de color estética')}
+                      {t('appearance.presetsSubtitle')}
                     </p>
                   </div>
 
@@ -181,22 +186,22 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             <div
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.canvas }}
-                              title={t('appearance.colors.canvas', 'Lienzo')}
+                              title={t('appearance.colors.canvas')}
                             />
                             <div
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.surface }}
-                              title={t('appearance.colors.surface', 'Superficie')}
+                              title={t('appearance.colors.surface')}
                             />
                             <div
                               className="size-4.5 rounded-full border border-black/10 shadow-xs"
                               style={{ backgroundColor: preset.previewColors.ink }}
-                              title={t('appearance.colors.ink', 'Texto')}
+                              title={t('appearance.colors.ink')}
                             />
                             <div
                               className="size-4.5 rounded-full border border-black/10 shadow-xs ml-auto"
                               style={{ backgroundColor: preset.previewColors.accent }}
-                              title={t('appearance.colors.ready', 'Acento')}
+                              title={t('appearance.colors.ready')}
                             />
                           </div>
                         </button>
@@ -223,17 +228,17 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 <div className="flex flex-col gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-ink">
-                      {t('appearance.liquidGlass', 'Liquid Glass UI')}
+                      {t('appearance.liquidGlass')}
                     </h4>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {t('appearance.liquidGlassHint', 'Convierte los paneles en cristal esmerilado translúcido')}
+                      {t('appearance.liquidGlassHint')}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-ink">
-                        {t('appearance.liquidGlassEnabled', 'Activar efecto Liquid Glass')}
+                        {t('appearance.liquidGlassEnabled')}
                       </span>
                       <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
                     </div>
@@ -242,7 +247,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       <div className="flex flex-col gap-3 border-t border-line pt-4">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-medium text-ink">
-                            {t('appearance.liquidGlassOpacity', 'Opacidad del cristal')}
+                            {t('appearance.liquidGlassOpacity')}
                           </span>
                           <span className="font-mono font-semibold text-ink">
                             {liquidGlassOpacity}%
@@ -257,7 +262,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           className="w-full"
                         />
                         <p className="text-[0.7rem] text-ink-3">
-                          {t('appearance.liquidGlassOpacityHint', 'Un valor menor hace los paneles más translúcidos; un valor mayor los hace más sólidos')}
+                          {t('appearance.liquidGlassOpacityHint')}
                         </p>
                       </div>
                     )}
@@ -277,10 +282,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 <div className="flex flex-col gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-ink">
-                      {t('appearance.resetTitle', 'Restablecer ajustes visuales')}
+                      {t('appearance.resetTitle')}
                     </h4>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {t('appearance.resetSubtitle', 'Restaura colores o valores por defecto')}
+                      {t('appearance.resetSubtitle')}
                     </p>
                   </div>
 
@@ -288,10 +293,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                     <div className="flex items-center justify-between">
                       <div>
                         <h5 className="text-xs font-semibold text-ink">
-                          {t('appearance.resetColorsOnly', 'Restablecer colores personalizados')}
+                          {t('appearance.resetColorsOnly')}
                         </h5>
                         <p className="text-[0.72rem] text-ink-3">
-                          {t('appearance.resetColorsOnlyDesc', 'Vuelve a los colores de fábrica del tema seleccionado')}
+                          {t('appearance.resetColorsOnlyDesc')}
                         </p>
                       </div>
                       <button
@@ -299,30 +304,31 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         onClick={resetCustomThemeColors}
                         className="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
                       >
-                        {t('appearance.tabs.reset', 'Restablecer')}
+                        {t('appearance.tabs.reset')}
                       </button>
                     </div>
 
                     <div className="border-t border-line pt-3 flex items-center justify-between">
                       <div>
                         <h5 className="text-xs font-semibold text-ink">
-                          {t('appearance.resetAllVisual', 'Restablecer todo al tema por defecto')}
+                          {t('appearance.resetAllVisual')}
                         </h5>
                         <p className="text-[0.72rem] text-ink-3">
-                          {t('appearance.resetAllVisualDesc', 'Restaura el tema claro u oscuro clásico y elimina personalizaciones')}
+                          {t('appearance.resetAllVisualDesc')}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
-                          setThemePreset('default');
+                          setThemePreset('dark');
+                          preferencesStore.getState().setTheme('dark');
                           resetCustomThemeColors();
                           setLiquidGlass(false);
                           setLiquidGlassOpacity(65);
                         }}
                         className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"
                       >
-                        {t('appearance.resetAll', 'Restablecer todo')}
+                        {t('appearance.resetAll')}
                       </button>
                     </div>
                   </div>

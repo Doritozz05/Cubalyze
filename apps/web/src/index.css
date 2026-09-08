@@ -370,17 +370,17 @@ html.liquid-glass.dark {
    for text usages only (backgrounds keep the glass remap). */
 html.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
-  color: #ffffff !important;
+  color: var(--surface-solid, #ffffff) !important;
 }
 html.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
-  color: #f1f3f5 !important;
+  color: var(--surface-2, #f1f3f5) !important;
 }
 html.dark.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.dark.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
-  color: #1b1f23 !important;
+  color: var(--surface-solid, #1b1f23) !important;
 }
 html.dark.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
-  color: #24292e !important;
+  color: var(--surface-2, #24292e) !important;
 }
 
 html.liquid-glass [data-slot="card"],

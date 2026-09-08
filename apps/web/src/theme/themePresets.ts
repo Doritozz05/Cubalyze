@@ -94,9 +94,9 @@ export const DEFAULT_DARK_COLORS: ThemeColors = {
 
 export const THEME_PRESETS: ThemePreset[] = [
   {
-    id: 'default',
-    labelKey: 'appearance.presetDefault',
-    descriptionKey: 'appearance.presetDefaultDesc',
+    id: 'dark',
+    labelKey: 'appearance.presetDark',
+    descriptionKey: 'appearance.presetDarkDesc',
     isDark: true,
     colors: DEFAULT_DARK_COLORS,
     previewColors: {
@@ -104,6 +104,19 @@ export const THEME_PRESETS: ThemePreset[] = [
       surface: '#1b1f23',
       ink: '#e9ecef',
       accent: '#6abf8a',
+    },
+  },
+  {
+    id: 'light',
+    labelKey: 'appearance.presetLight',
+    descriptionKey: 'appearance.presetLightDesc',
+    isDark: false,
+    colors: DEFAULT_LIGHT_COLORS,
+    previewColors: {
+      canvas: '#f8f9fa',
+      surface: '#ffffff',
+      ink: '#212529',
+      accent: '#2b7749',
     },
   },
   {
@@ -315,14 +328,17 @@ export function resolveThemeColors(
   baseTheme: 'light' | 'dark' | 'system',
   customColors?: Record<string, string> | null,
 ): ThemeColors {
-  let baseColors: ThemeColors;
-
-  if (presetId === 'default') {
-    baseColors = baseTheme === 'light' ? DEFAULT_LIGHT_COLORS : DEFAULT_DARK_COLORS;
-  } else {
-    const preset = THEME_PRESETS.find((p) => p.id === presetId);
-    baseColors = preset ? { ...preset.colors } : { ...DEFAULT_DARK_COLORS };
+  let effectiveId = presetId;
+  if (!effectiveId || effectiveId === 'default') {
+    effectiveId = baseTheme === 'light' ? 'light' : 'dark';
   }
+
+  const preset = THEME_PRESETS.find((p) => p.id === effectiveId);
+  const baseColors: ThemeColors = preset
+    ? { ...preset.colors }
+    : effectiveId === 'light'
+      ? { ...DEFAULT_LIGHT_COLORS }
+      : { ...DEFAULT_DARK_COLORS };
 
   if (customColors) {
     return {
@@ -333,3 +349,54 @@ export function resolveThemeColors(
 
   return baseColors;
 }
+
+/**
+ * Derives shadcn / Radix / base Tailwind variables from the resolved theme colors
+ * so that sidebars, dropdowns, buttons, cards and dialogs stay synchronized.
+ */
+export function getDerivedThemeTokens(colors: ThemeColors): Record<string, string> {
+  return {
+    '--surface-solid': colors['--surface'],
+    '--sidebar': colors['--surface'],
+    '--sidebar-foreground': colors['--ink'],
+    '--sidebar-border': colors['--line'],
+    '--sidebar-accent': colors['--surface-2'],
+    '--sidebar-accent-foreground': colors['--ink'],
+    '--popover': colors['--surface'],
+    '--popover-foreground': colors['--ink'],
+    '--border': colors['--line'],
+    '--input': colors['--line'],
+    '--background': colors['--canvas'],
+    '--foreground': colors['--ink'],
+    '--card': colors['--surface'],
+    '--card-foreground': colors['--ink'],
+    '--primary': colors['--ink'],
+    '--primary-foreground': colors['--surface'],
+    '--secondary': colors['--surface-2'],
+    '--secondary-foreground': colors['--ink'],
+    '--muted': colors['--surface-2'],
+    '--muted-foreground': colors['--ink-3'],
+    '--accent': colors['--surface-2'],
+    '--accent-foreground': colors['--ink'],
+  };
+}
+
+/**
+ * Derives dynamic frosted glass colors from the active theme's surface and line tokens,
+ * ensuring Liquid Glass looks native across Light, Dark, OLED, Nord, etc.
+ */
+export function getDerivedLiquidGlassTokens(
+  colors: ThemeColors,
+  opacityPercent: number,
+): Record<string, string> {
+  const op = Math.max(0.15, Math.min(0.95, opacityPercent / 100));
+  return {
+    '--glass-opacity': `${op}`,
+    '--glass-bg': `color-mix(in srgb, ${colors['--surface']} ${Math.round(op * 100)}%, transparent)`,
+    '--glass-bg-subtle': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 75)}%, transparent)`,
+    '--glass-btn-bg': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 80)}%, transparent)`,
+    '--glass-btn-bg-hover': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 95)}%, transparent)`,
+    '--glass-border': `color-mix(in srgb, ${colors['--line']} ${Math.round((0.5 + op * 0.5) * 100)}%, transparent)`,
+  };
+}
+
