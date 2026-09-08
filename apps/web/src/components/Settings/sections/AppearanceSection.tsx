@@ -5,7 +5,7 @@ import { preferencesStore, type HeaderMode } from '@cubeforge/state';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
 import { useState } from 'react';
-import { Palette, Sun, Moon, Monitor, LayoutGrid, Sliders } from 'lucide-react';
+import { Palette, Monitor, LayoutGrid, Sliders } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { dockEditStore } from '@/widgets/dock/dockEditStore';
 import { useIsTouch } from '@/hooks/use-mobile';
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { THEME_PRESETS } from '@/theme/themePresets';
 
 /**
  * Appearance settings section.
@@ -40,6 +41,24 @@ export function AppearanceSection() {
   const { t } = useTranslation('settings');
   const theme = useStore(preferencesStore, (s) => s.theme);
   const setTheme = useStore(preferencesStore, (s) => s.setTheme);
+  const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? 'default');
+  const setThemePreset = useStore(preferencesStore, (s) => s.setThemePreset);
+  // Selector mirrors the full Theme Studio catalog: system follows the OS
+  // (classic light/dark), any other value is the active preset id.
+  const selectorValue =
+    theme === 'system' ? 'system' : themePreset === 'default' ? theme : themePreset;
+
+  const handleSelectThemeValue = (value: string) => {
+    if (value === 'system') {
+      setThemePreset('default');
+      setTheme('system');
+      return;
+    }
+    const preset = THEME_PRESETS.find((p) => p.id === value);
+    if (!preset) return;
+    setThemePreset(preset.id);
+    setTheme(preset.isDark ? 'dark' : 'light');
+  };
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
   const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
   const isTouch = useIsTouch();
@@ -93,8 +112,8 @@ export function AppearanceSection() {
         title={t('appearance.theme')}
         description={t('appearance.themeHint')}
         control={
-          <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger className="w-40 max-lg:w-full">
+          <Select value={selectorValue} onValueChange={handleSelectThemeValue}>
+            <SelectTrigger className="w-44 max-lg:w-full">
               <SelectValue placeholder={t('appearance.selectTheme')} />
             </SelectTrigger>
             <SelectContent>
@@ -104,18 +123,18 @@ export function AppearanceSection() {
                   <span>{t('appearance.system')}</span>
                 </div>
               </SelectItem>
-              <SelectItem value="dark">
-                <div className="flex items-center gap-2">
-                  <Moon className="size-3.5" />
-                  <span>{t('appearance.dark')}</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="light">
-                <div className="flex items-center gap-2">
-                  <Sun className="size-3.5" />
-                  <span>{t('appearance.light')}</span>
-                </div>
-              </SelectItem>
+              {THEME_PRESETS.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="size-3.5 shrink-0 rounded-full border border-black/15"
+                      style={{ backgroundColor: preset.previewColors.accent }}
+                      aria-hidden="true"
+                    />
+                    <span>{t(preset.labelKey, preset.id)}</span>
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         }

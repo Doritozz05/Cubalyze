@@ -406,8 +406,9 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       <button
                         type="button"
                         onClick={() => {
-                          setThemePreset('dark');
-                          preferencesStore.getState().setTheme('dark');
+                          // Factory defaults: classic light theme, no overrides.
+                          setThemePreset('default');
+                          preferencesStore.getState().setTheme('light');
                           resetCustomThemeColors();
                           setLiquidGlass(false);
                           setLiquidGlassOpacity(65);

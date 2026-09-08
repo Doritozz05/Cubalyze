@@ -14,40 +14,58 @@ import {
 
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
-  const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? "dark");
+  const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? "default");
   const customThemeColors = useStore(preferencesStore, (s) => s.customThemeColors);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const { theme: nextTheme, setTheme } = useTheme();
 
+  // Live OS scheme snapshot so `system` mode reacts to OS changes.
+  const [osDark, setOsDark] = React.useState(false);
   React.useEffect(() => {
-    if (storeTheme && storeTheme !== nextTheme) {
-      setTheme(storeTheme);
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setOsDark(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Single resolution rule:
+  // - system  -> OS scheme mapped to the classic light/dark presets
+  // - default preset -> follows the explicit base theme (light/dark)
+  // - explicit preset -> its own isDark flag wins
+  const presetObj = THEME_PRESETS.find((p) => p.id === themePreset);
+  const resolvedBase: "light" | "dark" =
+    storeTheme === "system"
+      ? osDark
+        ? "dark"
+        : "light"
+      : presetObj
+        ? presetObj.isDark
+          ? "dark"
+          : "light"
+        : storeTheme;
+
+  React.useEffect(() => {
+    if (resolvedBase !== nextTheme) {
+      setTheme(resolvedBase);
     }
-  }, [storeTheme, nextTheme, setTheme]);
+  }, [resolvedBase, nextTheme, setTheme]);
 
   // Synchronize theme preset, derived tokens, and liquid glass to :root
   React.useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
 
-    const presetObj = THEME_PRESETS.find((p) => p.id === themePreset);
-    const isLightPreset = themePreset === "light" || (presetObj && !presetObj.isDark);
-
     // Synchronize .dark class on root
-    if (isLightPreset) {
-      root.classList.remove("dark");
-      if (storeTheme !== "light") {
-        preferencesStore.getState().setTheme("light");
-      }
-    } else {
-      root.classList.add("dark");
-      if (storeTheme !== "dark") {
-        preferencesStore.getState().setTheme("dark");
-      }
+    root.classList.toggle("dark", resolvedBase === "dark");
+    // Keep an explicit (non-system) base theme coherent with the preset.
+    if (storeTheme !== "system" && presetObj && storeTheme !== resolvedBase) {
+      preferencesStore.getState().setTheme(resolvedBase);
     }
 
-    const resolved = resolveThemeColors(themePreset, storeTheme, customThemeColors);
+    const resolved = resolveThemeColors(themePreset, resolvedBase, customThemeColors);
     const derived = getDerivedThemeTokens(resolved);
     const allVars = { ...resolved, ...derived };
 
@@ -72,7 +90,7 @@ function ThemeSync() {
       root.style.removeProperty("--glass-btn-bg-hover");
       root.style.removeProperty("--glass-border");
     }
-  }, [themePreset, customThemeColors, storeTheme, liquidGlass, liquidGlassOpacity]);
+  }, [themePreset, customThemeColors, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity]);
 
   return null;
 }

@@ -320,6 +320,18 @@ export const THEME_PRESETS: ThemePreset[] = [
 ];
 
 /**
+ * Reads the OS color scheme. SSR-safe (defaults to light outside the browser).
+ * Used as the single source of truth for `system` mode: system always resolves
+ * to one of the two classic presets (light / dark), never to a fancy preset.
+ */
+export function getSystemBaseTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return 'light';
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
  * Resolves the complete map of CSS variables given the preset, base light/dark mode,
  * and any user overrides.
  */
@@ -328,9 +340,10 @@ export function resolveThemeColors(
   baseTheme: 'light' | 'dark' | 'system',
   customColors?: Record<string, string> | null,
 ): ThemeColors {
+  const base = baseTheme === 'system' ? getSystemBaseTheme() : baseTheme;
   let effectiveId = presetId;
   if (!effectiveId || effectiveId === 'default') {
-    effectiveId = baseTheme === 'light' ? 'light' : 'dark';
+    effectiveId = base;
   }
 
   const preset = THEME_PRESETS.find((p) => p.id === effectiveId);
