@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, Save, Trash2, Check, Lock, ArrowDownToLine } from "lucide-react";
+import { LayoutGrid, Save, Trash2, Check, ArrowDownToLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
@@ -10,7 +10,6 @@ import { getWidget } from "@/widgets/registry";
 import { WIDGET_LABEL_KEY } from "@/widgets/i18n";
 import type { WidgetId } from "@/widgets/types";
 import type { CustomLayout } from "@/widgets/widgetStore";
-import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ── Widget size registry ─────────────────────────────────────────────────
@@ -54,18 +53,39 @@ type LayoutFn = (ids: WidgetId[]) => Record<WidgetId, Rect>;
 const cascade: LayoutFn = (ids) => {
   const a = getArea();
   const out: Record<WidgetId, Rect> = {};
-  ids.forEach((id, i) => { const s = getSize(id); out[id] = { x: a.x + i * 30, y: a.y + i * 30, w: s.w, h: s.h }; });
+  const maxShiftX = Math.max(0, a.w - DEFAULT_SIZE.w);
+  const maxShiftY = Math.max(0, a.h - DEFAULT_SIZE.h);
+  const stepX = ids.length > 1 ? Math.min(30, maxShiftX / (ids.length - 1)) : 0;
+  const stepY = ids.length > 1 ? Math.min(30, maxShiftY / (ids.length - 1)) : 0;
+  ids.forEach((id, i) => {
+    const s = getSize(id);
+    out[id] = {
+      x: Math.round(a.x + i * stepX),
+      y: Math.round(a.y + i * stepY),
+      w: s.w,
+      h: s.h,
+    };
+  });
   return out;
 };
 
 const grid: LayoutFn = (ids) => {
   const a = getArea();
   const cols = Math.max(1, Math.min(ids.length, Math.floor(a.w / (DEFAULT_SIZE.w + GAP))));
+  const rows = Math.ceil(ids.length / cols);
   const cellW = Math.floor((a.w - GAP * (cols - 1)) / cols);
   const out: Record<WidgetId, Rect> = {};
   ids.forEach((id, i) => {
     const s = getSize(id);
-    out[id] = { x: a.x + (i % cols) * (cellW + GAP), y: a.y + Math.floor(i / cols) * (DEFAULT_SIZE.h + GAP), w: Math.min(s.w, cellW), h: s.h };
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const stepY = rows > 1 ? Math.min(DEFAULT_SIZE.h + GAP, (a.h - s.h) / (rows - 1)) : 0;
+    out[id] = {
+      x: a.x + col * (cellW + GAP),
+      y: Math.round(a.y + (rows > 1 ? row * stepY : 0)),
+      w: Math.min(s.w, cellW),
+      h: s.h,
+    };
   });
   return out;
 };
@@ -73,16 +93,38 @@ const grid: LayoutFn = (ids) => {
 const colLeft: LayoutFn = (ids) => {
   const a = getArea();
   const out: Record<WidgetId, Rect> = {};
+  const totalH = ids.reduce((acc, id) => acc + getSize(id).h, 0) + GAP * (ids.length - 1);
+  const fits = totalH <= a.h;
   let y = a.y;
-  ids.forEach((id) => { const s = getSize(id); out[id] = { x: a.x, y, w: s.w, h: s.h }; y += s.h + GAP; });
+  ids.forEach((id, i) => {
+    const s = getSize(id);
+    if (fits) {
+      out[id] = { x: a.x, y, w: s.w, h: s.h };
+      y += s.h + GAP;
+    } else {
+      const stepY = ids.length > 1 ? Math.max(0, (a.h - s.h) / (ids.length - 1)) : 0;
+      out[id] = { x: a.x, y: Math.round(a.y + i * stepY), w: s.w, h: s.h };
+    }
+  });
   return out;
 };
 
 const colRight: LayoutFn = (ids) => {
   const a = getArea();
   const out: Record<WidgetId, Rect> = {};
+  const totalH = ids.reduce((acc, id) => acc + getSize(id).h, 0) + GAP * (ids.length - 1);
+  const fits = totalH <= a.h;
   let y = a.y;
-  ids.forEach((id) => { const s = getSize(id); out[id] = { x: a.x + a.w - s.w, y, w: s.w, h: s.h }; y += s.h + GAP; });
+  ids.forEach((id, i) => {
+    const s = getSize(id);
+    if (fits) {
+      out[id] = { x: a.x + a.w - s.w, y, w: s.w, h: s.h };
+      y += s.h + GAP;
+    } else {
+      const stepY = ids.length > 1 ? Math.max(0, (a.h - s.h) / (ids.length - 1)) : 0;
+      out[id] = { x: a.x + a.w - s.w, y: Math.round(a.y + i * stepY), w: s.w, h: s.h };
+    }
+  });
   return out;
 };
 
@@ -93,7 +135,10 @@ const focus: LayoutFn = (ids) => {
   const [primary, ...rest] = ids;
   const ps = getSize(primary);
   out[primary] = { x: a.x + Math.floor((a.w - ps.w) / 2), y: a.y, w: ps.w, h: ps.h };
-  rest.forEach((id, i) => { const s = getSize(id); out[id] = { x: a.x + i * (s.w + GAP), y: a.y + a.h - 48, w: s.w, h: 36 }; });
+  rest.forEach((id, i) => {
+    const pillW = 200;
+    out[id] = { x: a.x + i * (pillW + GAP), y: a.y + a.h - 48, w: pillW, h: 36 };
+  });
   return out;
 };
 
@@ -101,11 +146,17 @@ const spread: LayoutFn = (ids) => {
   const a = getArea();
   const out: Record<WidgetId, Rect> = {};
   const totalW = ids.reduce((s, id) => s + getSize(id).w, 0) + GAP * (ids.length - 1);
+  const fits = totalW <= a.w;
   let x = a.x + Math.max(0, Math.floor((a.w - totalW) / 2));
   ids.forEach((id, i) => {
     const s = getSize(id);
-    out[id] = { x, y: a.y + (i % 2 === 0 ? 0 : Math.min(80, a.h * 0.15)), w: s.w, h: s.h };
-    x += s.w + GAP;
+    if (fits) {
+      out[id] = { x, y: a.y + (i % 2 === 0 ? 0 : Math.min(80, a.h * 0.15)), w: s.w, h: s.h };
+      x += s.w + GAP;
+    } else {
+      const stepX = ids.length > 1 ? (a.w - s.w) / (ids.length - 1) : 0;
+      out[id] = { x: Math.round(a.x + i * stepX), y: a.y + (i % 2 === 0 ? 0 : Math.min(80, a.h * 0.15)), w: s.w, h: s.h };
+    }
   });
   return out;
 };
@@ -115,12 +166,20 @@ const splitColumns: LayoutFn = (ids) => {
   const out: Record<WidgetId, Rect> = {};
   const half = Math.ceil(ids.length / 2);
   const colW = Math.floor((a.w - GAP) / 2);
-  let yL = a.y, yR = a.y;
+  const leftCount = half;
+  const rightCount = ids.length - half;
+
   ids.forEach((id, i) => {
     const s = getSize(id);
     const w = Math.min(s.w, colW);
-    if (i < half) { out[id] = { x: a.x, y: yL, w, h: s.h }; yL += s.h + GAP; }
-    else { out[id] = { x: a.x + a.w - w, y: yR, w, h: s.h }; yR += s.h + GAP; }
+    if (i < half) {
+      const stepY = leftCount > 1 ? Math.max(0, (a.h - s.h) / (leftCount - 1)) : 0;
+      out[id] = { x: a.x, y: Math.round(a.y + i * stepY), w, h: s.h };
+    } else {
+      const rIdx = i - half;
+      const stepY = rightCount > 1 ? Math.max(0, (a.h - s.h) / (rightCount - 1)) : 0;
+      out[id] = { x: a.x + a.w - w, y: Math.round(a.y + rIdx * stepY), w, h: s.h };
+    }
   });
   return out;
 };
@@ -220,38 +279,30 @@ export function FloatingLayoutOrganizer() {
   const [saveName, setSaveName] = useState("");
   const [savedId, setSavedId] = useState<string | null>(null);
 
-  // All active widgets (docked, floating, or minimized) except self
-  const activeIds = useMemo(() =>
-    Object.entries(instances)
-      .filter(([, inst]) => inst?.status !== "inactive")
-      .filter(([id]) => id !== SELF_ID)
-      .map(([id]) => id as WidgetId),
-  [instances]);
-
-  // Floating widgets currently on screen
-  const floatingIds = useMemo(() =>
+  // Open floating widgets currently on screen (floating or minimized) except self
+  const openIds = useMemo(() =>
     Object.entries(instances)
       .filter(([, inst]) => inst?.status === "floating" || inst?.status === "minimized")
       .filter(([id]) => id !== SELF_ID)
       .map(([id]) => id as WidgetId),
   [instances]);
 
-  const activeCount = activeIds.length;
+  const openCount = openIds.length;
 
   const layoutData = useMemo(() =>
-    LAYOUTS.map((l) => ({ ...l, rects: activeIds.length ? l.fn(activeIds) : {} })),
-  [activeIds]);
+    LAYOUTS.map((l) => ({ ...l, rects: openIds.length ? l.fn(openIds) : {} })),
+  [openIds]);
 
   const applyBuiltInLayout = (rects: Record<WidgetId, Rect>, layoutId: string) => {
     const store = widgetStore.getState();
-    activeIds.forEach((id, i) => {
+    openIds.forEach((id, i) => {
       const r = rects[id];
       if (!r) return;
       store.setPosition(id, { x: r.x, y: r.y });
       if (layoutId === "focus" && i > 0) {
         store.setStatus(id, "minimized");
       } else {
-        // Auto undock / expand all layout widgets to floating
+        // Auto undock / expand layout widgets to floating
         store.setStatus(id, "floating");
       }
     });
@@ -277,7 +328,7 @@ export function FloatingLayoutOrganizer() {
 
   const handleDockAll = () => {
     const store = widgetStore.getState();
-    for (const id of floatingIds) {
+    for (const id of openIds) {
       store.setStatus(id, "docked");
     }
   };
@@ -288,7 +339,7 @@ export function FloatingLayoutOrganizer() {
 
   return (
     <FloatingWidgetWrapper widgetId={SELF_ID} icon={LayoutGrid} label={t("def.layoutOrganizer")} panelWidth={300}>
-      {activeCount === 0 && customLayouts.length === 0 ? (
+      {openCount === 0 && customLayouts.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-5 py-8 text-center">
           <LayoutGrid className="size-8 text-ink-3/40" />
           <p className="text-[0.78rem] font-medium text-ink-2">
@@ -305,8 +356,8 @@ export function FloatingLayoutOrganizer() {
             {/* Header bar + save layout button */}
             <div className="sticky top-0 z-1 flex items-center justify-between border-b border-line bg-surface-2 px-3 py-1.5">
               <p className="text-[0.65rem] text-ink-3">
-                <span className="font-semibold text-ink">{activeCount}</span>{" "}
-                {t("panel.layoutOrganizer.activeCount", { count: activeCount })}
+                <span className="font-semibold text-ink">{openCount}</span>{" "}
+                {t("panel.layoutOrganizer.activeCount", { count: openCount })}
               </p>
               <div className="flex items-center gap-1">
                 <Tooltip>
@@ -314,7 +365,7 @@ export function FloatingLayoutOrganizer() {
                     <span className="inline-flex">
                       <button
                         onClick={handleDockAll}
-                        disabled={floatingIds.length === 0}
+                        disabled={openCount === 0}
                         className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
                       >
                         <ArrowDownToLine className="size-2.5" />
@@ -323,16 +374,17 @@ export function FloatingLayoutOrganizer() {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    {floatingIds.length === 0
+                    {openCount === 0
                       ? t("panel.layoutOrganizer.noFloating")
-                      : t("panel.layoutOrganizer.dockAll", { count: floatingIds.length })}
+                      : t("panel.layoutOrganizer.dockAll", { count: openCount })}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setSaveInputOpen((v) => !v)}
-                      className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                      disabled={openCount === 0}
+                      className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[0.6rem] font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
                     >
                       <Save className="size-2.5" />
                       {t("panel.layoutOrganizer.saveLayout")}
@@ -359,7 +411,7 @@ export function FloatingLayoutOrganizer() {
                 />
                 <button
                   onClick={handleSaveCustom}
-                  disabled={!saveName.trim() || floatingIds.length === 0}
+                  disabled={!saveName.trim() || openCount === 0}
                   className="flex items-center gap-1 rounded bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   <Check className="size-3" />
@@ -387,63 +439,26 @@ export function FloatingLayoutOrganizer() {
                 <div className="grid grid-cols-2 gap-1.5">
                   {customLayouts.map((layout) => {
                     const requiredIds = Object.keys(layout.positions) as WidgetId[];
-                    // Find widgets that are inactive
-                    const missingIds = requiredIds.filter(
-                      (id) => !instances[id] || instances[id].status === "inactive"
-                    );
-                    const isFullyActive = missingIds.length === 0;
                     const rects = customLayoutRects(layout);
-
-                    // Descriptive label when widgets are missing
-                    let missingText = "";
-                    if (missingIds.length === 1) {
-                      missingText = t("panel.layoutOrganizer.widgetNeeded", {
-                        name: t(WIDGET_LABEL_KEY[missingIds[0]]),
-                      });
-                    } else if (missingIds.length > 1) {
-                      missingText = t("panel.layoutOrganizer.widgetsNeeded", {
-                        count: missingIds.length,
-                      });
-                    }
 
                     return (
                       <div
                         key={layout.id}
-                        className={cn(
-                          "group relative flex flex-col rounded-lg border transition-all duration-150 overflow-hidden",
-                          isFullyActive
-                            ? "border-line bg-surface hover:shadow-md hover:scale-[1.02] hover:border-accent/40"
-                            : "border-line/40 bg-surface-2/40 opacity-55"
-                        )}
+                        className="group relative flex flex-col rounded-lg border border-line bg-surface transition-all duration-150 overflow-hidden hover:shadow-md hover:scale-[1.02] hover:border-accent/40"
                       >
                         <button
-                          onClick={() => isFullyActive && applyCustomLayout(layout)}
-                          disabled={!isFullyActive}
-                          className={cn(
-                            "flex flex-col gap-1 p-2 text-left w-full",
-                            !isFullyActive && "cursor-not-allowed"
-                          )}
+                          onClick={() => applyCustomLayout(layout)}
+                          className="flex flex-col gap-1 p-2 text-left w-full cursor-pointer"
                         >
                           <div className="relative overflow-hidden rounded border border-line/50 bg-surface-2/50">
                             <LayoutPreviewSvg rects={rects} ids={requiredIds} />
-                            {!isFullyActive && (
-                              <div className="absolute inset-0 bg-surface/85 flex items-center justify-center gap-1 text-ink-3">
-                                <Lock className="size-3 text-ink-3/80" />
-                              </div>
-                            )}
                           </div>
                           <div>
                             <p className="text-[0.68rem] font-semibold text-ink leading-tight truncate">
                               {layout.name}
                             </p>
                             <p className="text-[0.58rem] text-ink-3 leading-tight mt-0.5">
-                              {isFullyActive ? (
-                                <span>{t("panel.layoutOrganizer.widgetsCount", { count: requiredIds.length })}</span>
-                              ) : (
-                                <span className="text-caution font-medium flex items-center gap-0.5">
-                                  {missingText}
-                                </span>
-                              )}
+                              <span>{t("panel.layoutOrganizer.widgetsCount", { count: requiredIds.length })}</span>
                             </p>
                           </div>
                         </button>
@@ -472,11 +487,11 @@ export function FloatingLayoutOrganizer() {
             )}
 
             {/* ── Built-in presets section ─────────────────────────────────── */}
-            {activeCount > 0 && (
-              <div className="px-2.5 pt-2 pb-1">
-                <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold mb-1.5">
-                  {t("panel.layoutOrganizer.presets")}
-                </p>
+            <div className="px-2.5 pt-2 pb-1">
+              <p className="text-[0.55rem] uppercase tracking-widest text-ink-3/70 font-semibold mb-1.5">
+                {t("panel.layoutOrganizer.presets")}
+              </p>
+              {openCount > 0 ? (
                 <div className="grid grid-cols-2 gap-1.5">
                   {layoutData.map((layout) => (
                     <button
@@ -485,7 +500,7 @@ export function FloatingLayoutOrganizer() {
                       className="group flex flex-col gap-1 rounded-lg border border-line bg-surface p-2 text-left transition-all duration-150 hover:shadow-md hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       <div className="overflow-hidden rounded border border-line/50 bg-surface-2/50">
-                        <LayoutPreviewSvg rects={layout.rects} ids={activeIds} />
+                        <LayoutPreviewSvg rects={layout.rects} ids={openIds} />
                       </div>
                       <div>
                         <p className="text-[0.68rem] font-semibold text-ink leading-tight">
@@ -498,15 +513,24 @@ export function FloatingLayoutOrganizer() {
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-line/60 bg-surface-2/30 px-3 py-4 text-center">
+                  <p className="text-[0.72rem] font-medium text-ink-2">
+                    {t("panel.layoutOrganizer.noActive")}
+                  </p>
+                  <p className="text-[0.65rem] leading-relaxed text-ink-3">
+                    {t("panel.layoutOrganizer.noActiveHint")}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Footer: active widget chips ───────────────────── */}
-          {activeCount > 0 && (
+          {openCount > 0 && (
             <div className="shrink-0 border-t border-line px-2.5 py-2">
               <div className="flex flex-wrap gap-1">
-                {activeIds.map((id) => {
+                {openIds.map((id) => {
                   const def = getWidget(id);
                   const Icon = def?.icon;
                   return (

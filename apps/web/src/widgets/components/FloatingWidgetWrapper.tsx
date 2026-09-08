@@ -142,6 +142,7 @@ export function FloatingWidgetWrapper({
   const status = instance?.status;
   const minimized = status === "minimized";
   const zIndex = instance?.zIndex ?? 25;
+  const isFocused = useWidgetStore((s) => s.focusedWidgetId === widgetId);
 
   // Clean up dock zone state on unmount
   useEffect(() => {
@@ -158,22 +159,21 @@ export function FloatingWidgetWrapper({
     widgetStore.getState().setSize(widgetId, panelWidth);
   }, [widgetId, panelWidth]);
 
-  // ── Snap targets (other floating widgets) ────────────────────────────
-  const allInstances = useWidgetStore((s) => s.instances);
-
   // ── Touch stack offset ────────────────────────────────────────────────
   // Sheets stack upward (like iOS notifications): each subsequent open
   // widget sits a little higher so its header stays reachable.
   const stackIndex = useMemo(() => {
-    const ids = Object.keys(allInstances);
+    if (!isTouch) return 0;
+    const instances = widgetStore.getState().instances;
+    const ids = Object.keys(instances);
     const myIndex = ids.indexOf(widgetId);
     let count = 0;
     for (let i = 0; i < myIndex; i++) {
-      const s = allInstances[ids[i]]?.status;
+      const s = instances[ids[i]]?.status;
       if (s === "floating" || s === "minimized") count++;
     }
     return count;
-  }, [allInstances, widgetId]);
+  }, [isTouch, widgetId]);
 
   // Set once the user actually drags the widget on touch — after that, keep
   // whatever position they chose (no snap-back to the default on later drags).
@@ -196,12 +196,13 @@ export function FloatingWidgetWrapper({
     };
   }, [storePosition, stackIndex]);
 
-  const snapTargets = useMemo<SnapRect[]>(() => {
-    // On touch the panels are scaled, so snap rects must use the SCALED
-    // visual size too — otherwise edge snapping between two mini-panels
-    // would nudge ~1/scale off from the other widget's actual visual edge.
-    const scale = isTouch ? TOUCH_SCALE : 1;
-    return Object.entries(allInstances)
+  // Dynamic getter for snap targets — called ONLY ONCE at drag start (onPointerDown)
+  // inside useDraggable. Eliminates the global reactive subscription to s.instances,
+  // preventing all other floating widgets from re-rendering when one widget moves!
+  const getSnapTargets = useCallback((): SnapRect[] => {
+    const instances = widgetStore.getState().instances;
+    const scale = isTouchRef.current ? TOUCH_SCALE : 1;
+    return Object.entries(instances)
       .filter(([id, inst]) => {
         if (id === widgetId) return false;
         const s = inst?.status;
@@ -216,7 +217,7 @@ export function FloatingWidgetWrapper({
           h: Math.round(w * 0.85),
         };
       });
-  }, [allInstances, widgetId, isTouch]);
+  }, [widgetId]);
 
   // ── Dock zone visual state (throttled — only updated on threshold cross) ──
   const [isNearDock, setIsNearDock] = useState(false);
@@ -311,7 +312,7 @@ export function FloatingWidgetWrapper({
       [widgetId],
     ),
     snapThreshold: 8,
-    snapTargets,
+    snapTargets: getSnapTargets,
     // While near the dock the panel collapses into a dock pill: keep it
     // CENTERED on the cursor (whatever the original grab point) instead of
     // sitting offset from the mouse at the old panel's top-left corner.
@@ -378,6 +379,7 @@ export function FloatingWidgetWrapper({
               drag works from the rest of the pill. */}
           <div
             onPointerDown={(e) => {
+              e.stopPropagation();
               handleFocus();
               drag.onPointerDown(e);
             }}
@@ -463,6 +465,7 @@ export function FloatingWidgetWrapper({
           {/* Compact header — the drag handle */}
           <div
             onPointerDown={(e) => {
+              e.stopPropagation();
               handleFocus();
               drag.onPointerDown(e);
             }}
@@ -561,19 +564,24 @@ export function FloatingWidgetWrapper({
         // near-dock collapse (340px panel → 32px pill) must be INSTANT. An
         // animated morph looks like a giant circle under the cursor, and the
         // re-anchor reads offsetWidth mid-animation → the pill jumps/vibrates.
-        "fixed flex flex-col touch-none select-none overflow-hidden border border-line bg-surface shadow-xl transition-[box-shadow,background-color] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] animate-widget-mount",
+        "fixed flex flex-col touch-none select-none overflow-hidden border bg-surface animate-widget-mount",
+        !drag.isDragging && "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         isNearDock
-          ? "size-8 rounded-full border-0 p-0 cursor-grabbing"
+          ? "size-8 rounded-full border-0 p-0 cursor-grabbing shadow-lg"
           : minimized
             ? "rounded-lg cursor-grab"
             : "rounded-xl",
-        drag.isDragging && !isNearDock && "shadow-2xl cursor-grabbing",
+        isFocused && !isNearDock
+          ? "border-ink/25 shadow-2xl ring-1 ring-ink/10 dark:border-ink/35 dark:ring-white/10"
+          : "border-line/80 shadow-md hover:border-line hover:shadow-lg",
+        drag.isDragging && !isNearDock && "shadow-2xl cursor-grabbing scale-[1.008] border-ink/30 ring-1 ring-ink/15",
         className,
       )}
     >
       {/* Top Header / Drag Bar */}
       <div
         onPointerDown={(e) => {
+          e.stopPropagation();
           handleFocus();
           drag.onPointerDown(e);
         }}
@@ -585,8 +593,10 @@ export function FloatingWidgetWrapper({
           isNearDock
             ? "size-8 justify-center gap-0 border-b-0 cursor-grabbing"
             : drag.isDragging
-              ? "cursor-grabbing"
-              : "cursor-grab",
+              ? "cursor-grabbing bg-surface-2/60"
+              : isFocused
+                ? "cursor-grab bg-surface hover:bg-surface-2/40"
+                : "cursor-grab bg-surface/80 hover:bg-surface-2/50 text-ink/80 hover:text-ink",
         )}
       >
         <div
@@ -595,9 +605,9 @@ export function FloatingWidgetWrapper({
             isNearDock && "gap-0",
           )}
         >
-          <Icon className="shrink-0 text-ink-3 size-4" />
+          <Icon className={cn("shrink-0 size-4 transition-colors", isFocused ? "text-ink" : "text-ink-3")} />
           {!isNearDock && (
-            <span className="font-medium text-ink truncate text-xs">
+            <span className={cn("font-medium truncate text-xs transition-colors", isFocused ? "text-ink font-semibold" : "text-ink-2")}>
               {label}
             </span>
           )}

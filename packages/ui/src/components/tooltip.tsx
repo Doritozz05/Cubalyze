@@ -150,7 +150,6 @@ function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root
         // devices the caller's own props pass through untouched (e.g. a
         // custom delayDuration) and Radix behaves exactly as before.
         {...(hoverNone ? { open, onOpenChange: setOpen, delayDuration: 0 } : {})}
-        {...(dragActive ? { open: false } : {})}
       >
         {composedTrigger}
         {rest}
@@ -171,6 +170,9 @@ function TooltipContent({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  const dragActive = useDragActivityActive()
+  if (dragActive) return null
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content

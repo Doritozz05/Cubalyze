@@ -43,6 +43,8 @@ export interface WidgetStoreState {
   dockAreaOrder: string[];
   /** Saved custom layouts. */
   customLayouts: CustomLayout[];
+  /** ID of the currently focused floating widget, if any (runtime only). */
+  focusedWidgetId: WidgetId | null;
 }
 
 export interface WidgetStoreActions {
@@ -273,6 +275,7 @@ export const widgetStore = createStore<WidgetStore>()(
       dockItems: BUILT_IN_WIDGETS.map((w) => w.id),
       dockAreaOrder: DEFAULT_DOCK_AREA_ORDER,
       customLayouts: [],
+      focusedWidgetId: null,
 
       // ── Toggle: inactive ↔ docked ───────────────────────────────────
       toggleWidget: (id) =>
@@ -291,6 +294,8 @@ export const widgetStore = createStore<WidgetStore>()(
             (def ? { ...def.defaultPosition } : { x: 100, y: 100 });
           return {
             dockOrder,
+            focusedWidgetId:
+              !willBeActive && s.focusedWidgetId === id ? null : s.focusedWidgetId,
             instances: {
               ...s.instances,
               [id]: {
@@ -326,8 +331,13 @@ export const widgetStore = createStore<WidgetStore>()(
               ? [...s.dockOrder, id]
               : s.dockOrder;
 
+          const clearsFocus =
+            (clamped === "docked" || clamped === "inactive") &&
+            s.focusedWidgetId === id;
+
           return {
             dockOrder,
+            focusedWidgetId: clearsFocus ? null : s.focusedWidgetId,
             instances: {
               ...s.instances,
               [id]: {
@@ -466,6 +476,7 @@ export const widgetStore = createStore<WidgetStore>()(
           }
           return {
             dockOrder,
+            focusedWidgetId: s.focusedWidgetId === id ? null : s.focusedWidgetId,
             instances: {
               ...s.instances,
               [id]: { ...instance, status: clamped, zIndex: undefined },
@@ -479,6 +490,11 @@ export const widgetStore = createStore<WidgetStore>()(
           const inst = s.instances[id];
           if (!inst) return s;
 
+          // If already the focused widget and already at Z_MAX, no state change is needed!
+          if (s.focusedWidgetId === id && inst.zIndex === Z_MAX) {
+            return s;
+          }
+
           // Current bottom→top order of floating/minimized widgets, derived
           // from their stored z-index (unfocused widgets default to the band
           // floor). Sorting is stable, so ties keep a deterministic order.
@@ -489,26 +505,35 @@ export const widgetStore = createStore<WidgetStore>()(
             .sort(([, a], [, b]) => (a?.zIndex ?? Z_MIN) - (b?.zIndex ?? Z_MIN))
             .map(([wid]) => wid);
 
+          // If id is already the last element in order and has Z_MAX, just update focusedWidgetId if different
+          const isAlreadyTop =
+            order.length > 0 &&
+            order[order.length - 1] === id &&
+            inst.zIndex === Z_MAX;
+
+          if (isAlreadyTop) {
+            if (s.focusedWidgetId === id) return s;
+            return { focusedWidgetId: id };
+          }
+
           // Move the focused widget to the top of the stack.
           const stack = [...order.filter((wid) => wid !== id), id];
 
           // Renormalize the whole stack across the fixed band so the most
           // recently dragged widget is always on top, re-dragging brings it
           // back to top, and no widget can ever climb above Z_MAX (panels,
-          // dialogs and the sidebar live at z-50). This also fixes the old
-          // counter approach, where every widget saturated at Z_MAX and the
-          // drag order was lost.
+          // dialogs and the sidebar live at z-50).
           const span = Math.max(Z_MAX - Z_MIN, 1);
           const instances = { ...s.instances };
           stack.forEach((wid, i) => {
             const z =
               stack.length <= 1
-                ? Z_MIN
+                ? Z_MAX
                 : Math.round(Z_MIN + (i * span) / (stack.length - 1));
             instances[wid] = { ...instances[wid], zIndex: z };
           });
 
-          return { instances };
+          return { instances, focusedWidgetId: id };
         }),
 
       // ── Custom layouts ──────────────────────────────────────────────

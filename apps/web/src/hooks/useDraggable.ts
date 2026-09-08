@@ -46,10 +46,19 @@ interface UseDraggableOptions {
    */
   snapThreshold?: number;
   /**
-   * Other rectangles to snap to (e.g., other floating widgets' bounds).
+   * Maximum pointer velocity in px/ms to engage widget-to-widget snapping.
+   * Drags moving faster than this threshold bypass snapping so elements glide
+   * smoothly across the screen without hitching or micro-stutters.
+   * Snapping engages when moving slowly (e.g. deliberate alignment) or on drop.
+   * Default 0.35 px/ms (~350 px/s).
+   */
+  snapMaxVelocity?: number;
+  /**
+   * Other rectangles to snap to (e.g., other floating widgets' bounds) or a getter
+   * function evaluated once at drag start for optimal performance without re-renders.
    * Viewport edges are always included automatically.
    */
-  snapTargets?: SnapRect[];
+  snapTargets?: SnapRect[] | (() => SnapRect[]);
   /**
    * Re-anchor the element mid-drag. When provided and returning a point, that
    * point (relative to the element's CURRENT top-left) stays under the pointer
@@ -75,45 +84,75 @@ function applySnap(
   elH: number,
   threshold: number,
   targets: SnapRect[],
+  allowTargetSnap = true,
 ): Position {
   if (threshold <= 0) return pos;
-  let { x, y } = pos;
-  const right = x + elW;
-  const bottom = y + elH;
+  const rawX = pos.x;
+  const rawY = pos.y;
+  const rawRight = rawX + elW;
+  const rawBottom = rawY + elH;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  // ── Viewport edges ────────────────────────────────────────────────
-  if (Math.abs(x) < threshold) x = 0;
-  if (Math.abs(y) < threshold) y = 0;
-  if (Math.abs(right - vw) < threshold) x = vw - elW;
-  if (Math.abs(bottom - vh) < threshold) y = vh - elH;
+  let bestSnapX = rawX;
+  let minDiffX = threshold;
 
-  // ── Widget-to-widget (all edges, using real panelWidth sizes) ───
-  for (const t of targets) {
-    const tRight = t.x + t.w;
-    const tBottom = t.y + t.h;
+  let bestSnapY = rawY;
+  let minDiffY = threshold;
 
-    // Left edge → left edge
-    if (Math.abs(x - t.x) < threshold) x = t.x;
-    // Right edge → right edge
-    if (Math.abs(right - tRight) < threshold) x = tRight - elW;
-    // Left edge → right edge (adjacent)
-    if (Math.abs(x - tRight) < threshold) x = tRight;
-    // Right edge → left edge (adjacent)
-    if (Math.abs(right - t.x) < threshold) x = t.x - elW;
+  const checkX = (candidateX: number) => {
+    const diff = Math.abs(candidateX - rawX);
+    if (diff < minDiffX) {
+      minDiffX = diff;
+      bestSnapX = candidateX;
+    }
+  };
 
-    // Top edge → top edge
-    if (Math.abs(y - t.y) < threshold) y = t.y;
-    // Bottom edge → bottom edge
-    if (Math.abs(bottom - tBottom) < threshold) y = tBottom - elH;
-    // Top edge → bottom edge (adjacent)
-    if (Math.abs(y - tBottom) < threshold) y = tBottom;
-    // Bottom edge → top edge (adjacent)
-    if (Math.abs(bottom - t.y) < threshold) y = t.y - elH;
+  const checkY = (candidateY: number) => {
+    const diff = Math.abs(candidateY - rawY);
+    if (diff < minDiffY) {
+      minDiffY = diff;
+      bestSnapY = candidateY;
+    }
+  };
+
+  // ── Viewport edges (always active) ────────────────────────────────
+  checkX(0);
+  checkX(vw - elW);
+  checkY(0);
+  checkY(vh - elH);
+
+  // ── Widget-to-widget (deliberate slow movement or final drop) ──────
+  if (allowTargetSnap && targets.length > 0) {
+    for (const t of targets) {
+      const tRight = t.x + t.w;
+      const tBottom = t.y + t.h;
+
+      // Vertical proximity check: dragged element and target overlap or are within 40px vertically
+      const yNear = rawY <= tBottom + 40 && rawBottom >= t.y - 40;
+      // Horizontal proximity check: dragged element and target overlap or are within 40px horizontally
+      const xNear = rawX <= tRight + 40 && rawRight >= t.x - 40;
+
+      // 1. Collinear edge alignments (aligning columns / rows)
+      checkX(t.x);
+      checkX(tRight - elW);
+      checkY(t.y);
+      checkY(tBottom - elH);
+
+      // 2. Adjacent alignments (side-by-side or stacked)
+      // Only makes sense when near in the orthogonal axis!
+      if (yNear) {
+        checkX(tRight);
+        checkX(t.x - elW);
+      }
+      if (xNear) {
+        checkY(tBottom);
+        checkY(t.y - elH);
+      }
+    }
   }
 
-  return { x, y };
+  return { x: bestSnapX, y: bestSnapY };
 }
 
 /**
@@ -164,6 +203,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
     onPositionChange,
     onDrag,
     snapThreshold = 8,
+    snapMaxVelocity = 0.35,
     snapTargets,
     anchor,
   } = options;
@@ -252,8 +292,14 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
   onDragRef.current = onDrag;
   const snapTargetsRef = useRef(snapTargets);
   snapTargetsRef.current = snapTargets;
+  const activeSnapTargetsRef = useRef<SnapRect[]>([]);
   const snapThresholdRef = useRef(snapThreshold);
   snapThresholdRef.current = snapThreshold;
+  const snapMaxVelocityRef = useRef(snapMaxVelocity);
+  snapMaxVelocityRef.current = snapMaxVelocity;
+  // Velocity sampling: window of 24-32ms for robust physical velocity measurement
+  const sampleRef = useRef({ x: 0, y: 0, time: 0 });
+  const pointerVelocityRef = useRef(0);
   const anchorRef = useRef(anchor);
   anchorRef.current = anchor;
   // Where the pointer currently sits within the element (grab offset or a
@@ -315,6 +361,15 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
 
       currentDragPos.current = { x: actualX, y: actualY };
 
+      // Resolve snap targets once at drag start (supports dynamic getter function)
+      if (typeof snapTargetsRef.current === "function") {
+        activeSnapTargetsRef.current = snapTargetsRef.current();
+      } else if (Array.isArray(snapTargetsRef.current)) {
+        activeSnapTargetsRef.current = snapTargetsRef.current;
+      } else {
+        activeSnapTargetsRef.current = [];
+      }
+
       dragState.current = {
         startX: e.clientX,
         startY: e.clientY,
@@ -323,6 +378,8 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
         pointerId: e.pointerId,
       };
       movedRef.current = false;
+      sampleRef.current = { x: e.clientX, y: e.clientY, time: performance.now() };
+      pointerVelocityRef.current = 0;
 
       // Capture pointer on the element that has the handlers (e.currentTarget).
       // For the expanded panel case, this is the header div; for the minimized
@@ -363,6 +420,25 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       const elW = el.offsetWidth;
       const elH = el.offsetHeight;
 
+      // Update pointer velocity using a sampled time window (filters out sub-ms mouse polling noise)
+      const now = performance.now();
+      const timeDiff = now - sampleRef.current.time;
+      if (timeDiff > 120) {
+        // Pointer was paused or stationary — reset velocity
+        pointerVelocityRef.current = 0;
+        sampleRef.current = { x: e.clientX, y: e.clientY, time: now };
+      } else if (timeDiff >= 24) {
+        const dist = Math.hypot(e.clientX - sampleRef.current.x, e.clientY - sampleRef.current.y);
+        const instantVel = dist / timeDiff;
+        pointerVelocityRef.current = pointerVelocityRef.current * 0.5 + instantVel * 0.5;
+        sampleRef.current = { x: e.clientX, y: e.clientY, time: now };
+      }
+
+      // Snapping to other widgets is ONLY active when moving slowly (deliberate alignment).
+      // When moving fast or medium speed (transit movement), snapping is bypassed so elements
+      // glide smoothly across the screen without stuttering or stopping on intermediate widgets.
+      const isMovingSlow = pointerVelocityRef.current <= snapMaxVelocityRef.current;
+
       // Pointer's current viewport position (fixed offset from its start).
       const pointerX = state.startX + dx;
       const pointerY = state.startY + dy;
@@ -385,6 +461,7 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       // Apply soft snap — but NOT while the element is anchored (e.g. shrunk
       // into a dock pill centered on the cursor): snapping there would fight
       // the cursor centering and make the pill jump/vibrate.
+      // Widget-to-widget snapping is gated by pointer velocity.
       const snapped = anchored
         ? { x: rawX, y: rawY }
         : applySnap(
@@ -392,7 +469,8 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
             elW,
             elH,
             snapThresholdRef.current,
-            snapTargetsRef.current ?? [],
+            activeSnapTargetsRef.current,
+            isMovingSlow,
           );
       const finalX = Math.max(0, Math.min(maxX, snapped.x));
       const finalY = Math.max(0, Math.min(maxY, snapped.y));
@@ -448,8 +526,34 @@ export function useDraggable<T extends HTMLElement = HTMLElement>(
       onDragRef.current?.(currentDragPos.current, currentPointerRef.current);
 
       if (movedRef.current) {
+        const currentEl = elementRef.current;
+        let finalPos = currentDragPos.current;
+
+        // On drop, if not anchored (e.g. not docking), apply a final snap
+        // so releasing near an alignment target cleanly locks into place.
+        if (currentEl && activeSnapTargetsRef.current.length > 0) {
+          const grab = anchorRef.current?.(currentEl.offsetWidth, currentEl.offsetHeight);
+          if (!grab) {
+            const snapped = applySnap(
+              finalPos,
+              currentEl.offsetWidth,
+              currentEl.offsetHeight,
+              snapThresholdRef.current,
+              activeSnapTargetsRef.current,
+              true,
+            );
+            const maxX = Math.max(0, window.innerWidth - currentEl.offsetWidth);
+            const maxY = Math.max(0, window.innerHeight - currentEl.offsetHeight);
+            finalPos = {
+              x: Math.max(0, Math.min(maxX, snapped.x)),
+              y: Math.max(0, Math.min(maxY, snapped.y)),
+            };
+            currentEl.style.transform = `translate3d(${finalPos.x}px, ${finalPos.y}px, 0)`;
+            currentDragPos.current = finalPos;
+          }
+        }
+
         // Commit the final position from our ref → React state
-        const finalPos = currentDragPos.current;
         setPosition(finalPos);
         persist(finalPos);
         dragActivity.end();

@@ -238,10 +238,10 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
         <div className="flex items-center justify-between rounded-lg bg-surface-2 p-3 border border-line">
           <div className="flex flex-col">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold tracking-tight font-mono text-accent">
+              <span className="text-2xl font-bold tracking-tight font-mono text-ink">
                 {tps.toFixed(1)}
               </span>
-              <span className="text-xs text-accent font-extrabold font-mono">TPS</span>
+              <span className="text-xs text-ink-3 font-bold font-mono">TPS</span>
             </div>
             <span className="text-[0.68rem] font-mono text-ink-3 font-medium">
               {bpm} BPM
@@ -252,10 +252,7 @@ export function FloatingMetronomePanel({ className }: FloatingMetronomePanelProp
             onClick={togglePlay}
             size="icon"
             variant={isPlaying ? "destructive" : "default"}
-            className={cn(
-              "size-11 rounded-full shadow-sm transition-all duration-150 active:scale-95",
-              !isPlaying && "bg-accent hover:bg-accent/90 text-white",
-            )}
+            className="size-11 rounded-full shadow-sm transition-all duration-150 active:scale-95"
             aria-label={
               isPlaying ? t("panel.metronome.stop") : t("panel.metronome.start")
             }
