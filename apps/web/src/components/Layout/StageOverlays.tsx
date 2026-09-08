@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { MobileTabBar } from "@/components/Layout/MobileTabBar";
 import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
 import { ManualSolveSheet } from "@/components/Stats/ManualSolveSheet";
