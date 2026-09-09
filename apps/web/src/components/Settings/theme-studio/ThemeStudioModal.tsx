@@ -18,8 +18,6 @@ import {
   Settings2,
   Plus,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -90,22 +88,6 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     }
   };
 
-  // Scroll bounds for chevron buttons
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  // Takes an explicit element — safe to call from ref callback before tabsRef.current is set
-  const updateScrollBoundsFor = (el: HTMLDivElement) => {
-    setCanScrollLeft(el.scrollLeft > 2);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
-  };
-  // Reads from tabsRef.current — used by chevron onClick handlers
-  const updateScrollBounds = () => {
-    const el = tabsRef.current;
-    if (!el) return;
-    updateScrollBoundsFor(el);
-  };
-
   // Wheel-to-horizontal-scroll on the tabs strip.
   //
   // Why a ref callback instead of useEffect + useRef:
@@ -131,8 +113,6 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
 
     if (!el) return;
 
-    updateScrollBoundsFor(el);
-
     const onWheel = (e: WheelEvent) => {
       // { passive: false } lets us call preventDefault(); without it the browser
       // ignores the call and the content panel below steals the vertical delta.
@@ -145,25 +125,14 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         : e.deltaY * factor;
       if (dx !== 0) {
         el.scrollLeft += dx;
-        updateScrollBoundsFor(el);
       }
     };
 
-    const onScroll = () => updateScrollBoundsFor(el);
-    const onResize = () => updateScrollBoundsFor(el);
-
     el.addEventListener('wheel', onWheel, { passive: false });
-    el.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onResize);
 
     wheelCleanupRef.current = () => {
       el.removeEventListener('wheel', onWheel);
-      el.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
     };
-  // stable — updateScrollBoundsFor is defined in the same component scope and
-  // its identity never changes (plain arrow function, not a state setter)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Mouse drag-to-scroll on desktop
@@ -206,7 +175,6 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
       }
       dragRef.current.moved = true;
       el.scrollLeft = dragRef.current.startScrollLeft - dx;
-      updateScrollBounds();
     }
   };
 
@@ -407,81 +375,53 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
               'lg:flex lg:self-stretch'
             )}
           >
-            {/* Tabs Navigation Strip with Chevrons and Mouse Drag */}
-            <div className="relative flex items-center shrink-0 border-b border-line bg-surface-2/40">
-              {canScrollLeft && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    tabsRef.current?.scrollBy({ left: -140, behavior: 'smooth' });
-                  }}
-                  aria-label="Scroll tabs left"
-                  className="absolute left-0 z-10 flex h-full items-center px-1.5 bg-linear-to-r from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-              )}
-
-              <div
-                ref={setTabsRef}
-                role="tablist"
-                aria-label={t('appearance.tabsLabel')}
-                onKeyDown={handleTabKeyDown}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                className="flex flex-1 gap-1 px-3 py-2 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain select-none cursor-grab active:cursor-grabbing"
-              >
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const active = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      data-tab-id={tab.id}
-                      aria-selected={active}
-                      tabIndex={active ? 0 : -1}
-                      onClick={(e) => {
-                        if (dragRef.current.moved) {
-                          dragRef.current.moved = false;
-                          return;
-                        }
-                        setActiveTab(tab.id);
-                        e.currentTarget.scrollIntoView({
-                          inline: 'center',
-                          block: 'nearest',
-                          behavior: 'smooth',
-                        });
-                      }}
-                      className={cn(
-                        'shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink cursor-pointer',
-                        active
-                          ? 'bg-surface text-ink shadow-xs font-semibold'
-                          : 'text-ink-3 hover:text-ink hover:bg-surface-2'
-                      )}
-                    >
-                      <Icon className="size-3.5" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {canScrollRight && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    tabsRef.current?.scrollBy({ left: 140, behavior: 'smooth' });
-                  }}
-                  aria-label="Scroll tabs right"
-                  className="absolute right-0 z-10 flex h-full items-center px-1.5 bg-linear-to-l from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-              )}
+            {/* Tabs Navigation Strip with Mouse Drag and Wheel Scroll */}
+            <div
+              ref={setTabsRef}
+              role="tablist"
+              aria-label={t('appearance.tabsLabel')}
+              onKeyDown={handleTabKeyDown}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="flex shrink-0 gap-1 px-3 py-2 border-b border-line bg-surface-2/40 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain select-none cursor-grab active:cursor-grabbing"
+            >
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    data-tab-id={tab.id}
+                    aria-selected={active}
+                    tabIndex={active ? 0 : -1}
+                    onClick={(e) => {
+                      if (dragRef.current.moved) {
+                        dragRef.current.moved = false;
+                        return;
+                      }
+                      setActiveTab(tab.id);
+                      e.currentTarget.scrollIntoView({
+                        inline: 'center',
+                        block: 'nearest',
+                        behavior: 'smooth',
+                      });
+                    }}
+                    className={cn(
+                      'shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink cursor-pointer',
+                      active
+                        ? 'bg-surface text-ink shadow-xs font-semibold'
+                        : 'text-ink-3 hover:text-ink hover:bg-surface-2'
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Scrollable Tab Content */}
