@@ -29,13 +29,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #f8f9fa;
-        color: #14171b;
+        background-color: var(--canvas, #f8f9fa);
+        color: var(--ink, #14171b);
         z-index: 9999;
       }
       html.dark #root-loader-wrapper {
-        background-color: #14171b;
-        color: #f8f9fa;
+        background-color: var(--canvas, #14171b);
+        color: var(--ink, #f8f9fa);
       }
       .cf-rubik-lateral-root {
         --offset: 18px;
@@ -61,11 +61,11 @@
          SEAMLESS (100% == 0%), so the flow never jumps or teleports at the
          cycle boundary. No start delay and no staggered fade-in: all squares
          are visible and animating from the very first frame. */
-      .cf-sq1-r { background-color: #fb923c; transform: translate3d(0px, 0px, 0); animation: cf-sq1-r 2.4s ease-in-out infinite; }
-      .cf-sq2-r { background-color: #60a5fa; transform: translate3d(0px, 18px, 0); animation: cf-sq2-r 2.4s ease-in-out infinite; }
-      .cf-sq3-r { background-color: #fbbf24; transform: translate3d(18px, 18px, 0); animation: cf-sq3-r 2.4s ease-in-out infinite; }
-      .cf-sq4-r { background-color: #34d399; transform: translate3d(36px, 18px, 0); animation: cf-sq4-r 2.4s ease-in-out infinite; }
-      .cf-sq5-r { background-color: #a78bfa; transform: translate3d(54px, 18px, 0); animation: cf-sq5-r 2.4s ease-in-out infinite; }
+      .cf-sq1-r { background-color: var(--phase-orange, #fb923c); transform: translate3d(0px, 0px, 0); animation: cf-sq1-r 2.4s ease-in-out infinite; }
+      .cf-sq2-r { background-color: var(--phase-blue, #60a5fa); transform: translate3d(0px, 18px, 0); animation: cf-sq2-r 2.4s ease-in-out infinite; }
+      .cf-sq3-r { background-color: var(--phase-amber, #fbbf24); transform: translate3d(18px, 18px, 0); animation: cf-sq3-r 2.4s ease-in-out infinite; }
+      .cf-sq4-r { background-color: var(--phase-emerald, #34d399); transform: translate3d(36px, 18px, 0); animation: cf-sq4-r 2.4s ease-in-out infinite; }
+      .cf-sq5-r { background-color: var(--phase-violet, #a78bfa); transform: translate3d(54px, 18px, 0); animation: cf-sq5-r 2.4s ease-in-out infinite; }
 
       @keyframes cf-sq1-r {
         0% { transform: translate3d(0px, 0px, 0); }

@@ -255,6 +255,8 @@
 }
 
 .dark {
+  /* Keep :root light defaults and override per-token so dark mode stays coherent
+     even when some tokens are omitted. */
   --background: #14171b;
   --foreground: #e9ecef;
   --card: #1f2429;
