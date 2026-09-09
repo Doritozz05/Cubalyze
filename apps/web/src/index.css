@@ -733,6 +733,19 @@ html.liquid-glass [data-slot="badge"] {
   border-color: var(--glass-border) !important;
 }
 
+/* Floating overlay controls (portaled, never nested inside a panel):
+   full glass WITH blur. The button rule deliberately omits blur to avoid
+   milky blur-over-blur inside panels — but a floating control has no
+   blurred panel behind it, so without blur the content shines through
+   sharp and the control reads as broken. Placed after the button rule
+   (same specificity wins by order). */
+html.liquid-glass button[data-glass-float] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
 /* Range input slider tracks */
 html.liquid-glass input[type="range"] {
   background-color: var(--glass-btn-bg) !important;
