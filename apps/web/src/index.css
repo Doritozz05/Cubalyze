@@ -588,6 +588,20 @@ html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="c
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
+/* Profile content tabs: the ACTIVE tab is a full glass panel (frosted
+   backplate + backdrop blur), not the flat --glass-btn-bg chip the generic
+   button remap gives it. Same specificity as the button rule above (thanks
+   to the mirrored :not guards) but declared later, so it wins. Inactive
+   tabs stay text-only. With liquid glass OFF nothing applies: the tab keeps
+   its solid bg-surface fill from Tailwind. */
+html.liquid-glass [data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass button[data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
 /* ── Dropdown Select Trigger: frosted glass with backdrop blur ───────────
    SelectTrigger renders a <button data-slot="select-trigger">. Unlike
    action buttons inside panels, select triggers act as dropdown pickers
