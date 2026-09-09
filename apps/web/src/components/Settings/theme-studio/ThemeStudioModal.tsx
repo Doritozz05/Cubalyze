@@ -116,7 +116,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const handleFontUpload = async (role: 'sans' | 'mono', file: File | undefined) => {
     if (!file || uploadingFont) return;
     if (!canUploadMore) {
-      toast.error(t('appearance.fontUploadCap', 'Límite de fuentes alcanzado'));
+      toast.error(t('appearance.fontUploadCap'));
       return;
     }
     setUploadingFont(true);
@@ -127,14 +127,14 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         role,
       });
       if (!id) {
-        toast.error(t('appearance.fontUploadCap', 'Límite de fuentes alcanzado'));
+        toast.error(t('appearance.fontUploadCap'));
         return;
       }
       await saveFontBlob(id, file, mimeType);
       if (role === 'sans') setFontSans(id);
       else setFontMono(id);
     } catch {
-      toast.error(t('appearance.fontUploadError', 'Ese archivo no es una fuente válida (.woff2, .woff, .ttf, .otf, máx 3 MB)'));
+      toast.error(t('appearance.fontUploadError'));
     } finally {
       setUploadingFont(false);
     }
@@ -434,7 +434,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             ) : (
                               <Plus className="size-3" />
                             )}
-                            {t('appearance.uploadFont', 'Subir fuente')}
+                            {t('appearance.uploadFont')}
                           </button>
                         )}
                         {customSansFonts.map((f) => (
@@ -446,7 +446,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             <button
                               type="button"
                               onClick={() => handleDeleteFont(f.id)}
-                              aria-label={t('appearance.deleteFont', 'Borrar fuente')}
+                              aria-label={t('appearance.deleteFont')}
                               className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
                             >
                               <X className="size-2.5" />
@@ -502,7 +502,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             ) : (
                               <Plus className="size-3" />
                             )}
-                            {t('appearance.uploadFont', 'Subir fuente')}
+                            {t('appearance.uploadFont')}
                           </button>
                         )}
                         {customMonoFonts.map((f) => (
@@ -514,7 +514,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             <button
                               type="button"
                               onClick={() => handleDeleteFont(f.id)}
-                              aria-label={t('appearance.deleteFont', 'Borrar fuente')}
+                              aria-label={t('appearance.deleteFont')}
                               className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
                             >
                               <X className="size-2.5" />
@@ -526,7 +526,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
 
                     <div className="flex flex-col gap-1.5 border-t border-line pt-3">
                       <span className="text-xs font-medium text-ink">
-                        {t('appearance.zeroStyle', 'Cero tabular')}
+                        {t('appearance.zeroStyle')}
                       </span>
                       <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5">
                         {(['dotted', 'slashed'] as const).map((mode) => (
@@ -617,7 +617,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       <div className="flex flex-col gap-3 border-t border-line pt-4">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-ink">
-                            {t('appearance.liquidGlassCustomBlur', 'Desenfoque personalizado')}
+                            {t('appearance.liquidGlassCustomBlur')}
                           </span>
                           <Switch
                             checked={liquidGlassBlur != null}
@@ -630,7 +630,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           <>
                             <div className="flex items-center justify-between text-xs">
                               <span className="font-medium text-ink">
-                                {t('appearance.liquidGlassBlur', 'Desenfoque')}
+                                {t('appearance.liquidGlassBlur')}
                               </span>
                               <span className="font-mono font-semibold text-ink">
                                 {liquidGlassBlur}px

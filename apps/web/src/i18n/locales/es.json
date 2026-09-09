@@ -316,6 +316,8 @@
       "themeImportUnknown": "Ese tema referencia un preset desconocido",
       "viewPreview": "Vista previa",
       "viewCustomize": "Personalizar",
+      "previewCollapse": "Cerrar vista previa",
+      "previewExpand": "Ver en grande",
       "tabsLabel": "Secciones del tema",
       "cubeSkin": "Apariencia del cubo",
       "cubeSkinHint": "Elige el estilo visual para la representación 3D del cubo.",

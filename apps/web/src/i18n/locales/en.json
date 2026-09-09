@@ -316,6 +316,8 @@
       "themeImportUnknown": "That theme references an unknown preset",
       "viewPreview": "Preview",
       "viewCustomize": "Customize",
+      "previewCollapse": "Close preview",
+      "previewExpand": "Expand preview",
       "tabsLabel": "Theme sections",
       "cubeSkin": "Cube appearance",
       "cubeSkinHint": "Choose the visual style for the 3D cube representation.",

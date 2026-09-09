@@ -47,7 +47,7 @@ export function CustomThemesSection() {
         ? getSystemBaseTheme()
         : storeTheme;
     const id = preferencesStore.getState().saveCustomTheme({
-      name: `${t('appearance.customThemeDefaultName', 'Mi tema')} ${customThemes.length + 1}`,
+      name: `${t('appearance.customThemeDefaultName')} ${customThemes.length + 1}`,
       base,
       colors: { ...resolved },
     });
@@ -95,17 +95,17 @@ export function CustomThemesSection() {
       <div className="flex items-center justify-between">
         <div>
           <h4 className="text-sm font-semibold text-ink">
-            {t('appearance.customThemesTitle', 'Mis temas')}
+            {t('appearance.customThemesTitle')}
           </h4>
           <p className="mt-0.5 text-xs text-ink-3">
-            {t('appearance.customThemesSubtitle', 'Tus paletas guardadas, editables al completo')}
+            {t('appearance.customThemesSubtitle')}
           </p>
         </div>
         {hasOverrides && canSaveMore && (
           <button
             type="button"
             onClick={handleSaveCurrent}
-            aria-label={t('appearance.saveCurrentTheme', 'Guardar tema actual')}
+            aria-label={t('appearance.saveCurrentTheme')}
             className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ink text-surface shadow-xs transition-all hover:bg-ink/90 active:scale-95"
           >
             <Plus className="size-4" />
@@ -160,7 +160,7 @@ export function CustomThemesSection() {
                         if (e.key === 'Escape') setEditingId(null);
                       }}
                       onBlur={() => commitRename(preset.id)}
-                      aria-label={t('appearance.renameTheme', 'Renombrar tema')}
+                      aria-label={t('appearance.renameTheme')}
                       className="min-w-0 flex-1 rounded-md border border-ink/30 bg-surface px-1.5 py-0.5 text-xs font-bold text-ink focus:outline-none"
                     />
                   ) : (
@@ -191,7 +191,7 @@ export function CustomThemesSection() {
                             setDraftName(preset.customName ?? '');
                             setEditingId(preset.id);
                           }}
-                          aria-label={t('appearance.renameTheme', 'Renombrar tema')}
+                          aria-label={t('appearance.renameTheme')}
                           className="flex size-6 items-center justify-center rounded-md text-ink-3 opacity-0 transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
                         >
                           <Pencil className="size-3" />
@@ -202,7 +202,7 @@ export function CustomThemesSection() {
                             e.stopPropagation();
                             setPendingDeleteId(preset.id);
                           }}
-                          aria-label={t('appearance.deleteTheme', 'Borrar tema')}
+                          aria-label={t('appearance.deleteTheme')}
                           className="flex size-6 items-center justify-center rounded-md text-ink-3 opacity-0 transition-all hover:bg-surface-2 hover:text-dnf focus-visible:opacity-100 group-hover:opacity-100"
                         >
                           <X className="size-3.5" />
@@ -228,11 +228,8 @@ export function CustomThemesSection() {
         onOpenChange={(open) => {
           if (!open) setPendingDeleteId(null);
         }}
-        title={t('appearance.deleteThemeTitle', 'Borrar tema')}
-        description={t(
-          'appearance.deleteThemeDesc',
-          'El tema personalizado se eliminará. Esta acción no se puede deshacer.',
-        )}
+        title={t('appearance.deleteThemeTitle')}
+        description={t('appearance.deleteThemeDesc')}
         onConfirm={confirmDelete}
       />
     </div>

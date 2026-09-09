@@ -209,7 +209,7 @@ export function ScaledTimerPreview({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          aria-label={t('appearance.previewCollapse', 'Cerrar vista previa')}
+          aria-label={t('appearance.previewCollapse')}
           className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border border-line bg-surface/90 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-surface"
         >
           <X className="size-4" />
@@ -231,14 +231,14 @@ export function ScaledTimerPreview({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              aria-label={t('appearance.previewExpand', 'Ver en grande')}
+              aria-label={t('appearance.previewExpand')}
               className="flex size-7 items-center justify-center rounded-md border border-line/60 bg-surface-2/60 text-ink-2 transition-colors hover:text-ink hover:bg-surface cursor-pointer"
             >
               <Maximize2 className="size-3.5" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {t('appearance.previewExpand', 'Ver en grande')}
+            {t('appearance.previewExpand')}
           </TooltipContent>
         </Tooltip>
         {/* Device Switcher */}
