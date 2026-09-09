@@ -178,7 +178,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         onEscapeKeyDown={(e) => {
           if (isColorPickerOpen()) e.preventDefault();
         }}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92vh] h-[92dvh] max-h-[92vh] max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92dvh] max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
       >
         <DialogTitle className="sr-only">
           {t('appearance.themeStudioTitle')}
@@ -268,7 +268,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
               role="tablist"
               aria-label={t('appearance.tabsLabel')}
               onKeyDown={handleTabKeyDown}
-              className="flex shrink-0 gap-1 border-b border-line bg-surface-2/40 px-3 py-2 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
+              className="flex shrink-0 gap-1 border-b border-line bg-surface-2/40 px-3 py-2 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
             >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
