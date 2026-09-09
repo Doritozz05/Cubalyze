@@ -441,7 +441,7 @@ const DEFAULT_VALUES = {
   fontSans: 'open-sans',
   fontMono: 'cascadia-code',
   zeroStyle: 'slashed' as const,
-  fontDigitMode: 'hybrid' as const,
+  fontDigitMode: 'timer-only' as const,
   customFonts: [],
   notificationsEnabled: true,
   soundsEnabled: true,

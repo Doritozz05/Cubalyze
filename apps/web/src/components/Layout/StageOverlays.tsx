@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { Toaster } from "@/components/ui/sonner";
 import { MobileTabBar } from "@/components/Layout/MobileTabBar";
 import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
@@ -100,6 +102,7 @@ export function StageOverlays(props: StageOverlaysProps) {
   // The Cube tab (virtual cube simulator) owns its own scramble lifecycle —
   // while it's active, the floating widgets (scramble-2d in particular) must
   // render ITS scramble, not the real timer's `currentScramble`.
+  const notificationsEnabled = useStore(preferencesStore, (s) => s.notificationsEnabled);
   const cubeScramble = useVirtualScrambleStore((s) => s.scramble);
   const widgetScramble = activeView === "cube" ? cubeScramble : scramble;
 
@@ -190,6 +193,9 @@ export function StageOverlays(props: StageOverlaysProps) {
         // keeps the bottom-center position unchanged.
         position={isTouch ? "top-center" : "bottom-center"}
         richColors={false}
+        // When the user has disabled notifications, suppress every toast.
+        visibleToasts={notificationsEnabled ? 3 : 0}
+        duration={notificationsEnabled ? 4000 : 0}
       />
     </>
   );

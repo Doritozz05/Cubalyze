@@ -286,7 +286,7 @@
       "fontDigitModeSubtitle": "Choose how and where the digit font applies throughout CubeForge.",
       "fontDigitModeTimerOnly": "Timer only",
       "fontDigitModeTimerOnlyDesc": "Digit font is used exclusively on the main timer. All other UI (solves, averages, tables) uses the interface font.",
-      "fontDigitModeHybrid": "Hybrid (default)",
+      "fontDigitModeHybrid": "Hybrid",
       "fontDigitModeHybridDesc": "Numeric strings and elements use the digit font; general text uses the interface font.",
       "fontDigitModeComposite": "Composite dynamic",
       "fontDigitModeCompositeDesc": "Combines both across the entire web: letters use interface font and numbers or symbols always use digit font (e.g. R2, 3x3).",

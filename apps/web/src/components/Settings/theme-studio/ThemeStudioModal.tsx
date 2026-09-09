@@ -20,9 +20,6 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -682,60 +679,47 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 mt-1">
+                      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 mt-1">
                         {(
                           [
                             {
                               id: 'timer-only' as const,
-                              icon: Clock,
                               title: t('appearance.fontDigitModeTimerOnly'),
                               desc: t('appearance.fontDigitModeTimerOnlyDesc'),
                             },
                             {
                               id: 'hybrid' as const,
-                              icon: Layers,
                               title: t('appearance.fontDigitModeHybrid'),
                               desc: t('appearance.fontDigitModeHybridDesc'),
                             },
                             {
                               id: 'composite' as const,
-                              icon: Sparkles,
                               title: t('appearance.fontDigitModeComposite'),
                               desc: t('appearance.fontDigitModeCompositeDesc'),
                             },
-                          ]
-                        ).map((mode) => {
-                          const Icon = mode.icon;
-                          const isSelected = fontDigitMode === mode.id;
-                          return (
-                            <button
-                              key={mode.id}
-                              type="button"
-                              onClick={() => setFontDigitMode(mode.id)}
-                              className={cn(
-                                'flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all cursor-pointer',
-                                isSelected
-                                  ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-xs'
-                                  : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2/60'
-                              )}
-                            >
-                              <div className="flex w-full items-center justify-between">
-                                <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
-                                  <Icon className="size-3.5 text-ink-2" />
+                          ] as const
+                        ).map((mode, i, arr) => (
+                          <div key={mode.id}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex flex-col gap-0.5 min-w-0">
+                                <span className="text-xs font-medium text-ink">
                                   {mode.title}
                                 </span>
-                                {isSelected && (
-                                  <span className="flex size-3.5 items-center justify-center rounded-full bg-ink text-surface">
-                                    <Check className="size-2.5 stroke-3" />
-                                  </span>
-                                )}
+                                <span className="text-[0.72rem] text-ink-3 leading-snug">
+                                  {mode.desc}
+                                </span>
                               </div>
-                              <p className="text-[0.68rem] text-ink-3 leading-snug">
-                                {mode.desc}
-                              </p>
-                            </button>
-                          );
-                        })}
+                              <Switch
+                                checked={fontDigitMode === mode.id}
+                                onCheckedChange={(on) => {
+                                  if (on) setFontDigitMode(mode.id);
+                                }}
+                                aria-label={mode.title}
+                              />
+                            </div>
+                            {i < arr.length - 1 && <div className="mt-3 h-px bg-line/60" />}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Live typography interactive preview cards */}
@@ -918,8 +902,11 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       )}
                     </div>
                   </div>
+
+
                 </div>
               )}
+
 
               {/* Tab 5: Background Media */}
               {activeTab === 'background' && (

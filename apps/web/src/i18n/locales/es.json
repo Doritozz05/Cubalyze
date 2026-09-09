@@ -286,7 +286,7 @@
       "fontDigitModeSubtitle": "Elige cómo y dónde se aplica la fuente de dígitos en CubeForge.",
       "fontDigitModeTimerOnly": "Solo temporizador",
       "fontDigitModeTimerOnlyDesc": "La fuente de dígitos solo se usa en el timer. En el resto de la web (solves, promedios, tablas) se usa la de interfaz.",
-      "fontDigitModeHybrid": "Híbrido (actual)",
+      "fontDigitModeHybrid": "Híbrido",
       "fontDigitModeHybridDesc": "Cadenas y elementos numéricos usan la fuente de dígitos; los textos usan la de interfaz.",
       "fontDigitModeComposite": "Compuesta dinámica",
       "fontDigitModeCompositeDesc": "Combina ambas en toda la web: letras con fuente de interfaz y números o símbolos con fuente de dígitos (ej: R2, 3x3).",
