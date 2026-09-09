@@ -42,6 +42,14 @@ export interface CustomFontMeta {
   createdAt: number;
 }
 
+/**
+ * Layout mode for the scramble display in Timer and Virtual Cube:
+ * - 'default': standard presentation (actions top-right or responsive bottom)
+ * - 'compact-right': compact scramble tokens with icon-only buttons on the right
+ * - 'compact-down': compact scramble tokens with icon-only buttons centered below
+ */
+export type ScrambleLayoutMode = 'default' | 'compact-right' | 'compact-down';
+
 /** Accent tokens whose `-soft` companion is derived automatically. */
 const ACCENT_SOFT_TOKENS: Record<string, string> = {
   '--ready': '--ready-soft',
@@ -289,6 +297,10 @@ export interface PreferencesState {
   scramblePanel: boolean;
   setScramblePanel: (value: boolean) => void;
 
+  /** Layout density and button positioning for scramble display. Default 'default'. */
+  scrambleLayoutMode: ScrambleLayoutMode;
+  setScrambleLayoutMode: (value: ScrambleLayoutMode) => void;
+
   /** Whether the timer display is rendered inside a bordered container panel. Default false. */
   timerPanel: boolean;
   setTimerPanel: (value: boolean) => void;
@@ -438,6 +450,7 @@ const DEFAULT_VALUES = {
   liquidGlassOpacity: 65,
   liquidGlassBlur: null,
   scramblePanel: false,
+  scrambleLayoutMode: 'default' as const,
   timerPanel: false,
   fontSans: 'open-sans',
   fontMono: 'cascadia-code',
@@ -575,6 +588,7 @@ export const createPreferencesStore = () => {
         setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
         setLiquidGlassBlur: (liquidGlassBlur) => set({ liquidGlassBlur }),
         setScramblePanel: (scramblePanel) => set({ scramblePanel }),
+        setScrambleLayoutMode: (scrambleLayoutMode) => set({ scrambleLayoutMode }),
         setTimerPanel: (timerPanel) => set({ timerPanel }),
         setFontSans: (fontSans) => set({ fontSans }),
         setFontMono: (fontMono) => set({ fontMono }),
@@ -655,6 +669,7 @@ export const createPreferencesStore = () => {
           liquidGlassOpacity: state.liquidGlassOpacity,
           liquidGlassBlur: state.liquidGlassBlur,
           scramblePanel: state.scramblePanel,
+          scrambleLayoutMode: state.scrambleLayoutMode,
           timerPanel: state.timerPanel,
           fontSans: state.fontSans,
           fontMono: state.fontMono,

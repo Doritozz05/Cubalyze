@@ -108,6 +108,7 @@ export function TimerStage(props: TimerStageProps) {
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel);
+  const scrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode);
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const startTimerKey = useStore(preferencesStore, (s) => s.shortcuts.startTimer);
@@ -157,6 +158,7 @@ export function TimerStage(props: TimerStageProps) {
       awaitingSolve={isManualMode || !smartCubeConnected ? false : validation.awaitingSolve}
       onRegenerate={onRegenerate}
       onCopy={onCopy}
+      layoutMode={scrambleLayoutMode}
       indexLabel={`#${scrambleIndex + 1}`}
       focusModeAction={
         isManualMode && focusMode ? (

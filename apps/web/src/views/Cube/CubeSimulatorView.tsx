@@ -208,6 +208,8 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
 
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
+  const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel);
+  const scrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode);
   // "Rotate scramble with cube" (Settings → Scramble): remap the scramble
   // notation to the virtual cube's current orientation, like the real timer
   // does with the physical cube's gyroscope.
@@ -690,7 +692,13 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
           cube) pixel-stable; the content is top-aligned, so short scrambles
           leave clean space below. */}
       <div className="flex h-32 shrink-0 items-start overflow-hidden px-4 pt-3 sm:px-6 lg:h-24">
-        <div className="min-w-0 flex-1">
+        <div
+          data-glass-panel={scramblePanel ? "true" : undefined}
+          className={cn(
+            "min-w-0 flex-1 transition-all duration-200",
+            scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+          )}
+        >
           <ScrambleDisplay
             scramble={scramble}
             displayScramble={displayScramble}
@@ -703,6 +711,7 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
             needsReset={validation.needsReset}
             awaitingSolve={validation.awaitingSolve}
             onRegenerate={handleRegenerate}
+            layoutMode={scrambleLayoutMode}
           />
         </div>
       </div>

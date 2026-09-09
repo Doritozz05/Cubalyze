@@ -140,6 +140,8 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
 
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
+  const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel);
+  const scrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode);
   // "Rotate scramble with cube" (Settings → Scramble): remap the scramble
   // notation to the puzzle's current orientation — same preference and
   // behavior as the cube simulator (keyboard conjugation always follows the
@@ -372,7 +374,13 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
           keeps the canvas (and the puzzle) pixel-stable; the content is
           top-aligned, so short scrambles leave clean space below. */}
       <div className="flex h-32 shrink-0 items-start overflow-hidden border-b border-line/60 px-4 pt-3 sm:px-6 lg:h-24">
-        <div className="min-w-0 flex-1">
+        <div
+          data-glass-panel={scramblePanel ? "true" : undefined}
+          className={cn(
+            "min-w-0 flex-1 transition-all duration-200",
+            scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+          )}
+        >
           <ScrambleDisplay
             scramble={scramble}
             displayScramble={displayScramble}
@@ -384,6 +392,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
             needsReset={validation.needsReset}
             awaitingSolve={false}
             onRegenerate={handleRegenerate}
+            layoutMode={scrambleLayoutMode}
           />
         </div>
       </div>

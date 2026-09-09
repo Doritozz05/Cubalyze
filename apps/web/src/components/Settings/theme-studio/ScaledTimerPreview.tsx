@@ -77,6 +77,7 @@ export function ScaledTimerPreview({
   const storeLiquidOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const storeLiquidBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const storeScramblePanel = useStore(preferencesStore, (s) => s.scramblePanel ?? false);
+  const storeScrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode ?? 'default');
   const storeTimerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
 
   const timerBackgroundImage = useStore(preferencesStore, (s) => s.timerBackgroundImage);
@@ -188,6 +189,7 @@ export function ScaledTimerPreview({
         isScrambled
         onRegenerate={() => {}}
         compact={isMobileFrame}
+        layoutMode={storeScrambleLayoutMode}
         tokenSizePx={scrambleTokenPx}
       />
     </div>

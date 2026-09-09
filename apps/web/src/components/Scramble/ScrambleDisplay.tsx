@@ -6,6 +6,8 @@ import { Check, Copy, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+import type { ScrambleLayoutMode } from "@cubeforge/state";
+
 export interface ScrambleDisplayProps {
   scramble: string;
   /** Orientation-adapted scramble for display (raw scramble used for validation). */
@@ -34,6 +36,13 @@ export interface ScrambleDisplayProps {
    * Copy/New below. Used by the theme-studio preview's mobile frame.
    */
   compact?: boolean;
+  /**
+   * Mutually-exclusive layout mode for Timer and Virtual Cube:
+   * - 'default': standard responsive layout
+   * - 'compact-right': compact scramble tokens with icon-only buttons aligned to the right
+   * - 'compact-down': compact scramble tokens with icon-only buttons centered below
+   */
+  layoutMode?: ScrambleLayoutMode;
   /** Override for the token text-size class (viewport-evaluated px in previews). */
   tokenSizeClass?: string;
   /**
@@ -60,6 +69,7 @@ export function ScrambleDisplay({
   needsReset = false,
   awaitingSolve = false,
   compact = false,
+  layoutMode = "default",
   tokenSizeClass = "text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)]",
   tokenSizePx,
 }: ScrambleDisplayProps) {
@@ -87,12 +97,14 @@ export function ScrambleDisplay({
     Array.isArray(states) &&
     states.length > 0;
 
-  // Copy/New actions. Desktop/tablet (>=768px): inline in the header row,
-  // right-aligned above the scramble. Mobile (<768px): rendered again BELOW
-  // the scramble tokens as a centered row — the header copy is hidden and
-  // the #index counter is dropped, so the top of the timer stays clean.
-  const copyNewActions = (
+  const isCompactRight = layoutMode === "compact-right";
+  const isCompactDown = layoutMode === "compact-down";
+  const isCustomCompact = isCompactRight || isCompactDown;
+
+  // Render actions. When showLabels is false, text labels are hidden everywhere (icon-only).
+  const renderActions = (showLabels: boolean) => (
     <>
+      {focusModeAction}
       <Button
         variant="ghost"
         size="sm"
@@ -105,7 +117,7 @@ export function ScrambleDisplay({
         ) : (
           <Copy className="size-3.5" />
         )}
-        <span className="max-lg:hidden">{copied ? t("copied") : t("copy")}</span>
+        {showLabels && <span className="max-lg:hidden">{copied ? t("copied") : t("copy")}</span>}
       </Button>
       {onRegenerate ? (
         <Button
@@ -116,20 +128,133 @@ export function ScrambleDisplay({
           aria-label={t("newScramble")}
         >
           <RefreshCw className="size-3.5" />
-          <span className="max-lg:hidden">{t("new")}</span>
+          {showLabels && <span className="max-lg:hidden">{t("new")}</span>}
         </Button>
       ) : null}
     </>
   );
 
-  // Responsive regime: the real viewport drives `max-lg:` in the app, while
-  // `compact` forces the phone presentation inside scaled previews.
-  const headerMetaHidden = compact ? "hidden" : "max-lg:hidden";
-  const tokensClass = compact
+  const isCompactLayout = compact || isCustomCompact;
+  const headerMetaHidden = isCompactLayout ? "hidden" : "max-lg:hidden";
+  const tokensClass = isCompactLayout
     ? "flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
     : "flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5";
-  const tokenText = compact ? "text-sm" : tokenSizeClass;
+  const tokenText = isCompactLayout ? "text-sm" : tokenSizeClass;
 
+  const renderTokens = () => {
+    if (awaitingSolve) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-2 py-2">
+          <p className="text-sm text-caution">{t("solveToApply")}</p>
+        </div>
+      );
+    }
+    if (needsReset) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-2 py-2">
+          <p className="text-sm text-caution">{t("tooManyMistakes")}</p>
+        </div>
+      );
+    }
+    if (errorMoves.length > 0) {
+      return (
+        <div
+          className={cn(tokensClass)}
+          translate="no"
+        >
+          {errorMoves.map((m, i) => (
+            <span
+              key={`err-${i}`}
+              className={cn(
+                "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100",
+                tokenText,
+              )}
+              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
+            >
+              {m}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className={cn(tokensClass)} translate="no">
+        {tokens.map((tok, i) => {
+          const state = isVerificationActive ? states?.[i] || "pending" : "normal";
+          const isCompleted = isVerificationActive && state === "correct";
+          const isActive = isVerificationActive && i === currentIndex;
+
+          return (
+            <span
+              key={`${tok}-${i}`}
+              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
+              className={cn(
+                "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300",
+                tokenText,
+                !isVerificationActive && "text-ink scale-100",
+                isVerificationActive && isCompleted && "text-ink-3 scale-110",
+                isVerificationActive &&
+                  isActive &&
+                  !isCompleted &&
+                  pendingHalfDouble &&
+                  "text-ink scale-100 animate-pulse",
+                isVerificationActive &&
+                  isActive &&
+                  !isCompleted &&
+                  !pendingHalfDouble &&
+                  "text-ink scale-100",
+                isVerificationActive && !isCompleted && !isActive && "text-ink/40 scale-95",
+              )}
+            >
+              {tok}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  if (isCompactRight) {
+    return (
+      <div className="w-full" data-onboarding-target="timer">
+        {/* Compact Right: compact tokens flex with icon-only action buttons on the right side */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {renderTokens()}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {isScrambled && (
+              <span className="mr-1 text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
+                <Check className="size-3" />
+              </span>
+            )}
+            {renderActions(false)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCompactDown) {
+    return (
+      <div className="w-full" data-onboarding-target="timer">
+        {/* Compact Down: compact tokens with icon-only action buttons centered below */}
+        {isScrambled && (
+          <div className="mb-1 flex justify-center">
+            <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
+              <Check className="size-3" /> {t("ready")}
+            </span>
+          </div>
+        )}
+        {renderTokens()}
+        <div className="mt-2 flex items-center justify-center gap-1">
+          {renderActions(false)}
+        </div>
+      </div>
+    );
+  }
+
+  // Default layout
   return (
     <div className="w-full" data-onboarding-target="timer">
       <div className="mb-2 flex items-center justify-between">
@@ -152,81 +277,16 @@ export function ScrambleDisplay({
           ) : null}
         </div>
         <div className={cn("flex items-center gap-1", headerMetaHidden)}>
-          {focusModeAction}
-          {copyNewActions}
+          {renderActions(true)}
         </div>
       </div>
 
-      {awaitingSolve ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-4">
-          <p className="text-sm text-caution">
-            {t("solveToApply")}
-          </p>
-        </div>
-      ) : needsReset ? (
-        <div className="flex flex-col items-center justify-center gap-2 py-4">
-          <p className="text-sm text-caution">
-            {t("tooManyMistakes")}
-          </p>
-        </div>
-      ) : errorMoves.length > 0 ? (
-        <div
-          // Tokens scale with the viewport (width AND height) like the timer,
-          // so on short landscape tablets the scramble shrinks in step with
-          // the rest of the stage. Touch (<768px) keeps the smaller text-sm
-          // tokens that wrap with zero horizontal scroll.
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
-          translate="no"
-        >
-          {errorMoves.map((m, i) => (
-            <span
-              key={`err-${i}`}
-              className={cn("inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100", tokenText)}
-              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
-            >
-              {m}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <div
-          // Tokens scale with the viewport (width AND height) like the timer,
-          // so on short landscape tablets the scramble shrinks in step with
-          // the rest of the stage. Touch (<768px) keeps the smaller text-sm
-          // tokens that wrap with zero horizontal scroll.
-          className={cn(tokensClass)}
-          translate="no"
-        >
-          {tokens.map((tok, i) => {
-            const state = isVerificationActive ? (states?.[i] || 'pending') : 'normal';
-            const isCompleted = isVerificationActive && state === 'correct';
-            const isActive = isVerificationActive && i === currentIndex;
-
-            return (
-              <span
-                key={`${tok}-${i}`}
-                style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
-                className={cn(
-                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300",
-                  tokenText,
-                  !isVerificationActive && "text-ink scale-100",
-                  isVerificationActive && isCompleted && "text-ink-3 scale-110",
-                  isVerificationActive && isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
-                  isVerificationActive && isActive && !isCompleted && !pendingHalfDouble && "text-ink scale-100",
-                  isVerificationActive && !isCompleted && !isActive && "text-ink/40 scale-95",
-                )}
-              >
-                {tok}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {renderTokens()}
 
       {/* Mobile-only (<768px): Copy/New sit BELOW the scramble instead of
           above it (the header row hides them at max-lg). Centered, icon-only. */}
       <div className={cn("mt-2.5 flex items-center justify-center gap-1", compact ? undefined : "lg:hidden")}>
-        {copyNewActions}
+        {renderActions(false)}
       </div>
     </div>
   );
