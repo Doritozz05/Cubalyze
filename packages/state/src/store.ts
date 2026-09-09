@@ -25,9 +25,85 @@ export type AppLanguage = 'auto' | 'en' | 'es';
 /** Visibility mode for the top bar (header + glass dock). */
 export type HeaderMode = 'always' | 'hidden' | 'autohide';
 
+/** Maximum number of user-created custom themes. */
+export const MAX_CUSTOM_THEMES = 10;
+
+/** Maximum number of user-uploaded custom fonts (blobs live in IndexedDB). */
+export const MAX_CUSTOM_FONTS = 6;
+
+/**
+ * User-uploaded font: metadata only (the file blob lives in IndexedDB,
+ * keyed by id). `role` decides which registry list it joins.
+ */
+export interface CustomFontMeta {
+  id: string;
+  name: string;
+  role: 'sans' | 'mono';
+  createdAt: number;
+}
+
+/** Accent tokens whose `-soft` companion is derived automatically. */
+const ACCENT_SOFT_TOKENS: Record<string, string> = {
+  '--ready': '--ready-soft',
+  '--hold': '--hold-soft',
+  '--dnf': '--dnf-soft',
+  '--plus2': '--plus2-soft',
+  '--caution': '--caution-soft',
+};
+
+/** Full-hex color to the 14% `rgba()` soft used by every built-in preset. */
+function hexToSoftRgba(color: string): string | null {
+  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!m) return null;
+  const hex = m[1];
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.14)`;
+}
+
+/**
+ * User-created theme: a full snapshot of resolved color tokens plus the
+ * light/dark base it was built on. `colors` is a plain record on purpose —
+ * the canonical `ThemeColors` type lives in the web app, and this package
+ * must not import from it.
+ */
+export interface CustomTheme {
+  id: string;
+  name: string;
+  base: 'light' | 'dark';
+  colors: Record<string, string>;
+  createdAt: number;
+}
+
+export interface CustomThemeInput {
+  name: string;
+  base: 'light' | 'dark';
+  colors: Record<string, string>;
+}
+
 export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+
+  /** Active preset theme ('default' | 'dark' | 'light' | 'midnight' | 'custom'). */
+  themePreset: string;
+  setThemePreset: (preset: string) => void;
+
+  /** User overrides for web color tokens (e.g. { '--canvas': '#14171b', '--surface': '#1b1f23' }). */
+  customThemeColors: Record<string, string> | null;
+  setCustomThemeColor: (token: string, color: string) => void;
+  setCustomThemeColors: (colors: Record<string, string> | null) => void;
+  resetCustomThemeColors: () => void;
+
+  /** User-created full themes (snapshots). Persisted; capped at MAX_CUSTOM_THEMES. */
+  customThemes: CustomTheme[];
+  /** Saves a snapshot, returns its id (or null when the cap is reached). */
+  saveCustomTheme: (input: CustomThemeInput) => string | null;
+  renameCustomTheme: (id: string, name: string) => void;
+  deleteCustomTheme: (id: string) => void;
+  /** Copies a theme (new id, " (copia)" suffix), returns the copy id or null at cap. */
+  duplicateCustomTheme: (id: string) => string | null;
 
   /**
    * Top-bar (header + glass dock) visibility mode:
@@ -201,6 +277,37 @@ export interface PreferencesState {
   liquidGlassOpacity: number;
   setLiquidGlassOpacity: (value: number) => void;
 
+  /**
+   * Custom backdrop-blur radius in px for liquid glass. `null` (default)
+   * keeps the built-in formula tied to opacity; a number overrides it.
+   */
+  liquidGlassBlur: number | null;
+  setLiquidGlassBlur: (value: number | null) => void;
+
+  /**
+   * Theme Studio typography: registry ids resolved to font stacks by the
+   * web app ('open-sans' + 'cascadia-code' by default, 'system' keeps the
+   * legacy pure-system stacks).
+   */
+  fontSans: string;
+  setFontSans: (value: string) => void;
+  fontMono: string;
+  setFontMono: (value: string) => void;
+
+  /**
+   * Tabular zero style: 'dotted' is the typeface default (e.g. Cascadia's
+   * signature dotted zero), 'slashed' enables the `zero` OpenType feature.
+   * App default is 'slashed'.
+   */
+  zeroStyle: 'dotted' | 'slashed';
+  setZeroStyle: (value: 'dotted' | 'slashed') => void;
+
+  /** User-uploaded fonts (metadata; file blobs live in IndexedDB). */
+  customFonts: CustomFontMeta[];
+  /** Registers metadata, returns its id (or null when the cap is reached). */
+  addCustomFont: (input: { name: string; role: 'sans' | 'mono' }) => string | null;
+  removeCustomFont: (id: string) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -259,6 +366,9 @@ export interface PreferencesState {
 
 const DEFAULT_VALUES = {
   theme: 'light' as const,
+  themePreset: 'default',
+  customThemeColors: null as Record<string, string> | null,
+  customThemes: [] as CustomTheme[],
   headerMode: 'autohide' as const,
   appearance3d: 'default',
   scrambleFollowsCube: true,
@@ -303,10 +413,15 @@ const DEFAULT_VALUES = {
   timerBackgroundBlur: 0,
   timerBackgroundFit: 'cover' as const,
   timerBackgroundOverlay: 0,
-  timerBackgroundAllViews: false,
-  timerBackgroundAlwaysAnimate: false,
+  timerBackgroundAllViews: true,
+  timerBackgroundAlwaysAnimate: true,
   liquidGlass: false,
   liquidGlassOpacity: 65,
+  liquidGlassBlur: null,
+  fontSans: 'open-sans',
+  fontMono: 'cascadia-code',
+  zeroStyle: 'slashed' as const,
+  customFonts: [],
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -322,10 +437,65 @@ const DEFAULT_VALUES = {
 export const createPreferencesStore = () => {
   return createStore<PreferencesState>()(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...DEFAULT_VALUES,
 
         setTheme: (theme) => set({ theme }),
+        setThemePreset: (themePreset) => set({ themePreset }),
+        setCustomThemeColor: (token, color) =>
+          set((state) => {
+            const customThemeColors = { ...(state.customThemeColors ?? {}), [token]: color };
+            // Keep the `-soft` wash in sync with its accent so halos and
+            // pills follow the edited color instead of the old preset value.
+            const softToken = ACCENT_SOFT_TOKENS[token];
+            if (softToken) {
+              const soft = hexToSoftRgba(color);
+              if (soft) customThemeColors[softToken] = soft;
+            }
+            return { customThemeColors };
+          }),
+        setCustomThemeColors: (customThemeColors) => set({ customThemeColors }),
+        resetCustomThemeColors: () => set({ customThemeColors: null }),
+        saveCustomTheme: (input) => {
+          const { customThemes } = get();
+          if (customThemes.length >= MAX_CUSTOM_THEMES) return null;
+          const name = input.name.trim().slice(0, 40) || 'My theme';
+          const theme: CustomTheme = {
+            id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name,
+            base: input.base,
+            colors: { ...input.colors },
+            createdAt: Date.now(),
+          };
+          set({ customThemes: [...customThemes, theme] });
+          return theme.id;
+        },
+        renameCustomTheme: (id, name) => {
+          const next = name.trim().slice(0, 40);
+          if (!next) return;
+          set((state) => ({
+            customThemes: state.customThemes.map((t) => (t.id === id ? { ...t, name: next } : t)),
+          }));
+        },
+        deleteCustomTheme: (id) =>
+          set((state) => ({
+            customThemes: state.customThemes.filter((t) => t.id !== id),
+          })),
+        duplicateCustomTheme: (id) => {
+          const { customThemes } = get();
+          if (customThemes.length >= MAX_CUSTOM_THEMES) return null;
+          const source = customThemes.find((t) => t.id === id);
+          if (!source) return null;
+          const theme: CustomTheme = {
+            id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name: `${source.name} (copy)`.slice(0, 40),
+            base: source.base,
+            colors: { ...source.colors },
+            createdAt: Date.now(),
+          };
+          set({ customThemes: [...customThemes, theme] });
+          return theme.id;
+        },
         setHeaderMode: (headerMode) => set({ headerMode }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),
@@ -368,6 +538,27 @@ export const createPreferencesStore = () => {
         setTimerBackgroundAlwaysAnimate: (timerBackgroundAlwaysAnimate) => set({ timerBackgroundAlwaysAnimate }),
         setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
         setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
+        setLiquidGlassBlur: (liquidGlassBlur) => set({ liquidGlassBlur }),
+        setFontSans: (fontSans) => set({ fontSans }),
+        setFontMono: (fontMono) => set({ fontMono }),
+        setZeroStyle: (zeroStyle) => set({ zeroStyle }),
+        addCustomFont: (input) => {
+          const { customFonts } = get();
+          if (customFonts.length >= MAX_CUSTOM_FONTS) return null;
+          const name = input.name.trim().slice(0, 40) || 'Mi fuente';
+          const font: CustomFontMeta = {
+            id: `font-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name,
+            role: input.role,
+            createdAt: Date.now(),
+          };
+          set({ customFonts: [...customFonts, font] });
+          return font.id;
+        },
+        removeCustomFont: (id) =>
+          set((state) => ({
+            customFonts: state.customFonts.filter((f) => f.id !== id),
+          })),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -386,6 +577,9 @@ export const createPreferencesStore = () => {
         name: 'cubeforge-prefs',
         partialize: (state) => ({
           theme: state.theme,
+          themePreset: state.themePreset,
+          customThemeColors: state.customThemeColors,
+          customThemes: state.customThemes,
           headerMode: state.headerMode,
           appearance3d: state.appearance3d,
           scrambleFollowsCube: state.scrambleFollowsCube,
@@ -421,6 +615,11 @@ export const createPreferencesStore = () => {
           timerBackgroundAlwaysAnimate: state.timerBackgroundAlwaysAnimate,
           liquidGlass: state.liquidGlass,
           liquidGlassOpacity: state.liquidGlassOpacity,
+          liquidGlassBlur: state.liquidGlassBlur,
+          fontSans: state.fontSans,
+          fontMono: state.fontMono,
+          zeroStyle: state.zeroStyle,
+          customFonts: state.customFonts,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,
@@ -437,10 +636,16 @@ export const createPreferencesStore = () => {
         // v3: `showHeader`/`dockAutoHide` booleans were replaced by the
         // `headerMode` tri-state ('always' | 'hidden' | 'autohide').
         // v4: `shortcuts.startTimer` (configurable timer start key) added.
-        version: 4,
+        // v5: `customThemes` (user-created full themes) added.
+        // v6: `zeroStyle` default becomes 'slashed' — the setting never
+        // took effect before v6, so no real 'dotted' preference exists.
+        version: 6,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
           const migrated: Record<string, unknown> = { ...raw };
+          if (!Array.isArray(raw.customThemes)) {
+            migrated.customThemes = [];
+          }
           if (version < 2) {
             if (typeof raw.showSessionStats === 'boolean') {
               migrated.showBottomLayout = raw.showSessionStats;
@@ -468,6 +673,9 @@ export const createPreferencesStore = () => {
               startTimer: ' ',
               ...sc,
             };
+          }
+          if (version < 6) {
+            migrated.zeroStyle = 'slashed';
           }
           return migrated;
         },

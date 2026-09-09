@@ -498,7 +498,7 @@ export function MethodRailItem({
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30",
-        active ? "text-ink" : "text-ink-3 hover:bg-surface-2/60 hover:text-ink",
+        active ? "text-ink" : "text-ink-3 hover:bg-surface-2 hover:text-ink",
       )}
     >
       {active && (
@@ -574,7 +574,7 @@ function PhaseRow({
   const modes = phaseModes ?? [];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 lg:flex-row lg:items-center lg:gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2 lg:flex-row lg:items-center lg:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
           <Icon className="size-4 text-ink-2" />
@@ -663,7 +663,7 @@ function SubsetRow({
   const descKey = SUBSET_DESC_KEY[`${puzzleType}:${subset.name}`];
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2/30 lg:flex-row lg:items-center lg:gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-surface-2 lg:flex-row lg:items-center lg:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-md border border-line bg-surface-2">
           <Sparkles className="size-4 text-ink-2" />

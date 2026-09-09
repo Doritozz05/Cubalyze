@@ -344,6 +344,7 @@ export function Header({
 
   return (
     <motion.header
+      data-slot="app-header"
       ref={headerRef}
       initial={{ y: "-100%", opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}

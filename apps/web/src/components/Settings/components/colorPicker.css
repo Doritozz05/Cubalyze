@@ -1,0 +1,78 @@
+/* Custom range thumbs for the advanced color picker.
+   Native thumbs are intentionally replaced so every browser renders the same
+   contained thumb — nothing paints outside the track. */
+
+.cp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cp-range:focus {
+  outline: none;
+}
+
+/* Track — background comes from --cp-track (set inline per slider).
+   Neutral gray hairline reads clean on light and dark themes alike. */
+.cp-range::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 10px;
+  border-radius: 9999px;
+  background-image: var(--cp-track);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: 100% 100%;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+}
+
+.cp-range::-moz-range-track {
+  box-sizing: border-box;
+  height: 10px;
+  border-radius: 9999px;
+  background-image: var(--cp-track);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: 100% 100%;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+}
+
+/* Thumb — 14px on a 10px track, vertically centered, never clipped
+   because the input gets vertical padding from .cp-range-tall. */
+.cp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -3px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid rgba(128, 128, 128, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.cp-range::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid rgba(128, 128, 128, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.cp-range-tall {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.cp-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.cp-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}

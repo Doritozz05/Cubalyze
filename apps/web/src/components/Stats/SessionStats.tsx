@@ -16,6 +16,11 @@ export interface SessionStatsProps {
   onExpand?: () => void;
   /** Filter solves to a specific puzzle type (e.g. '333', '222'). */
   puzzleFilter?: string;
+  /**
+   * Force the phone (<768px) density regardless of the real viewport.
+   * Used by the theme-studio preview's mobile frame.
+   */
+  compact?: boolean;
 }
 
 interface Cell {
@@ -29,7 +34,7 @@ interface Cell {
  * Compact, flat summary row shown beneath the timer: Ao5, Ao12, Best, Mean.
  * Includes a subtle toggle button to minimize/collapse stats downwards.
  */
-export function SessionStats({ solves, className, onExpand, puzzleFilter }: SessionStatsProps) {
+export function SessionStats({ solves, className, onExpand, puzzleFilter, compact = false }: SessionStatsProps) {
   const { t } = useTranslation("stats");
   const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -84,7 +89,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                   type="button"
                   onClick={() => setIsMinimized(false)}
                   // Touch: bigger restore pill for thumb use.
-                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
+                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
                   aria-label={t("restoreSessionStats")}
                 >
                   <ChevronUp className="size-4 max-lg:size-5" />
@@ -104,7 +109,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
           >
             <div className="relative flex flex-col items-center w-full h-full justify-center">
               {bpaWpa != null && (
-                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
+                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
                     Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
                   </span>
@@ -142,21 +147,24 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                     <div
                       key={c.label}
                       className={cn(
-                        "flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-3 sm:px-3",
+                        "flex min-w-0 flex-col items-center justify-center px-2 py-3 sm:px-3",
                         // Touch: slightly tighter rows but larger numerals so the
                         // strip stays readable at a glance. Desktop unchanged.
-                        "max-lg:gap-0.5 max-lg:px-1.5 max-lg:py-2.5",
+                        compact ? "gap-0.5 px-1.5 py-2.5" : "gap-1 max-lg:gap-0.5 max-lg:px-1.5 max-lg:py-2.5",
                         i !== 0 && "border-l border-line",
                         c.accent && "bg-ready-soft/40",
                       )}
                     >
-                      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-ink-3 max-lg:text-[0.62rem]">
+                      <span className={cn(
+                        "uppercase tracking-[0.18em] text-ink-3",
+                        compact ? "text-[0.62rem]" : "text-[0.6rem] max-lg:text-[0.62rem]",
+                      )}>
                         {c.label}
                       </span>
                       <span
                         className={cn(
-                          "nums text-sm tabular-nums text-ink sm:text-[0.95rem]",
-                          "max-lg:text-base",
+                          "nums tabular-nums text-ink",
+                          compact ? "text-base" : "text-sm sm:text-[0.95rem] max-lg:text-base",
                           c.accent && "text-ready",
                         )}
                       >
@@ -177,10 +185,13 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter }: Sess
                           setIsMinimized(true);
                         }}
                       // Touch: bigger hit area for thumb use.
-                      className="flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-7"
+                      className={cn(
+                        "flex items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        compact ? "size-7" : "size-5 max-lg:size-7",
+                      )}
                         aria-label={t("minimizeStats")}
                       >
-                        <ChevronDown className="size-3 max-lg:size-4" />
+                        <ChevronDown className={cn(compact ? "size-4" : "size-3 max-lg:size-4")} />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">{t("minimizeStatsTooltip")}</TooltipContent>

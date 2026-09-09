@@ -342,7 +342,9 @@ export function AlgorithmEditorDialog({
             // w-105 (420px) overflows on screens <420px; below `sm` it becomes
             // a full-width sheet (no side border), >=640px stays w-105.
             // Desktop (>=768px) is unchanged.
-            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-full flex-col border-l border-line bg-canvas shadow-2xl sm:w-105 max-sm:border-l-0"
+            data-slot="sheet-content"
+            data-glass-panel
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-full flex-col border-l border-line bg-surface shadow-2xl sm:w-105 max-sm:border-l-0"
             aria-label={
               existingAlgorithm
                 ? t("editor.editAlgorithm")
@@ -545,7 +547,7 @@ export function AlgorithmEditorDialog({
                         "rounded-md px-2 py-2 text-xs font-medium capitalize transition-all",
                         difficulty === d
                           ? "bg-ink text-surface shadow-sm"
-                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
                       )}
                     >
                       {t(DIFFICULTY_LABEL_KEYS[d])}

@@ -19,6 +19,13 @@ export interface TimerDisplayProps {
   hintCtx: HintContext;
   /** Optional className override for the time display text size. */
   className?: string;
+  /**
+   * Exact digit sizes in px (viewport-evaluated by previews). Inline styles
+   * are deliberate: Tailwind cannot generate dynamically-interpolated
+   * class names, so `text-[${px}px]` would silently render nothing.
+   */
+  fontSizePx?: number;
+  deltaFontSizePx?: number;
 }
 
 const STATE_COLOR: Record<TimerState, string> = {
@@ -56,6 +63,8 @@ export function TimerDisplay({
   showPbDelta = false,
   hintCtx,
   className,
+  fontSizePx,
+  deltaFontSizePx,
 }: TimerDisplayProps) {
   const timePrecision = useStore(preferencesStore, (s) => s.timePrecision);
   const showHints = useStore(preferencesStore, (s) => s.showHints);
@@ -105,9 +114,10 @@ export function TimerDisplay({
         {deltaMs != null && (
           <span
             aria-hidden="true"
-            className="nums invisible text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none"
+            className={cn("nums invisible font-medium leading-none", deltaFontSizePx == null && "text-[clamp(1rem,3vw,1.8rem)]")}
+            style={deltaFontSizePx != null ? { fontSize: deltaFontSizePx } : undefined}
           >
-            {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}
+            {deltaMs <= 0 ? "−" : "+"}{formatTime(Math.abs(deltaMs))}
           </span>
         )}
         <div
@@ -125,6 +135,7 @@ export function TimerDisplay({
             textColor,
             STATE_SCALE[state],
           )}
+          style={fontSizePx != null ? { fontSize: fontSizePx } : undefined}
           aria-live="polite"
           aria-atomic="true"
         >
@@ -133,9 +144,11 @@ export function TimerDisplay({
         {deltaMs != null && (
           <span
             className={cn(
-              "nums text-[clamp(1rem,3vw,1.8rem)] font-medium leading-none",
+              "nums font-medium leading-none",
+              deltaFontSizePx == null && "text-[clamp(1rem,3vw,1.8rem)]",
               deltaMs <= 0 ? "text-ready" : "text-dnf",
             )}
+            style={deltaFontSizePx != null ? { fontSize: deltaFontSizePx } : undefined}
           >
             {deltaMs <= 0 ? "\u2212" : "+"}{formatTime(Math.abs(deltaMs))}
           </span>

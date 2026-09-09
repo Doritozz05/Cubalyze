@@ -207,8 +207,8 @@ export function CreditsSection() {
     <div className="flex flex-col gap-4">
       {/* ── Intro ─────────────────────────────────────────────────────── */}
       <div className="relative flex items-start gap-3 overflow-hidden rounded-xl border border-line bg-surface p-4">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-emerald/25 bg-accent-emerald/10">
-          <Heart className="size-4 text-accent-emerald" fill="currentColor" />
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[#047857]/25 bg-[#047857]/10 dark:border-[#34d399]/25 dark:bg-[#34d399]/10">
+          <Heart className="size-4 text-[#047857] dark:text-[#34d399]" fill="currentColor" />
         </div>
         <div className="min-w-0">
           <h4 className="text-[0.85rem] font-semibold leading-5 text-ink">
@@ -300,10 +300,10 @@ export function CreditsSection() {
                         href={item.link}
                         target="_blank"
                         rel="noreferrer"
-                        className="group/link inline-flex items-center gap-1 text-[0.78rem] font-medium text-ink underline-offset-2 transition-colors duration-150 hover:text-accent-emerald"
+                        className="group/link inline-flex items-center gap-1 text-[0.78rem] font-medium text-ink underline-offset-2 transition-colors duration-150 hover:text-[#047857] dark:hover:text-[#34d399]"
                       >
                         {item.name}
-                        <ArrowUpRight className="size-3 shrink-0 text-ink-3 transition-transform duration-150 group-hover/link:-translate-y-px group-hover/link:translate-x-px group-hover/link:text-accent-emerald" />
+                        <ArrowUpRight className="size-3 shrink-0 text-ink-3 transition-transform duration-150 group-hover/link:-translate-y-px group-hover/link:translate-x-px group-hover/link:text-[#047857] dark:group-hover/link:text-[#34d399]" />
                       </a>
                     ) : (
                       <span className="text-[0.78rem] font-medium text-ink">

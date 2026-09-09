@@ -614,7 +614,7 @@ export function SkillGraphCanvas({
       <div className="absolute inset-0 bg-[radial-gradient(var(--line)_1px,transparent_1px)] bg-size-[24px_24px] opacity-35 pointer-events-none" />
 
       {/* Floating Viewport Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface/90 backdrop-blur-sm border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-lg bg-surface border border-line shadow-sm text-xs font-mono max-lg:top-auto max-lg:bottom-4">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -727,7 +727,7 @@ export function SkillGraphCanvas({
       </div>
 
       {/* Footer Info Legend */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 text-xs text-ink-3 bg-surface px-3 py-1.5 rounded-lg border border-line shadow-sm max-lg:hidden">
         <Info className="w-3.5 h-3.5 text-ink shrink-0" />
         <span>{t("canvasHint")}</span>
       </div>

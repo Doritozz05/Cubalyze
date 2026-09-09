@@ -114,6 +114,7 @@ export function FloatingCubeButton({
     <button
       ref={drag.elementRef}
       data-widget-id="cube-button"
+      data-glass-float
       onPointerDown={drag.onPointerDown}
       onPointerMove={drag.onPointerMove}
       onPointerUp={handlePointerUp}

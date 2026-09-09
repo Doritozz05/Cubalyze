@@ -28,6 +28,19 @@ export interface ScrambleDisplayProps {
   isScrambled?: boolean;
   needsReset?: boolean;
   awaitingSolve?: boolean;
+  /**
+   * Force the phone (<768px) presentation regardless of the real viewport:
+   * no header label/counter/actions row, small wrapping tokens, icon-only
+   * Copy/New below. Used by the theme-studio preview's mobile frame.
+   */
+  compact?: boolean;
+  /** Override for the token text-size class (viewport-evaluated px in previews). */
+  tokenSizeClass?: string;
+  /**
+   * Exact token size in px. Inline style, deliberate: Tailwind cannot
+   * generate dynamically-interpolated class names.
+   */
+  tokenSizePx?: number;
 }
 
 export function ScrambleDisplay({
@@ -46,6 +59,9 @@ export function ScrambleDisplay({
   isScrambled = false,
   needsReset = false,
   awaitingSolve = false,
+  compact = false,
+  tokenSizeClass = "text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)]",
+  tokenSizePx,
 }: ScrambleDisplayProps) {
   const { t } = useTranslation("timer");
   const [copied, setCopied] = useState(false);
@@ -106,6 +122,14 @@ export function ScrambleDisplay({
     </>
   );
 
+  // Responsive regime: the real viewport drives `max-lg:` in the app, while
+  // `compact` forces the phone presentation inside scaled previews.
+  const headerMetaHidden = compact ? "hidden" : "max-lg:hidden";
+  const tokensClass = compact
+    ? "flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5"
+    : "flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5";
+  const tokenText = compact ? "text-sm" : tokenSizeClass;
+
   return (
     <div className="w-full" data-onboarding-target="timer">
       <div className="mb-2 flex items-center justify-between">
@@ -113,11 +137,11 @@ export function ScrambleDisplay({
           {/* The "Scramble" label and #N counter are desktop/tablet-only — on
               phones (<768px) the tokens stand alone above the timer, so the
               whole top line is dropped to keep the stage clean. */}
-          <span className="max-lg:hidden text-[0.7rem] uppercase tracking-[0.2em] text-ink-3">
+          <span className={cn(headerMetaHidden, "text-[0.7rem] uppercase tracking-[0.2em] text-ink-3")}>
             Scramble
           </span>
           {indexLabel ? (
-            <span className="nums text-[0.7rem] text-ink-3 max-lg:hidden">
+            <span className={cn(headerMetaHidden, "nums text-[0.7rem] text-ink-3")}>
               {indexLabel}
             </span>
           ) : null}
@@ -127,7 +151,7 @@ export function ScrambleDisplay({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-1 max-lg:hidden">
+        <div className={cn("flex items-center gap-1", headerMetaHidden)}>
           {focusModeAction}
           {copyNewActions}
         </div>
@@ -157,7 +181,8 @@ export function ScrambleDisplay({
           {errorMoves.map((m, i) => (
             <span
               key={`err-${i}`}
-              className="inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100 text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)] max-lg:text-sm"
+              className={cn("inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100", tokenText)}
+              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
             >
               {m}
             </span>
@@ -169,7 +194,7 @@ export function ScrambleDisplay({
           // so on short landscape tablets the scramble shrinks in step with
           // the rest of the stage. Touch (<768px) keeps the smaller text-sm
           // tokens that wrap with zero horizontal scroll.
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-lg:gap-x-2.5 max-lg:gap-y-1.5"
+          className={cn(tokensClass)}
           translate="no"
         >
           {tokens.map((tok, i) => {
@@ -180,8 +205,10 @@ export function ScrambleDisplay({
             return (
               <span
                 key={`${tok}-${i}`}
+                style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
                 className={cn(
-                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-[clamp(0.75rem,min(1.6vw,1.9vh),1rem)] max-lg:text-sm",
+                  "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300",
+                  tokenText,
                   !isVerificationActive && "text-ink scale-100",
                   isVerificationActive && isCompleted && "text-ink-3 scale-110",
                   isVerificationActive && isActive && !isCompleted && pendingHalfDouble && "text-ink scale-100 animate-pulse",
@@ -198,7 +225,7 @@ export function ScrambleDisplay({
 
       {/* Mobile-only (<768px): Copy/New sit BELOW the scramble instead of
           above it (the header row hides them at max-lg). Centered, icon-only. */}
-      <div className="mt-2.5 flex items-center justify-center gap-1 lg:hidden">
+      <div className={cn("mt-2.5 flex items-center justify-center gap-1", compact ? undefined : "lg:hidden")}>
         {copyNewActions}
       </div>
     </div>

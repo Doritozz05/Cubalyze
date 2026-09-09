@@ -384,7 +384,7 @@ export const SolveListPanel = memo(function SolveListPanel({
       ) : (
         <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1">
           {selectionMode && (
-            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-[var(--glass-bg-dense)] px-3 py-1.5">
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-(--glass-bg-dense) px-3 py-1.5">
               <button
                 onClick={onExitSelection}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
@@ -499,8 +499,8 @@ export const SolveListPanel = memo(function SolveListPanel({
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-                  {/* Hover pill — subtle translucent inset card */}
-                  <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-surface-2/0 transition-colors duration-150 group-hover:bg-surface-2/50" />
+                  {/* Hover pill — subtle solid inset card */}
+                  <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-transparent transition-colors duration-150 group-hover:bg-surface-2" />
                   {/* Active-row card — Linear/Raycast style hairline inset card */}
                   <ActivePill active={selectionMode ? isChecked : isSelected} />
 

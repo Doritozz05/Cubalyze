@@ -609,7 +609,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl bg-surface/98 p-6 overflow-y-auto"
+                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl border border-line bg-surface p-6 overflow-y-auto"
                   >
                     <div className="flex flex-col items-center gap-2">
                       <Trophy className="size-10 text-caution" />
@@ -627,7 +627,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                           return (
                             <div
                               key={split.phaseId}
-                              className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2"
+                              className="flex items-center gap-3 rounded-lg border border-line/40 bg-surface-2/60 px-3 py-2"
                             >
                               <span className="text-[0.62rem] font-medium text-ink-2 w-20 shrink-0">
                                 {split.phaseName}

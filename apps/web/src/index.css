@@ -28,6 +28,17 @@
 }
 
 /* ───────────────────────────────────────────────────────────────────────
+   App font stacks. Self-hosted first (identical on every device), system
+   fallbacks preserved for instant first paint and offline safety.
+   The Theme Studio typography tab overrides --app-font-sans/mono inline
+   from the registry in theme/fonts.ts ('system' restores legacy stacks).
+   ─────────────────────────────────────────────────────────────────────── */
+:root {
+  --app-font-sans: 'Open Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-mono: 'Cascadia Code', ui-monospace, 'Source Code Pro', Menlo, Consolas, monospace;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
    Speedcubing timer — pale, utilitarian, flat palette.
    Bone-white canvas, carbon ink, muted semantic accents for timer states.
    ─────────────────────────────────────────────────────────────────────── */
@@ -35,8 +46,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -84,8 +95,6 @@
   --color-ink-3: var(--ink-3);
   --color-line: var(--line);
   --color-line-2: var(--line-2);
-
-  --color-accent-emerald: var(--accent-emerald);
 
   /* Phase / training accent dots — the "rainbow" used to colour-code
      exercises, calendar tasks and progress markers. Kept as first-class
@@ -162,11 +171,12 @@
   /* Custom palette (light). */
   --canvas: #f8f9fa;
   --surface: #ffffff;
+  --surface-solid: #ffffff;
   --surface-2: #f1f3f5;
-  /* Solid (non-glass) surface-2 — NEVER remapped by the liquid-glass
-     engine, so small identity tiles (sidebar CubeMark frame) stay dry. */
+  /* Solid (non-glass) surface and line tokens — NEVER remapped by the liquid-glass
+     engine, so solid components like identity tiles and random-puzzle pill stay dry. */
   --surface-2-solid: #f1f3f5;
-  --accent-emerald: #047857;
+  --line-solid: #e9ecef;
   /* Phase dots (light) — identical hex values to the previous Tailwind-400
      classes so colours don't change, they're just tokenised now. */
   --phase-blue: #60a5fa;
@@ -278,17 +288,18 @@
      comes from the lighter backplates plus the existing subtle shadows. */
   --canvas: #14171b;
   --surface: #1b1f23;
+  --surface-solid: #1b1f23;
   --surface-2: #24292e;
   --surface-2-solid: #24292e;
   --card: #1f2429;
   --popover: #22282e;
-  --accent-emerald: #34d399;
   --ink: #e9ecef;
   --ink-2: #adb5bd;
   /* ink-3 brightened (gray-500 → #9099a3) so secondary text clears 4.5:1
      against both the darker canvas and the lighter surfaces. */
   --ink-3: #9099a3;
   --line: #2a2f35;
+  --line-solid: #2a2f35;
   --line-2: #343a40;
   --ready: #6abf8a;
   --ready-soft: rgba(106, 191, 138, 0.14);
@@ -332,19 +343,20 @@
    Built for easy customization by future theme editors.
    ─────────────────────────────────────────────────────────────────────── */
 html.liquid-glass {
-  --surface: var(--glass-bg);
-  --surface-2: var(--glass-bg-subtle);
-  --card: var(--glass-bg);
-  --popover: var(--glass-bg);
-  --sidebar: var(--glass-bg);
+  --surface: var(--glass-bg) !important;
+  --surface-2: var(--glass-bg-subtle) !important;
+  --card: var(--glass-bg) !important;
+  --popover: var(--glass-bg) !important;
+  --sidebar: var(--glass-bg) !important;
   --sidebar-accent: rgba(0, 0, 0, 0.08);
   --sidebar-accent-foreground: #212529;
-  --line: var(--glass-border);
+  --line: var(--glass-border) !important;
   /* Sidebar separators + the profile frame (border/ring-sidebar-border)
      follow the SAME glass hairline as every other panel (dock, 3D panel,
      widgets): the solid light/dark gray tokens read as white in light
      mode and near-black in dark mode on translucent glass. */
-  --sidebar-border: var(--glass-border);
+  --sidebar-border: var(--glass-border) !important;
+  --border: var(--glass-border) !important;
   /* Buttons & chips: secondary / muted / accent (ghost hovers, selected
      chips, steppers) inherit the frosted chip token so interactive fills
      tint with the backplate instead of rendering solid white/gray. */
@@ -370,17 +382,20 @@ html.liquid-glass.dark {
    for text usages only (backgrounds keep the glass remap). */
 html.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
-  color: #ffffff !important;
+  color: var(--surface-solid, #ffffff) !important;
 }
+
 html.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
-  color: #f1f3f5 !important;
+  color: var(--surface-2, #f1f3f5) !important;
 }
+
 html.dark.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.dark.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
-  color: #1b1f23 !important;
+  color: var(--surface-solid, #1b1f23) !important;
 }
+
 html.dark.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
-  color: #24292e !important;
+  color: var(--surface-2, #24292e) !important;
 }
 
 html.liquid-glass [data-slot="card"],
@@ -392,6 +407,7 @@ html.liquid-glass [data-slot="popover-content"],
 html.liquid-glass [data-slot="dropdown-menu-content"],
 html.liquid-glass [data-slot="context-menu-content"],
 html.liquid-glass [data-slot="select-content"],
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]),
 html.liquid-glass [data-slot="dock"],
 html.liquid-glass [data-slot="mobile-tab-bar"],
 html.liquid-glass [data-slot="sidebar"],
@@ -402,24 +418,61 @@ html.liquid-glass [data-sonner-toast],
 html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
-html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] {
+html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass header:not([data-slot="app-header"])[class*="bg-surface"],
+html.liquid-glass header:not([data-slot="app-header"])[class*="bg-surface-2"],
+html.liquid-glass nav[class*="bg-surface"][class*="border"],
+html.liquid-glass nav[class*="bg-surface-2"][class*="border"],
+html.liquid-glass div[class*="bg-surface"][class*="border-b"],
+html.liquid-glass div[class*="bg-surface"][class*="border-t"],
+html.liquid-glass div[class*="bg-surface"][class*="border-l"],
+html.liquid-glass div[class*="bg-surface"][class*="border-r"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-b"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-t"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-l"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-r"],
+html.liquid-glass aside[class*="bg-surface"][class*="border-l"],
+html.liquid-glass aside[class*="bg-surface"][class*="border-r"],
+html.liquid-glass button[data-glass-panel],
+html.liquid-glass button[data-slot="card"],
+html.liquid-glass a[data-glass-panel],
+html.liquid-glass a[data-slot="card"] {
   background-color: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
 }
 
+/* ── Glass hairline dividers, borders, and layout separators ───────────
+   All structural division lines (LeftSidebar dividers, Reconstructions
+   split columns, table row dividers, layout panes, dialog strips, and
+   border-line utilities) adopt the translucent glass hairline by law. */
+html.liquid-glass [class*="border-line"],
+html.liquid-glass [class*="border-sidebar-border"],
+html.liquid-glass [class*="divide-line"],
+html.liquid-glass [class*="divide-sidebar-border"],
+html.liquid-glass hr[class*="border-line"],
+html.liquid-glass hr[class*="border-sidebar-border"] {
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass div[class*="bg-line"]:not(.grid) {
+  background-color: var(--glass-border) !important;
+}
+
 /* Replay split/detail columns (stats detail mode, reconstruction split):
    the column must be a normal glass panel on mobile (<768px) but 100%
-   transparent on desktop. The rules above match class-attribute
-   SUBSTRINGS, so responsive variants like `max-lg:bg-surface` still
-   contain "bg-surface" and the panel is re-frosted at every size — a
-   plain `lg:bg-transparent` can never win (lower specificity, both
-   !important). This override re-declares the same properties with the
-   extra [data-replay-flat] attribute (higher specificity) inside the
-   desktop breakpoint only. Border-color is left alone so the intentional
-   `lg:border-r` divider keeps its glass hairline. */
+   transparent on desktop — the cube floats on the page and ONLY the
+   ReplaySection's own controls panel (flat mode) gets the glass. The
+   rules above match class-attribute SUBSTRINGS, so responsive variants
+   like `max-lg:bg-surface` still contain "bg-surface" and the panel is
+   re-frosted at every size — a plain `lg:bg-transparent` can never win
+   (lower specificity, both !important). This override re-declares the
+   same properties with the extra [data-replay-flat] attribute (higher
+   specificity) inside the desktop breakpoint only. Border-color is left
+   alone so the intentional `lg:border-r` divider keeps its glass hairline. */
 @media (min-width: 768px) {
+
   html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-flat],
   html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"][data-replay-flat] {
     background-color: transparent !important;
@@ -427,11 +480,28 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+
+  /* Replay controls panel (flat/split layouts): must read as a FULL
+     base-glass surface like every other panel — NOT the half-power
+     nested glass. The column's mobile-card classes (max-lg:bg-surface…)
+     keep matching the nested-panel ancestor pattern even though the rule
+     above forces the column transparent, so the controls panel would
+     drop to --glass-nested-bg (~33% alpha + half blur) and its text
+     washes out against the page. This override restores the full
+     --glass-bg + full blur, scoped to [data-replay-controls] only
+     (mirrors the [data-studio-device] override above); specificity
+     (0,9,3) outranks the nested rule (0,7,3). */
+  html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-flat] div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-controls] {
+    background-color: var(--glass-bg) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+    border-color: var(--glass-border) !important;
+  }
 }
 
 /* Header: only mobile touch bar gets glass; desktop floats the dock without a background */
 @media (max-width: 1023px) {
-  html.liquid-glass header {
+  html.liquid-glass header[data-slot="app-header"] {
     background-color: var(--glass-bg) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
@@ -440,7 +510,7 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
 }
 
 @media (min-width: 1024px) {
-  html.liquid-glass header {
+  html.liquid-glass header[data-slot="app-header"] {
     background-color: transparent !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -490,32 +560,115 @@ html.liquid-glass textarea:focus-visible {
    survives the glass. The dock is the one DESIGNED exception: its buttons
    are flat icon-only pills (see block below), so they are never given a
    persistent chip fill. */
-html.liquid-glass button[class*="bg-surface"],
-html.liquid-glass button[class*="bg-card"],
-html.liquid-glass button[class*="bg-white"],
-html.liquid-glass button[class*="bg-background"],
-html.liquid-glass button[class*="bg-canvas"],
-html.liquid-glass [data-slot="button"][class*="bg-surface"],
-html.liquid-glass [data-slot="button"][class*="bg-card"],
-html.liquid-glass [data-slot="button"][class*="bg-white"],
-html.liquid-glass [data-slot="button"][class*="bg-background"],
-html.liquid-glass [data-slot="button"][class*="bg-canvas"] {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"] {
   background-color: var(--glass-btn-bg) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass button[class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-canvas"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"]:hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Dropdown Select Trigger: frosted glass with backdrop blur ───────────
+   SelectTrigger renders a <button data-slot="select-trigger">. Unlike
+   action buttons inside panels, select triggers act as dropdown pickers
+   (e.g. Insights session & cube selectors, Dock puzzle selector).
+   They carry the full liquid-glass backdrop blur and frosted backplate,
+   harmonizing with the open select-content menu and surrounding panels. */
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]) {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* Nested select triggers (inside a glass card/dialog/sheet): half-blur */
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]) {
+  background-color: var(--glass-nested-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+}
+
+/* ── Puzzle Select Trigger: Liquid Glass DISABLED ──
+   The puzzle selector remains flat / text-only — no frosted backdrop blur or
+   glass fill. data-no-glass on the component keeps the generic glass engine
+   from applying glass-bg + blur. The chip and hover styles below ensure a
+   subtle hover affordance at rest. */
+
+/* ── Card buttons & standalone panel triggers: frosted glass with backdrop blur ──
+   Interactive cards and floating trigger bars render as <button data-slot="card">
+   or <button data-glass-panel> (e.g. CaseCard in Algorithm case grid,
+   MobileMethodNavigator trigger bar, quiz options in Algorithm Recognize,
+   case cards in Algorithm Drill, and TouchAside trigger).
+   Unlike small nested action buttons, these stand alone on the canvas or grid
+   and carry the full liquid-glass frosted backdrop blur. */
+html.liquid-glass button[data-glass-panel],
+html.liquid-glass button[data-slot="card"],
+html.liquid-glass a[data-glass-panel],
+html.liquid-glass a[data-slot="card"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[data-glass-panel]:hover:not(:disabled),
+html.liquid-glass button[data-slot="card"]:hover:not(:disabled),
+html.liquid-glass a[data-glass-panel]:hover,
+html.liquid-glass a[data-slot="card"]:hover {
+  background-color: var(--glass-bg-elevated, var(--glass-btn-bg-hover)) !important;
+  border-color: var(--glass-border-hover, var(--glass-border)) !important;
+}
+
+html.liquid-glass button[data-glass-panel][class*="bg-surface-2"],
+html.liquid-glass button[data-slot="card"][class*="bg-surface-2"],
+html.liquid-glass a[data-glass-panel][class*="bg-surface-2"],
+html.liquid-glass a[data-slot="card"][class*="bg-surface-2"] {
+  background-color: var(--glass-bg-elevated, var(--glass-btn-bg-hover)) !important;
+  border-color: var(--glass-border-hover, var(--glass-border)) !important;
 }
 
 /* ── Flat-button exceptions: dock pills, menus & sidebar tabs ────────────
@@ -532,15 +685,32 @@ html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) 
    fill inside those zones; the engine's hover rule above still
    supplies the raised hover chip, and the active tab pills (bare
    bg-surface divs) stay. */
-html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
+/* Ghost / icon-only buttons with hover-only surface fill: remain transparent at rest across the whole app */
+html.liquid-glass button[class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]):not([data-slot="select-trigger"]),
+html.liquid-glass button[class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]):not([data-slot="select-trigger"]),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]) {
+  background-color: transparent !important;
+}
+
+html.liquid-glass button[class*="hover:bg-surface"]:hover:not(:disabled),
+html.liquid-glass button[class*="hover:bg-surface-2"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+}
+
+html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-piece="puzzle"]):not([data-no-glass]),
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="algorithms-nav"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-piece="puzzle"]),
+html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface-2"] {
   background-color: transparent !important;
 }
 
@@ -622,7 +792,7 @@ html.liquid-glass .grid[class*="bg-line"] {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
 }
 
-html.liquid-glass .grid[class*="bg-line"] > div {
+html.liquid-glass .grid[class*="bg-line"]>div {
   background-color: var(--glass-bg) !important;
 }
 
@@ -641,7 +811,9 @@ html.liquid-glass [data-slot="drawer-content"] nav[class*="bg-canvas"],
 html.liquid-glass [data-slot="dialog-content"] nav,
 html.liquid-glass [data-slot="drawer-content"] nav,
 html.liquid-glass [data-slot="dialog-content"] [data-modal-header],
-html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
+html.liquid-glass [data-slot="drawer-content"] [data-modal-header],
+html.liquid-glass [data-slot="dialog-content"] [data-modal-footer],
+html.liquid-glass [data-slot="drawer-content"] [data-modal-footer] {
   background-color: var(--glass-bg-subtle) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
   backdrop-filter: blur(var(--glass-blur)) !important;
@@ -649,8 +821,110 @@ html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
 
 html.liquid-glass [data-slot="dialog-content"] div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass [data-slot="drawer-content"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
-  background-color: var(--glass-bg-subtle) !important;
+  background-color: var(--glass-nested-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
 }
+
+/* ── Studio device preview: base glass, not nested ────────────────
+   The studio modal itself matches the nested-panel ancestor pattern, so
+   every panel inside the simulated device wrongly got half-power nested
+   glass. In the real timer view the bottom strip sits on plain canvas
+   and receives full base glass — this override restores that fidelity,
+   scoped to [data-studio-device] only (the studio's own cards keep
+   their correct nested treatment). Specificity (0,7,4) outranks both
+   the nested rule (0,7,3) and the dialog rule above. */
+html.liquid-glass[data-liquid-glass="true"] body [data-slot="dialog-content"] [data-studio-device] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass[data-liquid-glass="true"] body [data-slot="dialog-content"] [data-studio-device] div[class*="bg-surface-2"][class*="border"][class*="rounded"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Badges & indicator tags: translucent frosted chips */
+html.liquid-glass [data-slot="badge"] {
+  background-color: var(--glass-btn-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Floating overlay controls (portaled or canvas-floating, not nested inside a panel):
+   full glass WITH blur. The button rule deliberately omits blur to avoid
+   milky blur-over-blur inside panels — but a floating control has no
+   blurred panel behind it, so without blur the content shines through
+   sharp and the control reads as broken. */
+html.liquid-glass button[data-glass-float],
+html.liquid-glass [data-glass-float] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[data-glass-float]:hover:not(:disabled),
+html.liquid-glass [data-glass-float]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Range input slider tracks */
+html.liquid-glass input[type="range"] {
+  background-color: var(--glass-btn-bg) !important;
+}
+
+/* ── Exclude Random Puzzle Selector from Liquid Glass ───────────────────
+   The slot-machine reel in the dock needs crisp, opaque rendering so the
+   dice, numbers, and reel animations stay 100% sharp and readable.
+   The button wrapper itself must also keep its original transparent border
+   and background — no glass hairline, no frosted chip fill.
+   Specificity note: glass button selectors are (0,3,1); we match that with
+   [data-slot="random-puzzle"][data-slot="random-puzzle"] > button to ensure
+   our !important wins in cascade order when specificity is equal. */
+html.liquid-glass [data-slot="random-puzzle"],
+html.liquid-glass [data-slot="random-puzzle"] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.liquid-glass [data-slot="random-puzzle"] button {
+  background-color: var(--surface-solid, #ffffff) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
+html.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled) {
+  background-color: var(--surface-2-solid, #f1f3f5) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
+html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
+  background-color: var(--surface-solid, #ffffff) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] button,
+.dark html.liquid-glass [data-slot="random-puzzle"] button,
+html.liquid-glass.dark [data-slot="random-puzzle"] button {
+  background-color: var(--surface-solid, #1b1f23) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled),
+.dark html.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled),
+html.liquid-glass.dark [data-slot="random-puzzle"] button:hover:not(:disabled) {
+  background-color: var(--surface-2-solid, #24292e) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
+.dark html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
+html.liquid-glass.dark [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
+  background-color: var(--surface-solid, #1b1f23) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
+}
+
 
 /* Liquid glass scrollbars — translucent frosted pills with refraction border */
 html.liquid-glass * {
@@ -684,12 +958,14 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     background-color: var(--background);
     color: var(--foreground);
     height: 100%;
     overflow: hidden;
   }
+
   body {
     @apply overflow-hidden bg-background text-foreground;
     height: 100%;
@@ -698,6 +974,8 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* No synthetic bold/italic: every OS fakes them differently. */
+    font-synthesis: none;
     /* Kill the grey flash on tap in mobile Chrome/Android and let the
        app's own pressed states (not the UA highlight) own the feedback.
        Desktop is unaffected (no touch highlight is ever painted). */
@@ -708,12 +986,25 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
     cursor: var(--cursor-default), auto;
   }
 
-  /* Tabular, monospaced figures for any element opted in via .nums. */
+  /* Tabular, monospaced figures for any element opted in via .nums.
+     Default keeps each typeface's native zero (e.g. Cascadia's dotted
+     zero); html[data-zero="slashed"] enables the `zero` OpenType feature. */
   .nums {
     font-family: var(--font-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1, "zero" 1;
+    font-feature-settings: "tnum" 1;
     letter-spacing: -0.01em;
+  }
+
+  html[data-zero="slashed"] .nums {
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  /* IBM Plex Mono answers slashed zero via `ss03`, not `zero` (per IBM).
+     Scoped behind its own attribute so other families never see ss03. */
+  html[data-zero="slashed"][data-zero-feature="ss03"] .nums {
+    font-feature-settings: "tnum" 1, "ss03" 1;
   }
 
   /* Selection — subtle, on-brand (theme-aware via ink-3). */
@@ -730,20 +1021,25 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
     scrollbar-width: thin;
     scrollbar-color: var(--line-2) transparent;
   }
+
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+
   *::-webkit-scrollbar-thumb {
     background: var(--line-2);
     border-radius: 9999px;
   }
+
   *::-webkit-scrollbar-thumb:hover {
     background: var(--ink-3);
   }
+
   /* Radix ScrollArea renders its own custom scrollbar element — keep it
      hidden (its viewport still scrolls; native thin bars cover the rest). */
   [data-slot="scroll-area-scrollbar"] {
@@ -758,6 +1054,7 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
@@ -781,21 +1078,62 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   --cursor-resize-e: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACyklEQVR4nL1VTWgTQRT+Jk2y+YEgheQYLLQBjyW0IeQYQktzK6EBfw7FizkIQlyTpb0ZsgdbpYgHL57VgBgbUkvF0FSIxYNCepIgEaGXEAPWSJbN7srE3bCtTcyK9cFjd2d2vm/ee9/MI9lsFmdppjNFx38gMP8rII7jiP6b53mFPsmoNeA4jjidzrl2u/0KgKQB0HG3231HEISrNCPj4+OFer1+DUCb53nZSIrMgiDkZmdnlwDYdTs2HR0dXd/f3z93cHDgajQaS7u7uwEAzt6kgfDHCCH2Wq32aHFx8QoAB8dxdL1ZkqSxiYkJeL1e2O12MAxzwRCBar0db25uMuVyeSMWi12mkVBinDCLxeLU6mtYRX6/H1tbW0ypVNqIx+MXaSSn/EYGquikGlSjY/3xmZkZFItFZmFh4f7y8rIFQ+xYBGtrazcYhukQQuQTLhFC2t1ut5+OQCCAQqHA5PP5e5IkDcxEf0ItGLu3t2dVFAWD3Gaz9RcHg0FaE6vD4RgpgjFZlh0ejwdGLBQKYX19nYxCYDKZTOLh4aEhgmq1itXVVWUUAtnn8z2MRCIiIQSDvNPpHAMPh8PdZrM5MAK9iqRKpfIAwHsA5wFYdXM9FVmt1tvapjRwlmV3VlZW5gZJXj9Iw2wCeAPgGYCczp8CeK7QKuvAk8nkNsuyr4elsB+BenmJHMc19JpXjX7bNPBoNNoDT6VS2wA+aMSn2W8HTSVSTjl8Mn2fn58XWZZ9mUqldgBUAHzBEDN6VYiJROJxOp3eVsE/AvhuNpulVqsFQRCoE5fLJf4NgRKJRG5lMpkXAN5q4AC6k5OTOa/XK9NDOD09/XlqauorFc3IBPyvtEnFYvEJgHcaOG0olKBaraZFUbykKMrNcrl8F8AnAD/oWiMtswugpTrtaL2aqLWhwiipNyvd+Tfa0ejkyC3zT6YKQVOforXUn7gbLaufxATmAAAAAElFTkSuQmCC') 19 12;
 }
 
-.cursor-default { cursor: var(--cursor-default), auto; }
-.cursor-pointer { cursor: var(--cursor-pointer), pointer; }
-.cursor-grab { cursor: var(--cursor-grab), grab; }
+.cursor-default {
+  cursor: var(--cursor-default), auto;
+}
+
+.cursor-pointer {
+  cursor: var(--cursor-pointer), pointer;
+}
+
+.cursor-grab {
+  cursor: var(--cursor-grab), grab;
+}
+
 .cursor-grabbing,
-.active\:cursor-grabbing:active { cursor: var(--cursor-grabbing), grabbing; }
-.cursor-text { cursor: var(--cursor-text), text; }
-.cursor-not-allowed { cursor: var(--cursor-not-allowed), not-allowed; }
-.cursor-move { cursor: var(--cursor-move), move; }
-.cursor-help { cursor: var(--cursor-help), help; }
-.cursor-w-resize { cursor: var(--cursor-resize-w), w-resize; }
-.cursor-e-resize { cursor: var(--cursor-resize-e), e-resize; }
-.cursor-n-resize { cursor: var(--cursor-resize-n), n-resize; }
-.cursor-s-resize { cursor: var(--cursor-resize-s), s-resize; }
-.cursor-col-resize { cursor: var(--cursor-resize-w), col-resize; }
-.cursor-row-resize { cursor: var(--cursor-resize-n), row-resize; }
+.active\:cursor-grabbing:active {
+  cursor: var(--cursor-grabbing), grabbing;
+}
+
+.cursor-text {
+  cursor: var(--cursor-text), text;
+}
+
+.cursor-not-allowed {
+  cursor: var(--cursor-not-allowed), not-allowed;
+}
+
+.cursor-move {
+  cursor: var(--cursor-move), move;
+}
+
+.cursor-help {
+  cursor: var(--cursor-help), help;
+}
+
+.cursor-w-resize {
+  cursor: var(--cursor-resize-w), w-resize;
+}
+
+.cursor-e-resize {
+  cursor: var(--cursor-resize-e), e-resize;
+}
+
+.cursor-n-resize {
+  cursor: var(--cursor-resize-n), n-resize;
+}
+
+.cursor-s-resize {
+  cursor: var(--cursor-resize-s), s-resize;
+}
+
+.cursor-col-resize {
+  cursor: var(--cursor-resize-w), col-resize;
+}
+
+.cursor-row-resize {
+  cursor: var(--cursor-resize-n), row-resize;
+}
 
 /* While a drag is in progress, force the grabbing cursor everywhere.
    The CSS cursor follows the element UNDER the pointer — not the element
@@ -842,6 +1180,7 @@ input[type="image"],
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -862,12 +1201,14 @@ input[type="image"],
    button-based draggables (e.g. the floating 3D cube launcher). */
 @layer base {
   @media (hover: none) {
+
     button:active,
     [role="button"]:active,
     a:active,
     summary:active {
       filter: brightness(0.94);
     }
+
     button,
     [role="button"],
     a,
@@ -885,6 +1226,7 @@ input[type="image"],
      prevent double-tap-to-zoom delays on buttons. Desktop: untouched. Also in
      @layer base so touch-none/touch-manipulation utilities still win. */
   @media (max-width: 767px) {
+
     html,
     body {
       height: 100%;
@@ -894,24 +1236,30 @@ input[type="image"],
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
+
     input,
     textarea,
     [contenteditable="true"] {
       user-select: text;
       -webkit-user-select: text;
     }
+
     button,
     [role="button"],
     a {
       touch-action: manipulation;
     }
+
     /* Hide scrollbars on touch: mobile scrolling is gesture-driven and native
        overlays/scroll affordances replace the visible thumbs — the styled 6px
        bars above would only clutter the stage. Scrolling still works. */
     * {
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* legacy Edge/IE */
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* legacy Edge/IE */
     }
+
     *::-webkit-scrollbar {
       display: none;
     }
@@ -926,6 +1274,7 @@ input[type="image"],
     opacity: 0;
     scale: 0.94;
   }
+
   100% {
     opacity: 1;
     scale: 1;
@@ -944,9 +1293,11 @@ input[type="image"],
   .animate-widget-mount {
     animation: none;
   }
+
   .animate-pulse {
     animation: none;
   }
+
   * {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
@@ -1008,53 +1359,141 @@ input[type="image"],
 }
 
 @keyframes cf-sq1 {
-  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  0% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  8.333% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  100% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq2 {
-  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  0% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  8.333% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  16.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  25.00% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  83.33% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  91.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  100% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq3 {
-  0%, 100% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  16.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  25.00% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  33.33% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  41.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  66.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  75.00% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  83.33% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  91.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq4 {
-  0%, 100% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  33.33% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  41.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  50.00% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  58.33% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq5 {
-  0%, 100% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  50.00% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  58.33% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  66.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  75.00% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 /* ── In-App Fullscreen Replay Mode (Hide Chrome & Sidebar) ────────────────── */
 body.replay-fullscreen-active aside,
 body.replay-fullscreen-active nav,
-body.replay-fullscreen-active header {
+body.replay-fullscreen-active header[data-slot="app-header"] {
   display: none !important;
 }
 
@@ -1068,9 +1507,11 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     height: 0;
     opacity: 0.4;
   }
+
   30% {
     opacity: 1;
   }
+
   100% {
     height: var(--radix-accordion-content-height);
     opacity: 1;
@@ -1082,9 +1523,11 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     height: var(--radix-accordion-content-height);
     opacity: 1;
   }
+
   70% {
     opacity: 0.3;
   }
+
   100% {
     height: 0;
     opacity: 0;
@@ -1112,9 +1555,9 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     opacity: 0;
     transform: translate3d(0, -10px, 0);
   }
+
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
-

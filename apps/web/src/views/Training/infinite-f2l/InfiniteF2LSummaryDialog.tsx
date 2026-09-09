@@ -170,7 +170,7 @@ export function InfiniteF2LSummaryDialog({
     return (
       <Drawer open={open} onOpenChange={() => onClose()}>
         <DrawerContent className="max-h-[90vh] bg-surface">
-          <DrawerHeader className="border-b border-line px-6 py-4">
+          <DrawerHeader className="border-b border-line px-6 py-4" data-modal-header>
             <DrawerTitle className="flex items-center gap-2 text-base font-semibold text-ink">
               <Trophy className="size-5 text-amber-500" />
               {t("infiniteF2l.summary.title")}
@@ -187,8 +187,8 @@ export function InfiniteF2LSummaryDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-md border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl">
-        <DialogHeader className="border-b border-line px-6 py-4">
+      <DialogContent className="max-w-md border-line bg-surface p-0 overflow-hidden shadow-2xl">
+        <DialogHeader className="border-b border-line px-6 py-4" data-modal-header>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             <Trophy className="size-5 text-amber-500" />
             {t("infiniteF2l.summary.title")}

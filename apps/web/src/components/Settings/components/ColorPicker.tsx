@@ -1,9 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import i18n from "@/i18n";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Check, Pipette, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  hexToHsv,
+  hsvToHex,
+  hsvToRgb,
+  normalizeHex,
+  rgbToHex,
+  type HSV,
+} from "./colorUtils";
+import {
+  MAX_FAVORITE_COLORS,
+  removeFavoriteColor,
+  saveFavoriteColor,
+  useFavoriteColors,
+} from "./useFavoriteColors";
+import { SvArea } from "./SvArea";
+import { HueSlider, RgbSliders } from "./ColorSliders";
+import { HexField } from "./HexField";
+import { SwatchGrid } from "./SwatchGrid";
+import "./colorPicker.css";
 
 export interface ColorPickerProps {
   value: string;
@@ -22,111 +43,322 @@ const PRESET_COLORS = [
 ];
 
 /**
- * Compact, minimal color picker with a swatch trigger and a popover grid.
- * Designed for the Custom cube skin settings panel.
+ * Advanced color picker (Radix popover shell): SV area + hue + RGB + hex +
+ * native OS picker + shared favorites.
+ *
+ * The popover is portalled with collision handling, so it never clips inside
+ * the scrollable studio panel and flips when there is no room below.
+ *
+ * Performance contract: dragging/sliding only touches local draft state
+ * (one small popover re-renders at most once per frame via rAF). The parent
+ * store is written exactly once per gesture — on release, on Enter/blur, or
+ * on swatch pick — so theme CSS, 3D materials and localStorage persist run
+ * once instead of ~100 times per drag.
  */
+
+let openPickerCount = 0;
+
+/** True while any ColorPicker popover is open (dialogs use it for Escape). */
+export function isColorPickerOpen(): boolean {
+  return openPickerCount > 0;
+}
 export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
+  const { t } = useTranslation("settings");
   const [open, setOpen] = useState(false);
-  const [hexInput, setHexInput] = useState(value);
-  const ref = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState<HSV>(() => hexToHsv(value));
+  const [hoverHex, setHoverHex] = useState<string | null>(null);
+  const nativeInputRef = useRef<HTMLInputElement>(null);
+  const favorites = useFavoriteColors();
 
+  const draftHex = useMemo(() => hsvToHex(draft.h, draft.s, draft.v), [draft]);
+  const draftRgb = useMemo(() => hsvToRgb(draft.h, draft.s, draft.v), [draft]);
+  const hueBase = useMemo(() => hsvToHex(draft.h, 100, 100), [draft.h]);
+  const footerHex = hoverHex ?? draftHex;
+  const currentIsFavorite = favorites.includes(draftHex);
+
+  // Follow external changes while closed (parent is source of truth).
   useEffect(() => {
-    setHexInput(value);
-  }, [value]);
+    if (!open) {
+      const next = hexToHsv(value);
+      draftRef.current = next;
+      setDraft(next);
+    }
+  }, [value, open]);
 
-  // Close on click outside
+  // Track open popovers globally so parent dialogs can keep their own
+  // Escape handling while a picker is open (Radix closes the popover;
+  // the dialog must not close underneath it).
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    openPickerCount += 1;
+    return () => {
+      openPickerCount = Math.max(0, openPickerCount - 1);
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  }, [open ]);
 
-  const handleHexSubmit = useCallback(() => {
-    const hex = hexInput.startsWith("#") ? hexInput : `#${hexInput}`;
-    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-      onChange(hex);
-      setOpen(false);
-    }
-  }, [hexInput, onChange]);
+  /** The single store write per gesture — reads the latest draft via ref,
+      so state updaters stay pure (StrictMode-safe). */
+  const draftRef = useRef(draft);
+  const applyPreview = useCallback((next: HSV) => {
+    draftRef.current = next;
+    setDraft(next);
+  }, []);
+
+  const commitDraftNow = useCallback(() => {
+    const next = draftRef.current;
+    onChange(hsvToHex(next.h, next.s, next.v));
+  }, [onChange]);
+
+  const commitHex = useCallback(
+    (hex: string, close = false) => {
+      const normalized = normalizeHex(hex);
+      if (!normalized) return;
+      const next = hexToHsv(normalized);
+      draftRef.current = next;
+      setDraft(next);
+      onChange(normalized);
+      if (close) setOpen(false);
+    },
+    [onChange],
+  );
+
+  const previewSv = useCallback((s: number, v: number) => {
+    const prev = draftRef.current;
+    if (prev.s === s && prev.v === v) return;
+    applyPreview({ ...prev, s, v });
+  }, [applyPreview]);
+
+  const previewHue = useCallback((h: number) => {
+    const prev = draftRef.current;
+    if (prev.h === h) return;
+    applyPreview({ ...prev, h });
+  }, [applyPreview]);
+
+  const previewChannel = useCallback((channel: "r" | "g" | "b", val: number) => {
+    const prev = draftRef.current;
+    const rgb = hsvToRgb(prev.h, prev.s, prev.v);
+    const nextRgb = {
+      r: channel === "r" ? val : rgb.r,
+      g: channel === "g" ? val : rgb.g,
+      b: channel === "b" ? val : rgb.b,
+    };
+    const hex = rgbToHex(nextRgb.r, nextRgb.g, nextRgb.b);
+    const next = hexToHsv(hex);
+    if (prev.h === next.h && prev.s === next.s && prev.v === next.v) return;
+    applyPreview(next);
+  }, [applyPreview]);
+
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (next) {
+        const synced = hexToHsv(value);
+        draftRef.current = synced;
+        setDraft(synced);
+        setHoverHex(null);
+      }
+      setOpen(next);
+    },
+    [value],
+  );
+
+  const selectAndClose = useCallback(
+    (hex: string) => commitHex(hex, true),
+    [commitHex],
+  );
+
+  const pickNativeLabel = t("appearance.colorPicker.pickNative", "Selector del sistema");
+  const saveLabel = t("appearance.colorPicker.saveFavorite", "Guardar en favoritos");
+  const removeLabel = t("appearance.colorPicker.removeFavorite", "Quitar de favoritos");
 
   return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
-      >
-        <div
-          className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
-          style={{ backgroundColor: value }}
-        />
-        <div className="text-left min-w-0">
-          <span className="block text-[0.75rem] font-medium text-ink leading-tight">
-            {label}
-          </span>
-          <span className="block text-[0.62rem] text-ink-3 font-mono">
-            {value}
-          </span>
-        </div>
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border border-line bg-surface p-3 shadow-xl">
-          {/* Header with hex input */}
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="size-6 shrink-0 rounded-md border border-line"
-              style={{ backgroundColor: value }}
-            />
-            <input
-              type="text"
-              value={hexInput}
-              onChange={(e) => setHexInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleHexSubmit();
-                if (e.key === "Escape") setOpen(false);
-              }}
-              className="flex-1 rounded-md border border-line bg-surface-2/50 px-2 py-1 text-[0.72rem] font-mono text-ink placeholder:text-ink-3/40 focus:outline-none focus:border-ink/30"
-              placeholder="#1abe57"
-              autoFocus
-            />
-            <button
-              onClick={handleHexSubmit}
-              className="rounded-md bg-ink px-2.5 py-1 text-[0.65rem] font-medium text-surface hover:bg-ink/90 transition-colors"
-            >
-              {i18n.t("common:ok")}
-            </button>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-label={label}
+          className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
+        >
+          <div
+            className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
+            style={{ backgroundColor: value }}
+          />
+          <div className="text-left min-w-0">
+            <span className="block text-[0.75rem] font-medium text-ink leading-tight">
+              {label}
+            </span>
+            <span className="block text-[0.62rem] text-ink-3 font-mono">
+              {value}
+            </span>
           </div>
+        </button>
+      </DialogTrigger>
 
-          {/* Preset grid */}
-          <div className="grid grid-cols-6 gap-1.5">
-            {PRESET_COLORS.map((color) => (
-              <Tooltip key={color}>
+      <DialogContent
+        aria-label={label}
+        className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-xs overflow-y-auto overscroll-contain p-4 sm:max-w-xl sm:p-5"
+      >
+        <DialogTitle className="flex items-center gap-2 text-xs font-semibold text-ink">
+          <span
+            aria-hidden="true"
+            className="size-5 shrink-0 rounded-md border border-line"
+            style={{ backgroundColor: footerHex }}
+          />
+          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <span className="shrink-0 font-mono font-normal text-ink-3">{footerHex}</span>
+        </DialogTitle>
+
+        {/* 2-column grid for tablets and PC (sm:grid-cols-2) */}
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+          {/* Column 1: Visual picker (SV plane + Hue + Hex row) */}
+          <div className="flex flex-col gap-2.5">
+            <SvArea
+              hue={draft.h}
+              saturation={draft.s}
+              value={draft.v}
+              hueBase={hueBase}
+              draftHex={draftHex}
+              onPreview={previewSv}
+              onCommit={commitDraftNow}
+            />
+
+            <div className="flex items-center">
+              <HueSlider hue={draft.h} onPreview={previewHue} onCommit={commitDraftNow} />
+            </div>
+
+            {/* Hex + native + save */}
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <div
+                aria-hidden="true"
+                onClick={() => nativeInputRef.current?.click()}
+                className="size-7 shrink-0 cursor-pointer rounded-md border border-line shadow-xs transition-transform hover:scale-105"
+                style={{ backgroundColor: draftHex }}
+              />
+              <input
+                ref={nativeInputRef}
+                type="color"
+                value={draftHex}
+                onChange={(e) => commitHex(e.target.value)}
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <HexField draftHex={draftHex} onCommit={commitHex} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => nativeInputRef.current?.click()}
+                    aria-label={pickNativeLabel}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface-2/50 text-ink-3 transition-colors outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/50"
+                  >
+                    <Pipette className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{pickNativeLabel}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={() => {
-                      onChange(color);
-                      setOpen(false);
+                      if (currentIsFavorite) removeFavoriteColor(draftHex);
+                      else saveFavoriteColor(draftHex);
                     }}
+                    aria-label={currentIsFavorite ? removeLabel : saveLabel}
+                    aria-pressed={currentIsFavorite}
                     className={cn(
-                      "size-7 rounded-md border-2 transition-all duration-100 hover:scale-110 hover:shadow-md",
-                      value === color ? "border-ink ring-2 ring-ink/20" : "border-line/60",
+                      "flex size-7 shrink-0 items-center justify-center rounded-md border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink/50",
+                      currentIsFavorite
+                        ? "border-ink bg-ink text-surface"
+                        : "border-line bg-surface-2/50 text-ink-3 hover:text-ink",
                     )}
-                    style={{ backgroundColor: color }}
-                  />
+                  >
+                    {currentIsFavorite ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">{color}</TooltipContent>
+                <TooltipContent side="top">
+                  {currentIsFavorite ? removeLabel : saveLabel}
+                </TooltipContent>
               </Tooltip>
-            ))}
+            </div>
+          </div>
+
+          {/* Column 2: RGB Sliders + Palettes (Favorites + Presets) */}
+          <div className="flex flex-col gap-2.5">
+            <RgbSliders rgb={draftRgb} onPreviewChannel={previewChannel} onCommit={commitDraftNow} />
+
+            {/* Favorites */}
+            <div className="border-t border-line pt-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
+                  {t("appearance.colorPicker.favorites", "Favoritos")}
+                </span>
+                <span className="font-mono text-[0.6rem] text-ink-3">
+                  {favorites.length}/{MAX_FAVORITE_COLORS}
+                </span>
+              </div>
+              {favorites.length === 0 ? (
+                <p className="rounded-md bg-surface-2/50 px-2 py-1 text-[0.65rem] leading-snug text-ink-3">
+                  {t(
+                    "appearance.colorPicker.favoritesEmpty",
+                    "Guarda colores con + para reutilizarlos en stickers y temas.",
+                  )}
+                </p>
+              ) : (
+                <SwatchGrid
+                  colors={favorites}
+                  selectedHex={value}
+                  onSelect={selectAndClose}
+                  onRemove={removeFavoriteColor}
+                  removeLabel={removeLabel}
+                  onHoverHex={setHoverHex}
+                />
+              )}
+            </div>
+
+            {/* Presets */}
+            <div className="border-t border-line pt-2">
+              <div className="mb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
+                {t("appearance.colorPicker.presets", "Predefinidos")}
+              </div>
+              <SwatchGrid
+                colors={PRESET_COLORS}
+                selectedHex={value}
+                onSelect={selectAndClose}
+                onHoverHex={setHoverHex}
+              />
+            </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Footer: current vs new/hovered + Done button */}
+        <div className="mt-3.5 flex items-center justify-between border-t border-line pt-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <div
+              role="img"
+              aria-label={t("appearance.colorPicker.current", "Actual")}
+              className="size-6 shrink-0 rounded-md border border-line shadow-2xs"
+              style={{ backgroundColor: value }}
+            />
+            <span aria-hidden="true" className="font-mono text-[0.65rem] text-ink-3">→</span>
+            <div
+              role="img"
+              aria-label={t("appearance.colorPicker.new", "Nuevo")}
+              className="size-6 shrink-0 rounded-md border border-line shadow-2xs"
+              style={{ backgroundColor: footerHex }}
+            />
+            <span className="truncate font-mono text-[0.65rem] text-ink">{footerHex}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="shrink-0 rounded-md bg-ink px-3.5 py-1.5 text-xs font-medium text-surface outline-none transition-colors hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink/50 cursor-pointer"
+          >
+            {t("appearance.colorPicker.done", "Listo")}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

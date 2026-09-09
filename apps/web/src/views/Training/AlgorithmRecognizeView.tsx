@@ -337,7 +337,7 @@ function RecognizeHeader({
         <div className="flex-1" />
 
         {/* Mode toggle */}
-        <div className="flex gap-1 rounded-lg bg-surface-2 p-0.5">
+        <div className="flex gap-1 rounded-lg border border-line bg-surface p-0.5">
           <button
             onClick={() => onModeChange("weakest")}
             className={cn(
@@ -513,6 +513,8 @@ function QuizPanel({
                 <button
                   key={opt.id}
                   onClick={() => onSelect(opt.id)}
+                  data-slot="card"
+                  data-glass-panel
                   className={cn(
                     "rounded-xl border-2 bg-surface px-4 py-3.5 text-center transition-all",
                     "border-line hover:border-ink/25 hover:bg-surface-2 hover:shadow-sm",

@@ -69,7 +69,7 @@ export function PhaseTargetsPanel({
               onClick={isActive ? onMarkSplit : undefined}
               className={cn(
                 "w-full rounded-lg p-2.5 transition-colors text-left",
-                isActive && "bg-surface-2 ring-1 ring-ink/10 cursor-pointer hover:bg-surface-2/80",
+                isActive && "bg-surface-2 ring-1 ring-ink/10 cursor-pointer hover:bg-line",
                 isDone && "bg-surface-2/50",
                 !isActive && !isDone && "opacity-40 cursor-default",
               )}

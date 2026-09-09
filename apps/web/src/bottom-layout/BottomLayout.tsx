@@ -22,6 +22,11 @@ export interface BottomLayoutProps {
   scramble?: ReactNode;
   /** Injected 2D scramble net rendered by templates with a `scramble-2d` cell. */
   scramble2d?: ReactNode;
+  /**
+   * Force phone density in `SessionStats` regardless of the real viewport.
+   * Used by the theme-studio preview's mobile frame.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -39,6 +44,7 @@ export function BottomLayout({
   puzzleFilter,
   scramble,
   scramble2d,
+  compact = false,
 }: BottomLayoutProps) {
   const template =
     getBottomLayoutTemplate(templateId) ?? DEFAULT_BOTTOM_LAYOUT_TEMPLATE;
@@ -50,6 +56,7 @@ export function BottomLayout({
         className={className}
         onExpand={onExpand}
         puzzleFilter={puzzleFilter}
+        compact={compact}
       />
     );
   }

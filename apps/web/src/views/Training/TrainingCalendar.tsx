@@ -433,7 +433,7 @@ export function TrainingCalendar({
 
           <div className="flex flex-col h-full max-h-[80vh]">
             {/* ── Header ───────────────────────────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5" data-modal-header>
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-surface">
                   {panelMode === "add" || panelMode === "edit" ? (
@@ -603,7 +603,7 @@ export function TrainingCalendar({
                             }}
                             className={cn(
                               "flex items-center gap-1.5 rounded-md px-2.5 py-2 text-[0.6rem] font-medium transition-all",
-                              isActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                              isActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
                             )}
                           >
                             <Icon className={cn("size-3", isActive ? "text-surface/70" : "text-ink-3/50")} />
@@ -640,7 +640,7 @@ export function TrainingCalendar({
                                   disabled={!canToggle}
                                   className={cn(
                                     "flex h-8 w-8 items-center justify-center rounded-md text-[0.6rem] font-medium transition-all disabled:pointer-events-none",
-                                    shouldShowActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3/50 hover:text-ink hover:bg-surface-2/80",
+                                    shouldShowActive ? "bg-ink text-surface shadow-sm" : "bg-surface-2 text-ink-3/50 hover:text-ink hover:bg-line",
                                     !canToggle && "cursor-default",
                                     canToggle && "cursor-pointer",
                                   )}

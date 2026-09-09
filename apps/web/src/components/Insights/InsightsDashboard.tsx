@@ -533,7 +533,7 @@ export function InsightsDashboard({
             "width(0) and height(0)" warnings on every hidden re-render. The
             solve list stays mounted so its scroll survives the toggle. */}
         {isTouch && touchSection === "list" ? null : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg bg-canvas">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden rounded-lg">
             {selected && !isTouch ? (
               <SolveAnalysisPanel
                 solve={selected}

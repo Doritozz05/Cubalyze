@@ -24,7 +24,7 @@ export interface RandomPuzzlePieceProps {
   className?: string;
 }
 
-const ITEM_HEIGHT = 32; // height in px of each reel slot item
+const ITEM_HEIGHT = 28; // height in px of each reel slot item
 
 export function RandomPuzzlePiece({
   puzzle,
@@ -131,16 +131,18 @@ export function RandomPuzzlePiece({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          data-slot="context-menu-trigger"
+          data-slot="random-puzzle"
+          data-no-glass="true"
           onContextMenu={(e) => e.stopPropagation()}
           className="relative inline-flex items-center"
         >
           <button
             type="button"
+            data-no-glass="true"
             onClick={spin}
             disabled={isSpinning}
             className={cn(
-              "group relative flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface pl-2.5 pr-1.5 text-xs text-ink-2 shadow-xs transition-colors duration-200 select-none",
+              "group relative flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface pl-2.5 pr-1.5 text-xs text-ink-2 shadow-xs transition-colors duration-200 select-none cursor-pointer",
               "hover:bg-surface-2 hover:text-ink",
               "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               isSpinning && "cursor-wait bg-surface-2 text-ink",
@@ -158,24 +160,20 @@ export function RandomPuzzlePiece({
               <Dices className="size-3.5" />
             </div>
 
-            {/* Slot machine reel viewport */}
-            <div className="relative h-8 w-20 overflow-hidden rounded-md border border-line/40 bg-surface-2/40 px-1.5 shadow-inner">
-              {/* Top/bottom cylinder 3D shadows */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-2 bg-linear-to-b from-surface/90 to-transparent" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2 bg-linear-to-t from-surface/90 to-transparent" />
-
+            {/* Slot machine reel viewport — crisp and opaque */}
+            <div
+              data-slot="random-puzzle-reel"
+              className="relative h-7 w-20 overflow-hidden rounded-md border border-line bg-surface px-1.5 shadow-inner"
+            >
               {/* Reel items container */}
               <motion.div
                 animate={reelControls}
-                className={cn(
-                  "flex flex-col items-center",
-                  isSpinning && "filter blur-[0.3px]",
-                )}
+                className="flex flex-col items-center"
               >
                 {reelItems.map((item, idx) => (
                   <div
                     key={`${item}-${idx}`}
-                    className="flex h-8 w-full shrink-0 items-center justify-center text-center leading-none"
+                    className="flex h-7 w-full shrink-0 items-center justify-center text-center leading-none"
                   >
                     <span
                       className={cn(
@@ -192,8 +190,8 @@ export function RandomPuzzlePiece({
               </motion.div>
             </div>
 
-            {/* Slot Machine Lever */}
-            <div className="relative flex h-8 w-3 shrink-0 items-center justify-center">
+            {/* Slot Machine Lever — width 18px (w-4.5) to mirror the 18px dice on the left */}
+            <div className="relative flex h-8 w-4.5 shrink-0 items-center justify-center">
               {/* Rod anchored firmly at bottom, compressing/growing from the top */}
               <motion.div
                 initial={{ scaleY: 1 }}
@@ -207,7 +205,7 @@ export function RandomPuzzlePiece({
                 initial={{ y: 0 }}
                 animate={leverControls}
                 whileHover={{ scale: 1.15 }}
-                className="absolute top-1 z-10 size-2.5 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 cursor-pointer"
+                className="absolute top-1 left-1/2 -translate-x-1/2 z-10 size-2.5 rounded-full shadow-xs bg-linear-to-tr from-red-600 via-rose-500 to-rose-400 cursor-pointer"
               />
             </div>
           </button>

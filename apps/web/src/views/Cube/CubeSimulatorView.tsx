@@ -737,7 +737,7 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
         {/* Timer overlay — right-center of the canvas (csTimer-style
             position). Clean: just the time, no status captions. */}
         <div className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 sm:right-5">
-          <div className="flex flex-col items-end rounded-xl border border-line/60 bg-background/70 px-3.5 py-2.5 shadow-lg backdrop-blur-md">
+          <div data-glass-float className="flex flex-col items-end rounded-xl border border-line bg-surface px-3.5 py-2.5 shadow-lg">
             <span
               role="timer"
               aria-label={t("timerAria")}
@@ -815,10 +815,11 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
         {hintVisible && isReady && !unavailable ? (
           <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
             <motion.p
+              data-glass-float
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.3 }}
-              className="select-none rounded-full border border-line/60 bg-background/70 px-3.5 py-1.5 text-center text-[0.65rem] text-ink-3 shadow-md backdrop-blur-md"
+              className="select-none rounded-full border border-line bg-surface px-3.5 py-1.5 text-center text-[0.65rem] text-ink-3 shadow-md"
             >
               {t("gestureHint")}
             </motion.p>
@@ -827,11 +828,11 @@ const CubeVirtualCore = memo(function CubeVirtualCore({
 
         {/* Loading / fallback states */}
         {unavailable ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80 px-4">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/90 px-4">
             <p className="select-none text-center text-xs text-ink-3/70">{t("unavailable")}</p>
           </div>
         ) : !isReady ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-surface/80">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/90">
             <p className="animate-pulse select-none text-xs text-ink-3/50">{t("initializing")}</p>
           </div>
         ) : null}

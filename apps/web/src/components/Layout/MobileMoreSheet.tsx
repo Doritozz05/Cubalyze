@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "next-themes";
-import { useStore } from "zustand";
-import { Settings, Bluetooth, Sun, Moon, User, Network, Box, LayoutGrid } from "lucide-react";
+import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -12,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { preferencesStore } from "@cubeforge/state";
+import { ThemeStudioModal } from "@/components/Settings/theme-studio/ThemeStudioModal";
 import { hapticTap } from "@/utils/haptics";
 import { cn } from "@/lib/utils";
 import type { ViewId } from "./sidebar.constants";
@@ -44,15 +42,9 @@ export function MobileMoreSheet({
   onOpenWidgets,
   onNavigate,
 }: MobileMoreSheetProps) {
-  const { resolvedTheme } = useTheme();
-  const setStoreTheme = useStore(preferencesStore, (s) => s.setTheme);
   const { t } = useTranslation("shell");
   const { t: tNav } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  const isDark = mounted && resolvedTheme === "dark";
 
   const handleAction = (action: () => void) => {
     hapticTap();
@@ -63,10 +55,7 @@ export function MobileMoreSheet({
     }, 150);
   };
 
-  const handleToggleTheme = () => {
-    hapticTap();
-    setStoreTheme(isDark ? "light" : "dark");
-  };
+  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
 
   // Actions are rendered as a 2-column grid. Titles/subtitles are resolved
   // with t() inside the component (render time) so they follow language
@@ -109,7 +98,7 @@ export function MobileMoreSheet({
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),
     },
     {
-      key: "virtual",
+      key: "virtual-cube",
       icon: Box,
       title: tNav("virtual"),
       subtitle: t("more.virtualSubtitle"),
@@ -124,56 +113,59 @@ export function MobileMoreSheet({
     },
     {
       key: "theme",
-      icon: isDark ? Sun : Moon,
-      title: isDark ? tCommon("lightMode") : tCommon("darkMode"),
+      icon: Palette,
+      title: tCommon("theme"),
       subtitle: t("more.themeSubtitle"),
-      onClick: handleToggleTheme,
+      onClick: () => handleAction(() => setThemeStudioOpen(true)),
     },
   ];
 
   const lastStretches = items.length % 2 === 1;
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
-        <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
-          <DrawerTitle className="text-sm font-semibold text-ink">
-            {tNav("moreOptions")}
-          </DrawerTitle>
-        </DrawerHeader>
+    <>
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
+          <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
+            <DrawerTitle className="text-sm font-semibold text-ink">
+              {tNav("moreOptions")}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        {/* Grid of secondary action cards */}
-        <div className="grid grid-cols-2 gap-3 p-4">
-          {items.map((item, index) => {
-            const Icon = item.icon;
-            const isLast = index === items.length - 1;
-            const stretches = isLast && lastStretches;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={item.onClick}
-                className={cn(
-                  "flex flex-col items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-4 text-left transition-all active:scale-[0.98] active:bg-surface-2 hover:border-line-2 cursor-pointer",
-                  stretches && "col-span-2 flex-row items-center gap-3",
-                )}
-              >
-                <div className="grid size-9 place-items-center rounded-lg bg-surface border border-line text-ink shrink-0">
-                  <Icon className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-xs font-semibold text-ink">
-                    {item.title}
-                  </span>
-                  <span className="block text-[0.65rem] text-ink-3 mt-0.5 leading-tight">
-                    {item.subtitle}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </DrawerContent>
-    </Drawer>
+          {/* Grid of secondary action cards */}
+          <div className="grid grid-cols-2 gap-3 p-4">
+            {items.map((item, index) => {
+              const Icon = item.icon;
+              const isLast = index === items.length - 1;
+              const stretches = isLast && lastStretches;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={item.onClick}
+                  className={cn(
+                    "flex flex-col items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-4 text-left transition-all active:scale-[0.98] active:bg-surface-2 hover:border-line-2 cursor-pointer",
+                    stretches && "col-span-2 flex-row items-center gap-3",
+                  )}
+                >
+                  <div className="grid size-9 place-items-center rounded-lg bg-surface border border-line text-ink shrink-0">
+                    <Icon className="size-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-xs font-semibold text-ink">
+                      {item.title}
+                    </span>
+                    <span className="block text-[0.65rem] text-ink-3 mt-0.5 leading-tight">
+                      {item.subtitle}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
+      <ThemeStudioModal open={themeStudioOpen} onOpenChange={setThemeStudioOpen} />
+    </>
   );
 }

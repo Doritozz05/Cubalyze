@@ -121,7 +121,7 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute inset-0 z-40 flex items-center justify-center bg-background/60 p-4 backdrop-blur-sm"
+          className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
           onPointerDown={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
@@ -232,7 +232,7 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
               </div>
 
               {/* Gestures */}
-              <div className="rounded-xl border border-line/60 bg-background/40 p-3">
+              <div className="rounded-xl border border-line bg-surface-2/40 p-3">
                 <h4 className="mb-1.5 text-[0.62rem] font-medium uppercase tracking-[0.14em] text-ink-3">
                   {t("keys.gestures")}
                 </h4>

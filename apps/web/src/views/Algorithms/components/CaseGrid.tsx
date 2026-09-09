@@ -85,13 +85,15 @@ function CaseCard({
   return (
     <button
       onClick={onClick}
+      data-slot="card"
+      data-glass-panel
       className={cn(
         "group relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all duration-150 text-left w-full",
         // Touch: compact cards so 2 columns fit on 360px screens.
         "max-lg:p-2.5 max-lg:gap-1.5",
         isSelected
           ? "border-ink/30 bg-surface-2 ring-1 ring-ink/20 shadow-xs"
-          : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
+          : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2",
       )}
     >
       {/* Diagram — supports 3D isometric & 2D top diagrams */}

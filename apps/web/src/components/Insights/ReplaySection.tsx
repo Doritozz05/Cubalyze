@@ -111,8 +111,10 @@ export interface ReplaySectionProps {
    * padding) — used by the horizontal/split layouts (stats detail mode and
    * reconstruction detail) where the replay column must be 100% transparent.
    * The base classes are dropped entirely (not overridden), so the
-   * liquid-glass engine never matches this surface. Fullscreen chrome
-   * always wins over flat.
+   * liquid-glass engine never matches this surface — EXCEPT the controls
+   * bar, which in flat mode renders as its own glass panel (two separate
+   * surfaces: transparent cube zone + frosted controls). Fullscreen
+   * chrome always wins over flat.
    */
   flat?: boolean;
   className?: string;
@@ -809,7 +811,7 @@ function ReplaySection({
     <div
       className={cn(
         isFullscreen
-          ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-background/98 backdrop-blur-xl p-4 sm:p-6 shadow-2xl"
+          ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-surface p-4 sm:p-6 shadow-2xl"
           : flat
             ? "rounded-none border-0 bg-transparent p-0 shadow-none"
             : "rounded-lg border border-line bg-surface px-5 py-4",
@@ -1000,11 +1002,17 @@ function ReplaySection({
                 )}
               </div>
 
-              {/* Controls bar */}
+              {/* Controls bar — in flat mode this renders as its OWN
+                  liquid-glass panel (bg-surface triggers the glass engine),
+                  so the horizontal/split layout gets two separate surfaces:
+                  the cube zone floats transparent above, the controls get
+                  the frosted backplate below. Non-flat keeps the chip. */}
               <div
+                data-replay-controls
                 className={cn(
                   "flex flex-col gap-2 w-full shrink-0",
                   size === "large" || isFullscreen ? "max-w-2xl mx-auto px-1 pb-1" : "w-full max-w-sm sm:max-w-md mx-auto",
+                  flat ? "rounded-xl bg-surface border border-line/60 p-1.5 sm:p-2" : "",
                 )}
               >
                 {/* Top row: live move stats */}
@@ -1048,15 +1056,15 @@ function ReplaySection({
                   </div>
                 </div>
 
-                {/* Bottom row: transport buttons — flat mode drops the
-                    frosted chip too, so the horizontal column is 100%
-                    transparent (buttons keep their hover chips). */}
+                {/* Bottom row: transport buttons — in flat mode they sit
+                    directly on the controls panel above (no nested chip, so
+                    no blur-over-blur); non-flat keeps its own frosted chip. */}
                 <div
                   className={cn(
-                    "flex items-center justify-between gap-1 sm:gap-2 p-1.5 sm:px-2.5",
+                    "flex items-center justify-between gap-1 sm:gap-2",
                     flat
-                      ? "rounded-none bg-transparent border-0"
-                      : "rounded-xl bg-surface-2/50 border border-line/60",
+                      ? ""
+                      : "p-1.5 sm:px-2.5 rounded-xl bg-surface-2/50 border border-line/60",
                   )}
                 >
                   {/* Left: Transport playback controls */}
@@ -1147,7 +1155,7 @@ function ReplaySection({
                               const next = SPEEDS[(idx === -1 ? 2 : idx + 1) % SPEEDS.length] ?? 1;
                               handleSetSpeed(next);
                             }}
-                            className="flex items-center justify-center rounded-lg border border-line/70 bg-surface/80 px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-8.5"
+                            className="flex items-center justify-center rounded-lg border border-line bg-surface px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-8.5"
                             aria-label={t("replay.speed", { speed })}
                           >
                             {speed}x
@@ -1158,7 +1166,7 @@ function ReplaySection({
                     </div>
 
                     {/* Desktop / sm+: Full speed pill selector */}
-                    <div className="hidden sm:flex items-center gap-0.5 rounded-lg border border-line/70 bg-surface/80 p-0.5">
+                    <div className="hidden sm:flex items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5">
                       {SPEEDS.map((s) => (
                         <Tooltip key={s}>
                           <TooltipTrigger asChild>

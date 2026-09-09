@@ -158,7 +158,7 @@ export function RecentAttemptsList({ attempts }: { attempts: CrossAttemptView[] 
       {attempts.slice(0, 12).map((a) => (
         <div
           key={a.id}
-          className="flex items-center gap-2 rounded-md px-2 py-1 text-[0.6rem] hover:bg-surface-2/50"
+          className="flex items-center gap-2 rounded-md px-2 py-1 text-[0.6rem] hover:bg-surface-2"
         >
           <span
             className={cn(

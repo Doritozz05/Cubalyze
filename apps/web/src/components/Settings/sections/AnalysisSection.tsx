@@ -48,7 +48,7 @@ export function AnalysisSection() {
                 className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
                   isActive
                     ? 'border-ink-2 bg-surface-2 ring-1 ring-ink-2/30'
-                    : 'border-line bg-surface hover:border-line-2 hover:bg-surface-2/50'
+                    : 'border-line bg-surface hover:border-line-2 hover:bg-surface-2'
                 }`}
               >
                 <div className="flex-1 min-w-0">

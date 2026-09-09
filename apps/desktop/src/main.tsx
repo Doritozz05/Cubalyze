@@ -7,6 +7,36 @@ import { BrowserRouter } from 'react-router-dom';
 // the PWA (web) and the Tauri desktop app.
 import App from '../../web/src/App';
 
+// Self-hosted fonts (same set as apps/web): @font-face must register here
+// because the desktop entry doesn't go through web's main.tsx.
+// Monos come from web assets (full OpenType features kept); sans stay on
+// Fontsource subsets.
+import '../../web/src/assets/fonts/mono-fonts.css';
+import '@fontsource/open-sans/latin-400.css';
+import '@fontsource/open-sans/latin-500.css';
+import '@fontsource/open-sans/latin-600.css';
+import '@fontsource/open-sans/latin-700.css';
+import '@fontsource/open-sans/latin-ext-400.css';
+import '@fontsource/open-sans/latin-ext-500.css';
+import '@fontsource/open-sans/latin-ext-600.css';
+import '@fontsource/open-sans/latin-ext-700.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
+import '@fontsource/inter/latin-ext-400.css';
+import '@fontsource/inter/latin-ext-500.css';
+import '@fontsource/inter/latin-ext-600.css';
+import '@fontsource/inter/latin-ext-700.css';
+import '@fontsource/space-grotesk/latin-400.css';
+import '@fontsource/space-grotesk/latin-500.css';
+import '@fontsource/space-grotesk/latin-600.css';
+import '@fontsource/space-grotesk/latin-700.css';
+import '@fontsource/space-grotesk/latin-ext-400.css';
+import '@fontsource/space-grotesk/latin-ext-500.css';
+import '@fontsource/space-grotesk/latin-ext-600.css';
+import '@fontsource/space-grotesk/latin-ext-700.css';
+
 // Reuse the EXISTING global styles from the web app.
 import '../../web/src/index.css';
 
@@ -15,6 +45,11 @@ import '../../web/src/index.css';
 // This is a desktop-only feature — Web Bluetooth requires user gesture.
 import { listen } from '@tauri-apps/api/event';
 import { globalCubeAdapter } from '../../web/src/components/Hardware/CubeConnector';
+import { preferencesStore } from '@cubeforge/state';
+import { loadCustomFonts } from '../../web/src/theme/customFonts';
+
+// Rebuild user-uploaded @font-faces from IndexedDB (see apps/web main).
+void loadCustomFonts(preferencesStore.getState().customFonts);
 
 listen<{ cubes: { name: string; address: string }[] }>('ble:devices_found', async (event) => {
   const cubes = event.payload.cubes;

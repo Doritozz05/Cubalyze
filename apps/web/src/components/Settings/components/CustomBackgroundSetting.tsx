@@ -59,6 +59,16 @@ export function CustomBackgroundSetting() {
 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Tiling only makes sense for static images — video frames and animated
+  // GIFs always render cover/contain. Coerce a stale 'tile' back to cover
+  // so the stored value never disagrees with what is rendered.
+  const canTile = mediaType === 'image' || !mediaType;
+  useEffect(() => {
+    if (!canTile && timerBackgroundFit === 'tile') {
+      setTimerBackgroundFit('cover');
+    }
+  }, [canTile, timerBackgroundFit, setTimerBackgroundFit]);
+
   // Synchronize preview video playback
   useEffect(() => {
     const video = previewVideoRef.current;
@@ -136,8 +146,8 @@ export function CustomBackgroundSetting() {
 
   return (
     <div className="group flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="min-w-0">
           <h4 className="flex items-center gap-2 text-[0.85rem] font-medium leading-5 text-ink">
             <ImageIcon className="size-3.5 text-ink-2" />
             {t('appearance.backgroundImage')}
@@ -146,7 +156,7 @@ export function CustomBackgroundSetting() {
             {t('appearance.backgroundImageHint')}
           </p>
         </div>
-        <div className="mt-0.5 flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="file"
             id="bg-image-upload"
@@ -271,7 +281,7 @@ export function CustomBackgroundSetting() {
             )}
 
             {/* Media Type Badge in corner */}
-            <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface/85 backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60">
+            <div data-glass-float className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line">
               {mediaType === 'video' ? (
                 <>
                   <Film className="size-3 text-primary" />
@@ -296,9 +306,10 @@ export function CustomBackgroundSetting() {
             {/* Test Animation (Play/Pause) Button for Videos and GIFs */}
             {(mediaType === 'video' || mediaType === 'gif') && (
               <button
+                data-glass-float
                 type="button"
                 onClick={() => setPreviewPlaying((p) => !p)}
-                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-(--glass-bg-dense) hover:bg-surface backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60 transition-colors"
+                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface hover:bg-surface-2 px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line transition-colors"
                 title={previewPlaying ? t('appearance.previewPause') : t('appearance.previewPlay')}
               >
                 {previewPlaying ? (
@@ -317,14 +328,14 @@ export function CustomBackgroundSetting() {
 
             {/* Mock timer readout */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="rounded-md bg-(--glass-bg-dense) backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
+              <span data-glass-float className="rounded-md bg-surface px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line">
                 00:00.00
               </span>
             </div>
           </div>
 
           {/* Controls grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Opacity slider */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs text-ink-2 font-medium">
@@ -391,15 +402,17 @@ export function CustomBackgroundSetting() {
                 <SelectContent>
                   <SelectItem value="cover">{t('appearance.fitCover')}</SelectItem>
                   <SelectItem value="contain">{t('appearance.fitContain')}</SelectItem>
-                  <SelectItem value="tile">{t('appearance.fitTile')}</SelectItem>
+                  {canTile && (
+                    <SelectItem value="tile">{t('appearance.fitTile')}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             {/* Always animate (only visible for video or gif, above the experimental toggle) */}
             {(mediaType === 'video' || mediaType === 'gif') && (
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">
-                <div className="flex flex-col gap-0.5">
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface-2/40 p-3 mt-1 sm:col-span-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-xs font-medium text-ink">
                     {t('appearance.backgroundAlwaysAnimate')}
                   </span>
@@ -415,14 +428,14 @@ export function CustomBackgroundSetting() {
             )}
 
             {/* Experimental: Background on all views */}
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2 lg:col-span-4">
-              <div className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface-2/40 p-3 mt-1 sm:col-span-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-ink">
                     {t('appearance.backgroundAllViews')}
                   </span>
                   <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wide text-amber-500 uppercase border border-amber-500/20">
-                    {t('appearance.experimentalBadge', { defaultValue: 'EXPERIMENTAL' })}
+                    {t('appearance.experimentalBadge')}
                   </span>
                 </div>
                 <span className="text-[0.72rem] text-ink-3 leading-4">

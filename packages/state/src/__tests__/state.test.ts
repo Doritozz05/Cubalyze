@@ -21,6 +21,118 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().theme).toBe('dark');
   });
 
+  it('manages themePreset and customThemeColors correctly', () => {
+    expect(preferencesStore.getState().themePreset).toBe('default');
+    expect(preferencesStore.getState().customThemeColors).toBeNull();
+
+    preferencesStore.getState().setThemePreset('midnight');
+    expect(preferencesStore.getState().themePreset).toBe('midnight');
+
+    preferencesStore.getState().setCustomThemeColor('--canvas', '#2e3440');
+    expect(preferencesStore.getState().customThemeColors).toEqual({ '--canvas': '#2e3440' });
+
+    preferencesStore.getState().setCustomThemeColor('--ready', '#a3be8c');
+    expect(preferencesStore.getState().customThemeColors).toEqual({
+      '--canvas': '#2e3440',
+      '--ready': '#a3be8c',
+      '--ready-soft': 'rgba(163, 190, 140, 0.14)',
+    });
+
+    preferencesStore.getState().resetCustomThemeColors();
+    expect(preferencesStore.getState().customThemeColors).toBeNull();
+
+    preferencesStore.getState().setThemePreset('default');
+  });
+
+  it('manages custom themes (save / rename / delete with cap)', () => {
+    const store = preferencesStore.getState();
+    expect(store.customThemes).toEqual([]);
+
+    const id = store.saveCustomTheme({
+      name: '  Mi tema  ',
+      base: 'dark',
+      colors: { '--canvas': '#000000' },
+    });
+    expect(typeof id).toBe('string');
+
+    const themes = preferencesStore.getState().customThemes;
+    expect(themes).toHaveLength(1);
+    expect(themes[0].name).toBe('Mi tema');
+    expect(themes[0].base).toBe('dark');
+    expect(themes[0].colors).toEqual({ '--canvas': '#000000' });
+
+    preferencesStore.getState().renameCustomTheme(id as string, 'Noche total');
+    expect(preferencesStore.getState().customThemes[0].name).toBe('Noche total');
+
+    // Empty renames are ignored.
+    preferencesStore.getState().renameCustomTheme(id as string, '   ');
+    expect(preferencesStore.getState().customThemes[0].name).toBe('Noche total');
+
+    preferencesStore.getState().deleteCustomTheme(id as string);
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
+  it('duplicates a custom theme with a fresh id', () => {
+    const store = preferencesStore.getState();
+    const id = store.saveCustomTheme({
+      name: 'Original',
+      base: 'dark',
+      colors: { '--canvas': '#111111' },
+    });
+    expect(typeof id).toBe('string');
+
+    const copyId = preferencesStore.getState().duplicateCustomTheme(id as string);
+    expect(typeof copyId).toBe('string');
+    expect(copyId).not.toBe(id);
+    const themes = preferencesStore.getState().customThemes;
+    expect(themes).toHaveLength(2);
+    expect(themes[1].name).toBe('Original (copy)');
+    expect(themes[1].base).toBe('dark');
+    expect(themes[1].colors).toEqual({ '--canvas': '#111111' });
+
+    expect(preferencesStore.getState().duplicateCustomTheme('missing')).toBeNull();
+
+    preferencesStore.getState().deleteCustomTheme(id as string);
+    preferencesStore.getState().deleteCustomTheme(copyId as string);
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
+  it('manages tabular zero style and custom font metadata', () => {
+    expect(preferencesStore.getState().zeroStyle).toBe('slashed');
+    preferencesStore.getState().setZeroStyle('dotted');
+    expect(preferencesStore.getState().zeroStyle).toBe('dotted');
+    preferencesStore.getState().setZeroStyle('slashed');
+
+    const store = preferencesStore.getState();
+    const id = store.addCustomFont({ name: '  Mi Mono  ', role: 'mono' });
+    expect(typeof id).toBe('string');
+    const fonts = preferencesStore.getState().customFonts;
+    expect(fonts).toHaveLength(1);
+    expect(fonts[0].name).toBe('Mi Mono');
+    expect(fonts[0].role).toBe('mono');
+
+    preferencesStore.getState().removeCustomFont(id as string);
+    expect(preferencesStore.getState().customFonts).toEqual([]);
+  });
+
+  it('caps custom themes at MAX_CUSTOM_THEMES', () => {
+    const store = preferencesStore.getState();
+    for (let i = 0; i < 10; i++) {
+      expect(
+        store.saveCustomTheme({ name: `T${i}`, base: 'light', colors: {} }),
+      ).not.toBeNull();
+    }
+    expect(preferencesStore.getState().customThemes).toHaveLength(10);
+    expect(
+      store.saveCustomTheme({ name: 'overflow', base: 'light', colors: {} }),
+    ).toBeNull();
+    // Cleanup for other tests.
+    for (const t of preferencesStore.getState().customThemes) {
+      preferencesStore.getState().deleteCustomTheme(t.id);
+    }
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
   it('initializes language preference with auto default', () => {
     expect(preferencesStore.getState().language).toBe('auto');
   });

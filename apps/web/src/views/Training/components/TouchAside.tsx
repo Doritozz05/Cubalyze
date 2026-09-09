@@ -51,6 +51,7 @@ export function TouchAside({ title, children, className }: TouchAsideProps) {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
+        data-glass-panel
         className="flex h-11 w-full shrink-0 items-center justify-between rounded-xl border border-line bg-surface px-4 text-[0.72rem] font-medium text-ink shadow-xs touch-manipulation select-none"
       >
         <span className="flex items-center gap-2">

@@ -54,24 +54,24 @@ describe("useBackgroundMediaStore", () => {
     expect(state.posterUrl).toBe(legacyDataUrl);
   });
 
-  it("defaults timerBackgroundAllViews to false and allows toggling", () => {
-    expect(preferencesStore.getState().timerBackgroundAllViews).toBe(false);
-
-    preferencesStore.getState().setTimerBackgroundAllViews(true);
+  it("defaults timerBackgroundAllViews to true and allows toggling", () => {
     expect(preferencesStore.getState().timerBackgroundAllViews).toBe(true);
 
     preferencesStore.getState().setTimerBackgroundAllViews(false);
     expect(preferencesStore.getState().timerBackgroundAllViews).toBe(false);
+
+    preferencesStore.getState().setTimerBackgroundAllViews(true);
+    expect(preferencesStore.getState().timerBackgroundAllViews).toBe(true);
   });
 
-  it("defaults timerBackgroundAlwaysAnimate to false and allows toggling", () => {
-    expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(false);
-
-    preferencesStore.getState().setTimerBackgroundAlwaysAnimate(true);
+  it("defaults timerBackgroundAlwaysAnimate to true and allows toggling", () => {
     expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(true);
 
     preferencesStore.getState().setTimerBackgroundAlwaysAnimate(false);
     expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(false);
+
+    preferencesStore.getState().setTimerBackgroundAlwaysAnimate(true);
+    expect(preferencesStore.getState().timerBackgroundAlwaysAnimate).toBe(true);
   });
 
   it("defaults liquidGlass to false and allows toggling", () => {

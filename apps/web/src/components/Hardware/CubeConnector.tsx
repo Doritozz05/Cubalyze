@@ -229,9 +229,10 @@ export function CubeConnector({
         <Button
           variant="ghost"
           size="icon"
+          data-glass-float
           onClick={() => handleOpenChange(true)}
           className={cn(
-            "size-8 rounded-md border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink hidden sm:flex",
+            "size-9 rounded-lg border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink flex items-center justify-center cursor-pointer transition-colors",
             status === "connected" && "text-phase-blue-500 border-phase-blue-500/20 bg-phase-blue-500/5 hover:bg-phase-blue-500/10 hover:text-phase-blue-600",
             className,
           )}
