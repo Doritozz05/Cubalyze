@@ -34,6 +34,7 @@ interface PreviewTimerProps {
   deviceMode: DeviceMode;
   timerState: TimerPreviewState;
   panel?: boolean;
+  hyprlandBorder?: 'none' | 'accent' | 'gradient';
 }
 
 function resolveFace(timerState: TimerPreviewState): {
@@ -69,7 +70,7 @@ function resolveFace(timerState: TimerPreviewState): {
  * PB delta, real `hintFor` copy) inside the REAL `TimerContainer` surface
  * geometry, with viewport units evaluated against the virtual device.
  */
-export function PreviewTimer({ deviceMode, timerState, panel }: PreviewTimerProps) {
+export function PreviewTimer({ deviceMode, timerState, panel, hyprlandBorder = 'none' }: PreviewTimerProps) {
   const { t } = useTranslation('timer');
   const isMobile = deviceMode === 'mobile';
   const { w, h } = VIRTUAL_SIZE[deviceMode];
@@ -102,7 +103,9 @@ export function PreviewTimer({ deviceMode, timerState, panel }: PreviewTimerProp
       data-glass-panel={panel ? 'true' : undefined}
       className={cn(
         'group relative flex w-full flex-1 touch-manipulation select-none flex-col items-center justify-center rounded-lg transition-all duration-300',
-        panel && 'rounded-2xl border border-line bg-surface p-6 shadow-2xs'
+        panel && 'rounded-2xl border border-line bg-surface p-6 shadow-2xs',
+        panel && hyprlandBorder === 'accent' && 'hyprland-border-accent',
+        panel && hyprlandBorder === 'gradient' && 'hyprland-border-gradient',
       )}
       style={{ minHeight: minH }}
       role="button"

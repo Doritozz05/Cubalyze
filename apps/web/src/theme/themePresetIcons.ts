@@ -7,6 +7,10 @@ import {
   Snowflake,
   Sun,
   Sparkles,
+  Terminal,
+  Flame,
+  Ghost,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -19,6 +23,10 @@ export const THEME_PRESET_ICONS: Record<string, LucideIcon> = {
   "rose-pine": Flower2,
   nord: Snowflake,
   "catppuccin-latte": Coffee,
+  "tokyo-night": Terminal,
+  "gruvbox-dark": Flame,
+  dracula: Ghost,
+  cyberpunk: Zap,
 };
 
 export function getPresetIcon(id: string): LucideIcon {

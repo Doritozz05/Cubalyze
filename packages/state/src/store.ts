@@ -306,6 +306,15 @@ export interface PreferencesState {
   setTimerPanel: (value: boolean) => void;
 
   /**
+   * Hyprland active border style for floating stage panels (scramble, timer panel):
+   * - 'none': standard border-line
+   * - 'accent': vibrant accent border (uses theme accent/ready color)
+   * - 'gradient': continuous animated rotating gradient border (Hyprland iconic)
+   */
+  hyprlandBorder: 'none' | 'accent' | 'gradient';
+  setHyprlandBorder: (value: 'none' | 'accent' | 'gradient') => void;
+
+  /**
    * Theme Studio typography: registry ids resolved to font stacks by the
    * web app ('open-sans' + 'cascadia-code' by default, 'system' keeps the
    * legacy pure-system stacks).
@@ -452,6 +461,7 @@ const DEFAULT_VALUES = {
   scramblePanel: false,
   scrambleLayoutMode: 'default' as const,
   timerPanel: false,
+  hyprlandBorder: 'none' as const,
   fontSans: 'open-sans',
   fontMono: 'cascadia-code',
   zeroStyle: 'slashed' as const,
@@ -590,6 +600,7 @@ export const createPreferencesStore = () => {
         setScramblePanel: (scramblePanel) => set({ scramblePanel }),
         setScrambleLayoutMode: (scrambleLayoutMode) => set({ scrambleLayoutMode }),
         setTimerPanel: (timerPanel) => set({ timerPanel }),
+        setHyprlandBorder: (hyprlandBorder) => set({ hyprlandBorder }),
         setFontSans: (fontSans) => set({ fontSans }),
         setFontMono: (fontMono) => set({ fontMono }),
         setZeroStyle: (zeroStyle) => set({ zeroStyle }),
@@ -671,6 +682,7 @@ export const createPreferencesStore = () => {
           scramblePanel: state.scramblePanel,
           scrambleLayoutMode: state.scrambleLayoutMode,
           timerPanel: state.timerPanel,
+          hyprlandBorder: state.hyprlandBorder,
           fontSans: state.fontSans,
           fontMono: state.fontMono,
           zeroStyle: state.zeroStyle,

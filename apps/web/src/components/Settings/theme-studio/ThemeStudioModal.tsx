@@ -18,6 +18,8 @@ import {
   Settings2,
   Plus,
   Loader2,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -213,6 +215,12 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setScrambleLayoutMode = useStore(preferencesStore, (s) => s.setScrambleLayoutMode);
   const timerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
   const setTimerPanel = useStore(preferencesStore, (s) => s.setTimerPanel);
+  const hyprlandBorder = useStore(preferencesStore, (s) => s.hyprlandBorder ?? 'none');
+  const setHyprlandBorder = useStore(preferencesStore, (s) => s.setHyprlandBorder);
+  const [showAllPresets, setShowAllPresets] = useState(() => {
+    const baseIds = ['dark', 'light', 'midnight', 'catppuccin-mocha'];
+    return !baseIds.includes(themePreset);
+  });
   const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
   const setFontSans = useStore(preferencesStore, (s) => s.setFontSans);
   const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
@@ -444,7 +452,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 mt-2">
-                    {THEME_PRESETS.map((preset) => {
+                    {THEME_PRESETS.slice(0, 4).map((preset) => {
                       const isSelected = themePreset === preset.id;
                       const PresetIcon = getPresetIcon(preset.id);
                       return (
@@ -479,6 +487,68 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Browse More Themes (Expandable Ricer Presets) */}
+                  <div className="flex flex-col gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPresets((prev) => !prev)}
+                      className="flex items-center justify-between rounded-xl border border-line bg-surface-2/60 px-3.5 py-2 text-xs font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2 font-semibold">
+                        <span>{showAllPresets ? t('appearance.collapseThemes', 'Mostrar menos') : t('appearance.browseMoreThemes', 'Explorar más temas')}</span>
+                        <span className="rounded-full bg-surface px-1.5 py-0.5 text-[0.65rem] text-ink-3 border border-line/60">
+                          +{THEME_PRESETS.length - 4}
+                        </span>
+                      </span>
+                      <ChevronDown
+                        className={cn(
+                          'size-4 text-ink-3 transition-transform duration-200',
+                          showAllPresets && 'rotate-180 text-ink'
+                        )}
+                      />
+                    </button>
+
+                    {showAllPresets && (
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+                        {THEME_PRESETS.slice(4).map((preset) => {
+                          const isSelected = themePreset === preset.id;
+                          const PresetIcon = getPresetIcon(preset.id);
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => handleSelectPreset(preset.id)}
+                              className={cn(
+                                'group relative flex flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150',
+                                isSelected
+                                  ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-sm'
+                                  : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2'
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                                  <PresetIcon className="size-3.5 text-ink-2" aria-hidden="true" />
+                                  {t(preset.labelKey, preset.id)}
+                                </span>
+                                {isSelected && (
+                                  <span className="flex size-4 items-center justify-center rounded-full bg-ink text-surface">
+                                    <Check className="size-2.5 stroke-3" />
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-[0.68rem] text-ink-3 leading-snug line-clamp-2">
+                                {t(preset.descriptionKey, '')}
+                              </p>
+
+                              <PresetDots preset={preset} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <CustomThemesSection />
@@ -819,6 +889,38 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             {mode === 'default' && t('appearance.scrambleLayoutDefault', 'Por defecto')}
                             {mode === 'compact-right' && t('appearance.scrambleLayoutCompactRight', 'Compacto derecha')}
                             {mode === 'compact-down' && t('appearance.scrambleLayoutCompactDown', 'Compacto abajo')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Hyprland Active Border selector */}
+                    <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-ink">
+                          {t('appearance.hyprlandBorderLabel', 'Estilo de borde activo')}
+                        </span>
+                        <span className="text-[0.72rem] text-ink-3">
+                          {t('appearance.hyprlandBorderSectionDesc', 'Añade a los paneles del timer el icónico borde activo de Hyprland con acento o gradiente giratorio.')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5 mt-1">
+                        {(['none', 'accent', 'gradient'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setHyprlandBorder(mode)}
+                            aria-pressed={hyprlandBorder === mode}
+                            className={cn(
+                              'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                              hyprlandBorder === mode
+                                ? 'bg-ink text-canvas shadow-sm'
+                                : 'text-ink-2 hover:text-ink',
+                            )}
+                          >
+                            {mode === 'none' && t('appearance.hyprlandBorderNone', 'Estándar')}
+                            {mode === 'accent' && t('appearance.hyprlandBorderAccent', 'Acento reactivo')}
+                            {mode === 'gradient' && t('appearance.hyprlandBorderGradient', 'Gradiente animado (Hyprland)')}
                           </button>
                         ))}
                       </div>
