@@ -1613,3 +1613,85 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     transform: translate3d(0, 0, 0);
   }
 }
+
+/* ── Hyprland Active Borders (col.active_border) ───────────────────────────
+   Authentic Wayland / Hyprland active window borders for floating cards and
+   timer stage panels. Supports crisp reactive accent or animated 45deg
+   gradient rotation.
+
+   IMPORTANT: These must win over the liquid-glass [class*="border-line"]
+   override (which forces --glass-border). Both use !important, so we use
+   higher specificity: the liquid-glass rule is (0,1,1) [one class + one
+   attribute], these are (0,2,1) [two classes]. */
+
+@property --hypr-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes hyprland-spin {
+  to {
+    --hypr-angle: 360deg;
+  }
+}
+
+/* Accent: reactive border using the ready/accent color with a soft glow */
+.hyprland-border-accent.hyprland-border-accent {
+  border-color: var(--ready) !important;
+  box-shadow: 0 0 0 1px var(--ready), 0 0 18px -4px var(--ready-soft) !important;
+}
+
+/* Gradient: animated rotating conic gradient border (Hyprland classic) */
+.hyprland-border-gradient {
+  position: relative;
+  border-color: transparent !important;
+  background-clip: padding-box;
+}
+
+.hyprland-border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--hypr-angle, 0deg),
+    var(--ready) 0%,
+    var(--plus2) 25%,
+    var(--caution) 50%,
+    var(--hold) 75%,
+    var(--ready) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: hyprland-spin 4s linear infinite;
+  z-index: 1;
+}
+
+/* When liquid glass is active, override its border-line enforcement for hyprland borders */
+html.liquid-glass .hyprland-border-accent.hyprland-border-accent {
+  border-color: var(--ready) !important;
+  box-shadow: 0 0 0 1px var(--ready), 0 0 18px -4px var(--ready-soft) !important;
+}
+
+html.liquid-glass .hyprland-border-gradient {
+  border-color: transparent !important;
+}
+
+html.liquid-glass .hyprland-border-gradient::before {
+  background: conic-gradient(
+    from var(--hypr-angle, 0deg),
+    var(--ready) 0%,
+    var(--plus2) 25%,
+    var(--caution) 50%,
+    var(--hold) 75%,
+    var(--ready) 100%
+  ) !important;
+}
