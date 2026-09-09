@@ -19,6 +19,7 @@ function ThemeSync() {
   const customThemes = useStore(preferencesStore, (s) => s.customThemes);
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
+  const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const { theme: nextTheme, setTheme } = useTheme();
 
   // Live OS scheme snapshot so `system` mode reacts to OS changes.
@@ -130,7 +131,15 @@ function ThemeSync() {
       root.style.removeProperty("--glass-nested-blur");
       root.style.removeProperty("--glass-border");
     }
-  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity]);
+
+    // Custom blur radius overrides the built-in opacity-tied formula.
+    // Null removes the inline value so the stylesheet default wins.
+    if (liquidGlass && liquidGlassBlur != null) {
+      root.style.setProperty("--glass-blur", `${liquidGlassBlur}px`);
+    } else {
+      root.style.removeProperty("--glass-blur");
+    }
+  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity, liquidGlassBlur]);
 
   return null;
 }

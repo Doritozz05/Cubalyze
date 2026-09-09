@@ -263,6 +263,13 @@ export interface PreferencesState {
   liquidGlassOpacity: number;
   setLiquidGlassOpacity: (value: number) => void;
 
+  /**
+   * Custom backdrop-blur radius in px for liquid glass. `null` (default)
+   * keeps the built-in formula tied to opacity; a number overrides it.
+   */
+  liquidGlassBlur: number | null;
+  setLiquidGlassBlur: (value: number | null) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -372,6 +379,7 @@ const DEFAULT_VALUES = {
   timerBackgroundAlwaysAnimate: false,
   liquidGlass: false,
   liquidGlassOpacity: 65,
+  liquidGlassBlur: null,
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -488,6 +496,7 @@ export const createPreferencesStore = () => {
         setTimerBackgroundAlwaysAnimate: (timerBackgroundAlwaysAnimate) => set({ timerBackgroundAlwaysAnimate }),
         setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
         setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
+        setLiquidGlassBlur: (liquidGlassBlur) => set({ liquidGlassBlur }),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -544,6 +553,7 @@ export const createPreferencesStore = () => {
           timerBackgroundAlwaysAnimate: state.timerBackgroundAlwaysAnimate,
           liquidGlass: state.liquidGlass,
           liquidGlassOpacity: state.liquidGlassOpacity,
+          liquidGlassBlur: state.liquidGlassBlur,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,

@@ -43,6 +43,11 @@ export const SvArea = memo(function SvArea({
   const callbacks = useRef({ onPreview, onCommit });
   callbacks.current = { onPreview, onCommit };
 
+  // Thumb stays fully visible: clamp its center inside the area instead of
+  // hanging half outside at the edges (overflow-hidden would slice it).
+  const thumbLeft = `calc(7px + ${(saturation / 100).toFixed(4)} * (100% - 14px))`;
+  const thumbTop = `calc(7px + ${((100 - value) / 100).toFixed(4)} * (100% - 14px))`;
+
   const flush = useCallback(() => {
     raf.current = 0;
     const rect = rectCache.current;
@@ -122,16 +127,26 @@ export const SvArea = memo(function SvArea({
       className="relative h-32 w-full cursor-crosshair touch-none overflow-hidden rounded-lg border border-line outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
       style={{ backgroundColor: hueBase }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white to-transparent" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+      {/* Explicit rgba endpoints: the `transparent` keyword resolves to
+          transparent BLACK and would tint the mid-tones gray. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "linear-gradient(to right, #ffffff, rgba(255,255,255,0))" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "linear-gradient(to top, #000000, rgba(0,0,0,0))" }}
+      />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+        className="pointer-events-none absolute size-3.5 rounded-full border-2 border-white"
         style={{
-          left: `${saturation}%`,
-          top: `${100 - value}%`,
+          left: thumbLeft,
+          top: thumbTop,
+          marginLeft: -7,
+          marginTop: -7,
           backgroundColor: draftHex,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.25)",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.55), 0 0 0 1px rgba(128,128,128,0.5)",
         }}
       />
     </div>

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Pipette, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   hexToHsv,
   hsvToHex,
@@ -171,11 +171,10 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const removeLabel = t("appearance.colorPicker.removeFavorite", "Quitar de favoritos");
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
         <button
           type="button"
-          aria-expanded={open}
           aria-haspopup="dialog"
           aria-label={label}
           className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
@@ -193,16 +192,21 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
             </span>
           </div>
         </button>
-      </PopoverTrigger>
+      </DialogTrigger>
 
-      <PopoverContent
-        side="bottom"
-        align="start"
-        sideOffset={8}
-        collisionPadding={8}
+      <DialogContent
         aria-label={label}
-        className="w-64 p-3"
+        className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-xs overflow-y-auto overscroll-contain p-4 sm:max-w-xs"
       >
+        <DialogTitle className="flex items-center gap-2 text-xs font-semibold text-ink">
+          <span
+            aria-hidden="true"
+            className="size-5 shrink-0 rounded-md border border-line"
+            style={{ backgroundColor: footerHex }}
+          />
+          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <span className="shrink-0 font-mono font-normal text-ink-3">{footerHex}</span>
+        </DialogTitle>
           <SvArea
             hue={draft.h}
             saturation={draft.s}
@@ -346,7 +350,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
               {t("appearance.colorPicker.done", "Listo")}
             </button>
           </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

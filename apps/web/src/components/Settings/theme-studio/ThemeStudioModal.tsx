@@ -75,6 +75,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setLiquidGlass = useStore(preferencesStore, (s) => s.setLiquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
+  const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
+  const setLiquidGlassBlur = useStore(preferencesStore, (s) => s.setLiquidGlassBlur);
 
   // Computed active colors
   const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors, customThemes);
@@ -172,6 +174,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row overflow-hidden">
           {/* Left Column: Live Scaled Timer Preview */}
           <div
+            data-studio-device
             className={cn(
               'min-h-0 flex-1 flex-col border-b border-line p-3 lg:border-b-0 lg:border-r lg:p-5 overflow-hidden',
               mobileView === 'preview' ? 'flex' : 'hidden',
@@ -344,6 +347,50 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         </p>
                       </div>
                     )}
+
+                    {liquidGlass && (
+                      <div className="flex flex-col gap-3 border-t border-line pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-ink">
+                            {t('appearance.liquidGlassCustomBlur', 'Desenfoque personalizado')}
+                          </span>
+                          <Switch
+                            checked={liquidGlassBlur != null}
+                            onCheckedChange={(on) =>
+                              setLiquidGlassBlur(on ? (liquidGlassBlur ?? 14) : null)
+                            }
+                          />
+                        </div>
+                        {liquidGlassBlur != null && (
+                          <>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-ink">
+                                {t('appearance.liquidGlassBlur', 'Desenfoque')}
+                              </span>
+                              <span className="font-mono font-semibold text-ink">
+                                {liquidGlassBlur}px
+                              </span>
+                            </div>
+                            <Slider
+                              value={[liquidGlassBlur]}
+                              onValueChange={([val]) => {
+                                if (val !== undefined) setLiquidGlassBlur(val);
+                              }}
+                              min={0}
+                              max={24}
+                              step={1}
+                              className="w-full"
+                            />
+                            <p className="text-[0.7rem] text-ink-3">
+                              {t(
+                                'appearance.liquidGlassCustomBlurHint',
+                                'Desactivado usa la fórmula automática ligada a la opacidad.',
+                              )}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -404,6 +451,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           resetCustomThemeColors();
                           setLiquidGlass(false);
                           setLiquidGlassOpacity(65);
+                          setLiquidGlassBlur(null);
                         }}
                         className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"
                       >

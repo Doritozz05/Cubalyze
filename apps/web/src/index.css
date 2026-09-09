@@ -700,6 +700,22 @@ html.liquid-glass [data-slot="drawer-content"] div[class*="bg-surface"][class*="
   border-color: var(--glass-border) !important;
 }
 
+/* ── Studio device preview: base glass, not nested ────────────────
+   The studio modal itself matches the nested-panel ancestor pattern, so
+   every panel inside the simulated device wrongly got half-power nested
+   glass. In the real timer view the bottom strip sits on plain canvas
+   and receives full base glass — this override restores that fidelity,
+   scoped to [data-studio-device] only (the studio's own cards keep
+   their correct nested treatment). Specificity (0,7,4) outranks both
+   the nested rule (0,7,3) and the dialog rule above. */
+html.liquid-glass[data-liquid-glass="true"] body [data-slot="dialog-content"] [data-studio-device] div[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass[data-liquid-glass="true"] body [data-slot="dialog-content"] [data-studio-device] div[class*="bg-surface-2"][class*="border"][class*="rounded"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
 /* Badges & indicator tags: translucent frosted chips */
 html.liquid-glass [data-slot="badge"] {
   background-color: var(--glass-btn-bg) !important;
