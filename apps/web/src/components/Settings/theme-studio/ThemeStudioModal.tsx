@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -65,7 +65,12 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   // Mobile (<lg): preview and controls compete for 92dvh — show one at a
   // time instead of stacking both into an unreadable squeeze.
   const [mobileView, setMobileView] = useState<'preview' | 'customize'>('preview');
-  const tabsRef = useRef<HTMLDivElement>(null);
+  // tabsRef: kept as MutableRefObject so existing code (updateScrollBounds,
+  // chevron buttons, keyboard nav) can read .current without changes.
+  // setTabsRef: ref callback — React calls this synchronously when the element
+  // mounts/unmounts in the Portal DOM, bypassing the useEffect timing gap.
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const wheelCleanupRef = useRef<(() => void) | null>(null);
 
   const handleTabKeyDown = (e: React.KeyboardEvent) => {
     const order: StudioTab[] = ['presets', 'colors', 'typography', 'general', 'background', 'reset'];
@@ -89,50 +94,77 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  const updateScrollBounds = () => {
-    const el = tabsRef.current;
-    if (!el) return;
+  // Takes an explicit element — safe to call from ref callback before tabsRef.current is set
+  const updateScrollBoundsFor = (el: HTMLDivElement) => {
     setCanScrollLeft(el.scrollLeft > 2);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
   };
-
-  // Enable mouse wheel scrolling on the tabs strip in capture phase to prevent Radix modal locking
-  useEffect(() => {
-    if (!open) return;
+  // Reads from tabsRef.current — used by chevron onClick handlers
+  const updateScrollBounds = () => {
     const el = tabsRef.current;
     if (!el) return;
+    updateScrollBoundsFor(el);
+  };
 
-    updateScrollBounds();
+  // Wheel-to-horizontal-scroll on the tabs strip.
+  //
+  // Why a ref callback instead of useEffect + useRef:
+  //   Radix Dialog renders its children inside a Portal. The Portal's DOM is
+  //   committed *after* the parent component's useEffect fires, so tabsRef.current
+  //   is null at that point and listeners never register. A ref callback is called
+  //   synchronously by React the moment the element is inserted into (or removed
+  //   from) the DOM — no timing gap.
+  //
+  // Why attach to the element (not document/window):
+  //   react-remove-scroll walks the ancestor chain looking for a vertically-
+  //   scrollable parent. It finds the content panel (overflow-y-auto) that sits
+  //   below the tabs strip and claims any vertical wheel delta for it. Attaching
+  //   directly to the tabs element and calling stopPropagation() prevents the
+  //   event from ever reaching that ancestor check.
+  const setTabsRef = useCallback((el: HTMLDivElement | null) => {
+    // Teardown listeners from the previous element (unmount / re-mount cycle)
+    if (wheelCleanupRef.current) {
+      wheelCleanupRef.current();
+      wheelCleanupRef.current = null;
+    }
+    tabsRef.current = el;
+
+    if (!el) return;
+
+    updateScrollBoundsFor(el);
 
     const onWheel = (e: WheelEvent) => {
-      // Only process when cursor is over the tabs strip or its children
-      if (!el.contains(e.target as Node)) return;
-      const overflow = el.scrollWidth > el.clientWidth + 1;
-      if (!overflow) return;
-      // Stop propagation immediately on window capture before Radix / react-remove-scroll intercepts it
-      e.stopImmediatePropagation();
+      // { passive: false } lets us call preventDefault(); without it the browser
+      // ignores the call and the content panel below steals the vertical delta.
       e.preventDefault();
+      e.stopPropagation();
       const factor = e.deltaMode === 1 ? 16 : 1;
+      // Prefer explicit horizontal delta; fall back to vertical → horizontal scroll
       const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
         ? e.deltaX * factor
         : e.deltaY * factor;
       if (dx !== 0) {
         el.scrollLeft += dx;
-        updateScrollBounds();
+        updateScrollBoundsFor(el);
       }
     };
 
-    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
-    const onScroll = () => updateScrollBounds();
-    el.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', updateScrollBounds);
+    const onScroll = () => updateScrollBoundsFor(el);
+    const onResize = () => updateScrollBoundsFor(el);
 
-    return () => {
-      window.removeEventListener('wheel', onWheel, { capture: true });
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+
+    wheelCleanupRef.current = () => {
+      el.removeEventListener('wheel', onWheel);
       el.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', updateScrollBounds);
+      window.removeEventListener('resize', onResize);
     };
-  }, [open, mobileView]);
+  // stable — updateScrollBoundsFor is defined in the same component scope and
+  // its identity never changes (plain arrow function, not a state setter)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mouse drag-to-scroll on desktop
   const dragRef = useRef<{
@@ -388,7 +420,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
               )}
 
               <div
-                ref={tabsRef}
+                ref={setTabsRef}
                 role="tablist"
                 aria-label={t('appearance.tabsLabel')}
                 onKeyDown={handleTabKeyDown}
