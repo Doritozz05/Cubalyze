@@ -778,40 +778,6 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
 
                       <div className="h-px bg-line/60" />
 
-                      {/* Scramble layout mode triple selector */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-ink">
-                            {t('appearance.scrambleLayoutMode', 'Disposición del scramble')}
-                          </span>
-                          <span className="text-[0.72rem] text-ink-3">
-                            {t('appearance.scrambleLayoutModeDesc', 'Ajusta la densidad y posición de los botones en el temporizador y cubo virtual.')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5">
-                          {(['default', 'compact-right', 'compact-down'] as const).map((mode) => (
-                            <button
-                              key={mode}
-                              type="button"
-                              onClick={() => setScrambleLayoutMode(mode)}
-                              aria-pressed={scrambleLayoutMode === mode}
-                              className={cn(
-                                'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                                scrambleLayoutMode === mode
-                                  ? 'bg-ink text-canvas shadow-sm'
-                                  : 'text-ink-2 hover:text-ink',
-                              )}
-                            >
-                              {mode === 'default' && t('appearance.scrambleLayoutDefault', 'Por defecto')}
-                              {mode === 'compact-right' && t('appearance.scrambleLayoutCompactRight', 'Compacto derecha')}
-                              {mode === 'compact-down' && t('appearance.scrambleLayoutCompactDown', 'Compacto abajo')}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="h-px bg-line/60" />
-
                       {/* Timer panel toggle */}
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex flex-col gap-0.5">
@@ -823,6 +789,38 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           </span>
                         </div>
                         <Switch checked={timerPanel} onCheckedChange={setTimerPanel} />
+                      </div>
+                    </div>
+
+                    {/* Scramble layout mode triple selector */}
+                    <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-medium text-ink">
+                          {t('appearance.scrambleLayoutMode', 'Disposición del scramble')}
+                        </span>
+                        <span className="text-[0.72rem] text-ink-3">
+                          {t('appearance.scrambleLayoutModeDesc', 'Ajusta la densidad y posición de los botones en el temporizador y cubo virtual.')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5 mt-1">
+                        {(['default', 'compact-right', 'compact-down'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setScrambleLayoutMode(mode)}
+                            aria-pressed={scrambleLayoutMode === mode}
+                            className={cn(
+                              'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                              scrambleLayoutMode === mode
+                                ? 'bg-ink text-canvas shadow-sm'
+                                : 'text-ink-2 hover:text-ink',
+                            )}
+                          >
+                            {mode === 'default' && t('appearance.scrambleLayoutDefault', 'Por defecto')}
+                            {mode === 'compact-right' && t('appearance.scrambleLayoutCompactRight', 'Compacto derecha')}
+                            {mode === 'compact-down' && t('appearance.scrambleLayoutCompactDown', 'Compacto abajo')}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>

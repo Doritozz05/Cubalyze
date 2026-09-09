@@ -238,15 +238,19 @@ export function ScrambleDisplay({
   if (isCompactDown) {
     return (
       <div className="w-full" data-onboarding-target="timer">
-        {/* Compact Down: compact tokens with icon-only action buttons centered below */}
-        {isScrambled && (
-          <div className="mb-1 flex justify-center">
-            <span className="text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
-              <Check className="size-3" /> {t("ready")}
+        {/* Compact Down: compact tokens with optional green ready icon on the right, and icon-only action buttons centered below */}
+        <div className="flex items-center justify-center gap-2">
+          {renderTokens()}
+          {isScrambled && (
+            <span
+              className="flex shrink-0 items-center text-ready"
+              title={t("ready")}
+              aria-label={t("ready")}
+            >
+              <Check className="size-4" />
             </span>
-          </div>
-        )}
-        {renderTokens()}
+          )}
+        </div>
         <div className="mt-2 flex items-center justify-center gap-1">
           {renderActions(false)}
         </div>
