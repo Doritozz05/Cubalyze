@@ -11,13 +11,32 @@ import {
   Droplets,
   Image as ImageIcon,
   RotateCcw,
+  Type,
   X,
   Check,
   Eye,
   Settings2,
+  Plus,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
+import { MONO_FONTS, SANS_FONTS, slashedZeroFeature } from '@/theme/fonts';
+import { MAX_CUSTOM_FONTS } from '@cubeforge/state';
+import {
+  customFontFamily,
+  deleteFontBlob,
+  saveFontBlob,
+  validateFontFile,
+} from '@/theme/customFonts';
 import { findPreset } from '@/theme/customThemes';
 import { getPresetIcon } from '@/theme/themePresetIcons';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
@@ -34,7 +53,7 @@ export interface ThemeStudioModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type StudioTab = 'presets' | 'colors' | 'liquid' | 'background' | 'reset';
+type StudioTab = 'presets' | 'colors' | 'typography' | 'liquid' | 'background' | 'reset';
 
 export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) {
   const { t } = useTranslation('settings');
@@ -45,7 +64,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const handleTabKeyDown = (e: React.KeyboardEvent) => {
-    const order: StudioTab[] = ['presets', 'colors', 'liquid', 'background', 'reset'];
+    const order: StudioTab[] = ['presets', 'colors', 'typography', 'liquid', 'background', 'reset'];
     const idx = order.indexOf(activeTab);
     let next: number | null = null;
     if (e.key === 'ArrowRight') next = (idx + 1) % order.length;
@@ -77,6 +96,54 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
   const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const setLiquidGlassBlur = useStore(preferencesStore, (s) => s.setLiquidGlassBlur);
+  const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
+  const setFontSans = useStore(preferencesStore, (s) => s.setFontSans);
+  const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
+  const setFontMono = useStore(preferencesStore, (s) => s.setFontMono);
+  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'dotted');
+  const setZeroStyle = useStore(preferencesStore, (s) => s.setZeroStyle);
+  const customFonts = useStore(preferencesStore, (s) => s.customFonts);
+  const [uploadingFont, setUploadingFont] = useState(false);
+  const sansUploadRef = useRef<HTMLInputElement>(null);
+  const monoUploadRef = useRef<HTMLInputElement>(null);
+
+  const customSansFonts = customFonts.filter((f) => f.role === 'sans');
+  const customMonoFonts = customFonts.filter((f) => f.role === 'mono');
+  const canUploadMore = customFonts.length < MAX_CUSTOM_FONTS;
+
+  const handleFontUpload = async (role: 'sans' | 'mono', file: File | undefined) => {
+    if (!file || uploadingFont) return;
+    if (!canUploadMore) {
+      toast.error(t('appearance.fontUploadCap', 'Límite de fuentes alcanzado'));
+      return;
+    }
+    setUploadingFont(true);
+    try {
+      const { mimeType } = await validateFontFile(file);
+      const id = preferencesStore.getState().addCustomFont({
+        name: file.name.replace(/\.[^.]+$/, ''),
+        role,
+      });
+      if (!id) {
+        toast.error(t('appearance.fontUploadCap', 'Límite de fuentes alcanzado'));
+        return;
+      }
+      await saveFontBlob(id, file, mimeType);
+      if (role === 'sans') setFontSans(id);
+      else setFontMono(id);
+    } catch {
+      toast.error(t('appearance.fontUploadError', 'Ese archivo no es una fuente válida (.woff2, .woff, .ttf, .otf, máx 3 MB)'));
+    } finally {
+      setUploadingFont(false);
+    }
+  };
+
+  const handleDeleteFont = (id: string) => {
+    void deleteFontBlob(id);
+    preferencesStore.getState().removeCustomFont(id);
+    if (fontSans === id) setFontSans('open-sans');
+    if (fontMono === id) setFontMono('cascadia-code');
+  };
 
   // Computed active colors
   const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors, customThemes);
@@ -84,6 +151,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const tabs = [
     { id: 'presets' as const, label: t('appearance.tabs.presets'), icon: Palette },
     { id: 'colors' as const, label: t('appearance.tabs.colors'), icon: Sliders },
+    { id: 'typography' as const, label: t('appearance.tabs.typography'), icon: Type },
     { id: 'liquid' as const, label: t('appearance.tabs.liquid'), icon: Droplets },
     { id: 'background' as const, label: t('appearance.tabs.background'), icon: ImageIcon },
     { id: 'reset' as const, label: t('appearance.tabs.reset'), icon: RotateCcw },
@@ -304,7 +372,201 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 />
               )}
 
-              {/* Tab 3: Liquid Glass */}
+              {/* Tab 3: Typography */}
+              {activeTab === 'typography' && (
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-ink">
+                      {t('appearance.typographyTitle')}
+                    </h4>
+                    <p className="mt-0.5 text-xs text-ink-3">
+                      {t('appearance.typographySubtitle')}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-ink">
+                        {t('appearance.fontSans')}
+                      </span>
+                      <Select value={fontSans} onValueChange={setFontSans}>
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SANS_FONTS.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              <span style={{ fontFamily: f.stack }}>{f.label}</span>
+                            </SelectItem>
+                          ))}
+                          {customSansFonts.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              <span style={{ fontFamily: `'${customFontFamily(f.id)}', sans-serif` }}>
+                                {f.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <input
+                        ref={sansUploadRef}
+                        type="file"
+                        accept=".woff2,.woff,.ttf,.otf"
+                        className="hidden"
+                        onChange={(e) => {
+                          void handleFontUpload('sans', e.target.files?.[0]);
+                          e.target.value = '';
+                        }}
+                      />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {canUploadMore && (
+                          <button
+                            type="button"
+                            disabled={uploadingFont}
+                            onClick={() => sansUploadRef.current?.click()}
+                            className="flex items-center gap-1 rounded-md border border-dashed border-line px-2 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
+                          >
+                            {uploadingFont ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Plus className="size-3" />
+                            )}
+                            {t('appearance.uploadFont', 'Subir fuente')}
+                          </button>
+                        )}
+                        {customSansFonts.map((f) => (
+                          <span
+                            key={f.id}
+                            className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
+                          >
+                            <span className="max-w-28 truncate">{f.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteFont(f.id)}
+                              aria-label={t('appearance.deleteFont', 'Borrar fuente')}
+                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-ink">
+                        {t('appearance.fontMono')}
+                      </span>
+                      <Select value={fontMono} onValueChange={setFontMono}>
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONO_FONTS.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              <span style={{ fontFamily: f.stack }}>{f.label}</span>
+                            </SelectItem>
+                          ))}
+                          {customMonoFonts.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              <span style={{ fontFamily: `'${customFontFamily(f.id)}', monospace` }}>
+                                {f.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <input
+                        ref={monoUploadRef}
+                        type="file"
+                        accept=".woff2,.woff,.ttf,.otf"
+                        className="hidden"
+                        onChange={(e) => {
+                          void handleFontUpload('mono', e.target.files?.[0]);
+                          e.target.value = '';
+                        }}
+                      />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {canUploadMore && (
+                          <button
+                            type="button"
+                            disabled={uploadingFont}
+                            onClick={() => monoUploadRef.current?.click()}
+                            className="flex items-center gap-1 rounded-md border border-dashed border-line px-2 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
+                          >
+                            {uploadingFont ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Plus className="size-3" />
+                            )}
+                            {t('appearance.uploadFont', 'Subir fuente')}
+                          </button>
+                        )}
+                        {customMonoFonts.map((f) => (
+                          <span
+                            key={f.id}
+                            className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
+                          >
+                            <span className="max-w-28 truncate">{f.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteFont(f.id)}
+                              aria-label={t('appearance.deleteFont', 'Borrar fuente')}
+                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 border-t border-line pt-3">
+                      <span className="text-xs font-medium text-ink">
+                        {t('appearance.zeroStyle', 'Cero tabular')}
+                      </span>
+                      <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5">
+                        {(['dotted', 'slashed'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setZeroStyle(mode)}
+                            aria-pressed={zeroStyle === mode}
+                            className={cn(
+                              'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                              zeroStyle === mode
+                                ? 'bg-ink text-canvas shadow-sm'
+                                : 'text-ink-2 hover:text-ink',
+                            )}
+                          >
+                            {t(mode === 'dotted' ? 'appearance.zeroDotted' : 'appearance.zeroSlashed', mode)}
+                            <span
+                              aria-hidden="true"
+                              className="ml-1 font-mono font-bold"
+                              style={{
+                                fontVariantNumeric: 'tabular-nums',
+                                fontFeatureSettings:
+                                  mode === 'slashed'
+                                    ? `"tnum" 1, ${slashedZeroFeature(fontMono)}`
+                                    : '"tnum" 1',
+                              }}
+                            >
+                              0
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="rounded-lg border border-line bg-surface-2/40 px-3 py-2.5 text-sm text-ink">
+                      <span className="font-sans">AaBbCcDd 12:34.56 </span>
+                      <span className="nums">12:34.56 R U R&apos; U&apos;</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 4: Liquid Glass */}
               {activeTab === 'liquid' && (
                 <div className="flex flex-col gap-4">
                   <div>
@@ -395,14 +657,14 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 </div>
               )}
 
-              {/* Tab 4: Background Media */}
+              {/* Tab 5: Background Media */}
               {activeTab === 'background' && (
                 <div className="flex flex-col gap-4">
                   <CustomBackgroundSetting />
                 </div>
               )}
 
-              {/* Tab 5: Reset Options */}
+              {/* Tab 6: Reset Options */}
               {activeTab === 'reset' && (
                 <div className="flex flex-col gap-4">
                   <div>
@@ -452,6 +714,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           setLiquidGlass(false);
                           setLiquidGlassOpacity(65);
                           setLiquidGlassBlur(null);
+                          setFontSans('open-sans');
+                          setFontMono('cascadia-code');
                         }}
                         className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"
                       >

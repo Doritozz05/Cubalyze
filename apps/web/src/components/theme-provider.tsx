@@ -10,7 +10,21 @@ import {
   getDerivedThemeTokens,
   getDerivedLiquidGlassTokens,
 } from "@/theme/themePresets";
+import { fontStack, MONO_FONTS, SANS_FONTS, slashedZeroFeature, type FontOption } from "@/theme/fonts";
+import { customFontFamily } from "@/theme/customFonts";
+import type { CustomFontMeta } from "@cubeforge/state";
 import { findPreset } from "@/theme/customThemes";
+
+/** Resolve a stored id across built-ins + customs (custom family first). */
+function resolveFontStack(
+  builtins: FontOption[],
+  customs: CustomFontMeta[],
+  id: string | undefined,
+): string {
+  const custom = id ? customs.find((f) => f.id === id) : undefined;
+  if (custom) return `'${customFontFamily(custom.id)}', ${fontStack(builtins, builtins[0].id)}`;
+  return fontStack(builtins, id);
+}
 
 function ThemeSync() {
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
@@ -20,6 +34,10 @@ function ThemeSync() {
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
   const liquidGlassOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
+  const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
+  const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
+  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'dotted');
+  const customFonts = useStore(preferencesStore, (s) => s.customFonts);
   const { theme: nextTheme, setTheme } = useTheme();
 
   // Live OS scheme snapshot so `system` mode reacts to OS changes.
@@ -139,7 +157,25 @@ function ThemeSync() {
     } else {
       root.style.removeProperty("--glass-blur");
     }
-  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity, liquidGlassBlur]);
+
+    // Theme Studio typography: registry stacks win over the stylesheet
+    // defaults so the selected pair applies everywhere instantly.
+    root.style.setProperty('--app-font-sans', resolveFontStack(SANS_FONTS, customFonts, fontSans));
+    root.style.setProperty('--app-font-mono', resolveFontStack(MONO_FONTS, customFonts, fontMono));
+
+    // Tabular zero style for digits (per-family slashed-zero feature).
+    if (zeroStyle === 'slashed') {
+      root.setAttribute('data-zero', 'slashed');
+      if (slashedZeroFeature(fontMono) !== '"zero" 1') {
+        root.setAttribute('data-zero-feature', 'ss03');
+      } else {
+        root.removeAttribute('data-zero-feature');
+      }
+    } else {
+      root.removeAttribute('data-zero');
+      root.removeAttribute('data-zero-feature');
+    }
+  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity, liquidGlassBlur, fontSans, fontMono, zeroStyle, customFonts]);
 
   return null;
 }

@@ -1,6 +1,34 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+// Self-hosted fonts first so @font-face registers before any usage.
+// Monos come from ./assets/fonts (full OpenType features kept); sans stay
+// on Fontsource subsets (no stylistic features needed there).
+import './assets/fonts/mono-fonts.css'
+import '@fontsource/open-sans/latin-400.css'
+import '@fontsource/open-sans/latin-500.css'
+import '@fontsource/open-sans/latin-600.css'
+import '@fontsource/open-sans/latin-700.css'
+import '@fontsource/open-sans/latin-ext-400.css'
+import '@fontsource/open-sans/latin-ext-500.css'
+import '@fontsource/open-sans/latin-ext-600.css'
+import '@fontsource/open-sans/latin-ext-700.css'
+import '@fontsource/inter/latin-400.css'
+import '@fontsource/inter/latin-500.css'
+import '@fontsource/inter/latin-600.css'
+import '@fontsource/inter/latin-700.css'
+import '@fontsource/space-grotesk/latin-400.css'
+import '@fontsource/space-grotesk/latin-500.css'
+import '@fontsource/space-grotesk/latin-600.css'
+import '@fontsource/space-grotesk/latin-700.css'
+import '@fontsource/inter/latin-ext-400.css'
+import '@fontsource/inter/latin-ext-500.css'
+import '@fontsource/inter/latin-ext-600.css'
+import '@fontsource/inter/latin-ext-700.css'
+import '@fontsource/space-grotesk/latin-ext-400.css'
+import '@fontsource/space-grotesk/latin-ext-500.css'
+import '@fontsource/space-grotesk/latin-ext-600.css'
+import '@fontsource/space-grotesk/latin-ext-700.css'
 import './index.css'
 import App from './App.tsx'
 import { toast } from 'sonner'
@@ -10,6 +38,12 @@ import { appReady, appDataReady, markAppReady, markAppDataReady } from './boot/a
 import { installLogCapture } from './boot/logCapture'
 import { AppErrorBoundary } from './boot/AppErrorBoundary'
 import { LogViewer } from './components/LogViewer/LogViewer'
+import { preferencesStore } from '@cubeforge/state'
+import { loadCustomFonts } from '@/theme/customFonts'
+
+// Rebuild user-uploaded @font-faces from IndexedDB (fire-and-forget;
+// display:swap covers the gap until each face resolves).
+void loadCustomFonts(preferencesStore.getState().customFonts)
 
 // PWA service worker with a user-initiated update flow (registerType:
 // 'prompt' in vite.config.ts). A freshly-deployed worker WAITS instead of

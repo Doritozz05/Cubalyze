@@ -97,6 +97,24 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().customThemes).toEqual([]);
   });
 
+  it('manages tabular zero style and custom font metadata', () => {
+    expect(preferencesStore.getState().zeroStyle).toBe('slashed');
+    preferencesStore.getState().setZeroStyle('dotted');
+    expect(preferencesStore.getState().zeroStyle).toBe('dotted');
+    preferencesStore.getState().setZeroStyle('slashed');
+
+    const store = preferencesStore.getState();
+    const id = store.addCustomFont({ name: '  Mi Mono  ', role: 'mono' });
+    expect(typeof id).toBe('string');
+    const fonts = preferencesStore.getState().customFonts;
+    expect(fonts).toHaveLength(1);
+    expect(fonts[0].name).toBe('Mi Mono');
+    expect(fonts[0].role).toBe('mono');
+
+    preferencesStore.getState().removeCustomFont(id as string);
+    expect(preferencesStore.getState().customFonts).toEqual([]);
+  });
+
   it('caps custom themes at MAX_CUSTOM_THEMES', () => {
     const store = preferencesStore.getState();
     for (let i = 0; i < 10; i++) {

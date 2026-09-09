@@ -28,6 +28,20 @@ export type HeaderMode = 'always' | 'hidden' | 'autohide';
 /** Maximum number of user-created custom themes. */
 export const MAX_CUSTOM_THEMES = 10;
 
+/** Maximum number of user-uploaded custom fonts (blobs live in IndexedDB). */
+export const MAX_CUSTOM_FONTS = 6;
+
+/**
+ * User-uploaded font: metadata only (the file blob lives in IndexedDB,
+ * keyed by id). `role` decides which registry list it joins.
+ */
+export interface CustomFontMeta {
+  id: string;
+  name: string;
+  role: 'sans' | 'mono';
+  createdAt: number;
+}
+
 /** Accent tokens whose `-soft` companion is derived automatically. */
 const ACCENT_SOFT_TOKENS: Record<string, string> = {
   '--ready': '--ready-soft',
@@ -270,6 +284,30 @@ export interface PreferencesState {
   liquidGlassBlur: number | null;
   setLiquidGlassBlur: (value: number | null) => void;
 
+  /**
+   * Theme Studio typography: registry ids resolved to font stacks by the
+   * web app ('open-sans' + 'cascadia-code' by default, 'system' keeps the
+   * legacy pure-system stacks).
+   */
+  fontSans: string;
+  setFontSans: (value: string) => void;
+  fontMono: string;
+  setFontMono: (value: string) => void;
+
+  /**
+   * Tabular zero style: 'dotted' is the typeface default (e.g. Cascadia's
+   * signature dotted zero), 'slashed' enables the `zero` OpenType feature.
+   * App default is 'slashed'.
+   */
+  zeroStyle: 'dotted' | 'slashed';
+  setZeroStyle: (value: 'dotted' | 'slashed') => void;
+
+  /** User-uploaded fonts (metadata; file blobs live in IndexedDB). */
+  customFonts: CustomFontMeta[];
+  /** Registers metadata, returns its id (or null when the cap is reached). */
+  addCustomFont: (input: { name: string; role: 'sans' | 'mono' }) => string | null;
+  removeCustomFont: (id: string) => void;
+
 
   // ── Notifications (Settings → Notifications) ──────────────────────────
 
@@ -380,6 +418,10 @@ const DEFAULT_VALUES = {
   liquidGlass: false,
   liquidGlassOpacity: 65,
   liquidGlassBlur: null,
+  fontSans: 'open-sans',
+  fontMono: 'cascadia-code',
+  zeroStyle: 'slashed' as const,
+  customFonts: [],
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
@@ -497,6 +539,26 @@ export const createPreferencesStore = () => {
         setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
         setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
         setLiquidGlassBlur: (liquidGlassBlur) => set({ liquidGlassBlur }),
+        setFontSans: (fontSans) => set({ fontSans }),
+        setFontMono: (fontMono) => set({ fontMono }),
+        setZeroStyle: (zeroStyle) => set({ zeroStyle }),
+        addCustomFont: (input) => {
+          const { customFonts } = get();
+          if (customFonts.length >= MAX_CUSTOM_FONTS) return null;
+          const name = input.name.trim().slice(0, 40) || 'Mi fuente';
+          const font: CustomFontMeta = {
+            id: `font-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name,
+            role: input.role,
+            createdAt: Date.now(),
+          };
+          set({ customFonts: [...customFonts, font] });
+          return font.id;
+        },
+        removeCustomFont: (id) =>
+          set((state) => ({
+            customFonts: state.customFonts.filter((f) => f.id !== id),
+          })),
 
         setNotificationsEnabled: (notificationsEnabled) => set({ notificationsEnabled }),
         setSoundsEnabled: (soundsEnabled) => set({ soundsEnabled }),
@@ -554,6 +616,10 @@ export const createPreferencesStore = () => {
           liquidGlass: state.liquidGlass,
           liquidGlassOpacity: state.liquidGlassOpacity,
           liquidGlassBlur: state.liquidGlassBlur,
+          fontSans: state.fontSans,
+          fontMono: state.fontMono,
+          zeroStyle: state.zeroStyle,
+          customFonts: state.customFonts,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,
           soundVolume: state.soundVolume,
@@ -571,7 +637,9 @@ export const createPreferencesStore = () => {
         // `headerMode` tri-state ('always' | 'hidden' | 'autohide').
         // v4: `shortcuts.startTimer` (configurable timer start key) added.
         // v5: `customThemes` (user-created full themes) added.
-        version: 5,
+        // v6: `zeroStyle` default becomes 'slashed' — the setting never
+        // took effect before v6, so no real 'dotted' preference exists.
+        version: 6,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
           const migrated: Record<string, unknown> = { ...raw };
@@ -605,6 +673,9 @@ export const createPreferencesStore = () => {
               startTimer: ' ',
               ...sc,
             };
+          }
+          if (version < 6) {
+            migrated.zeroStyle = 'slashed';
           }
           return migrated;
         },

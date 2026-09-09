@@ -240,6 +240,7 @@
       "tabs": {
         "presets": "Temas",
         "colors": "Colores",
+        "typography": "Tipografía",
         "liquid": "Liquid glass",
         "background": "Fondo",
         "reset": "Restablecer"
@@ -260,6 +261,17 @@
       "presetNordDesc": "Ártico azulado #2e3440 con acentos escarcha, el clásico calmado de Linux para sesiones largas.",
       "presetCatppuccinLatte": "Catppuccin Latte",
       "presetCatppuccinLatteDesc": "Claro pastel suave #eff1f5, la pareja diurna de Mocha con acentos malva.",
+      "typographyTitle": "Tipografía",
+      "typographySubtitle": "Elige cómo se ven el texto y los dígitos en toda la app.",
+      "fontSans": "Fuente de interfaz",
+      "fontMono": "Fuente de dígitos y código",
+      "zeroStyle": "Cero tabular",
+      "zeroDotted": "Con punto",
+      "zeroSlashed": "Tachado",
+      "uploadFont": "Subir fuente",
+      "deleteFont": "Borrar fuente",
+      "fontUploadCap": "Límite de fuentes alcanzado",
+      "fontUploadError": "Archivo no válido (.woff2, .woff, .ttf, .otf, máx 3 MB)",
       "colors": {
         "title": "Personalización de colores",
         "subtitle": "Ajusta cada color individual del sistema",

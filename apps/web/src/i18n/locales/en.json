@@ -240,6 +240,7 @@
       "tabs": {
         "presets": "Themes",
         "colors": "Colors",
+        "typography": "Typography",
         "liquid": "Liquid glass",
         "background": "Background",
         "reset": "Reset"
@@ -260,6 +261,17 @@
       "presetNordDesc": "Arctic north-bluish #2e3440 with frost accents, the calm Linux classic for long sessions.",
       "presetCatppuccinLatte": "Catppuccin Latte",
       "presetCatppuccinLatteDesc": "Soothing pastel light #eff1f5, the day-side pair of Mocha with mauve accents.",
+      "typographyTitle": "Typography",
+      "typographySubtitle": "Choose how text and timer digits look across the app.",
+      "fontSans": "Interface font",
+      "fontMono": "Digits and code font",
+      "zeroStyle": "Tabular zero",
+      "zeroDotted": "Dotted",
+      "zeroSlashed": "Slashed",
+      "uploadFont": "Upload font",
+      "deleteFont": "Delete font",
+      "fontUploadCap": "Font limit reached",
+      "fontUploadError": "Not a valid font file (.woff2, .woff, .ttf, .otf, max 3 MB)",
       "colors": {
         "title": "Color customizer",
         "subtitle": "Adjust individual system tokens",
