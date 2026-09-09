@@ -138,10 +138,11 @@ export function RandomPuzzlePiece({
         >
           <button
             type="button"
+            data-no-glass="true"
             onClick={spin}
             disabled={isSpinning}
             className={cn(
-              "group relative flex h-8 items-center gap-2 rounded-full border border-transparent bg-transparent pl-2.5 pr-2.5 text-xs text-ink-2 shadow-none transition-colors duration-200 select-none cursor-pointer",
+              "group relative flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface pl-2.5 pr-1.5 text-xs text-ink-2 shadow-xs transition-colors duration-200 select-none cursor-pointer",
               "hover:bg-surface-2 hover:text-ink",
               "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               isSpinning && "cursor-wait bg-surface-2 text-ink",

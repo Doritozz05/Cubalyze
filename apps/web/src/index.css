@@ -171,10 +171,12 @@
   /* Custom palette (light). */
   --canvas: #f8f9fa;
   --surface: #ffffff;
+  --surface-solid: #ffffff;
   --surface-2: #f1f3f5;
-  /* Solid (non-glass) surface-2 — NEVER remapped by the liquid-glass
-     engine, so small identity tiles (sidebar CubeMark frame) stay dry. */
+  /* Solid (non-glass) surface and line tokens — NEVER remapped by the liquid-glass
+     engine, so solid components like identity tiles and random-puzzle pill stay dry. */
   --surface-2-solid: #f1f3f5;
+  --line-solid: #e9ecef;
   /* Phase dots (light) — identical hex values to the previous Tailwind-400
      classes so colours don't change, they're just tokenised now. */
   --phase-blue: #60a5fa;
@@ -286,6 +288,7 @@
      comes from the lighter backplates plus the existing subtle shadows. */
   --canvas: #14171b;
   --surface: #1b1f23;
+  --surface-solid: #1b1f23;
   --surface-2: #24292e;
   --surface-2-solid: #24292e;
   --card: #1f2429;
@@ -296,6 +299,7 @@
      against both the darker canvas and the lighter surfaces. */
   --ink-3: #9099a3;
   --line: #2a2f35;
+  --line-solid: #2a2f35;
   --line-2: #343a40;
   --ready: #6abf8a;
   --ready-soft: rgba(106, 191, 138, 0.14);
@@ -534,30 +538,30 @@ html.liquid-glass textarea:focus-visible {
    survives the glass. The dock is the one DESIGNED exception: its buttons
    are flat icon-only pills (see block below), so they are never given a
    persistent chip fill. */
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"],
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"],
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"],
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"],
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"],
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"],
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"],
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"],
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"],
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"] {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"] {
   background-color: var(--glass-btn-bg) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"]:hover:not(:disabled) {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"]):not([data-no-glass])[class*="bg-canvas"]:hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
@@ -613,7 +617,6 @@ html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:hove
    clean, and borderless at rest (no rounded rectangular frame / marco around 2x2/session).
    On the other hand, the desktop dock select trigger retains its frosted glass frame (marco)
    and subtle hover chip. */
-html.liquid-glass header[data-slot="app-header"] [data-slot="select-trigger"],
 html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"],
 html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"],
 html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"] {
@@ -625,7 +628,6 @@ html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-su
   backdrop-filter: none !important;
 }
 
-html.liquid-glass header[data-slot="app-header"] [data-slot="select-trigger"]:hover,
 html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"]:hover,
 html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"]:hover,
 html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"]:hover {
@@ -682,8 +684,8 @@ html.liquid-glass a[data-slot="card"][class*="bg-surface-2"] {
    supplies the raised hover chip, and the active tab pills (bare
    bg-surface divs) stay. */
 /* Ghost / icon-only buttons with hover-only surface fill: remain transparent at rest across the whole app */
-html.liquid-glass button[class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
-html.liquid-glass button[class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
+html.liquid-glass button[class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]):not([data-slot="select-trigger"]),
+html.liquid-glass button[class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]):not([data-slot="select-trigger"]),
 html.liquid-glass [data-slot="button"][class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
 html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]) {
   background-color: transparent !important;
@@ -696,7 +698,7 @@ html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:hover:not(:d
   background-color: var(--glass-btn-bg-hover) !important;
 }
 
-html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-no-glass]),
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
@@ -873,23 +875,52 @@ html.liquid-glass input[type="range"] {
 
 /* ── Exclude Random Puzzle Selector from Liquid Glass ───────────────────
    The slot-machine reel in the dock needs crisp, opaque rendering so the
-   dice, numbers, and reel animations stay 100% sharp and readable. */
+   dice, numbers, and reel animations stay 100% sharp and readable.
+   The button wrapper itself must also keep its original transparent border
+   and background — no glass hairline, no frosted chip fill.
+   Specificity note: glass button selectors are (0,3,1); we match that with
+   [data-slot="random-puzzle"][data-slot="random-puzzle"] > button to ensure
+   our !important wins in cascade order when specificity is equal. */
 html.liquid-glass [data-slot="random-puzzle"],
 html.liquid-glass [data-slot="random-puzzle"] * {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
 
+html.liquid-glass [data-slot="random-puzzle"] button {
+  background-color: var(--surface-solid, #ffffff) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
+html.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled) {
+  background-color: var(--surface-2-solid, #f1f3f5) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
 html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
   background-color: var(--surface-solid, #ffffff) !important;
-  border-color: var(--line) !important;
+  border-color: var(--line-solid, #e9ecef) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] button,
+.dark html.liquid-glass [data-slot="random-puzzle"] button,
+html.liquid-glass.dark [data-slot="random-puzzle"] button {
+  background-color: var(--surface-solid, #1b1f23) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled),
+.dark html.liquid-glass [data-slot="random-puzzle"] button:hover:not(:disabled),
+html.liquid-glass.dark [data-slot="random-puzzle"] button:hover:not(:disabled) {
+  background-color: var(--surface-2-solid, #24292e) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
 }
 
 html.dark.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
 .dark html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
 html.liquid-glass.dark [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
-  background-color: var(--surface-solid, #181825) !important;
-  border-color: var(--line) !important;
+  background-color: var(--surface-solid, #1b1f23) !important;
+  border-color: var(--line-solid, #2a2f35) !important;
 }
 
 
