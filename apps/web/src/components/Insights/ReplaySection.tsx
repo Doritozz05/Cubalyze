@@ -809,7 +809,7 @@ function ReplaySection({
     <div
       className={cn(
         isFullscreen
-          ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-background/98 backdrop-blur-xl p-4 sm:p-6 shadow-2xl"
+          ? "fixed inset-0 z-50 flex flex-col h-screen w-screen m-0 rounded-none border-0 bg-surface p-4 sm:p-6 shadow-2xl"
           : flat
             ? "rounded-none border-0 bg-transparent p-0 shadow-none"
             : "rounded-lg border border-line bg-surface px-5 py-4",
@@ -1147,7 +1147,7 @@ function ReplaySection({
                               const next = SPEEDS[(idx === -1 ? 2 : idx + 1) % SPEEDS.length] ?? 1;
                               handleSetSpeed(next);
                             }}
-                            className="flex items-center justify-center rounded-lg border border-line/70 bg-surface/80 px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-8.5"
+                            className="flex items-center justify-center rounded-lg border border-line bg-surface px-2 h-7.5 text-[0.7rem] font-semibold text-ink hover:bg-surface-2 transition-all active:scale-95 cursor-pointer shadow-xs min-w-8.5"
                             aria-label={t("replay.speed", { speed })}
                           >
                             {speed}x
@@ -1158,7 +1158,7 @@ function ReplaySection({
                     </div>
 
                     {/* Desktop / sm+: Full speed pill selector */}
-                    <div className="hidden sm:flex items-center gap-0.5 rounded-lg border border-line/70 bg-surface/80 p-0.5">
+                    <div className="hidden sm:flex items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5">
                       {SPEEDS.map((s) => (
                         <Tooltip key={s}>
                           <TooltipTrigger asChild>

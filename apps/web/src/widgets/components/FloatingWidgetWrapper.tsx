@@ -596,7 +596,7 @@ export function FloatingWidgetWrapper({
               ? "cursor-grabbing bg-surface-2/60"
               : isFocused
                 ? "cursor-grab bg-surface hover:bg-surface-2/40"
-                : "cursor-grab bg-surface/80 hover:bg-surface-2/50 text-ink/80 hover:text-ink",
+                : "cursor-grab bg-surface hover:bg-surface-2/50 text-ink/80 hover:text-ink",
         )}
       >
         <div

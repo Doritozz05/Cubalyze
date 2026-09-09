@@ -194,6 +194,8 @@ export function AppearanceSection() {
         onClick={() => {
           dockEditStore.startEditing();
         }}
+        data-slot="card"
+        data-glass-panel
         className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-5 text-left transition-shadow duration-200 hover:shadow-sm"
       >
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2">

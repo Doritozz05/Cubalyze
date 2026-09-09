@@ -73,10 +73,11 @@ export function LogViewer(): ReactNode | null {
     if (!showButton) return null;
     return (
       <button
+        data-glass-float
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ver logs de depuración"
-        className="fixed bottom-20 right-3 z-[2147483000] flex items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3 py-2 text-xs font-semibold text-ink-2 shadow-lg backdrop-blur"
+        className="fixed bottom-20 right-3 z-[2147483000] flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink-2 shadow-lg"
         style={{ zIndex: 2147483000 }}
       >
         <Bug className="size-3.5" />

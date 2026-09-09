@@ -410,7 +410,25 @@ html.liquid-glass [data-sonner-toast],
 html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"],
 html.liquid-glass aside[class*="bg-surface"][class*="border"][class*="rounded"],
-html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"] {
+html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"],
+html.liquid-glass header:not([data-slot="app-header"])[class*="bg-surface"],
+html.liquid-glass header:not([data-slot="app-header"])[class*="bg-surface-2"],
+html.liquid-glass nav[class*="bg-surface"][class*="border"],
+html.liquid-glass nav[class*="bg-surface-2"][class*="border"],
+html.liquid-glass div[class*="bg-surface"][class*="border-b"],
+html.liquid-glass div[class*="bg-surface"][class*="border-t"],
+html.liquid-glass div[class*="bg-surface"][class*="border-l"],
+html.liquid-glass div[class*="bg-surface"][class*="border-r"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-b"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-t"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-l"],
+html.liquid-glass div[class*="bg-surface-2"][class*="border-r"],
+html.liquid-glass aside[class*="bg-surface"][class*="border-l"],
+html.liquid-glass aside[class*="bg-surface"][class*="border-r"],
+html.liquid-glass button[data-glass-panel],
+html.liquid-glass button[data-slot="card"],
+html.liquid-glass a[data-glass-panel],
+html.liquid-glass a[data-slot="card"] {
   background-color: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
@@ -439,7 +457,7 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
 
 /* Header: only mobile touch bar gets glass; desktop floats the dock without a background */
 @media (max-width: 1023px) {
-  html.liquid-glass header {
+  html.liquid-glass header[data-slot="app-header"] {
     background-color: var(--glass-bg) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
@@ -448,7 +466,7 @@ html.liquid-glass section[class*="bg-surface"][class*="border"][class*="rounded"
 }
 
 @media (min-width: 1024px) {
-  html.liquid-glass header {
+  html.liquid-glass header[data-slot="app-header"] {
     background-color: transparent !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -498,30 +516,30 @@ html.liquid-glass textarea:focus-visible {
    survives the glass. The dock is the one DESIGNED exception: its buttons
    are flat icon-only pills (see block below), so they are never given a
    persistent chip fill. */
-html.liquid-glass button[class*="bg-surface"],
-html.liquid-glass button[class*="bg-card"],
-html.liquid-glass button[class*="bg-white"],
-html.liquid-glass button[class*="bg-background"],
-html.liquid-glass button[class*="bg-canvas"],
-html.liquid-glass [data-slot="button"][class*="bg-surface"],
-html.liquid-glass [data-slot="button"][class*="bg-card"],
-html.liquid-glass [data-slot="button"][class*="bg-white"],
-html.liquid-glass [data-slot="button"][class*="bg-background"],
-html.liquid-glass [data-slot="button"][class*="bg-canvas"] {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"],
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"],
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"] {
   background-color: var(--glass-btn-bg) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass button[class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass button[class*="bg-canvas"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-surface"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-card"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-white"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-background"]:hover:not(:disabled),
-html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) {
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass button:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-card"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-white"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-background"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="card"])[class*="bg-canvas"]:hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
@@ -570,6 +588,67 @@ html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:hove
   background-color: var(--glass-btn-bg-hover) !important;
 }
 
+/* ── Puzzle / Cube Select Trigger in Mobile Header: Flat by design ──
+   The minimal mobile header (header[data-slot="app-header"], [data-context-zone="mobile-header"])
+   hosts the center puzzle category selector with the active session beneath it.
+   As designed in the main branch, this center selector is completely flat,
+   clean, and borderless at rest (no rounded rectangular frame / marco around 2x2/session).
+   On the other hand, the desktop dock select trigger retains its frosted glass frame (marco)
+   and subtle hover chip. */
+html.liquid-glass header[data-slot="app-header"] [data-slot="select-trigger"],
+html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"],
+html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"],
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"] {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.liquid-glass header[data-slot="app-header"] [data-slot="select-trigger"]:hover,
+html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"]:hover,
+html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"]:hover,
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"]:hover {
+  background-color: var(--glass-btn-bg-hover) !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+/* ── Card buttons & standalone panel triggers: frosted glass with backdrop blur ──
+   Interactive cards and floating trigger bars render as <button data-slot="card">
+   or <button data-glass-panel> (e.g. CaseCard in Algorithm case grid,
+   MobileMethodNavigator trigger bar, quiz options in Algorithm Recognize,
+   case cards in Algorithm Drill, and TouchAside trigger).
+   Unlike small nested action buttons, these stand alone on the canvas or grid
+   and carry the full liquid-glass frosted backdrop blur. */
+html.liquid-glass button[data-glass-panel],
+html.liquid-glass button[data-slot="card"],
+html.liquid-glass a[data-glass-panel],
+html.liquid-glass a[data-slot="card"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[data-glass-panel]:hover:not(:disabled),
+html.liquid-glass button[data-slot="card"]:hover:not(:disabled),
+html.liquid-glass a[data-glass-panel]:hover,
+html.liquid-glass a[data-slot="card"]:hover {
+  background-color: var(--glass-bg-elevated, var(--glass-btn-bg-hover)) !important;
+  border-color: var(--glass-border-hover, var(--glass-border)) !important;
+}
+
+html.liquid-glass button[data-glass-panel][class*="bg-surface-2"],
+html.liquid-glass button[data-slot="card"][class*="bg-surface-2"],
+html.liquid-glass a[data-glass-panel][class*="bg-surface-2"],
+html.liquid-glass a[data-slot="card"][class*="bg-surface-2"] {
+  background-color: var(--glass-bg-elevated, var(--glass-btn-bg-hover)) !important;
+  border-color: var(--glass-border-hover, var(--glass-border)) !important;
+}
+
 /* ── Flat-button exceptions: dock pills, menus & sidebar tabs ────────────
    These are flat BY DESIGN (macOS-style icon tray, right-click menu
    items, the session switcher, the sidebar tab lists of Settings and
@@ -584,6 +663,21 @@ html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:hove
    fill inside those zones; the engine's hover rule above still
    supplies the raised hover chip, and the active tab pills (bare
    bg-surface divs) stay. */
+/* Ghost / icon-only buttons with hover-only surface fill: remain transparent at rest across the whole app */
+html.liquid-glass button[class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
+html.liquid-glass button[class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:not([class*=" bg-surface"]):not([class*=" bg-surface-2"]):not([class*=" bg-surface/"]):not([class*=" bg-surface-2/"]):not([class^="bg-surface"]):not([class^="bg-surface-2"]):not([data-glass-float]) {
+  background-color: transparent !important;
+}
+
+html.liquid-glass button[class*="hover:bg-surface"]:hover:not(:disabled),
+html.liquid-glass button[class*="hover:bg-surface-2"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface"]:hover:not(:disabled),
+html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+}
+
 html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
@@ -733,14 +827,22 @@ html.liquid-glass [data-slot="badge"] {
   border-color: var(--glass-border) !important;
 }
 
-/* Floating overlay controls (portaled, never nested inside a panel):
+/* Floating overlay controls (portaled or canvas-floating, not nested inside a panel):
    full glass WITH blur. The button rule deliberately omits blur to avoid
    milky blur-over-blur inside panels — but a floating control has no
    blurred panel behind it, so without blur the content shines through
-   sharp and the control reads as broken. Placed after the button rule
-   (same specificity wins by order). */
-html.liquid-glass button[data-glass-float] {
+   sharp and the control reads as broken. */
+html.liquid-glass button[data-glass-float],
+html.liquid-glass [data-glass-float] {
   background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass button[data-glass-float]:hover:not(:disabled),
+html.liquid-glass [data-glass-float]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
@@ -1169,7 +1271,7 @@ input[type="image"],
 /* ── In-App Fullscreen Replay Mode (Hide Chrome & Sidebar) ────────────────── */
 body.replay-fullscreen-active aside,
 body.replay-fullscreen-active nav,
-body.replay-fullscreen-active header {
+body.replay-fullscreen-active header[data-slot="app-header"] {
   display: none !important;
 }
 

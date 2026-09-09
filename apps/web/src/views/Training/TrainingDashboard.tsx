@@ -834,7 +834,7 @@ function ReviewView({
         ) : dueCount > 0 ? (
           <ReviewQueueSection onStartReview={onStartReview} onOpenInsights={onOpenInsights} />
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-line bg-surface/50 px-6 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-line bg-surface-2/40 px-6 py-16 text-center">
             <div className="grid size-12 place-items-center rounded-full bg-surface-2">
               <RotateCcw className="size-5 text-ink-3" />
             </div>

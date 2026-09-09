@@ -459,7 +459,7 @@ export function ReconstructionsView() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* ── Header + filters ── */}
-      <div className="shrink-0 border-b border-line bg-surface/60 px-5 pb-3 pt-4">
+      <div className="shrink-0 border-b border-line bg-surface px-5 pb-3 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold tracking-tight text-ink">

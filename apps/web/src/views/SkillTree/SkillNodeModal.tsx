@@ -158,7 +158,7 @@ export function SkillNodeModal({
               {drillList.map((drill) => (
                 <li
                   key={drill}
-                  className="text-xs text-ink/90 flex items-center gap-2 p-2.5 rounded-lg bg-surface/60 border border-line/60"
+                  className="text-xs text-ink/90 flex items-center gap-2 p-2.5 rounded-lg bg-surface border border-line"
                 >
                   <ArrowRight className="w-3.5 h-3.5 text-ink shrink-0" />
                   <span>{drill}</span>

@@ -106,7 +106,7 @@ export function ContextMenu() {
               // menu are portaled to <body> (outside the dialog's content), so
               // without this Radix treats them as "outside" and closes the
               // dialog when the menu is used.
-              "pointer-events-auto min-w-50 rounded-xl border border-line/80 bg-surface/95 p-1 shadow-xl backdrop-blur-xl",
+              "pointer-events-auto min-w-50 rounded-xl border border-line bg-surface p-1 shadow-xl",
               "select-none outline-none",
             )}
             onPointerDown={(e) => e.stopPropagation()}

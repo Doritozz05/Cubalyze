@@ -230,7 +230,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                   'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
                   active
                     ? 'bg-surface text-ink shadow-xs font-semibold'
-                    : 'text-ink-3 hover:text-ink hover:bg-surface/50'
+                    : 'text-ink-3 hover:text-ink hover:bg-surface-2'
                 )}
               >
                 <Icon className="size-3.5" />
@@ -293,7 +293,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink',
                       active
                         ? 'bg-surface text-ink shadow-xs font-semibold'
-                        : 'text-ink-3 hover:text-ink hover:bg-surface/50'
+                        : 'text-ink-3 hover:text-ink hover:bg-surface-2'
                     )}
                   >
                     <Icon className="size-3.5" />

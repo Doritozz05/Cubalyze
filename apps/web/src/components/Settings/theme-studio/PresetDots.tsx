@@ -7,7 +7,7 @@ import type { ThemePreset } from '@/theme/themePresets';
 export function PresetDots({ preset }: { preset: ThemePreset }) {
   const { t } = useTranslation('settings');
   return (
-    <div className="mt-1 flex items-center gap-1.5 rounded-lg border border-line/60 bg-surface/60 p-1.5">
+    <div className="mt-1 flex items-center gap-1.5 rounded-lg border border-line/60 bg-surface-2/60 p-1.5">
       <div
         role="img"
         aria-label={t('appearance.colors.canvas')}

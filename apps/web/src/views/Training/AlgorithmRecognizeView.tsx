@@ -513,6 +513,8 @@ function QuizPanel({
                 <button
                   key={opt.id}
                   onClick={() => onSelect(opt.id)}
+                  data-slot="card"
+                  data-glass-panel
                   className={cn(
                     "rounded-xl border-2 bg-surface px-4 py-3.5 text-center transition-all",
                     "border-line hover:border-ink/25 hover:bg-surface-2 hover:shadow-sm",

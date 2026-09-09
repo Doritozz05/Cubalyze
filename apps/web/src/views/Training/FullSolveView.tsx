@@ -609,7 +609,7 @@ export function FullSolveView({ methodId, onBack }: FullSolveViewProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl border border-line bg-surface/90 backdrop-blur-md p-6 overflow-y-auto"
+                    className="absolute inset-0 flex flex-col gap-4 z-10 rounded-xl border border-line bg-surface p-6 overflow-y-auto"
                   >
                     <div className="flex flex-col items-center gap-2">
                       <Trophy className="size-10 text-caution" />

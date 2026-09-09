@@ -171,8 +171,9 @@ export function InfiniteF2LView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  data-glass-float
                   onClick={calibrate}
-                  className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                  className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                   aria-label={t("infiniteF2l.calibrateGyro")}
                 >
                   <Compass className="size-4" />
@@ -186,8 +187,9 @@ export function InfiniteF2LView({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                data-glass-float
                 onClick={() => setIsSetupOpen(true)}
-                className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                 aria-label={t("infiniteF2l.settings")}
               >
                 <Settings2 className="size-4" />
@@ -201,8 +203,9 @@ export function InfiniteF2LView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  data-glass-float
                   onClick={finishSession}
-                  className="flex h-9 items-center gap-1.5 px-3 cursor-pointer rounded-lg border border-line bg-surface-2/60 text-xs font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                  className="flex h-9 items-center gap-1.5 px-3 cursor-pointer rounded-lg border border-line bg-surface text-xs font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                   aria-label={t("infiniteF2l.finish")}
                 >
                   <Flag className="size-3.5 text-amber-500" />
@@ -218,8 +221,9 @@ export function InfiniteF2LView({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  data-glass-float
                   onClick={() => restart()}
-                  className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface-2/60 text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+                  className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                   aria-label={t("infiniteF2l.restart")}
                 >
                   <RotateCcw className="size-4" />
@@ -241,7 +245,7 @@ export function InfiniteF2LView({
               key={solvedCount}
               initial={{ scale: 1.15 }}
               animate={{ scale: 1 }}
-              className="flex items-center gap-2 rounded-full border border-line bg-surface/90 backdrop-blur-md px-4 py-1.5 shadow-sm"
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-1.5 shadow-sm"
             >
               <Sparkles className="size-3.5 text-amber-500" />
               <span className="text-xs font-semibold text-ink">
@@ -255,7 +259,7 @@ export function InfiniteF2LView({
             </motion.div>
 
             {/* TPS & Time Pill */}
-            <div className="flex items-center gap-3 rounded-full border border-line bg-surface/90 backdrop-blur-md px-4 py-1.5 shadow-sm text-xs text-ink-2 font-medium">
+            <div className="flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-1.5 shadow-sm text-xs text-ink-2 font-medium">
               <span className="nums">{formatTime(elapsedMs)}</span>
               <span className="h-3 w-px bg-line" />
               <span className="nums flex items-center gap-1.5">
@@ -275,7 +279,7 @@ export function InfiniteF2LView({
               {activePairs.map((pair) => (
                 <div
                   key={pair.slotId}
-                  className="flex items-center gap-1.5 rounded-full border border-line bg-surface/90 backdrop-blur-md px-3 py-1 text-[0.68rem] font-semibold text-ink shadow-sm"
+                  className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[0.68rem] font-semibold text-ink shadow-sm"
                 >
                   <span
                     className="size-2 rounded-full shadow-xs"

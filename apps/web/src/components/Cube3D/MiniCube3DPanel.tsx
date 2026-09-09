@@ -111,13 +111,13 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
 
         {/* Loading / fallback state */}
         {initFailed || contextEvicted ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
+          <div className="absolute inset-0 flex items-center justify-center bg-canvas/90 px-2">
             <span className="text-[0.58rem] text-ink-3/70 text-center">
               {t("viewUnavailableShort")}
             </span>
           </div>
         ) : !isReady ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
+          <div className="absolute inset-0 flex items-center justify-center bg-canvas/90">
             <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
               {t("init3dShort")}
             </span>
@@ -125,7 +125,7 @@ export const MiniCube3DPanel = memo(function MiniCube3DPanel({ className, scramb
         ) : null}
 
         {/* Recent moves overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-background/60 backdrop-blur-sm px-2 py-1.5">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-line bg-surface px-2 py-1.5">
           {recentMoves.length === 0 ? (
             <p className="text-center text-[0.55rem] text-ink-3/50 italic">
               {t("waitingShort")}

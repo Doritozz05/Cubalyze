@@ -642,6 +642,8 @@ function CaseSelectorPanel({ cases, selectedCaseId, onSelectCase, getProgress }:
           const caseAlg = getAlgorithmsForCase(c.id)[0];
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
+              data-slot="card"
+              data-glass-panel
               className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 outline-none cursor-pointer",
                 isSelected
                   ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"

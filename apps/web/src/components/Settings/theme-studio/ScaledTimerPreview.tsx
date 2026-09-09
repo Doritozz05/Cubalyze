@@ -210,7 +210,8 @@ export function ScaledTimerPreview({
           type="button"
           onClick={() => setExpanded(false)}
           aria-label={t('appearance.previewCollapse')}
-          className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border border-line bg-surface/90 text-ink shadow-lg backdrop-blur-md transition-colors hover:bg-surface"
+          data-glass-float
+          className="absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-lg transition-colors hover:bg-surface-2"
         >
           <X className="size-4" />
         </button>
@@ -223,7 +224,7 @@ export function ScaledTimerPreview({
       {!expanded && (
       <div
         data-context-zone="preview-toolbar"
-        className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/75 px-3.5 py-2.5 backdrop-blur-md"
+        className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface px-3.5 py-2.5"
       >
         {/* Expand (mobile "ver en grande") — Radix tooltip, never `title` */}
         <Tooltip>
@@ -232,7 +233,7 @@ export function ScaledTimerPreview({
               type="button"
               onClick={() => setExpanded(true)}
               aria-label={t('appearance.previewExpand')}
-              className="flex size-7 items-center justify-center rounded-md border border-line/60 bg-surface-2/60 text-ink-2 transition-colors hover:text-ink hover:bg-surface cursor-pointer"
+              className="flex size-7 items-center justify-center rounded-md border border-line/60 bg-surface text-ink-2 transition-colors hover:text-ink hover:bg-surface-2 cursor-pointer"
             >
               <Maximize2 className="size-3.5" />
             </button>
@@ -289,7 +290,7 @@ export function ScaledTimerPreview({
                   'rounded-md px-2 py-1 text-[0.68rem] font-medium transition-all cursor-pointer',
                   active
                     ? 'border border-ink/40 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20'
-                    : 'border border-line/40 bg-transparent text-ink-3 hover:text-ink hover:bg-surface-2/40'
+                    : 'border border-line/60 bg-surface-2/40 text-ink-3 hover:text-ink hover:bg-surface-2/70'
                 )}
               >
                 {s.label}

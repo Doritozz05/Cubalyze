@@ -237,6 +237,7 @@ export function MobileMethodNavigator({
         type="button"
         onClick={handleOpen}
         aria-haspopup="dialog"
+        data-glass-panel
         className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-line bg-surface px-3.5 text-left shadow-xs touch-manipulation select-none"
       >
         <FolderTree className="size-4 shrink-0 text-ink-3" />

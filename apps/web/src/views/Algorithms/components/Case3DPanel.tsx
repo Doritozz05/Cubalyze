@@ -198,7 +198,7 @@ export function Case3DPanel({
   // ── Render ──────────────────────────────────────────────────────────
   return (
     <>
-      <div className={cn("flex min-h-0 flex-1 flex-col bg-surface", className)}>
+      <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
         {/* Header — overlay variant swaps X for a back button (touch) */}
         <div className="flex items-center justify-between shrink-0 px-4 py-3 border-b border-line">
           <div className="flex items-center gap-2 min-w-0">

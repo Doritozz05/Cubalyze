@@ -85,6 +85,8 @@ function CaseCard({
   return (
     <button
       onClick={onClick}
+      data-slot="card"
+      data-glass-panel
       className={cn(
         "group relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all duration-150 text-left w-full",
         // Touch: compact cards so 2 columns fit on 360px screens.

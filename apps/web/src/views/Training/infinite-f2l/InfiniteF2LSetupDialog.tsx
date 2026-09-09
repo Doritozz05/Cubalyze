@@ -120,7 +120,7 @@ export function InfiniteF2LSetupDialog({
                   "flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-all cursor-pointer",
                   isSelected
                     ? "border-ink/50 bg-surface-2 text-ink font-semibold shadow-xs ring-2 ring-ink/30"
-                    : "border-line/60 bg-surface/40 hover:bg-surface-2/60 text-ink-2",
+                    : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-2",
                 )}
               >
                 <span className={cn("size-6 rounded-full border shadow-inner", c.bgClass)} />
@@ -156,7 +156,7 @@ export function InfiniteF2LSetupDialog({
                     "flex h-10 items-center justify-center rounded-xl border text-sm font-semibold transition-all cursor-pointer",
                     isSelected
                       ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/60 bg-surface/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
                   )}
                 >
                   {num}
@@ -184,7 +184,7 @@ export function InfiniteF2LSetupDialog({
                     "flex h-10 items-center justify-center gap-1.5 rounded-xl border text-[0.78rem] font-semibold transition-all cursor-pointer",
                     isSelected
                       ? "border-ink/50 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/60 bg-surface/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
                   )}
                 >
                   {t(m.labelKey as never)}
@@ -199,7 +199,7 @@ export function InfiniteF2LSetupDialog({
           same height in both columns so the row reads balanced. */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Target Goal (Target Pairs Slider) */}
-        <div className="flex h-full flex-col justify-between gap-2.5 rounded-xl border border-line/40 p-3.5">
+        <div className="flex h-full flex-col justify-between gap-2.5 rounded-xl border border-line/60 bg-surface-2/20 p-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="size-4 text-ink-3" />
@@ -224,29 +224,32 @@ export function InfiniteF2LSetupDialog({
               <span className="text-xs text-ink-3 font-semibold">100</span>
             </div>
             {/* Quick presets */}
-            <div className="grid grid-cols-5 gap-1.5 pt-1">
-              {[0, 10, 25, 50, 100].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setTargetPairs(preset)}
-                  className={cn(
-                    "flex h-7 items-center justify-center rounded-lg text-xs font-medium transition-all cursor-pointer",
-                    targetPairs === preset
-                      ? "border border-ink/40 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20"
-                      : "border border-line/40 bg-transparent text-ink-3 hover:bg-surface-2/40 hover:text-ink",
-                  )}
-                >
-                  {preset === 0 ? "∞" : `${preset}`}
-                </button>
-              ))}
+            <div className="grid grid-cols-5 gap-2 pt-1">
+              {[0, 10, 25, 50, 100].map((preset) => {
+                const isSelected = targetPairs === preset;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setTargetPairs(preset)}
+                    className={cn(
+                      "flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all cursor-pointer",
+                      isSelected
+                        ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
+                        : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                    )}
+                  >
+                    {preset === 0 ? "∞" : `${preset}`}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* AUF switch — right column of the target row, stretched to the same
             height (content centered) so both cards read as one balanced row. */}
-        <div className="flex h-full flex-col justify-center gap-2 rounded-xl border border-line/40 p-3.5">
+        <div className="flex h-full flex-col justify-center gap-2 rounded-xl border border-line/60 bg-surface-2/20 p-3.5">
           <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
             <div className="flex items-center gap-2 min-w-0">
               <ShieldCheck className="size-4 shrink-0 text-ink-3" />
@@ -267,12 +270,12 @@ export function InfiniteF2LSetupDialog({
       {/* 5. Slot Filter & Trapped Options — side by side on md+ */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* Slot selector */}
-        <div className="flex flex-col gap-2 rounded-xl border border-line/40 p-3.5">
+        <div className="flex flex-col gap-2 rounded-xl border border-line/60 bg-surface-2/20 p-3.5">
           <div className="flex items-center gap-2">
             <Box className="size-4 text-ink-3" />
             <span className="text-[0.78rem] font-semibold text-ink">{t("infiniteF2l.setup.activeSlots")}</span>
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-4 gap-2">
             {SLOTS.map((s) => {
               const isActive = allowedSlots.includes(s.id);
               return (
@@ -281,10 +284,10 @@ export function InfiniteF2LSetupDialog({
                   type="button"
                   onClick={() => toggleSlot(s.id)}
                   className={cn(
-                    "flex h-8 items-center justify-center rounded-lg border text-xs font-medium transition-all cursor-pointer",
+                    "flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all cursor-pointer",
                     isActive
-                      ? "border-ink/40 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/40 bg-transparent text-ink-3/70 hover:bg-surface-2/40 hover:text-ink",
+                      ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
                   )}
                 >
                   {s.label}
@@ -297,7 +300,7 @@ export function InfiniteF2LSetupDialog({
         {/* Trapped pieces mode */}
         <div
           className={cn(
-            "flex flex-col justify-center gap-1.5 rounded-xl border border-line/40 p-3.5 transition-opacity",
+            "flex flex-col justify-center gap-1.5 rounded-xl border border-line/60 bg-surface-2/20 p-3.5 transition-opacity",
             spawnMode !== "normal" && "opacity-60",
           )}
         >

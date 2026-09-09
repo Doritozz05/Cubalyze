@@ -903,7 +903,7 @@ export function WidgetDock({
       {isEditing &&
         createPortal(
           <div
-            className="fixed inset-0 z-50 bg-canvas/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/40"
             onClick={() => dockEditStore.stopEditing()}
           />,
           document.body,

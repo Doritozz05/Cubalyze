@@ -89,7 +89,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter, compac
                   type="button"
                   onClick={() => setIsMinimized(false)}
                   // Touch: bigger restore pill for thumb use.
-                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
+                  className="flex size-7 items-center justify-center rounded-full border border-line bg-surface text-ink-3 shadow-xs hover:border-ink-2/40 hover:bg-surface-2 hover:text-ink transition-all duration-200 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring max-lg:size-9"
                   aria-label={t("restoreSessionStats")}
                 >
                   <ChevronUp className="size-4 max-lg:size-5" />
@@ -109,7 +109,7 @@ export function SessionStats({ solves, className, onExpand, puzzleFilter, compac
           >
             <div className="relative flex flex-col items-center w-full h-full justify-center">
               {bpaWpa != null && (
-                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs backdrop-blur-md whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
+                <div className="absolute -top-7.5 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2.5 rounded-full border border-line/70 bg-surface px-3 py-0.5 text-[0.68rem] text-ink-3 shadow-xs whitespace-nowrap z-10 animate-in fade-in slide-in-from-bottom-1">
                   <span className="font-mono">
                     Ao{bpaWpa.targetN} BPA: <strong className="text-ready font-semibold">{formatTime(bpaWpa.bpa ?? 0)}</strong>
                   </span>

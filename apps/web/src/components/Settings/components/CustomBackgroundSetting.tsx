@@ -281,7 +281,7 @@ export function CustomBackgroundSetting() {
             )}
 
             {/* Media Type Badge in corner */}
-            <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface/85 backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60">
+            <div data-glass-float className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line">
               {mediaType === 'video' ? (
                 <>
                   <Film className="size-3 text-primary" />
@@ -306,9 +306,10 @@ export function CustomBackgroundSetting() {
             {/* Test Animation (Play/Pause) Button for Videos and GIFs */}
             {(mediaType === 'video' || mediaType === 'gif') && (
               <button
+                data-glass-float
                 type="button"
                 onClick={() => setPreviewPlaying((p) => !p)}
-                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-(--glass-bg-dense) hover:bg-surface backdrop-blur-md px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line/60 transition-colors"
+                className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 rounded-full bg-surface hover:bg-surface-2 px-2.5 py-1 text-[0.7rem] font-medium text-ink shadow-sm border border-line transition-colors"
                 title={previewPlaying ? t('appearance.previewPause') : t('appearance.previewPlay')}
               >
                 {previewPlaying ? (
@@ -327,7 +328,7 @@ export function CustomBackgroundSetting() {
 
             {/* Mock timer readout */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="rounded-md bg-(--glass-bg-dense) backdrop-blur-xs px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line/50">
+              <span data-glass-float className="rounded-md bg-surface px-3 py-1 font-mono text-xs font-semibold text-ink shadow-sm border border-line">
                 00:00.00
               </span>
             </div>
@@ -410,7 +411,7 @@ export function CustomBackgroundSetting() {
 
             {/* Always animate (only visible for video or gif, above the experimental toggle) */}
             {(mediaType === 'video' || mediaType === 'gif') && (
-              <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2">
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface-2/40 p-3 mt-1 sm:col-span-2">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-xs font-medium text-ink">
                     {t('appearance.backgroundAlwaysAnimate')}
@@ -427,7 +428,7 @@ export function CustomBackgroundSetting() {
             )}
 
             {/* Experimental: Background on all views */}
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface/50 p-3 mt-1 sm:col-span-2">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-line/60 bg-surface-2/40 p-3 mt-1 sm:col-span-2">
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-ink">

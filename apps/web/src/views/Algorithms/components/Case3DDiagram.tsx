@@ -285,13 +285,13 @@ export function Case3DCanvas({
         )}
       />
       {initFailed || contextEvicted ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-surface/80 px-2">
+        <div className="absolute inset-0 flex items-center justify-center bg-canvas/90 px-2">
           <span className="text-[0.58rem] text-ink-3/70 text-center">
             {t("tooMany3DViews")}
           </span>
         </div>
       ) : !isReady ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
+        <div className="absolute inset-0 flex items-center justify-center bg-canvas/90">
           <span className="text-[0.6rem] text-ink-3/50 animate-pulse">{t("rendering3D")}</span>
         </div>
       ) : null}
