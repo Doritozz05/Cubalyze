@@ -588,18 +588,31 @@ html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="c
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
-/* Profile content tabs: the ACTIVE tab is a full glass panel (frosted
-   backplate + backdrop blur), not the flat --glass-btn-bg chip the generic
-   button remap gives it. Same specificity as the button rule above (thanks
-   to the mirrored :not guards) but declared later, so it wins. Inactive
-   tabs stay text-only. With liquid glass OFF nothing applies: the tab keeps
-   its solid bg-surface fill from Tailwind. */
+/* Profile content tabs: ALL tabs carry a glass chip so the tab row reads as a
+   strip of small glass pills; the ACTIVE tab is a full glass panel (frosted
+   backplate + backdrop blur + glass hairline), not the flat --glass-btn-bg
+   chip the generic button remap gives it. The active rules mirror the
+   :not() guards of the button rule above to match its specificity but are
+   declared later, so they win. With liquid glass OFF nothing applies: tabs
+   keep their solid Tailwind fills (inactive text-only, active bg-surface). */
+html.liquid-glass [data-slot="tabs-trigger"]:not([data-no-glass])[class*="bg-surface"],
+html.liquid-glass button[data-slot="tabs-trigger"]:not([data-no-glass])[class*="bg-surface"] {
+  background-color: var(--glass-btn-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
 html.liquid-glass [data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"],
 html.liquid-glass button[data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"] {
   background-color: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
-  border-color: var(--glass-border) !important;
+  border-color: var(--glass-border-hover, var(--glass-border)) !important;
+  box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.14);
+}
+
+html.liquid-glass [data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"]:hover,
+html.liquid-glass button[data-slot="tabs-trigger"][data-state="active"]:not([data-no-glass])[class*="bg-surface"]:hover {
+  background-color: var(--glass-btn-bg-hover) !important;
 }
 
 /* ── Dropdown Select Trigger: frosted glass with backdrop blur ───────────
