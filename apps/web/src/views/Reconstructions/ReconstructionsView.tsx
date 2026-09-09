@@ -217,11 +217,11 @@ function ReconRow({
           {entry.competition || "—"}
         </span>
 
-        <div className="flex min-w-0 items-center justify-start">
+        <div className="flex min-w-0 items-center justify-center">
           <PuzzleBadge puzzle={entry.puzzle} />
         </div>
 
-        <div className="flex min-w-0 items-center justify-start">
+        <div className="flex min-w-0 items-center justify-center">
           <MethodBadge entry={entry} />
         </div>
 
@@ -582,7 +582,7 @@ export function ReconstructionsView() {
           ))}
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col bg-surface">
           {/* Column header — desktop/tablet only; mobile cards are self-explanatory */}
           <div
             className={cn(
@@ -595,8 +595,8 @@ export function ReconstructionsView() {
             <span className="text-right">{t("list.colTime")}</span>
             <span>{t("list.colDate")}</span>
             <span>{t("list.colCompetition")}</span>
-            <span>{t("list.colPuzzle")}</span>
-            <span>{t("list.colMethod")}</span>
+            <span className="justify-center text-center">{t("list.colPuzzle")}</span>
+            <span className="justify-center text-center">{t("list.colMethod")}</span>
             <span className="text-right hidden xl:block">{t("list.colTech")}</span>
           </div>
 
