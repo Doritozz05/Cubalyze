@@ -111,8 +111,10 @@ export interface ReplaySectionProps {
    * padding) — used by the horizontal/split layouts (stats detail mode and
    * reconstruction detail) where the replay column must be 100% transparent.
    * The base classes are dropped entirely (not overridden), so the
-   * liquid-glass engine never matches this surface. Fullscreen chrome
-   * always wins over flat.
+   * liquid-glass engine never matches this surface — EXCEPT the controls
+   * bar, which in flat mode renders as its own glass panel (two separate
+   * surfaces: transparent cube zone + frosted controls). Fullscreen
+   * chrome always wins over flat.
    */
   flat?: boolean;
   className?: string;
@@ -1000,11 +1002,17 @@ function ReplaySection({
                 )}
               </div>
 
-              {/* Controls bar */}
+              {/* Controls bar — in flat mode this renders as its OWN
+                  liquid-glass panel (bg-surface triggers the glass engine),
+                  so the horizontal/split layout gets two separate surfaces:
+                  the cube zone floats transparent above, the controls get
+                  the frosted backplate below. Non-flat keeps the chip. */}
               <div
+                data-replay-controls
                 className={cn(
                   "flex flex-col gap-2 w-full shrink-0",
                   size === "large" || isFullscreen ? "max-w-2xl mx-auto px-1 pb-1" : "w-full max-w-sm sm:max-w-md mx-auto",
+                  flat ? "rounded-xl bg-surface border border-line/60 p-1.5 sm:p-2" : "",
                 )}
               >
                 {/* Top row: live move stats */}
@@ -1048,15 +1056,15 @@ function ReplaySection({
                   </div>
                 </div>
 
-                {/* Bottom row: transport buttons — flat mode drops the
-                    frosted chip too, so the horizontal column is 100%
-                    transparent (buttons keep their hover chips). */}
+                {/* Bottom row: transport buttons — in flat mode they sit
+                    directly on the controls panel above (no nested chip, so
+                    no blur-over-blur); non-flat keeps its own frosted chip. */}
                 <div
                   className={cn(
-                    "flex items-center justify-between gap-1 sm:gap-2 p-1.5 sm:px-2.5",
+                    "flex items-center justify-between gap-1 sm:gap-2",
                     flat
-                      ? "rounded-none bg-transparent border-0"
-                      : "rounded-xl bg-surface-2/50 border border-line/60",
+                      ? ""
+                      : "p-1.5 sm:px-2.5 rounded-xl bg-surface-2/50 border border-line/60",
                   )}
                 >
                   {/* Left: Transport playback controls */}

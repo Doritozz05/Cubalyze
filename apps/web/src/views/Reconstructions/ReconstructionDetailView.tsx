@@ -391,10 +391,11 @@ export function ReconstructionDetailView({
           {solve && (
             <div className="w-full shrink-0 max-lg:px-3 max-lg:pt-4 max-lg:pb-1 max-w-4xl mx-auto lg:mx-0 lg:h-full lg:w-[48%] xl:w-7/12 lg:min-w-72 lg:max-w-200 lg:flex-none lg:border-r lg:border-line/60">
               {/* Horizontal/split: the replay column is 100% transparent on
-                  desktop — panel classes are max-lg: variants, and
-                  [data-replay-flat] makes the liquid-glass engine force
-                  transparency at lg+ too (its rules match class substrings,
-                  so responsive variants alone can't escape them). */}
+                  desktop — the glass engine matches class SUBSTRINGS, so
+                  `max-lg:bg-surface` would re-frost the whole column at every
+                  size; [data-replay-flat] forces transparency at lg+ (cube
+                  floats on the page; only the controls panel keeps its glass).
+                  Mobile (<lg) gets a card. */}
               <div
                 data-replay-flat
                 className="flex flex-col aspect-4/3 sm:aspect-16/10 lg:aspect-auto w-full min-h-75 sm:min-h-95 lg:min-h-0 lg:h-full max-lg:rounded-xl max-lg:border max-lg:border-line max-lg:bg-surface max-lg:p-3 sm:max-lg:p-4 max-lg:shadow-xs"
