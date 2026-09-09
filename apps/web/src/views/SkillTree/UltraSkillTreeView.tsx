@@ -211,7 +211,7 @@ export function UltraSkillTreeView({ onNavigate }: UltraSkillTreeViewProps) {
                 className={`h-7 text-xs px-2.5 py-0 rounded-md border transition-all cursor-pointer ${
                   isActive
                     ? "bg-ink text-surface font-semibold border-ink shadow-sm"
-                    : "bg-surface-2/30 border-line/40 text-ink-3 hover:text-ink hover:bg-surface-2/70"
+                    : "bg-surface-2 border-line/40 text-ink-3 hover:text-ink hover:bg-line"
                 }`}
               >
                 {t(cat.labelKey)}

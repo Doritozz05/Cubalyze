@@ -283,7 +283,7 @@ export function MobileMethodNavigator({
                     }}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors touch-manipulation",
-                      isSelected ? "bg-surface-2" : "hover:bg-surface-2/60",
+                      isSelected ? "bg-surface-2" : "hover:bg-surface-2",
                     )}
                   >
                     <span className="min-w-0 flex-1">
@@ -343,7 +343,7 @@ export function MobileMethodNavigator({
                     onClick={() => handleTap(node)}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left transition-colors touch-manipulation",
-                      isSelected ? "bg-surface-2" : "hover:bg-surface-2/60",
+                      isSelected ? "bg-surface-2" : "hover:bg-surface-2",
                     )}
                   >
                     <span className="min-w-0 flex-1 truncate text-[0.8rem] font-medium text-ink">

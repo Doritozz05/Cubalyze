@@ -530,7 +530,7 @@ function CasesTab({ caseStats }: { caseStats: CaseStat[] }) {
         <div className="max-h-125 overflow-y-auto">
           {sorted.map((sc, idx) => (
             <div key={sc.case.id}
-              className={cn("flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2/50",
+              className={cn("flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-2",
                 idx < sorted.length - 1 && "border-b border-line")}>
               <span className="nums text-[0.55rem] text-ink-3/50 shrink-0 w-5">{idx + 1}</span>
               <div className="flex-1 min-w-0">
@@ -584,7 +584,7 @@ function HistoryTab({ sessionHistory }: { sessionHistory: { day: string; avgTime
             const prevDay = sessionHistory[13 - idx - 1];
             const timeTrend = prevDay ? day.avgTime <= prevDay.avgTime : null;
             return (
-              <div key={day.day} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-surface-2/50 transition-colors">
+              <div key={day.day} className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-surface-2 transition-colors">
                 <span className="text-[0.62rem] font-medium text-ink-2 w-8">{day.day}</span>
                 <div className="flex items-center gap-1.5">
                   {timeTrend === true && <TrendingDown className="size-3 text-ready" />}

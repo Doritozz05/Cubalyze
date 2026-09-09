@@ -333,7 +333,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             'group relative flex flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150',
                             isSelected
                               ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-sm'
-                              : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2/50'
+                              : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2'
                           )}
                         >
                           <div className="flex items-center justify-between">

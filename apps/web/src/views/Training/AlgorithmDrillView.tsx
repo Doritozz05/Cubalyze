@@ -647,7 +647,7 @@ function CaseSelectorPanel({ cases, selectedCaseId, onSelectCase, getProgress }:
               className={cn("flex flex-col gap-1.5 rounded-xl border p-2.5 text-left transition-all duration-150 outline-none cursor-pointer",
                 isSelected
                   ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
-                  : "border-line bg-surface hover:border-ink/20 hover:bg-surface-2/60")}>
+                  : "border-line bg-surface hover:border-ink/20 hover:bg-surface-2")}>
               <div className="flex items-center justify-between">
                 <span className="nums text-[0.78rem] font-bold text-ink">{c.caseNumber}</span>
                 <span className="nums text-[0.6rem] font-semibold text-ink-3">{progress.mastery}%</span>
@@ -719,7 +719,7 @@ function SequentialModePanel({ cases, currentIndex, selectedCaseId, onSelectCase
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
               className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors cursor-pointer outline-none",
-                isCurrent && "bg-surface-2 border border-ink/30 font-medium", !isCurrent && "hover:bg-surface-2/50")}>
+                isCurrent && "bg-surface-2 border border-ink/30 font-medium", !isCurrent && "hover:bg-surface-2")}>
               <span className={cn("nums text-[0.62rem] font-medium shrink-0 w-5", isCompleted ? "text-ready" : isCurrent ? "text-ink" : "text-ink-3")}>
                 {isCompleted ? "✓" : idx + 1}
               </span>
@@ -750,7 +750,7 @@ function WeaknessModePanel({ cases, selectedCaseId, onSelectCase, getProgress }:
           return (
             <button key={c.id} onClick={() => onSelectCase(c.id)}
               className={cn("flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors cursor-pointer outline-none",
-                isSelected && "bg-surface-2 border border-ink/30 font-medium", !isSelected && "hover:bg-surface-2/50")}>
+                isSelected && "bg-surface-2 border border-ink/30 font-medium", !isSelected && "hover:bg-surface-2")}>
               <span className={cn("nums text-[0.58rem] font-medium shrink-0 w-4", idx < 3 ? "text-hold" : idx < 6 ? "text-caution" : "text-ink-3")}>{idx + 1}</span>
               <span className="text-[0.62rem] text-ink truncate flex-1">{c.caseNumber}{c.name && c.name !== c.caseNumber ? ` ${c.name}` : ""}</span>
               <span className={cn("nums text-[0.55rem] shrink-0", progress.mastery < 50 ? "text-hold" : progress.mastery < 75 ? "text-caution" : "text-ink-3")}>{progress.mastery}%</span>

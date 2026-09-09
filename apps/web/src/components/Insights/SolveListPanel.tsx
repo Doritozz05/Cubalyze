@@ -499,8 +499,8 @@ export const SolveListPanel = memo(function SolveListPanel({
                   )}
                   style={{ transform: `translateY(${vi.start}px)` }}
                 >
-                  {/* Hover pill — subtle translucent inset card */}
-                  <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-surface-2/0 transition-colors duration-150 group-hover:bg-surface-2/50" />
+                  {/* Hover pill — subtle solid inset card */}
+                  <div className="pointer-events-none absolute inset-x-1.5 inset-y-0.5 rounded-md bg-transparent transition-colors duration-150 group-hover:bg-surface-2" />
                   {/* Active-row card — Linear/Raycast style hairline inset card */}
                   <ActivePill active={selectionMode ? isChecked : isSelected} />
 

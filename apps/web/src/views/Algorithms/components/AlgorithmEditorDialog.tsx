@@ -547,7 +547,7 @@ export function AlgorithmEditorDialog({
                         "rounded-md px-2 py-2 text-xs font-medium capitalize transition-all",
                         difficulty === d
                           ? "bg-ink text-surface shadow-sm"
-                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
                       )}
                     >
                       {t(DIFFICULTY_LABEL_KEYS[d])}

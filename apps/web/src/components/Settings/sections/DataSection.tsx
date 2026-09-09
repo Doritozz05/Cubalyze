@@ -456,7 +456,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                           'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
                           dragOver
                             ? 'border-ink bg-surface-2'
-                            : 'border-line hover:border-ink/30 hover:bg-surface-2/50',
+                            : 'border-line hover:border-ink/30 hover:bg-surface-2',
                         )}
                       >
                         <div className="grid size-12 place-items-center rounded-full bg-surface-2">
@@ -531,7 +531,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
                           'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 px-6 transition-colors cursor-pointer',
                           dragOver
                             ? 'border-ink bg-ink/5'
-                            : 'border-line hover:border-ink/30 hover:bg-surface-2/50',
+                            : 'border-line hover:border-ink/30 hover:bg-surface-2',
                         )}
                       >
                         <div className="grid size-12 place-items-center rounded-full bg-surface-2">

@@ -125,7 +125,7 @@ export const MethodTree = memo(function MethodTree({
               onClick={() => togglePuzzle(puzzleType)}
               className={cn(
                 "flex w-full items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-medium transition-colors",
-                "hover:bg-surface-2/40 rounded-sm",
+                "hover:bg-surface-2 rounded-sm",
                 "text-ink",
               )}
             >
@@ -194,7 +194,7 @@ function CollapsibleMethodNode({
           "flex w-full items-center px-2 py-1 text-[0.7rem] font-medium transition-colors rounded-sm",
           isSelected
             ? "bg-surface-2 text-ink font-semibold"
-            : "text-ink-2 hover:bg-surface-2/30 hover:text-ink",
+            : "text-ink-2 hover:bg-surface-2 hover:text-ink",
         )}
       >
         <span>{method.name}</span>
@@ -216,7 +216,7 @@ function CollapsibleMethodNode({
         onClick={onToggle}
         className={cn(
           "flex w-full items-center gap-1.5 px-2 py-1 text-[0.7rem] font-medium transition-colors",
-          "hover:bg-surface-2/30 rounded-sm",
+          "hover:bg-surface-2 rounded-sm",
           hasSelected ? "text-ink" : "text-ink-2",
         )}
       >
@@ -285,7 +285,7 @@ function SubsetItem({
           onClick={() => setExpanded(!expanded)}
           className={cn(
             "flex w-full items-center gap-1 px-2 py-1 text-[0.68rem] font-medium transition-colors rounded-sm",
-            "hover:bg-surface-2/30",
+            "hover:bg-surface-2",
             hasSelectedChild || subset.id === selectedSubsetId
               ? "text-ink"
               : "text-ink-2",
@@ -327,7 +327,7 @@ function SubsetItem({
         "block w-full text-left px-2 py-1 text-[0.68rem] rounded-sm transition-colors",
         isSelected
           ? "bg-ink text-surface font-semibold shadow-xs"
-          : "text-ink-3 hover:text-ink hover:bg-surface-2/60",
+          : "text-ink-3 hover:text-ink hover:bg-surface-2",
       )}
     >
       {subset.name}

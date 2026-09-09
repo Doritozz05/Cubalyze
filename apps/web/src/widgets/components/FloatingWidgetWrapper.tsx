@@ -593,10 +593,10 @@ export function FloatingWidgetWrapper({
           isNearDock
             ? "size-8 justify-center gap-0 border-b-0 cursor-grabbing"
             : drag.isDragging
-              ? "cursor-grabbing bg-surface-2/60"
+              ? "cursor-grabbing bg-surface-2"
               : isFocused
-                ? "cursor-grab bg-surface hover:bg-surface-2/40"
-                : "cursor-grab bg-surface hover:bg-surface-2/50 text-ink/80 hover:text-ink",
+                ? "cursor-grab bg-surface hover:bg-surface-2"
+                : "cursor-grab bg-surface hover:bg-surface-2 text-ink/80 hover:text-ink",
         )}
       >
         <div

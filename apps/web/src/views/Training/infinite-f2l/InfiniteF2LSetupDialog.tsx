@@ -120,7 +120,7 @@ export function InfiniteF2LSetupDialog({
                   "flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-all cursor-pointer",
                   isSelected
                     ? "border-ink/50 bg-surface-2 text-ink font-semibold shadow-xs ring-2 ring-ink/30"
-                    : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-2",
+                    : "border-line/60 bg-surface-2/40 hover:bg-surface-2 text-ink-2",
                 )}
               >
                 <span className={cn("size-6 rounded-full border shadow-inner", c.bgClass)} />
@@ -156,7 +156,7 @@ export function InfiniteF2LSetupDialog({
                     "flex h-10 items-center justify-center rounded-xl border text-sm font-semibold transition-all cursor-pointer",
                     isSelected
                       ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2 text-ink-3 hover:text-ink",
                   )}
                 >
                   {num}
@@ -184,7 +184,7 @@ export function InfiniteF2LSetupDialog({
                     "flex h-10 items-center justify-center gap-1.5 rounded-xl border text-[0.78rem] font-semibold transition-all cursor-pointer",
                     isSelected
                       ? "border-ink/50 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2 text-ink-3 hover:text-ink",
                   )}
                 >
                   {t(m.labelKey as never)}
@@ -236,7 +236,7 @@ export function InfiniteF2LSetupDialog({
                       "flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all cursor-pointer",
                       isSelected
                         ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
-                        : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                        : "border-line/60 bg-surface-2/40 hover:bg-surface-2 text-ink-3 hover:text-ink",
                     )}
                   >
                     {preset === 0 ? "∞" : `${preset}`}
@@ -287,7 +287,7 @@ export function InfiniteF2LSetupDialog({
                     "flex h-9 items-center justify-center rounded-xl border text-xs font-semibold transition-all cursor-pointer",
                     isActive
                       ? "border-ink/50 bg-surface-2 text-ink font-bold shadow-xs ring-1 ring-ink/20"
-                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2/60 text-ink-3 hover:text-ink",
+                      : "border-line/60 bg-surface-2/40 hover:bg-surface-2 text-ink-3 hover:text-ink",
                   )}
                 >
                   {s.label}

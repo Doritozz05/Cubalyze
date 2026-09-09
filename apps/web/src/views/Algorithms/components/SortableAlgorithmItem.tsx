@@ -61,7 +61,7 @@ export function SortableAlgorithmItem({
         "group flex gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors relative max-lg:p-3",
         isSelected
           ? "border-ink bg-surface-2 ring-1 ring-ink/20 shadow-xs"
-          : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2/60",
+          : "border-line bg-surface hover:border-ink/15 hover:bg-surface-2",
         isDragging && "shadow-lg z-10",
       )}
     >

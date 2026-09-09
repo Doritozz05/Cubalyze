@@ -259,7 +259,7 @@ export function FloatingNotesPanel({ solves: _solves }: FloatingNotesPanelProps)
                         "w-full text-left rounded-md p-1.5 text-[10.5px] transition-colors flex items-center justify-between border",
                         selectedNote?.id === n.id
                           ? "bg-surface-2 border-line text-ink font-semibold"
-                          : "bg-surface border-transparent text-ink-3 hover:bg-surface-2/50 hover:text-ink"
+                          : "bg-surface border-transparent text-ink-3 hover:bg-surface-2 hover:text-ink"
                       )}
                     >
                       <span className="truncate flex-1">{n.title}</span>

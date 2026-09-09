@@ -228,7 +228,7 @@ export function ManualSolveSheet({
                         "rounded-md px-2 py-2 text-xs font-medium transition-all",
                         method === m
                           ? "bg-ink text-surface shadow-sm"
-                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
                       )}
                     >
                       {m}
@@ -261,7 +261,7 @@ export function ManualSolveSheet({
                               : isPlus2
                                 ? "bg-plus2-soft text-plus2 ring-1 ring-plus2/30"
                                 : "bg-ink text-surface shadow-sm"
-                            : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-surface-2/80",
+                            : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
                         )}
                       >
                         {p === "none" ? t("clean") : p}

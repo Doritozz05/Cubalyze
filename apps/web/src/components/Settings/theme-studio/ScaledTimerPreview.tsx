@@ -261,7 +261,7 @@ export function ScaledTimerPreview({
                       'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer',
                       active
                         ? 'border border-line/60 bg-surface text-ink font-semibold shadow-xs'
-                        : 'border border-transparent bg-transparent text-ink-3 hover:text-ink hover:bg-surface/40'
+                        : 'border border-transparent bg-transparent text-ink-3 hover:text-ink hover:bg-surface-2'
                     )}
                   >
                     <Icon className="size-3.5" />
@@ -290,7 +290,7 @@ export function ScaledTimerPreview({
                   'rounded-md px-2 py-1 text-[0.68rem] font-medium transition-all cursor-pointer',
                   active
                     ? 'border border-ink/40 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20'
-                    : 'border border-line/60 bg-surface-2/40 text-ink-3 hover:text-ink hover:bg-surface-2/70'
+                    : 'border border-line/60 bg-surface-2/40 text-ink-3 hover:text-ink hover:bg-surface-2'
                 )}
               >
                 {s.label}
