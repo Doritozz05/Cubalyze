@@ -188,7 +188,10 @@ export function ColorPicker({ value, onChange, label, defaultColor, onResetToDef
             type="button"
             aria-haspopup="dialog"
             aria-label={label}
-            className="flex w-full min-w-0 items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 text-left transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
+            className={cn(
+              "flex w-full min-w-0 items-center gap-2.5 rounded-lg border border-line bg-surface-2/50 py-2 pl-3 text-left transition-all duration-150 hover:border-ink/20 hover:bg-surface-2",
+              isOverridden ? "pr-9" : "pr-3"
+            )}
           >
             <div
               className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
@@ -214,9 +217,9 @@ export function ColorPicker({ value, onChange, label, defaultColor, onResetToDef
                   onResetToDefault();
                 }}
                 aria-label={resetTokenLabel}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex size-7 items-center justify-center rounded-md border border-line bg-surface/80 text-ink-3 shadow-2xs backdrop-blur-xs transition-all hover:bg-surface hover:text-ink hover:scale-105 active:scale-95 cursor-pointer z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex size-6 shrink-0 items-center justify-center rounded-md border border-line bg-surface/90 text-ink-3 shadow-2xs backdrop-blur-xs transition-all hover:bg-surface hover:text-ink hover:scale-105 active:scale-95 cursor-pointer z-10"
               >
-                <RotateCcw className="size-3.5" />
+                <RotateCcw className="size-3" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">{resetTokenLabel}</TooltipContent>
