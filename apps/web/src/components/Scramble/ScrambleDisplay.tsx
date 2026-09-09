@@ -240,20 +240,22 @@ export function ScrambleDisplay({
   if (isCompactDown) {
     return (
       <div className="w-full" data-onboarding-target="timer">
-        {/* Scramble tokens remain perfectly centered; green check icon sits on the right via absolute positioning without displacing tokens */}
-        <div className="relative w-full">
-          {renderTokens()}
-          {isScrambled && (
-            <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
-              <span
-                className="flex shrink-0 items-center text-ready"
-                title={t("ready")}
-                aria-label={t("ready")}
-              >
-                <Check className="size-4" />
-              </span>
-            </div>
-          )}
+        {/* Scramble tokens remain perfectly centered; green check icon sits right next to the scramble with padding, without pushing it */}
+        <div className="flex items-center justify-center">
+          <div className="relative inline-block max-w-full">
+            {renderTokens()}
+            {isScrambled && (
+              <div className="pointer-events-none absolute left-[calc(100%+0.5rem)] top-1/2 -translate-y-1/2 flex items-center">
+                <span
+                  className="flex shrink-0 items-center text-ready"
+                  title={t("ready")}
+                  aria-label={t("ready")}
+                >
+                  <Check className="size-4" />
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="mt-2 flex items-center justify-center gap-1">
           {renderActions(false)}
