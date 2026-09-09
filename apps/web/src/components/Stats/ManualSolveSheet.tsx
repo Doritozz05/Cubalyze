@@ -132,11 +132,12 @@ export function ManualSolveSheet({
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { x: 360, opacity: 0 }}
             transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 32 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-95 flex-col border-l border-line bg-canvas shadow-2xl"
+            data-glass-panel="true"
+            className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-95 flex-col border-l border-line bg-surface shadow-2xl"
             aria-label={t("manualSolveAria")}
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
+            <div className="flex shrink-0 items-center justify-between border-b border-line bg-canvas px-5 py-3.5">
               <div className="flex items-center gap-2.5">
                 <div className="grid size-7 place-items-center rounded-md bg-ink text-surface">
                   <Plus className="size-3.5" />
