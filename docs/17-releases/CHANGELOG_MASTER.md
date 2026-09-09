@@ -93,7 +93,8 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | v0.8.8 | 2026-08-30 → 2026-08-30 | 7 | Professional Pause Analytics & Case Intelligence / Analítica de pausas e inteligencia de casos |
 | v0.8.9 | 2026-08-31 → 2026-08-31 | 1 | Puzzle Roulette & Reconstruction Table Polish / Ruleta de puzzles y tablas de reconstrucción |
 | v0.9.0 | 2026-09-01 → 2026-09-01 | 1 | 3D Pyraminx Engine & Face Simulator / Motor 3D de Pyraminx y simulador |
-| v0.9.1 ⭐ (actual) | 2026-09-02 → 2026-09-02 | 18 | Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog |
+| v0.9.1 | 2026-09-02 → 2026-09-02 | 18 | Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog |
+| v0.9.2 ⭐ (actual) | 2026-09-02 → 2026-09-09 | 30 | Theme Studio Avance: Temas, Tipografía, Scramble, Liquid Glass & UI Polish / Theme Studio: Themes, Typography, Scramble, Liquid Glass & UI Polish |
 
 ## Changelog completo
 
@@ -2015,7 +2016,7 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 |---|---|---|---|---|
 | 2026-09-01 | [`19fdcce`](https://github.com/Doritozz05/Cubeforge/commit/19fdcce) | feat | feat(multi-puzzle): 3D Pyraminx engine, virtual simulator and drag interactions (#27) | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Insights/ReplaySection.tsx · apps/web/src/components/Layout/AppShell.tsx · apps/web/src/hooks/__tests__/pyraminxSessionCore.test.ts · … (57 en total) |
 
-### v0.9.1 (actual) — Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog — 2026-09-02 → 2026-09-02 — 18 commits
+### v0.9.1 — Infinite F2L, Skill Radar & Changelog / Infinite F2L, radar de skills y changelog — 2026-09-02 → 2026-09-02 — 18 commits
 
 **Resumen:** Modo de entrenamiento continuo Infinite F2L, radar universal de habilidades en 6 ejes, navegador móvil y changelog interactivo.
 
@@ -2048,6 +2049,54 @@ Cada ola temática del historial es un salto minor. El bump existente a `0.8.0` 
 | 2026-09-02 | [`80dc181`](https://github.com/Doritozz05/Cubeforge/commit/80dc181) | feat | feat(settings): refine procedural changelog accordion, dynamic credits version and v0.9.1 semver sync | apps/web/package.json · apps/web/src/components/Settings/sections/ChangelogSection.tsx · apps/web/src/components/Settings/sections/CreditsSection.tsx · apps/web/src/data/changelog/changelog.json · … (8 en total) |
 | 2026-09-02 | [`4a19eff`](https://github.com/Doritozz05/Cubeforge/commit/4a19eff) | feat | feat(timer): support looping video and animated GIF backgrounds synced with inspection and solving | apps/web/src/components/Layout/AppShell.tsx · apps/web/src/components/Layout/BackgroundLayer.tsx · apps/web/src/components/Settings/components/CustomBackgroundSetting.tsx · apps/web/src/data/changelog/changelog.json · … (14 en total) |
 | 2026-09-02 | [`3c0c18e`](https://github.com/Doritozz05/Cubeforge/commit/3c0c18e) | feat | feat(settings): add experimental setting to display background across all views | apps/web/src/components/Layout/BackgroundLayer.tsx · apps/web/src/components/Settings/components/CustomBackgroundSetting.tsx · apps/web/src/data/changelog/changelog.json · apps/web/src/i18n/locales/en.json · … (9 en total) |
+
+---
+
+### v0.9.2 — Theme Studio Avance: Temas, Tipografía, Scramble, Liquid Glass & UI Polish / Theme Studio: Themes, Typography, Scramble, Liquid Glass & UI Polish — 2026-09-02 → 2026-09-09 — 30 commits
+
+**Resumen:** Avanza el Theme Studio con 4 temas nuevos (Tokyo Night, Gruvbox Dark, Dracula, Cyberpunk Neon), selector expandible "Explorar más temas", 3 modos de aplicación de fuente de dígitos, panel de scramble y timer como tarjetas, selector de layout de scramble en timer y cubo virtual, motor Liquid Glass completado (scrollbars, navbar, opacity slider, blur personalizado), tab General con toggles de paneles, perfeccionamiento de dock, widgets, profile, header, audio, scramble y theme-studio. El feature de bordes Hyprland (accent/gradient) se intentó y se reverteó al no funcionar correctamente con el motor Liquid Glass; los temas nuevos y el selector expandible se mantienen.
+
+**Destacados:**
+- 4 temas nuevos en "Explorar más temas": Tokyo Night (Neovim), Gruvbox Dark (retro UNIX), Dracula (gótico), Cyberpunk Neon (neón futurista).
+- 3 modos de aplicación de fuente de dígitos: timer-only (solo timer), hybrid (numéricos mono, texto sans), composite (unicode-range dinámico universal).
+- Timer y scramble como tarjetas contenedor (rounded-2xl border border-line bg-surface p-6 shadow-2xs) con paneles visibles en stage y preview.
+- Selector de layout de scramble integrado en TimerContainer y cubo virtual (default/compact-right/compact-down).
+- Liquid Glass completado: scrollbars glass con backdrop-filter, adopción en navbar, slider de opacidad 15-95%, blur personalizado 0-24px.
+- Tab General en Theme Studio: toggles de scramble panel y timer panel, selector de layout de scramble, olas de UI polish en dock (random puzzle lever animation, context menu fixes), widgets (layout presets, metronome contrast), profile (glass chips en tabs, full-glass treatment activo), header (autohide lock fix), audio (cubeTurnSounds default false).
+- Se reverteó el feature de bordes Hyprland (accent/gradient) por conflicto con el motor Liquid Glass; los temas nuevos y selector expandible se mantienen.
+
+| Fecha | Hash | Categoría | Mensaje original | Archivos |
+|---|---|---|---|---|
+| 2026-09-09 | [`d61fdb7`](https://github.com/Doritozz05/Cubeforge/commit/d61fdb7) | fix | Revert Hyprland border feature, keep new theme presets only | apps/web/src/components/Settings/theme-studio/ScaledTimerPreview.tsx · apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/preview/PreviewTimer.tsx · apps/web/src/components/Stage/TimerStage.tsx · apps/web/src/components/Timer/TimerContainer.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/index.css · packages/state/src/store.ts |
+| 2026-09-08 | [`b9307a0`](https://github.com/Doritozz05/Cubeforge/commit/b9307a0) | feat | Add Hyprland active border style selector for timer panels | apps/web/src/components/Settings/theme-studio/ScaledTimerPreview.tsx · apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/preview/PreviewTimer.tsx · apps/web/src/components/Stage/TimerStage.tsx · apps/web/src/components/Timer/TimerContainer.tsx · apps/web/src/i18n/locales/en.json · apps/web/src/i18n/locales/es.json · apps/web/src/theme/themePresetIcons.ts · apps/web/src/theme/themePresets.ts · packages/state/src/store.ts |
+| 2026-09-08 | [`22818ba`](https://github.com/Doritozz05/Cubeforge/commit/22818ba) | fix | Fix Hyprland border styles to work with Liquid Glass engine | apps/web/src/index.css |
+| 2026-09-07 | [`17ca327`](https://github.com/Doritozz05/Cubeforge/commit/17ca327) | fix | fix(theme-studio): prevent individual color reset button from overflowing card text | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx |
+| 2026-09-07 | [`402b300`](https://github.com/Doritozz05/Cubeforge/commit/402b300) | fix | fix(audio): set default cubeTurnSoundsEnabled to false | packages/state/src/store.ts |
+| 2026-09-07 | [`0fe4262`](https://github.com/Doritozz05/Cubeforge/commit/0fe4262) | fix | fix(scramble): place ready icon next to scramble with padding without displacing tokens in compact-down | apps/web/src/components/Scramble/ScrambleDisplay.tsx · apps/web/src/components/Scramble/ScrambleToken.tsx |
+| 2026-09-07 | [`193d42a`](https://github.com/Doritozz05/Cubeforge/commit/193d42a) | fix | fix(scramble): keep scramble centered without displacement in compact modes | apps/web/src/components/Scramble/ScrambleDisplay.tsx |
+| 2026-09-07 | [`62a78ca`](https://github.com/Doritozz05/Cubeforge/commit/62a78ca) | refactor | refactor(theme-studio): separate panels card and scramble layout selector, update compact ready indicator | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Scramble/ScrambleDisplay.tsx |
+| 2026-09-07 | [`652c8fb`](https://github.com/Doritozz05/Cubeforge/commit/652c8fb) | feat | feat(scramble): add scramble layout mode selector and panel support to virtual cube | apps/web/src/components/Cube3D/Cube3DPanel.tsx · apps/web/src/components/Scramble/ScrambleDisplay.tsx · apps/web/src/components/Timer/TimerContainer.tsx · apps/web/src/components/Stage/TimerStage.tsx · packages/state/src/store.ts |
+| 2026-09-06 | [`d588b0d`](https://github.com/Doritozz05/Cubeforge/commit/d588b0d) | chore | Update ThemeStudioModal.tsx | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx |
+| 2026-09-06 | [`a80e976`](https://github.com/Doritozz05/Cubeforge/commit/a80e976) | fix | fix(dock): handle top window exit and tooltip dismiss; feat(theme): individual color reset | apps/web/src/components/Dock/Dock.tsx · apps/web/src/components/Dock/DockPiece.tsx · apps/web/src/components/Settings/theme-studio/ThemeColorSection.tsx · apps/web/src/theme/themePresets.ts |
+| 2026-09-06 | [`a924a1d`](https://github.com/Doritozz05/Cubeforge/commit/a924a1d) | style | style(profile): glass chip on all content tabs and stronger full-glass treatment on the active one | apps/web/src/components/Profile/ProfileView.tsx · apps/web/src/index.css |
+| 2026-09-06 | [`86e5cf6`](https://github.com/Doritozz05/Cubeforge/commit/86e5cf6) | fix | fix(profile): active content tab reads as solid surface without liquid glass and as full frosted glass with it | apps/web/src/components/Profile/ProfileView.tsx · apps/web/src/index.css |
+| 2026-09-06 | [`2176e6d`](https://github.com/Doritozz05/Cubeforge/commit/2176e6d) | fix | fix(header): restrict anyPopoverOpen to header poppers to fix autohide lock | apps/web/src/components/Layout/Header.tsx |
+| 2026-09-06 | [`06bd43c`](https://github.com/Doritozz05/Cubeforge/commit/06bd43c) | fix | fix(theme-studio): fix wheel scroll on tabs strip inside Radix Dialog Portal | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx |
+| 2026-09-06 | [`0a6eea1`](https://github.com/Doritozz05/Cubeforge/commit/0a6eea1) | feat | feat: fix notifications toast suppression, default fontDigitMode to timer-only, restyle digit mode as switch rows in typography tab | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/TypographySection.tsx · packages/state/src/store.ts |
+| 2026-09-06 | [`5bceaa6`](https://github.com/Doritozz05/Cubeforge/commit/5bceaa6) | feat | feat(appearance): add General tab with scramble and timer panel toggles and fix tab scroll | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/PanelsSection.tsx · apps/web/src/index.css |
+| 2026-09-06 | [`204b656`](https://github.com/Doritozz05/Cubeforge/commit/204b656) | feat | feat(typography): add 3 font application modes and tab scroll controls | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/TypographySection.tsx · apps/web/src/theme/fonts.ts · packages/state/src/store.ts |
+| 2026-09-06 | [`1fcfa57`](https://github.com/Doritozz05/Cubeforge/commit/1fcfa57) | fix | fix(theme-studio): horizontal wheel scroll for tabs, ColorPicker Done button style, and unified font catalog | apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx · apps/web/src/components/Settings/theme-studio/ColorPicker.tsx · apps/web/src/theme/fonts.ts |
+| 2026-09-05 | [`a214f77`](https://github.com/Doritozz05/Cubeforge/commit/a214f77) | feat | Add randomized move-order to 2×2 IDA* search to remove deterministic scramble bias | packages/solver-engine/src/idaStar.ts · packages/solver-engine/src/moveGen.rs |
+| 2026-09-05 | [`85b2ffd`](https://github.com/Doritozz05/Cubeforge/commit/85b2ffd) | feat | Feature/theme studio (#32) | apps/web/src/components/Settings/theme-studio/ · apps/web/src/theme/ · packages/state/src/store.ts · apps/web/src/i18n/locales/ · apps/web/src/index.css |
+| 2026-09-05 | [`fbc2711`](https://github.com/Doritozz05/Cubeforge/commit/fbc2711) | fix | fix(layout): center sidebar nav icons horizontally within selector pill | apps/web/src/components/Layout/SidebarNav.tsx · apps/web/src/index.css |
+| 2026-09-05 | [`fa2f6c2`](https://github.com/Doritozz05/Cubeforge/commit/fa2f6c2) | fix | fix(widgets): simplify layout presets, remove cascade, and ensure scramble text clearance | apps/web/src/components/Widgets/WidgetDock.tsx · apps/web/src/components/Widgets/WidgetLayoutPresets.tsx |
+| 2026-09-05 | [`a7e5156`](https://github.com/Doritozz05/Cubeforge/commit/a7e5156) | fix | fix(widgets): optimize layout presets, smooth velocity-gated drag, and metronome contrast | apps/web/src/components/Widgets/WidgetDock.tsx · apps/web/src/components/Widgets/WidgetMetronome.tsx · apps/web/src/index.css |
+| 2026-09-05 | [`6bacd3b`](https://github.com/Doritozz05/Cubeforge/commit/6bacd3b) | fix | fix(ui): use standard ui Toaster to sync notifications with dark mode | apps/web/src/components/ui/Toaster.tsx · apps/web/src/components/Notifications/NotificationToast.tsx |
+| 2026-09-05 | [`d418c1b`](https://github.com/Doritozz05/Cubeforge/commit/d418c1b) | fix | fix(web): restore default liquid glass opacity to 65% | apps/web/src/index.css |
+| 2026-09-05 | [`7347282`](https://github.com/Doritozz05/Cubeforge/commit/7347282) | fix | fix(ui): order -webkit-backdrop-filter before standard backdrop-filter | apps/web/src/index.css |
+| 2026-09-05 | [`8a30b0b`](https://github.com/Doritozz05/Cubeforge/commit/8a30b0b) | fix | fix(web): default liquid glass opacity to 90% | apps/web/src/index.css |
+| 2026-09-05 | [`7264b78`](https://github.com/Doritozz05/Cubeforge/commit/7264b78) | fix | fix(csp): allow blob and data media for custom background uploads | apps/web/src/components/Settings/components/CustomBackgroundSetting.tsx · apps/web/index.html |
+| 2026-09-02 | [`2b288d4`](https://github.com/Doritozz05/Cubeforge/commit/2b288d4) | feat | Feat/UI standardization (#31) | apps/web/src/ · apps/web/package.json |
 
 ---
 

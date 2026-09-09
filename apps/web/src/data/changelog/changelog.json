@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-02T14:24:12.612Z",
-  "totalCommits": 1105,
-  "currentVersion": "0.9.1",
+  "generatedAt": "2026-09-09T00:00:00.000Z",
+  "totalCommits": 1138,
+  "currentVersion": "0.9.2",
   "versions": [
     {
       "version": "0.1.0",
@@ -2285,7 +2285,7 @@
     },
     {
       "version": "0.9.1",
-      "isCurrent": true,
+      "isCurrent": false,
       "name": {
         "en": "Infinite F2L, Skill Radar & Changelog",
         "es": "Infinite F2L, radar de skills y changelog"
@@ -2337,6 +2337,161 @@
         }
       ],
       "date": "2026-09-02"
+    },
+    {
+      "version": "0.9.2",
+      "isCurrent": true,
+      "name": {
+        "en": "Theme Studio Advance: Themes, Typography, Scramble, Liquid Glass & UI Polish",
+        "es": "Theme Studio: Temas, Tipografía, Scramble, Liquid Glass y UI Polish"
+      },
+      "period": {
+        "en": "Sep 2026",
+        "es": "sep 2026"
+      },
+      "endDate": "2026-09-09",
+      "moral": {
+        "en": "It is not mere speed that marks a solver; it is the deliberate practice between solves that turns repetition into recognition.",
+        "es": "No es solo la velocidad lo que marca a un resolvedor; es la práctica deliberada entre solves lo que convierte la repetición en reconocimiento."
+      },
+      "items": [
+        {
+          "type": "new",
+          "en": "Theme Studio: 4 new theme presets in expandable Browse more themes section — Tokyo Night, Gruvbox Dark, Dracula, Cyberpunk Neon.",
+          "es": "Theme Studio: 4 temas nuevos en la sección expandible Explorar más temas — Tokyo Night, Gruvbox Dark, Dracula, Cyberpunk Neon."
+        },
+        {
+          "type": "new",
+          "en": "Typography: 3 font application modes (timer-only, hybrid, composite) with interactive preview in the Theme Studio typography tab.",
+          "es": "Tipografía: 3 modos de aplicación de fuente (timer-only, hybrid, composite) con preview interactivo en la pestaña de tipografía del Theme Studio."
+        },
+        {
+          "type": "new",
+          "en": "General tab in Theme Studio: scramble panel and timer panel toggles with container card rendering, plus scramble layout mode selector.",
+          "es": "Pestaña General en Theme Studio: toggles de panel de scramble y panel de timer con renderizado en tarjeta contenedor, además de selector de layout de scramble."
+        },
+        {
+          "type": "new",
+          "en": "Scramble layout mode selector integrated into TimerContainer and virtual cube (default / compact-right / compact-down).",
+          "es": "Selector de layout de scramble integrado en TimerContainer y cubo virtual (default / compact-right / compact-down)."
+        },
+        {
+          "type": "new",
+          "en": "Liquid Glass engine completed: glass scrollbars with backdrop-filter, navbar adoption, opacity slider 15-95%, custom blur 0-24px.",
+          "es": "Motor Liquid Glass completado: scrollbars glass con backdrop-filter, adopción en navbar, slider de opacidad 15-95%, blur personalizado 0-24px."
+        },
+        {
+          "type": "fixed",
+          "en": "Dock: top window exit and tooltip dismiss handling; individual color reset per token.",
+          "es": "Dock: manejo de cierre de ventana superior y dismiss de tooltips; reset individual de color por token."
+        },
+        {
+          "type": "fixed",
+          "en": "Header: anyPopoverOpen restricted to header poppers to fix autohide lock.",
+          "es": "Header: anyPopoverOpen restringido a header poppers para arreglar autohide lock."
+        },
+        {
+          "type": "fixed",
+          "en": "Profile: glass chip on all content tabs and stronger full-glass treatment on the active tab.",
+          "es": "Profile: glass chip en todas las tabs de contenido y treatment full-glass más fuerte en la tab activa."
+        },
+        {
+          "type": "fixed",
+          "en": "Theme Studio: horizontal wheel scroll and drag on tabs strip inside Radix Dialog Portal.",
+          "es": "Theme Studio: scroll horizontal con wheel y drag en tabs strip dentro del Radix Dialog Portal."
+        },
+        {
+          "type": "fixed",
+          "en": "Theme Studio: ColorPicker Done button style and unified font catalog.",
+          "es": "Theme Studio: estilo del botón Done del ColorPicker y catálogo de fuentes unificado."
+        },
+        {
+          "type": "fixed",
+          "en": "Widgets: simplified layout presets, removed cascade, scramble text clearance ensured.",
+          "es": "Widgets: layout presets simplificados, cascade eliminado, clearance de texto de scramble asegurado."
+        },
+        {
+          "type": "fixed",
+          "en": "Widgets: optimized layout presets, smooth velocity-gated drag, metronome contrast.",
+          "es": "Widgets: layout presets optimizados, drag suave con velocity-gated, contraste del metrónomo."
+        },
+        {
+          "type": "fixed",
+          "en": "Dock: random puzzle lever animation with bottom-anchored compressing rod and ball slide.",
+          "es": "Dock: animación de la palanca de puzzle aleatorio con varilla compresora anclada abajo y deslizamiento de bola."
+        },
+        {
+          "type": "fixed",
+          "en": "Dock: context menu stays open when selecting or toggling random puzzle pool items.",
+          "es": "Dock: menú contextual se mantiene abierto al seleccionar o alternar items del pool de puzzles aleatorios."
+        },
+        {
+          "type": "fixed",
+          "en": "Dock: puzzle selector icon centering, descender clipping fix, sparkles icon removed.",
+          "es": "Dock: centrado de icons del selector de puzzles, arreglo de descender clipping, icono sparkles eliminado."
+        },
+        {
+          "type": "fixed",
+          "en": "Audio: cubeTurnSoundsEnabled defaults to false.",
+          "es": "Audio: cubeTurnSoundsEnabled por defecto a false."
+        },
+        {
+          "type": "fixed",
+          "en": "Notifications: toast suppression fixed; fontDigitMode defaults to timer-only.",
+          "es": "Notifications: supresión de toasts corregida; fontDigitMode por defecto a timer-only."
+        },
+        {
+          "type": "fixed",
+          "en": "UI: standard ui Toaster to sync notifications with dark mode.",
+          "es": "UI: Toaster estándar para sincronizar notificaciones con dark mode."
+        },
+        {
+          "type": "fixed",
+          "en": "Web: liquid glass opacity restored to 65% default (was 90%).",
+          "es": "Web: opacidad de liquid glass restaurada a 65% por defecto (era 90%)."
+        },
+        {
+          "type": "fixed",
+          "en": "UI: -webkit-backdrop-filter ordered before standard backdrop-filter.",
+          "es": "UI: -webkit-backdrop-filter ordenado antes del backdrop-filter estándar."
+        },
+        {
+          "type": "fixed",
+          "en": "Layout: sidebar nav icons centered horizontally within selector pill.",
+          "es": "Layout: icons del sidebar nav centrados horizontalmente dentro del selector pill."
+        },
+        {
+          "type": "fixed",
+          "en": "Theme Studio: Sparkles import removed (unused).",
+          "es": "Theme Studio: import de Sparkles eliminado (no usado)."
+        },
+        {
+          "type": "fixed",
+          "en": "Scramble: scramble centered without displacement in compact modes.",
+          "es": "Scramble: scramble centrado sin desplazamiento en modos compact."
+        },
+        {
+          "type": "fixed",
+          "en": "Scramble: ready icon placed next to scramble with padding without displacing tokens in compact-down.",
+          "es": "Scramble: icono listo colocado junto al scramble con padding sin desplazar tokens en compact-down."
+        },
+        {
+          "type": "improved",
+          "en": "Theme Studio: separate panels card and scramble layout selector, update compact ready indicator.",
+          "es": "Theme Studio: separar tarjeta de paneles y selector de layout de scramble, actualizar indicator ready compact."
+        },
+        {
+          "type": "fixed",
+          "en": "CSP: allow blob and data media for custom background uploads.",
+          "es": "CSP: permitir blob y data media para uploads de fondo personalizado."
+        },
+        {
+          "type": "new",
+          "en": "2x2 Solver: randomized move-order in IDA* search to remove deterministic scramble bias.",
+          "es": "Solver 2x2: orden de movimiento aleatorizado en búsqueda IDA* para eliminar sesgo determinista de scramble."
+        }
+      ],
+      "date": "2026-09-09"
     }
   ]
 }
