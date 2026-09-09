@@ -35,6 +35,7 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().customThemeColors).toEqual({
       '--canvas': '#2e3440',
       '--ready': '#a3be8c',
+      '--ready-soft': 'rgba(163, 190, 140, 0.14)',
     });
 
     preferencesStore.getState().resetCustomThemeColors();
@@ -68,6 +69,31 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().customThemes[0].name).toBe('Noche total');
 
     preferencesStore.getState().deleteCustomTheme(id as string);
+    expect(preferencesStore.getState().customThemes).toEqual([]);
+  });
+
+  it('duplicates a custom theme with a fresh id', () => {
+    const store = preferencesStore.getState();
+    const id = store.saveCustomTheme({
+      name: 'Original',
+      base: 'dark',
+      colors: { '--canvas': '#111111' },
+    });
+    expect(typeof id).toBe('string');
+
+    const copyId = preferencesStore.getState().duplicateCustomTheme(id as string);
+    expect(typeof copyId).toBe('string');
+    expect(copyId).not.toBe(id);
+    const themes = preferencesStore.getState().customThemes;
+    expect(themes).toHaveLength(2);
+    expect(themes[1].name).toBe('Original (copia)');
+    expect(themes[1].base).toBe('dark');
+    expect(themes[1].colors).toEqual({ '--canvas': '#111111' });
+
+    expect(preferencesStore.getState().duplicateCustomTheme('missing')).toBeNull();
+
+    preferencesStore.getState().deleteCustomTheme(id as string);
+    preferencesStore.getState().deleteCustomTheme(copyId as string);
     expect(preferencesStore.getState().customThemes).toEqual([]);
   });
 

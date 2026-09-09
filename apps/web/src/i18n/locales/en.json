@@ -255,6 +255,8 @@
       "presetRosePineDesc": "Elegant muted dark #191724 with dusty rose highlights for calm, focused sessions.",
       "presetNord": "Nord",
       "presetNordDesc": "Arctic north-bluish #2e3440 with frost accents, the calm Linux classic for long sessions.",
+      "presetCatppuccinLatte": "Catppuccin Latte",
+      "presetCatppuccinLatteDesc": "Soothing pastel light #eff1f5, the day-side pair of Mocha with mauve accents.",
       "colors": {
         "title": "Color customizer",
         "subtitle": "Adjust individual system tokens",

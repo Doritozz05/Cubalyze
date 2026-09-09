@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -73,6 +73,8 @@ export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
   const isMobile = deviceMode === 'mobile';
   const { w, h } = VIRTUAL_SIZE[deviceMode];
   const face = resolveFace(timerState);
+  // Penalty pill toggle: lets the preview surface both --plus2 and --dnf.
+  const [activePenalty, setActivePenalty] = useState<'+2' | 'DNF'>('+2');
 
   const hintCtx: HintContext = useMemo(
     () => ({
@@ -82,8 +84,9 @@ export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
       isScrambled: true,
       coarsePointer: isMobile,
       startKeyLabel: t('key.space'),
+      ...(face.lastSolvePenalty ? { lastSolvePenalty: activePenalty } : {}),
     }),
-    [isMobile, t],
+    [isMobile, t, face.lastSolvePenalty, activePenalty],
   );
 
   const digitsPx = px(evalTimerDigits(w, h));
@@ -107,11 +110,7 @@ export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
         hasLast={face.hasLast}
         pb={DEMO_PB_MS}
         showPbDelta
-        hintCtx={
-          face.lastSolvePenalty
-            ? { ...hintCtx, lastSolvePenalty: face.lastSolvePenalty }
-            : hintCtx
-        }
+        hintCtx={hintCtx}
         fontSizePx={digitsPx}
         deltaFontSizePx={deltaPx}
       />
@@ -124,22 +123,27 @@ export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
             isMobile ? 'px-2.5 py-1.5' : 'max-lg:px-2.5 max-lg:py-1.5',
           )}
         >
-          {['+2', 'DNF'].map((label) => {
-            const active = label === '+2';
+          {(['+2', 'DNF'] as const).map((label) => {
+            const active = label === activePenalty;
+            const isPlus2 = label === '+2';
             return (
-              <div
+              <button
                 key={label}
-                tabIndex={-1}
+                type="button"
+                onClick={() => setActivePenalty(label)}
+                aria-pressed={active}
                 className={cn(
-                  'flex items-center justify-center rounded-full font-medium',
+                  'flex items-center justify-center rounded-full font-medium transition-colors',
                   isMobile ? 'h-10 px-4 text-sm' : 'h-6 px-2.5 text-[0.72rem] max-lg:h-10 max-lg:px-4 max-lg:text-sm',
                   active
-                    ? 'bg-plus2-soft text-plus2 ring-1 ring-plus2/30'
-                    : 'text-ink-3',
+                    ? isPlus2
+                      ? 'bg-plus2-soft text-plus2 ring-1 ring-plus2/30'
+                      : 'bg-dnf-soft text-dnf ring-1 ring-dnf/30'
+                    : 'text-ink-3 hover:text-ink',
                 )}
               >
                 {label}
-              </div>
+              </button>
             );
           })}
           <div

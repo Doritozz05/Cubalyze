@@ -24,6 +24,7 @@ import { ScaledTimerPreview } from './ScaledTimerPreview';
 import { ThemeColorSection } from './ThemeColorSection';
 import { CustomThemesSection } from './CustomThemesSection';
 import { PresetDots } from './PresetDots';
+import { isColorPickerOpen } from '@/components/Settings/components/ColorPicker';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -88,7 +89,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
 
   const handleSelectPreset = (presetId: string) => {
     const preset = findPreset(presetId, customThemes);
-    // 'light' isn't in the preset list but resolves to the classic light theme.
+    // Unknown ids (e.g. legacy 'default') follow the explicit light/dark mode.
     const isDark = preset ? preset.isDark : presetId !== 'light';
     setThemePreset(presetId);
     preferencesStore.getState().setTheme(isDark ? 'dark' : 'light');
@@ -100,6 +101,11 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        // A color picker popover closes itself on Escape; keep the studio
+        // open underneath it.
+        onEscapeKeyDown={(e) => {
+          if (isColorPickerOpen()) e.preventDefault();
+        }}
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex w-[96vw] sm:max-w-[96vw] lg:max-w-7xl h-[92vh] h-[92dvh] max-h-[92vh] max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-2xl border border-line bg-surface p-0 shadow-2xl transition-all duration-200"
       >
         <DialogTitle className="sr-only">

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Pipette, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   hexToHsv,
   hsvToHex,
@@ -42,8 +43,11 @@ const PRESET_COLORS = [
 ];
 
 /**
- * Advanced color picker (zero deps): SV area + hue + RGB + hex + native OS
- * picker + shared favorites.
+ * Advanced color picker (Radix popover shell): SV area + hue + RGB + hex +
+ * native OS picker + shared favorites.
+ *
+ * The popover is portalled with collision handling, so it never clips inside
+ * the scrollable studio panel and flips when there is no room below.
  *
  * Performance contract: dragging/sliding only touches local draft state
  * (one small popover re-renders at most once per frame via rAF). The parent
@@ -51,12 +55,18 @@ const PRESET_COLORS = [
  * on swatch pick — so theme CSS, 3D materials and localStorage persist run
  * once instead of ~100 times per drag.
  */
+
+let openPickerCount = 0;
+
+/** True while any ColorPicker popover is open (dialogs use it for Escape). */
+export function isColorPickerOpen(): boolean {
+  return openPickerCount > 0;
+}
 export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const { t } = useTranslation("settings");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<HSV>(() => hexToHsv(value));
   const [hoverHex, setHoverHex] = useState<string | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
   const nativeInputRef = useRef<HTMLInputElement>(null);
   const favorites = useFavoriteColors();
 
@@ -75,24 +85,16 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     }
   }, [value, open]);
 
-  // Close on click outside / Escape.
+  // Track open popovers globally so parent dialogs can keep their own
+  // Escape handling while a picker is open (Radix closes the popover;
+  // the dialog must not close underneath it).
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
+    openPickerCount += 1;
     return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
+      openPickerCount = Math.max(0, openPickerCount - 1);
     };
-  }, [open]);
+  }, [open ]);
 
   /** The single store write per gesture — reads the latest draft via ref,
       so state updaters stay pure (StrictMode-safe). */
@@ -146,15 +148,18 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     applyPreview(next);
   }, [applyPreview]);
 
-  const handleToggle = useCallback(() => {
-    if (!open) {
-      const next = hexToHsv(value);
-      draftRef.current = next;
-      setDraft(next);
-      setHoverHex(null);
-    }
-    setOpen((o) => !o);
-  }, [open, value]);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (next) {
+        const synced = hexToHsv(value);
+        draftRef.current = synced;
+        setDraft(synced);
+        setHoverHex(null);
+      }
+      setOpen(next);
+    },
+    [value],
+  );
 
   const selectAndClose = useCallback(
     (hex: string) => commitHex(hex, true),
@@ -166,35 +171,38 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const removeLabel = t("appearance.colorPicker.removeFavorite", "Quitar de favoritos");
 
   return (
-    <div className="relative" ref={rootRef}>
-      <button
-        type="button"
-        onClick={handleToggle}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label={label}
-        className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
-      >
-        <div
-          className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
-          style={{ backgroundColor: value }}
-        />
-        <div className="text-left min-w-0">
-          <span className="block text-[0.75rem] font-medium text-ink leading-tight">
-            {label}
-          </span>
-          <span className="block text-[0.62rem] text-ink-3 font-mono">
-            {value}
-          </span>
-        </div>
-      </button>
-
-      {open && (
-        <div
-          role="dialog"
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="dialog"
           aria-label={label}
-          className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-line bg-surface p-3 shadow-xl"
+          className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
         >
+          <div
+            className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
+            style={{ backgroundColor: value }}
+          />
+          <div className="text-left min-w-0">
+            <span className="block text-[0.75rem] font-medium text-ink leading-tight">
+              {label}
+            </span>
+            <span className="block text-[0.62rem] text-ink-3 font-mono">
+              {value}
+            </span>
+          </div>
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        collisionPadding={8}
+        aria-label={label}
+        className="w-64 p-3"
+      >
           <SvArea
             hue={draft.h}
             saturation={draft.s}
@@ -338,8 +346,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
               {t("appearance.colorPicker.done", "Listo")}
             </button>
           </div>
-        </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

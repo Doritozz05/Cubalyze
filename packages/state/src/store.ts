@@ -28,6 +28,26 @@ export type HeaderMode = 'always' | 'hidden' | 'autohide';
 /** Maximum number of user-created custom themes. */
 export const MAX_CUSTOM_THEMES = 10;
 
+/** Accent tokens whose `-soft` companion is derived automatically. */
+const ACCENT_SOFT_TOKENS: Record<string, string> = {
+  '--ready': '--ready-soft',
+  '--hold': '--hold-soft',
+  '--dnf': '--dnf-soft',
+  '--plus2': '--plus2-soft',
+  '--caution': '--caution-soft',
+};
+
+/** Full-hex color to the 14% `rgba()` soft used by every built-in preset. */
+function hexToSoftRgba(color: string): string | null {
+  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!m) return null;
+  const hex = m[1];
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.14)`;
+}
+
 /**
  * User-created theme: a full snapshot of resolved color tokens plus the
  * light/dark base it was built on. `colors` is a plain record on purpose —
@@ -68,6 +88,8 @@ export interface PreferencesState {
   saveCustomTheme: (input: CustomThemeInput) => string | null;
   renameCustomTheme: (id: string, name: string) => void;
   deleteCustomTheme: (id: string) => void;
+  /** Copies a theme (new id, " (copia)" suffix), returns the copy id or null at cap. */
+  duplicateCustomTheme: (id: string) => string | null;
 
   /**
    * Top-bar (header + glass dock) visibility mode:
@@ -371,9 +393,17 @@ export const createPreferencesStore = () => {
         setTheme: (theme) => set({ theme }),
         setThemePreset: (themePreset) => set({ themePreset }),
         setCustomThemeColor: (token, color) =>
-          set((state) => ({
-            customThemeColors: { ...(state.customThemeColors ?? {}), [token]: color },
-          })),
+          set((state) => {
+            const customThemeColors = { ...(state.customThemeColors ?? {}), [token]: color };
+            // Keep the `-soft` wash in sync with its accent so halos and
+            // pills follow the edited color instead of the old preset value.
+            const softToken = ACCENT_SOFT_TOKENS[token];
+            if (softToken) {
+              const soft = hexToSoftRgba(color);
+              if (soft) customThemeColors[softToken] = soft;
+            }
+            return { customThemeColors };
+          }),
         setCustomThemeColors: (customThemeColors) => set({ customThemeColors }),
         resetCustomThemeColors: () => set({ customThemeColors: null }),
         saveCustomTheme: (input) => {
@@ -401,6 +431,21 @@ export const createPreferencesStore = () => {
           set((state) => ({
             customThemes: state.customThemes.filter((t) => t.id !== id),
           })),
+        duplicateCustomTheme: (id) => {
+          const { customThemes } = get();
+          if (customThemes.length >= MAX_CUSTOM_THEMES) return null;
+          const source = customThemes.find((t) => t.id === id);
+          if (!source) return null;
+          const theme: CustomTheme = {
+            id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
+            name: `${source.name} (copia)`.slice(0, 40),
+            base: source.base,
+            colors: { ...source.colors },
+            createdAt: Date.now(),
+          };
+          set({ customThemes: [...customThemes, theme] });
+          return theme.id;
+        },
         setHeaderMode: (headerMode) => set({ headerMode }),
         setAppearance3d: (appearance3d) => set({ appearance3d }),
         setScrambleFollowsCube: (scrambleFollowsCube) => set({ scrambleFollowsCube }),

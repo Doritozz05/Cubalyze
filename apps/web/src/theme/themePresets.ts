@@ -246,6 +246,38 @@ export const THEME_PRESETS: ThemePreset[] = [
       accent: '#88c0d0',
     },
   },
+  {
+    id: 'catppuccin-latte',
+    labelKey: 'appearance.presetCatppuccinLatte',
+    descriptionKey: 'appearance.presetCatppuccinLatteDesc',
+    isDark: false,
+    colors: {
+      '--canvas': '#eff1f5',
+      '--surface': '#e6e9ef',
+      '--surface-2': '#ccd0da',
+      '--line': '#bcc0cc',
+      '--line-2': '#acb0be',
+      '--ink': '#4c4f69',
+      '--ink-2': '#5c5f77',
+      '--ink-3': '#6c6f85',
+      '--ready': '#40a02b',
+      '--ready-soft': 'rgba(64, 160, 43, 0.14)',
+      '--hold': '#e64553',
+      '--hold-soft': 'rgba(230, 69, 83, 0.14)',
+      '--dnf': '#d20f39',
+      '--dnf-soft': 'rgba(210, 15, 57, 0.14)',
+      '--plus2': '#fe640b',
+      '--plus2-soft': 'rgba(254, 100, 11, 0.14)',
+      '--caution': '#df8e1d',
+      '--caution-soft': 'rgba(223, 142, 29, 0.14)',
+    },
+    previewColors: {
+      canvas: '#eff1f5',
+      surface: '#e6e9ef',
+      ink: '#4c4f69',
+      accent: '#8839ef',
+    },
+  },
 ];
 
 /**

@@ -4,9 +4,9 @@ import { useMemo, useState } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubeforge/state';
-import { Check, Pencil, Plus, X } from 'lucide-react';
+import { Check, Copy, Pencil, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { resolveThemeColors } from '@/theme/themePresets';
+import { resolveThemeColors, getSystemBaseTheme } from '@/theme/themePresets';
 import { customThemeToPreset, findPreset } from '@/theme/customThemes';
 import { PresetDots } from './PresetDots';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -39,7 +39,13 @@ export function CustomThemesSection() {
     if (!hasOverrides || !canSaveMore) return;
     const resolved = resolveThemeColors(themePreset, storeTheme, customColors, customThemes);
     const basePreset = findPreset(themePreset, customThemes);
-    const base = basePreset ? (basePreset.isDark ? 'dark' : 'light') : storeTheme === 'dark' ? 'dark' : 'light';
+    const base = basePreset
+      ? basePreset.isDark
+        ? 'dark'
+        : 'light'
+      : storeTheme === 'system'
+        ? getSystemBaseTheme()
+        : storeTheme;
     const id = preferencesStore.getState().saveCustomTheme({
       name: `${t('appearance.customThemeDefaultName', 'Mi tema')} ${customThemes.length + 1}`,
       base,
@@ -63,12 +69,24 @@ export function CustomThemesSection() {
     setEditingId(null);
   };
 
+  const handleDuplicate = (id: string, base: 'light' | 'dark') => {
+    const copyId = preferencesStore.getState().duplicateCustomTheme(id);
+    if (!copyId) return;
+    // Select the copy so the new card is visibly active.
+    preferencesStore.getState().setThemePreset(copyId);
+    preferencesStore.getState().setTheme(base);
+    preferencesStore.getState().resetCustomThemeColors();
+  };
+
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
     if (themePreset === pendingDeleteId) {
       preferencesStore.getState().setThemePreset('default');
     }
     preferencesStore.getState().deleteCustomTheme(pendingDeleteId);
+    // Drop overrides edited on top of the deleted theme so they don't leak
+    // onto the fallback preset.
+    preferencesStore.getState().resetCustomThemeColors();
     setPendingDeleteId(null);
   };
 
@@ -153,6 +171,19 @@ export function CustomThemesSection() {
                   <span className="flex shrink-0 items-center gap-1">
                     {!isEditing && (
                       <>
+                        {canSaveMore && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicate(preset.id, preset.isDark ? 'dark' : 'light');
+                            }}
+                            aria-label={t('appearance.duplicateTheme', 'Duplicar tema')}
+                            className="flex size-6 items-center justify-center rounded-md text-ink-3 opacity-0 transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+                          >
+                            <Copy className="size-3" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {

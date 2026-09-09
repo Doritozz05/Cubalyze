@@ -1,5 +1,6 @@
 import {
   Cat,
+  Coffee,
   Flower2,
   Moon,
   MoonStar,
@@ -17,6 +18,7 @@ export const THEME_PRESET_ICONS: Record<string, LucideIcon> = {
   "catppuccin-mocha": Cat,
   "rose-pine": Flower2,
   nord: Snowflake,
+  "catppuccin-latte": Coffee,
 };
 
 export function getPresetIcon(id: string): LucideIcon {

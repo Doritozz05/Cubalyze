@@ -255,6 +255,8 @@
       "presetRosePineDesc": "Oscuro elegante apagado #191724 con reflejos rosa empolvado para sesiones calmadas.",
       "presetNord": "Nord",
       "presetNordDesc": "Ártico azulado #2e3440 con acentos escarcha, el clásico calmado de Linux para sesiones largas.",
+      "presetCatppuccinLatte": "Catppuccin Latte",
+      "presetCatppuccinLatteDesc": "Claro pastel suave #eff1f5, la pareja diurna de Mocha con acentos malva.",
       "colors": {
         "title": "Personalización de colores",
         "subtitle": "Ajusta cada color individual del sistema",
