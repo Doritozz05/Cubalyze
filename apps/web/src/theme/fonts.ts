@@ -56,9 +56,15 @@ export const MONO_FONTS: FontOption[] = [
   { id: 'system', label: 'System', stack: SYSTEM_MONO },
 ];
 
+export const ALL_FONTS: FontOption[] = [
+  ...SANS_FONTS.filter((f) => f.id !== 'system'),
+  ...MONO_FONTS.filter((f) => f.id !== 'system'),
+  { id: 'system', label: 'System', stack: SYSTEM_SANS },
+];
+
 /** Resolve a stored id to its stack, falling back to the list default. */
 export function fontStack(list: FontOption[], id: string | undefined): string {
-  return list.find((f) => f.id === id)?.stack ?? list[0].stack;
+  return ALL_FONTS.find((f) => f.id === id)?.stack ?? list.find((f) => f.id === id)?.stack ?? list[0].stack;
 }
 
 /**

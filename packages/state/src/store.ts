@@ -38,7 +38,7 @@ export const MAX_CUSTOM_FONTS = 6;
 export interface CustomFontMeta {
   id: string;
   name: string;
-  role: 'sans' | 'mono';
+  role?: 'sans' | 'mono' | 'all';
   createdAt: number;
 }
 
@@ -305,7 +305,7 @@ export interface PreferencesState {
   /** User-uploaded fonts (metadata; file blobs live in IndexedDB). */
   customFonts: CustomFontMeta[];
   /** Registers metadata, returns its id (or null when the cap is reached). */
-  addCustomFont: (input: { name: string; role: 'sans' | 'mono' }) => string | null;
+  addCustomFont: (input: { name: string; role?: 'sans' | 'mono' | 'all' }) => string | null;
   removeCustomFont: (id: string) => void;
 
 
@@ -549,7 +549,7 @@ export const createPreferencesStore = () => {
           const font: CustomFontMeta = {
             id: `font-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
             name,
-            role: input.role,
+            role: input.role ?? 'all',
             createdAt: Date.now(),
           };
           set({ customFonts: [...customFonts, font] });

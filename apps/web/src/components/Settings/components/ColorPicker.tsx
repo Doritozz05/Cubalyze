@@ -6,6 +6,7 @@ import { Check, Pipette, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   hexToHsv,
   hsvToHex,
@@ -350,13 +351,15 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
             />
             <span className="truncate font-mono text-[0.65rem] text-ink">{footerHex}</span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => setOpen(false)}
-            className="shrink-0 rounded-md bg-ink px-3.5 py-1.5 text-xs font-medium text-surface outline-none transition-colors hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink/50 cursor-pointer"
+            className="h-7 shrink-0 border-line bg-surface-2 px-3 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-ink cursor-pointer"
           >
             {t("appearance.colorPicker.done", "Listo")}
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

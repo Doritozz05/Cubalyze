@@ -987,10 +987,13 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   }
 
   /* Tabular, monospaced figures for any element opted in via .nums.
+     Hybrid stack: digits & numeric symbols (0-9, :, ., +, -, etc.) render using
+     the chosen mono typeface (--app-font-mono), while alphabetic characters (A-Z, a-z)
+     gracefully fall back to the interface typeface (--app-font-sans).
      Default keeps each typeface's native zero (e.g. Cascadia's dotted
      zero); html[data-zero="slashed"] enables the `zero` OpenType feature. */
   .nums {
-    font-family: var(--font-mono), ui-monospace, monospace;
+    font-family: var(--font-mono), var(--font-sans), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.01em;

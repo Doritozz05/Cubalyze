@@ -76,7 +76,7 @@ export function SessionPiece({
             aria-label={t("switchSession")}
           >
             <History className="size-3.5 shrink-0 text-ink-3" />
-            <span className="nums max-w-28 truncate leading-none">
+            <span className="max-w-28 truncate leading-none">
               {active?.name ?? t("session")}
             </span>
             <span className="text-ink-3 leading-none">·</span>
@@ -130,7 +130,7 @@ export function SessionPiece({
                       s.id === activeSessionId && "bg-surface-2",
                     )}
                   >
-                    <span className="nums min-w-0 flex-1 truncate text-ink">
+                    <span className="min-w-0 flex-1 truncate text-ink">
                       {s.name}
                     </span>
                     <span className="nums shrink-0 text-[0.65rem] text-ink-3">

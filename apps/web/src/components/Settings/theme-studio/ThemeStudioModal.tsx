@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -28,8 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
-import { MONO_FONTS, SANS_FONTS, slashedZeroFeature } from '@/theme/fonts';
+import { ALL_FONTS, slashedZeroFeature } from '@/theme/fonts';
 import { MAX_CUSTOM_FONTS } from '@cubeforge/state';
 import {
   customFontFamily,
@@ -38,6 +37,7 @@ import {
   validateFontFile,
 } from '@/theme/customFonts';
 import { findPreset } from '@/theme/customThemes';
+import { THEME_PRESETS, resolveThemeColors } from '@/theme/themePresets';
 import { getPresetIcon } from '@/theme/themePresetIcons';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
@@ -83,6 +83,28 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     }
   };
 
+  // Enable mouse wheel vertical scrolling to translate to horizontal scrolling on the tabs strip
+  useEffect(() => {
+    if (!open) return;
+    const el = tabsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const overflow = el.scrollWidth > el.clientWidth + 1;
+      if (!overflow) return;
+      // Normalize line-mode delta to pixels
+      const factor = e.deltaMode === 1 ? 16 : 1;
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+        ? e.deltaX * factor
+        : e.deltaY * factor;
+      if (dx !== 0) {
+        e.preventDefault();
+        el.scrollLeft += dx;
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [open, mobileView]);
+
   // Preferences Store
   const storeTheme = useStore(preferencesStore, (s) => s.theme);
   const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? 'default');
@@ -106,14 +128,11 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setZeroStyle = useStore(preferencesStore, (s) => s.setZeroStyle);
   const customFonts = useStore(preferencesStore, (s) => s.customFonts);
   const [uploadingFont, setUploadingFont] = useState(false);
-  const sansUploadRef = useRef<HTMLInputElement>(null);
-  const monoUploadRef = useRef<HTMLInputElement>(null);
+  const fontUploadRef = useRef<HTMLInputElement>(null);
 
-  const customSansFonts = customFonts.filter((f) => f.role === 'sans');
-  const customMonoFonts = customFonts.filter((f) => f.role === 'mono');
   const canUploadMore = customFonts.length < MAX_CUSTOM_FONTS;
 
-  const handleFontUpload = async (role: 'sans' | 'mono', file: File | undefined) => {
+  const handleFontUpload = async (file: File | undefined) => {
     if (!file || uploadingFont) return;
     if (!canUploadMore) {
       toast.error(t('appearance.fontUploadCap'));
@@ -124,15 +143,14 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
       const { mimeType } = await validateFontFile(file);
       const id = preferencesStore.getState().addCustomFont({
         name: file.name.replace(/\.[^.]+$/, ''),
-        role,
+        role: 'all',
       });
       if (!id) {
         toast.error(t('appearance.fontUploadCap'));
         return;
       }
       await saveFontBlob(id, file, mimeType);
-      if (role === 'sans') setFontSans(id);
-      else setFontMono(id);
+      toast.success(t('appearance.uploadFont'));
     } catch {
       toast.error(t('appearance.fontUploadError'));
     } finally {
@@ -397,12 +415,12 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {SANS_FONTS.map((f) => (
+                          {ALL_FONTS.map((f) => (
                             <SelectItem key={f.id} value={f.id}>
                               <span style={{ fontFamily: f.stack }}>{f.label}</span>
                             </SelectItem>
                           ))}
-                          {customSansFonts.map((f) => (
+                          {customFonts.map((f) => (
                             <SelectItem key={f.id} value={f.id}>
                               <span style={{ fontFamily: `'${customFontFamily(f.id)}', sans-serif` }}>
                                 {f.name}
@@ -411,49 +429,6 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           ))}
                         </SelectContent>
                       </Select>
-                      <input
-                        ref={sansUploadRef}
-                        type="file"
-                        accept=".woff2,.woff,.ttf,.otf"
-                        className="hidden"
-                        onChange={(e) => {
-                          void handleFontUpload('sans', e.target.files?.[0]);
-                          e.target.value = '';
-                        }}
-                      />
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {canUploadMore && (
-                          <button
-                            type="button"
-                            disabled={uploadingFont}
-                            onClick={() => sansUploadRef.current?.click()}
-                            className="flex items-center gap-1 rounded-md border border-dashed border-line px-2 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
-                          >
-                            {uploadingFont ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : (
-                              <Plus className="size-3" />
-                            )}
-                            {t('appearance.uploadFont')}
-                          </button>
-                        )}
-                        {customSansFonts.map((f) => (
-                          <span
-                            key={f.id}
-                            className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
-                          >
-                            <span className="max-w-28 truncate">{f.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteFont(f.id)}
-                              aria-label={t('appearance.deleteFont')}
-                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
-                            >
-                              <X className="size-2.5" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -465,12 +440,12 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {MONO_FONTS.map((f) => (
+                          {ALL_FONTS.map((f) => (
                             <SelectItem key={f.id} value={f.id}>
                               <span style={{ fontFamily: f.stack }}>{f.label}</span>
                             </SelectItem>
                           ))}
-                          {customMonoFonts.map((f) => (
+                          {customFonts.map((f) => (
                             <SelectItem key={f.id} value={f.id}>
                               <span style={{ fontFamily: `'${customFontFamily(f.id)}', monospace` }}>
                                 {f.name}
@@ -479,13 +454,17 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Single unified custom fonts upload & management */}
+                    <div className="flex flex-col gap-2 border-t border-line pt-3">
                       <input
-                        ref={monoUploadRef}
+                        ref={fontUploadRef}
                         type="file"
                         accept=".woff2,.woff,.ttf,.otf"
                         className="hidden"
                         onChange={(e) => {
-                          void handleFontUpload('mono', e.target.files?.[0]);
+                          void handleFontUpload(e.target.files?.[0]);
                           e.target.value = '';
                         }}
                       />
@@ -494,8 +473,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           <button
                             type="button"
                             disabled={uploadingFont}
-                            onClick={() => monoUploadRef.current?.click()}
-                            className="flex items-center gap-1 rounded-md border border-dashed border-line px-2 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
+                            onClick={() => fontUploadRef.current?.click()}
+                            className="flex items-center gap-1.5 rounded-md border border-dashed border-line px-2.5 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50 cursor-pointer"
                           >
                             {uploadingFont ? (
                               <Loader2 className="size-3 animate-spin" />
@@ -505,17 +484,17 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                             {t('appearance.uploadFont')}
                           </button>
                         )}
-                        {customMonoFonts.map((f) => (
+                        {customFonts.map((f) => (
                           <span
                             key={f.id}
                             className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
                           >
-                            <span className="max-w-28 truncate">{f.name}</span>
+                            <span className="max-w-32 truncate">{f.name}</span>
                             <button
                               type="button"
                               onClick={() => handleDeleteFont(f.id)}
                               aria-label={t('appearance.deleteFont')}
-                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf"
+                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf cursor-pointer"
                             >
                               <X className="size-2.5" />
                             </button>

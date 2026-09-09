@@ -10,20 +10,19 @@ import {
   getDerivedThemeTokens,
   getDerivedLiquidGlassTokens,
 } from "@/theme/themePresets";
-import { fontStack, MONO_FONTS, SANS_FONTS, slashedZeroFeature, type FontOption } from "@/theme/fonts";
+import { ALL_FONTS, fontStack, slashedZeroFeature } from "@/theme/fonts";
 import { customFontFamily } from "@/theme/customFonts";
 import type { CustomFontMeta } from "@cubeforge/state";
 import { findPreset } from "@/theme/customThemes";
 
 /** Resolve a stored id across built-ins + customs (custom family first). */
 function resolveFontStack(
-  builtins: FontOption[],
   customs: CustomFontMeta[],
   id: string | undefined,
 ): string {
   const custom = id ? customs.find((f) => f.id === id) : undefined;
-  if (custom) return `'${customFontFamily(custom.id)}', ${fontStack(builtins, builtins[0].id)}`;
-  return fontStack(builtins, id);
+  if (custom) return `'${customFontFamily(custom.id)}', ${ALL_FONTS[0].stack}`;
+  return fontStack(ALL_FONTS, id);
 }
 
 function ThemeSync() {
@@ -170,8 +169,8 @@ function ThemeSync() {
 
     // Theme Studio typography: registry stacks win over the stylesheet
     // defaults so the selected pair applies everywhere instantly.
-    root.style.setProperty('--app-font-sans', resolveFontStack(SANS_FONTS, customFonts, fontSans));
-    root.style.setProperty('--app-font-mono', resolveFontStack(MONO_FONTS, customFonts, fontMono));
+    root.style.setProperty('--app-font-sans', resolveFontStack(customFonts, fontSans));
+    root.style.setProperty('--app-font-mono', resolveFontStack(customFonts, fontMono));
 
     // Tabular zero style for digits (per-family slashed-zero feature).
     if (zeroStyle === 'slashed') {

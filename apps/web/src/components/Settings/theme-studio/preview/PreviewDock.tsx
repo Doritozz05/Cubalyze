@@ -55,7 +55,7 @@ export function PreviewDock({ background }: { background: string }) {
         <div className="w-3" />
         <div className="flex h-8 items-center gap-1.5 rounded-full px-2.5 py-0 text-xs font-medium leading-none text-ink-2">
           <History className="size-3.5 shrink-0 text-ink-3" />
-          <span className="nums max-w-28 truncate leading-none">{DEMO_SESSION_NAME}</span>
+          <span className="max-w-28 truncate leading-none">{DEMO_SESSION_NAME}</span>
           <span className="leading-none text-ink-3">·</span>
           <span className="nums leading-none text-ink-3">{DEMO_SOLVES.length}</span>
         </div>

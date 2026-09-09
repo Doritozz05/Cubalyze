@@ -391,27 +391,6 @@ export function ScaledTimerPreview({
               )}
 
               {/* Content sits above the background media (absolute z-0). */}
-              {/* Demo texture for liquid glass: backdrop blur is invisible
-                  over a flat canvas, so the preview renders soft accent
-                  blobs behind the chrome (preview-only, never in the app)
-                  to make opacity AND blur visibly live. Skipped when the
-                  user set real background media. */}
-              {effectiveLiquid && !effectiveMediaUrl && (
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none">
-                  <div
-                    className="absolute -top-16 -left-16 size-72 rounded-full opacity-25 blur-2xl"
-                    style={{ backgroundColor: 'var(--ready)' }}
-                  />
-                  <div
-                    className="absolute top-1/3 -right-20 size-80 rounded-full opacity-20 blur-2xl"
-                    style={{ backgroundColor: 'var(--plus2)' }}
-                  />
-                  <div
-                    className="absolute -bottom-16 left-1/4 size-72 rounded-full opacity-20 blur-2xl"
-                    style={{ backgroundColor: 'var(--caution)' }}
-                  />
-                </div>
-              )}
               <div className="relative z-10 flex min-h-0 flex-1 flex-col">
               {isMobileFrame ? (
                 <>
@@ -431,7 +410,7 @@ export function ScaledTimerPreview({
                   <PreviewRail background={chromeSidebar} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     {/* 2. Header strip spanning all the way from sidebar to right edge with bleed */}
-                    <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center border-b border-line/40 pt-6 pr-6">
+                    <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 pr-6">
                       <PreviewDock background={chromeSurface} />
                     </div>
                     {/* 3. Stage content area */}
