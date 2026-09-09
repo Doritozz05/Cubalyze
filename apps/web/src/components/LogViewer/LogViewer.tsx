@@ -77,7 +77,7 @@ export function LogViewer(): ReactNode | null {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ver logs de depuración"
-        className="fixed bottom-20 right-3 z-[2147483000] flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink-2 shadow-lg"
+        className="fixed bottom-20 right-3 z-2147483000 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink-2 shadow-lg"
         style={{ zIndex: 2147483000 }}
       >
         <Bug className="size-3.5" />
@@ -88,14 +88,14 @@ export function LogViewer(): ReactNode | null {
 
   return (
     <div
-      className="fixed inset-0 z-[2147483000] flex items-end justify-center bg-black/40 sm:items-start sm:justify-end sm:p-4 sm:bg-transparent"
+      className="fixed inset-0 z-2147483000 flex items-end justify-center bg-black/40 sm:items-start sm:justify-end sm:p-4 sm:bg-transparent"
       style={{ zIndex: 2147483000 }}
       onClick={() => setOpen(false)}
     >
       <div
         role="dialog"
         aria-label="Visor de logs"
-        className="flex h-[82vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-canvas text-ink shadow-2xl sm:h-auto sm:max-h-[75vh] sm:w-[460px] sm:rounded-xl"
+        className="flex h-[82vh] w-full flex-col overflow-hidden rounded-t-2xl border border-line bg-canvas text-ink shadow-2xl sm:h-auto sm:max-h-[75vh] sm:w-115 sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -166,7 +166,7 @@ export function LogViewer(): ReactNode | null {
                     {e.level}
                   </span>
                   <span
-                    className="min-w-0 break-words whitespace-pre-wrap"
+                    className="min-w-0 wrap-break-word whitespace-pre-wrap"
                     style={{ color: levelColor(e.level) }}
                   >
                     {e.text}

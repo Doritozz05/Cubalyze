@@ -131,7 +131,8 @@ export function RandomPuzzlePiece({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          data-slot="context-menu-trigger"
+          data-slot="random-puzzle"
+          data-no-glass="true"
           onContextMenu={(e) => e.stopPropagation()}
           className="relative inline-flex items-center"
         >
@@ -158,19 +159,15 @@ export function RandomPuzzlePiece({
               <Dices className="size-3.5" />
             </div>
 
-            {/* Slot machine reel viewport */}
-            <div className="relative h-7 w-20 overflow-hidden rounded-md border border-line/40 bg-surface-2/40 px-1.5 shadow-inner">
-              {/* Top/bottom cylinder 3D shadows */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-2 bg-linear-to-b from-surface/90 to-transparent" />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2 bg-linear-to-t from-surface/90 to-transparent" />
-
+            {/* Slot machine reel viewport — crisp and opaque */}
+            <div
+              data-slot="random-puzzle-reel"
+              className="relative h-7 w-20 overflow-hidden rounded-md border border-line bg-surface px-1.5 shadow-inner"
+            >
               {/* Reel items container */}
               <motion.div
                 animate={reelControls}
-                className={cn(
-                  "flex flex-col items-center",
-                  isSpinning && "filter blur-[0.3px]",
-                )}
+                className="flex flex-col items-center"
               >
                 {reelItems.map((item, idx) => (
                   <div

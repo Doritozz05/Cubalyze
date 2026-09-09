@@ -87,7 +87,7 @@ function ThemeSync() {
 
     const resolved = resolveThemeColors(themePreset, resolvedBase, customThemeColors, customThemes);
     const derived = getDerivedThemeTokens(resolved);
-    const allVars = { ...resolved, ...derived };
+    const allVars: Record<string, string> = { ...resolved, ...derived };
 
     // Classic presets (light / dark / default) keep exact main parity: their
     // values already match the static :root / .dark palettes, so under liquid
@@ -136,6 +136,11 @@ function ThemeSync() {
         for (const [key, value] of Object.entries(glassTokens)) {
           root.style.setProperty(key, value);
         }
+        // Under liquid glass, separator lines, sidebars and layout borders MUST
+        // follow the glass hairline token rather than keeping the solid hex inline.
+        root.style.setProperty("--line", "var(--glass-border)");
+        root.style.setProperty("--sidebar-border", "var(--glass-border)");
+        root.style.setProperty("--border", "var(--glass-border)");
       }
     } else {
       root.classList.remove("liquid-glass");
@@ -148,6 +153,11 @@ function ThemeSync() {
       root.style.removeProperty("--glass-nested-bg");
       root.style.removeProperty("--glass-nested-blur");
       root.style.removeProperty("--glass-border");
+      if (!useStaticCascade) {
+        root.style.setProperty("--line", allVars["--line"]);
+        root.style.setProperty("--sidebar-border", allVars["--sidebar-border"]);
+        root.style.setProperty("--border", allVars["--border"]);
+      }
     }
 
     // Custom blur radius overrides the built-in opacity-tied formula.

@@ -339,19 +339,20 @@
    Built for easy customization by future theme editors.
    ─────────────────────────────────────────────────────────────────────── */
 html.liquid-glass {
-  --surface: var(--glass-bg);
-  --surface-2: var(--glass-bg-subtle);
-  --card: var(--glass-bg);
-  --popover: var(--glass-bg);
-  --sidebar: var(--glass-bg);
+  --surface: var(--glass-bg) !important;
+  --surface-2: var(--glass-bg-subtle) !important;
+  --card: var(--glass-bg) !important;
+  --popover: var(--glass-bg) !important;
+  --sidebar: var(--glass-bg) !important;
   --sidebar-accent: rgba(0, 0, 0, 0.08);
   --sidebar-accent-foreground: #212529;
-  --line: var(--glass-border);
+  --line: var(--glass-border) !important;
   /* Sidebar separators + the profile frame (border/ring-sidebar-border)
      follow the SAME glass hairline as every other panel (dock, 3D panel,
      widgets): the solid light/dark gray tokens read as white in light
      mode and near-black in dark mode on translucent glass. */
-  --sidebar-border: var(--glass-border);
+  --sidebar-border: var(--glass-border) !important;
+  --border: var(--glass-border) !important;
   /* Buttons & chips: secondary / muted / accent (ghost hovers, selected
      chips, steppers) inherit the frosted chip token so interactive fills
      tint with the backplate instead of rendering solid white/gray. */
@@ -433,6 +434,23 @@ html.liquid-glass a[data-slot="card"] {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
+}
+
+/* ── Glass hairline dividers, borders, and layout separators ───────────
+   All structural division lines (LeftSidebar dividers, Reconstructions
+   split columns, table row dividers, layout panes, dialog strips, and
+   border-line utilities) adopt the translucent glass hairline by law. */
+html.liquid-glass [class*="border-line"],
+html.liquid-glass [class*="border-sidebar-border"],
+html.liquid-glass [class*="divide-line"],
+html.liquid-glass [class*="divide-sidebar-border"],
+html.liquid-glass hr[class*="border-line"],
+html.liquid-glass hr[class*="border-sidebar-border"] {
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass div[class*="bg-line"]:not(.grid) {
+  background-color: var(--glass-border) !important;
 }
 
 /* Replay split/detail columns (stats detail mode, reconstruction split):
@@ -851,6 +869,27 @@ html.liquid-glass [data-glass-float]:hover:not(:disabled) {
 /* Range input slider tracks */
 html.liquid-glass input[type="range"] {
   background-color: var(--glass-btn-bg) !important;
+}
+
+/* ── Exclude Random Puzzle Selector from Liquid Glass ───────────────────
+   The slot-machine reel in the dock needs crisp, opaque rendering so the
+   dice, numbers, and reel animations stay 100% sharp and readable. */
+html.liquid-glass [data-slot="random-puzzle"],
+html.liquid-glass [data-slot="random-puzzle"] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
+  background-color: var(--surface-solid, #ffffff) !important;
+  border-color: var(--line) !important;
+}
+
+html.dark.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
+.dark html.liquid-glass [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"],
+html.liquid-glass.dark [data-slot="random-puzzle"] [data-slot="random-puzzle-reel"] {
+  background-color: var(--surface-solid, #181825) !important;
+  border-color: var(--line) !important;
 }
 
 
