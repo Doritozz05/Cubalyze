@@ -388,6 +388,7 @@ html.liquid-glass [data-slot="popover-content"],
 html.liquid-glass [data-slot="dropdown-menu-content"],
 html.liquid-glass [data-slot="context-menu-content"],
 html.liquid-glass [data-slot="select-content"],
+html.liquid-glass [data-slot="select-trigger"],
 html.liquid-glass [data-slot="dock"],
 html.liquid-glass [data-slot="mobile-tab-bar"],
 html.liquid-glass [data-slot="sidebar"],
@@ -514,6 +515,50 @@ html.liquid-glass [data-slot="button"][class*="bg-canvas"]:hover:not(:disabled) 
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
+/* ── Dropdown Select Trigger: frosted glass with backdrop blur ───────────
+   SelectTrigger renders a <button data-slot="select-trigger">. Unlike
+   action buttons inside panels, select triggers act as dropdown pickers
+   (e.g. Insights session & cube selectors, Dock puzzle selector).
+   They carry the full liquid-glass backdrop blur and frosted backplate,
+   harmonizing with the open select-content menu and surrounding panels. */
+html.liquid-glass [data-slot="select-trigger"],
+html.liquid-glass button[data-slot="select-trigger"] {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass button[data-slot="select-trigger"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+  box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
+}
+
+/* Nested select triggers (inside a glass card/dialog/sheet): half-blur */
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"],
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"],
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"],
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"],
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"],
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"],
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"] {
+  background-color: var(--glass-nested-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
+}
+
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:hover:not(:disabled) {
+  background-color: var(--glass-btn-bg-hover) !important;
+}
+
 /* ── Flat-button exceptions: dock pills, menus & sidebar tabs ────────────
    These are flat BY DESIGN (macOS-style icon tray, right-click menu
    items, the session switcher, the sidebar tab lists of Settings and
@@ -637,7 +682,9 @@ html.liquid-glass [data-slot="drawer-content"] nav[class*="bg-canvas"],
 html.liquid-glass [data-slot="dialog-content"] nav,
 html.liquid-glass [data-slot="drawer-content"] nav,
 html.liquid-glass [data-slot="dialog-content"] [data-modal-header],
-html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
+html.liquid-glass [data-slot="drawer-content"] [data-modal-header],
+html.liquid-glass [data-slot="dialog-content"] [data-modal-footer],
+html.liquid-glass [data-slot="drawer-content"] [data-modal-footer] {
   background-color: var(--glass-bg-subtle) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
   backdrop-filter: blur(var(--glass-blur)) !important;
@@ -645,8 +692,23 @@ html.liquid-glass [data-slot="drawer-content"] [data-modal-header] {
 
 html.liquid-glass [data-slot="dialog-content"] div[class*="bg-surface"][class*="border"][class*="rounded"],
 html.liquid-glass [data-slot="drawer-content"] div[class*="bg-surface"][class*="border"][class*="rounded"] {
-  background-color: var(--glass-bg-subtle) !important;
+  background-color: var(--glass-nested-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
+  border-color: var(--glass-border) !important;
 }
+
+/* Badges & indicator tags: translucent frosted chips */
+html.liquid-glass [data-slot="badge"] {
+  background-color: var(--glass-btn-bg) !important;
+  border-color: var(--glass-border) !important;
+}
+
+/* Range input slider tracks */
+html.liquid-glass input[type="range"] {
+  background-color: var(--glass-btn-bg) !important;
+}
+
 
 /* Liquid glass scrollbars — translucent frosted pills with refraction border */
 html.liquid-glass * {

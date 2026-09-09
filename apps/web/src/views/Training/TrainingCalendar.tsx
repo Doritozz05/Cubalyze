@@ -433,7 +433,7 @@ export function TrainingCalendar({
 
           <div className="flex flex-col h-full max-h-[80vh]">
             {/* ── Header ───────────────────────────────────────────── */}
-            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5" data-modal-header>
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-surface">
                   {panelMode === "add" || panelMode === "edit" ? (

@@ -178,7 +178,7 @@ export function PairHistoryDialog({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[90vh] bg-surface">
-          <DrawerHeader className="border-b border-line px-6 py-4">
+          <DrawerHeader className="border-b border-line px-6 py-4" data-modal-header>
             <DrawerTitle
               className={cn(
                 "flex items-center gap-2 text-base font-semibold text-ink",
@@ -196,8 +196,8 @@ export function PairHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-line bg-surface/95 backdrop-blur-md p-0 overflow-hidden shadow-2xl">
-        <DialogHeader className="border-b border-line px-6 py-4">
+      <DialogContent className="max-w-lg border-line bg-surface p-0 overflow-hidden shadow-2xl">
+        <DialogHeader className="border-b border-line px-6 py-4" data-modal-header>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             {titleEl}
           </DialogTitle>

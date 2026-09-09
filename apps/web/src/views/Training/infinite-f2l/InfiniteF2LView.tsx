@@ -143,9 +143,10 @@ export function InfiniteF2LView({
   }, [restart, isConnected, isStarted]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-ink select-none">
-      {/* Top Bar Header */}
-      <header className="flex shrink-0 items-center justify-between border-b border-line bg-surface px-4 py-3 sm:px-6">
+    <div className="relative flex-1 min-h-0 w-full h-full text-ink select-none">
+      <div className="absolute inset-0 flex flex-col overflow-hidden">
+        {/* Top Bar Header */}
+        <header className="flex shrink-0 items-center justify-between px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
         <div className="flex items-center gap-3">
           <TrainingBreadcrumb
             onBack={onBack}
@@ -336,6 +337,7 @@ export function InfiniteF2LView({
           setIsStarted(false);
         }}
       />
+      </div>
     </div>
   );
 }

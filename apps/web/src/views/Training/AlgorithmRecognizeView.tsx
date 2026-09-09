@@ -337,7 +337,7 @@ function RecognizeHeader({
         <div className="flex-1" />
 
         {/* Mode toggle */}
-        <div className="flex gap-1 rounded-lg bg-surface-2 p-0.5">
+        <div className="flex gap-1 rounded-lg border border-line bg-surface p-0.5">
           <button
             onClick={() => onModeChange("weakest")}
             className={cn(

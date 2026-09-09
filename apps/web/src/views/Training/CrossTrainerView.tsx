@@ -637,14 +637,14 @@ export function CrossTrainerView({
                     </span>
                   </div>
                 ) : !isReady ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-surface/80">
+                  <div className="absolute inset-0 flex items-center justify-center bg-surface/80 backdrop-blur-xs">
                     <span className="text-[0.6rem] text-ink-3/50 animate-pulse">
                       {t("crossTrainer.initializing3D")}
                     </span>
                   </div>
                 ) : null}
                 {stickeringOn && isReady && replayState === "idle" && (
-                  <div className="absolute bottom-2 left-2 rounded bg-background/85 px-2 py-1 text-[0.55rem] text-ink-3">
+                  <div className="absolute bottom-2 left-2 rounded-md border border-line bg-surface/80 backdrop-blur-xs px-2 py-1 text-[0.55rem] text-ink-3">
                     {t("crossTrainer.crossEdgesHighlighted")}
                   </div>
                 )}

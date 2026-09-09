@@ -447,6 +447,8 @@ export function getDerivedLiquidGlassTokens(
     '--glass-bg-subtle': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 75)}%, transparent)`,
     '--glass-btn-bg': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 80)}%, transparent)`,
     '--glass-btn-bg-hover': `color-mix(in srgb, ${colors['--surface-2']} ${Math.round(op * 95)}%, transparent)`,
+    '--glass-nested-bg': `color-mix(in srgb, ${colors['--surface']} ${Math.round(op * 35)}%, transparent)`,
+    '--glass-nested-blur': `calc(var(--glass-blur) * 0.5)`,
     '--glass-border': classicHairline
       ? `rgba(${isDark ? '255, 255, 255' : '0, 0, 0'}, ${borderAlpha.toFixed(3)})`
       : `color-mix(in srgb, ${colors['--line']} ${Math.round((0.5 + op * 0.5) * 100)}%, transparent)`,
