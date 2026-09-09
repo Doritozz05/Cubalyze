@@ -51,10 +51,10 @@ export const RgbSliders = memo(function RgbSliders({ rgb, onPreviewChannel, onCo
       {CHANNELS.map((key) => {
         const track =
           key === "r"
-            ? `linear-gradient(to right,rgb(0,${rgb.g},${rgb.b}),rgb(255,${rgb.g},${rgb.b}))`
+            ? `linear-gradient(to right, rgb(0, ${rgb.g}, ${rgb.b}) 0%, rgb(255, ${rgb.g}, ${rgb.b}) 100%)`
             : key === "g"
-              ? `linear-gradient(to right,rgb(${rgb.r},0,${rgb.b}),rgb(${rgb.r},255,${rgb.b}))`
-              : `linear-gradient(to right,rgb(${rgb.r},${rgb.g},0),rgb(${rgb.r},${rgb.g},255))`;
+              ? `linear-gradient(to right, rgb(${rgb.r}, 0, ${rgb.b}) 0%, rgb(${rgb.r}, 255, ${rgb.b}) 100%)`
+              : `linear-gradient(to right, rgb(${rgb.r}, ${rgb.g}, 0) 0%, rgb(${rgb.r}, ${rgb.g}, 255) 100%)`;
         return (
           <div key={key} className="flex items-center gap-2">
             <span aria-hidden="true" className="w-3 text-[0.65rem] font-bold uppercase text-ink-3">

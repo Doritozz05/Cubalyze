@@ -46,7 +46,7 @@ export const SwatchGrid = memo(function SwatchGrid({
             aria-label={color}
             aria-pressed={active}
             className={cn(
-              "size-7 rounded-md border-2 transition-transform duration-100 outline-none hover:scale-110 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ink/50",
+              "aspect-square size-6 sm:size-[1.65rem] rounded-md border-2 transition-transform duration-100 outline-none hover:scale-110 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ink/50",
               active ? "border-ink ring-2 ring-ink/20" : "border-line/60",
               onRemove && "w-full",
             )}

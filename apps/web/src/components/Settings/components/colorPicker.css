@@ -16,16 +16,26 @@
 /* Track — background comes from --cp-track (set inline per slider).
    Neutral gray hairline reads clean on light and dark themes alike. */
 .cp-range::-webkit-slider-runnable-track {
+  box-sizing: border-box;
   height: 10px;
   border-radius: 9999px;
-  background: var(--cp-track);
+  background-image: var(--cp-track);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: 100% 100%;
   border: 1px solid rgba(128, 128, 128, 0.45);
 }
 
 .cp-range::-moz-range-track {
+  box-sizing: border-box;
   height: 10px;
   border-radius: 9999px;
-  background: var(--cp-track);
+  background-image: var(--cp-track);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: 100% 100%;
   border: 1px solid rgba(128, 128, 128, 0.45);
 }
 

@@ -196,7 +196,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
 
       <DialogContent
         aria-label={label}
-        className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-xs overflow-y-auto overscroll-contain p-4 sm:max-w-xs"
+        className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-xs overflow-y-auto overscroll-contain p-4 sm:max-w-xl sm:p-5"
       >
         <DialogTitle className="flex items-center gap-2 text-xs font-semibold text-ink">
           <span
@@ -207,149 +207,157 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
           <span className="min-w-0 flex-1 truncate">{label}</span>
           <span className="shrink-0 font-mono font-normal text-ink-3">{footerHex}</span>
         </DialogTitle>
-          <SvArea
-            hue={draft.h}
-            saturation={draft.s}
-            value={draft.v}
-            hueBase={hueBase}
-            draftHex={draftHex}
-            onPreview={previewSv}
-            onCommit={commitDraftNow}
-          />
 
-          <div className="mt-1 flex items-center">
-            <HueSlider hue={draft.h} onPreview={previewHue} onCommit={commitDraftNow} />
-          </div>
-
-          <div className="mt-1.5">
-            <RgbSliders rgb={draftRgb} onPreviewChannel={previewChannel} onCommit={commitDraftNow} />
-          </div>
-
-          {/* Hex + native + save */}
-          <div className="mt-2 flex items-center gap-1.5">
-            <div
-              aria-hidden="true"
-              onClick={() => nativeInputRef.current?.click()}
-              className="size-7 shrink-0 cursor-pointer rounded-md border border-line"
-              style={{ backgroundColor: draftHex }}
+        {/* 2-column grid for tablets and PC (sm:grid-cols-2) */}
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+          {/* Column 1: Visual picker (SV plane + Hue + Hex row) */}
+          <div className="flex flex-col gap-2.5">
+            <SvArea
+              hue={draft.h}
+              saturation={draft.s}
+              value={draft.v}
+              hueBase={hueBase}
+              draftHex={draftHex}
+              onPreview={previewSv}
+              onCommit={commitDraftNow}
             />
-            <input
-              ref={nativeInputRef}
-              type="color"
-              value={draftHex}
-              onChange={(e) => commitHex(e.target.value)}
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-            <HexField draftHex={draftHex} onCommit={commitHex} />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => nativeInputRef.current?.click()}
-                  aria-label={pickNativeLabel}
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface-2/50 text-ink-3 transition-colors outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/50"
-                >
-                  <Pipette className="size-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">{pickNativeLabel}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentIsFavorite) removeFavoriteColor(draftHex);
-                    else saveFavoriteColor(draftHex);
-                  }}
-                  aria-label={currentIsFavorite ? removeLabel : saveLabel}
-                  aria-pressed={currentIsFavorite}
-                  className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-md border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink/50",
-                    currentIsFavorite
-                      ? "border-ink bg-ink text-surface"
-                      : "border-line bg-surface-2/50 text-ink-3 hover:text-ink",
-                  )}
-                >
-                  {currentIsFavorite ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {currentIsFavorite ? removeLabel : saveLabel}
-              </TooltipContent>
-            </Tooltip>
-          </div>
 
-          {/* Favorites */}
-          <div className="mt-2.5 border-t border-line pt-2.5">
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
-                {t("appearance.colorPicker.favorites", "Favoritos")}
-              </span>
-              <span className="font-mono text-[0.6rem] text-ink-3">
-                {favorites.length}/{MAX_FAVORITE_COLORS}
-              </span>
+            <div className="flex items-center">
+              <HueSlider hue={draft.h} onPreview={previewHue} onCommit={commitDraftNow} />
             </div>
-            {favorites.length === 0 ? (
-              <p className="rounded-md bg-surface-2/50 px-2 py-1.5 text-[0.65rem] leading-snug text-ink-3">
-                {t(
-                  "appearance.colorPicker.favoritesEmpty",
-                  "Guarda colores con + para reutilizarlos en stickers y temas.",
-                )}
-              </p>
-            ) : (
+
+            {/* Hex + native + save */}
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <div
+                aria-hidden="true"
+                onClick={() => nativeInputRef.current?.click()}
+                className="size-7 shrink-0 cursor-pointer rounded-md border border-line shadow-xs transition-transform hover:scale-105"
+                style={{ backgroundColor: draftHex }}
+              />
+              <input
+                ref={nativeInputRef}
+                type="color"
+                value={draftHex}
+                onChange={(e) => commitHex(e.target.value)}
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <HexField draftHex={draftHex} onCommit={commitHex} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => nativeInputRef.current?.click()}
+                    aria-label={pickNativeLabel}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md border border-line bg-surface-2/50 text-ink-3 transition-colors outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/50"
+                  >
+                    <Pipette className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{pickNativeLabel}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentIsFavorite) removeFavoriteColor(draftHex);
+                      else saveFavoriteColor(draftHex);
+                    }}
+                    aria-label={currentIsFavorite ? removeLabel : saveLabel}
+                    aria-pressed={currentIsFavorite}
+                    className={cn(
+                      "flex size-7 shrink-0 items-center justify-center rounded-md border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink/50",
+                      currentIsFavorite
+                        ? "border-ink bg-ink text-surface"
+                        : "border-line bg-surface-2/50 text-ink-3 hover:text-ink",
+                    )}
+                  >
+                    {currentIsFavorite ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {currentIsFavorite ? removeLabel : saveLabel}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Column 2: RGB Sliders + Palettes (Favorites + Presets) */}
+          <div className="flex flex-col gap-2.5">
+            <RgbSliders rgb={draftRgb} onPreviewChannel={previewChannel} onCommit={commitDraftNow} />
+
+            {/* Favorites */}
+            <div className="border-t border-line pt-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
+                  {t("appearance.colorPicker.favorites", "Favoritos")}
+                </span>
+                <span className="font-mono text-[0.6rem] text-ink-3">
+                  {favorites.length}/{MAX_FAVORITE_COLORS}
+                </span>
+              </div>
+              {favorites.length === 0 ? (
+                <p className="rounded-md bg-surface-2/50 px-2 py-1 text-[0.65rem] leading-snug text-ink-3">
+                  {t(
+                    "appearance.colorPicker.favoritesEmpty",
+                    "Guarda colores con + para reutilizarlos en stickers y temas.",
+                  )}
+                </p>
+              ) : (
+                <SwatchGrid
+                  colors={favorites}
+                  selectedHex={value}
+                  onSelect={selectAndClose}
+                  onRemove={removeFavoriteColor}
+                  removeLabel={removeLabel}
+                  onHoverHex={setHoverHex}
+                />
+              )}
+            </div>
+
+            {/* Presets */}
+            <div className="border-t border-line pt-2">
+              <div className="mb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
+                {t("appearance.colorPicker.presets", "Predefinidos")}
+              </div>
               <SwatchGrid
-                colors={favorites}
+                colors={PRESET_COLORS}
                 selectedHex={value}
                 onSelect={selectAndClose}
-                onRemove={removeFavoriteColor}
-                removeLabel={removeLabel}
                 onHoverHex={setHoverHex}
               />
-            )}
-          </div>
-
-          {/* Presets */}
-          <div className="mt-2.5 border-t border-line pt-2.5">
-            <div className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-ink-3">
-              {t("appearance.colorPicker.presets", "Predefinidos")}
             </div>
-            <SwatchGrid
-              colors={PRESET_COLORS}
-              selectedHex={value}
-              onSelect={selectAndClose}
-              onHoverHex={setHoverHex}
+          </div>
+        </div>
+
+        {/* Footer: current vs new/hovered + Done button */}
+        <div className="mt-3.5 flex items-center justify-between border-t border-line pt-2.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <div
+              role="img"
+              aria-label={t("appearance.colorPicker.current", "Actual")}
+              className="size-6 shrink-0 rounded-md border border-line shadow-2xs"
+              style={{ backgroundColor: value }}
             />
+            <span aria-hidden="true" className="font-mono text-[0.65rem] text-ink-3">→</span>
+            <div
+              role="img"
+              aria-label={t("appearance.colorPicker.new", "Nuevo")}
+              className="size-6 shrink-0 rounded-md border border-line shadow-2xs"
+              style={{ backgroundColor: footerHex }}
+            />
+            <span className="truncate font-mono text-[0.65rem] text-ink">{footerHex}</span>
           </div>
-
-          {/* Footer: current vs new/hovered */}
-          <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
-            <div className="flex min-w-0 items-center gap-2">
-              <div
-                role="img"
-                aria-label={t("appearance.colorPicker.current", "Actual")}
-                className="size-6 shrink-0 rounded-md border border-line"
-                style={{ backgroundColor: value }}
-              />
-              <span aria-hidden="true" className="font-mono text-[0.65rem] text-ink-3">→</span>
-              <div
-                role="img"
-                aria-label={t("appearance.colorPicker.new", "Nuevo")}
-                className="size-6 shrink-0 rounded-md border border-line"
-                style={{ backgroundColor: footerHex }}
-              />
-              <span className="truncate font-mono text-[0.65rem] text-ink">{footerHex}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="shrink-0 rounded-md bg-ink px-3 py-1.5 text-[0.65rem] font-medium text-surface outline-none transition-colors hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink/50"
-            >
-              {t("appearance.colorPicker.done", "Listo")}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="shrink-0 rounded-md bg-ink px-3.5 py-1.5 text-xs font-medium text-surface outline-none transition-colors hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink/50 cursor-pointer"
+          >
+            {t("appearance.colorPicker.done", "Listo")}
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
