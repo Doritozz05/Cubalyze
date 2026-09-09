@@ -216,31 +216,12 @@ export function ScrambleDisplay({
 
   if (isCompactRight) {
     return (
-      <div className="w-full" data-onboarding-target="timer">
-        {/* Compact Right: compact tokens flex with icon-only action buttons on the right side */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {renderTokens()}
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {isScrambled && (
-              <span className="mr-1 text-[0.7rem] uppercase tracking-[0.2em] text-ready flex items-center gap-1">
-                <Check className="size-3" />
-              </span>
-            )}
-            {renderActions(false)}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isCompactDown) {
-    return (
-      <div className="w-full" data-onboarding-target="timer">
-        {/* Compact Down: compact tokens with optional green ready icon on the right, and icon-only action buttons centered below */}
-        <div className="flex items-center justify-center gap-2">
+      <div className="relative w-full" data-onboarding-target="timer">
+        {/* Scramble tokens remain perfectly centered; actions and ready indicator live on the right without shifting the scramble */}
+        <div className="w-full">
           {renderTokens()}
+        </div>
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {isScrambled && (
             <span
               className="flex shrink-0 items-center text-ready"
@@ -249,6 +230,29 @@ export function ScrambleDisplay({
             >
               <Check className="size-4" />
             </span>
+          )}
+          {renderActions(false)}
+        </div>
+      </div>
+    );
+  }
+
+  if (isCompactDown) {
+    return (
+      <div className="w-full" data-onboarding-target="timer">
+        {/* Scramble tokens remain perfectly centered; green check icon sits on the right via absolute positioning without displacing tokens */}
+        <div className="relative w-full">
+          {renderTokens()}
+          {isScrambled && (
+            <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
+              <span
+                className="flex shrink-0 items-center text-ready"
+                title={t("ready")}
+                aria-label={t("ready")}
+              >
+                <Check className="size-4" />
+              </span>
+            </div>
           )}
         </div>
         <div className="mt-2 flex items-center justify-center gap-1">
