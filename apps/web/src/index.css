@@ -384,13 +384,16 @@ html.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
   color: var(--surface-solid, #ffffff) !important;
 }
+
 html.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
   color: var(--surface-2, #f1f3f5) !important;
 }
+
 html.dark.liquid-glass [class*="text-surface"]:not([class*="text-surface-"]),
 html.dark.liquid-glass [class*="text-sidebar"]:not([class*="text-sidebar-"]) {
   color: var(--surface-solid, #1b1f23) !important;
 }
+
 html.dark.liquid-glass [class*="text-accent"]:not([class*="text-accent-"]) {
   color: var(--surface-2, #24292e) !important;
 }
@@ -404,7 +407,7 @@ html.liquid-glass [data-slot="popover-content"],
 html.liquid-glass [data-slot="dropdown-menu-content"],
 html.liquid-glass [data-slot="context-menu-content"],
 html.liquid-glass [data-slot="select-content"],
-html.liquid-glass [data-slot="select-trigger"],
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]),
 html.liquid-glass [data-slot="dock"],
 html.liquid-glass [data-slot="mobile-tab-bar"],
 html.liquid-glass [data-slot="sidebar"],
@@ -468,6 +471,7 @@ html.liquid-glass div[class*="bg-line"]:not(.grid) {
    desktop breakpoint only. Border-color is left alone so the intentional
    `lg:border-r` divider keeps its glass hairline. */
 @media (min-width: 768px) {
+
   html.liquid-glass div[class*="bg-surface"][class*="border"][class*="rounded"][data-replay-flat],
   html.liquid-glass div[class*="bg-surface-2"][class*="border"][class*="rounded"][data-replay-flat] {
     background-color: transparent !important;
@@ -572,77 +576,49 @@ html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="c
    (e.g. Insights session & cube selectors, Dock puzzle selector).
    They carry the full liquid-glass backdrop blur and frosted backplate,
    harmonizing with the open select-content menu and surrounding panels. */
-html.liquid-glass [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass button[data-slot="select-trigger"]:not([data-piece="puzzle"]) {
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]) {
   background-color: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass button[data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled) {
+html.liquid-glass [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
 /* Nested select triggers (inside a glass card/dialog/sheet): half-blur */
-html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
-html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]) {
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]) {
   background-color: var(--glass-nested-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
-html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled) {
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-no-glass]):not([data-piece="puzzle"]):hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
 }
 
-/* ── Puzzle Select Trigger in Dock (PC) and Mobile Header: Transparent at rest ──
-   In both desktop dock and mobile header, the puzzle selector sits transparently
-   on the glass bar at rest (no rectangular pill, no border), and raises a subtle
-   frosted hover chip on hover. */
-html.liquid-glass [data-piece="puzzle"],
-html.liquid-glass [data-piece="puzzle"][data-slot="select-trigger"],
-html.liquid-glass [data-context-zone="dock"] [data-piece="puzzle"],
-html.liquid-glass [data-context-zone="mobile-header"] [data-piece="puzzle"],
-html.liquid-glass header[data-slot="app-header"] [data-piece="puzzle"],
-html.liquid-glass [data-context-zone="dock"] [data-slot="select-trigger"],
-html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"],
-html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"] {
-  background-color: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  border-color: transparent !important;
-  border-width: 0 !important;
-  box-shadow: none !important;
-}
-
-html.liquid-glass [data-piece="puzzle"]:hover:not(:disabled),
-html.liquid-glass [data-piece="puzzle"][data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-context-zone="dock"] [data-piece="puzzle"]:hover:not(:disabled),
-html.liquid-glass [data-context-zone="mobile-header"] [data-piece="puzzle"]:hover:not(:disabled),
-html.liquid-glass header[data-slot="app-header"] [data-piece="puzzle"]:hover:not(:disabled),
-html.liquid-glass [data-context-zone="dock"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"]:hover:not(:disabled) {
-  background-color: var(--glass-btn-bg-hover) !important;
-  border-color: transparent !important;
-  border-width: 0 !important;
-  box-shadow: none !important;
-}
+/* ── Puzzle Select Trigger: Liquid Glass DISABLED ──
+   The puzzle selector remains flat / text-only — no frosted backdrop blur or
+   glass fill. data-no-glass on the component keeps the generic glass engine
+   from applying glass-bg + blur. The chip and hover styles below ensure a
+   subtle hover affordance at rest. */
 
 /* ── Card buttons & standalone panel triggers: frosted glass with backdrop blur ──
    Interactive cards and floating trigger bars render as <button data-slot="card">
@@ -798,7 +774,7 @@ html.liquid-glass .grid[class*="bg-line"] {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
 }
 
-html.liquid-glass .grid[class*="bg-line"] > div {
+html.liquid-glass .grid[class*="bg-line"]>div {
   background-color: var(--glass-bg) !important;
 }
 
@@ -964,12 +940,14 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   * {
     @apply border-border outline-ring/50;
   }
+
   html {
     background-color: var(--background);
     color: var(--foreground);
     height: 100%;
     overflow: hidden;
   }
+
   body {
     @apply overflow-hidden bg-background text-foreground;
     height: 100%;
@@ -1025,20 +1003,25 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
     scrollbar-width: thin;
     scrollbar-color: var(--line-2) transparent;
   }
+
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+
   *::-webkit-scrollbar-thumb {
     background: var(--line-2);
     border-radius: 9999px;
   }
+
   *::-webkit-scrollbar-thumb:hover {
     background: var(--ink-3);
   }
+
   /* Radix ScrollArea renders its own custom scrollbar element — keep it
      hidden (its viewport still scrolls; native thin bars cover the rest). */
   [data-slot="scroll-area-scrollbar"] {
@@ -1053,6 +1036,7 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
@@ -1076,21 +1060,62 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   --cursor-resize-e: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAACyklEQVR4nL1VTWgTQRT+Jk2y+YEgheQYLLQBjyW0IeQYQktzK6EBfw7FizkIQlyTpb0ZsgdbpYgHL57VgBgbUkvF0FSIxYNCepIgEaGXEAPWSJbN7srE3bCtTcyK9cFjd2d2vm/ee9/MI9lsFmdppjNFx38gMP8rII7jiP6b53mFPsmoNeA4jjidzrl2u/0KgKQB0HG3231HEISrNCPj4+OFer1+DUCb53nZSIrMgiDkZmdnlwDYdTs2HR0dXd/f3z93cHDgajQaS7u7uwEAzt6kgfDHCCH2Wq32aHFx8QoAB8dxdL1ZkqSxiYkJeL1e2O12MAxzwRCBar0db25uMuVyeSMWi12mkVBinDCLxeLU6mtYRX6/H1tbW0ypVNqIx+MXaSSn/EYGquikGlSjY/3xmZkZFItFZmFh4f7y8rIFQ+xYBGtrazcYhukQQuQTLhFC2t1ut5+OQCCAQqHA5PP5e5IkDcxEf0ItGLu3t2dVFAWD3Gaz9RcHg0FaE6vD4RgpgjFZlh0ejwdGLBQKYX19nYxCYDKZTOLh4aEhgmq1itXVVWUUAtnn8z2MRCIiIQSDvNPpHAMPh8PdZrM5MAK9iqRKpfIAwHsA5wFYdXM9FVmt1tvapjRwlmV3VlZW5gZJXj9Iw2wCeAPgGYCczp8CeK7QKuvAk8nkNsuyr4elsB+BenmJHMc19JpXjX7bNPBoNNoDT6VS2wA+aMSn2W8HTSVSTjl8Mn2fn58XWZZ9mUqldgBUAHzBEDN6VYiJROJxOp3eVsE/AvhuNpulVqsFQRCoE5fLJf4NgRKJRG5lMpkXAN5q4AC6k5OTOa/XK9NDOD09/XlqauorFc3IBPyvtEnFYvEJgHcaOG0olKBaraZFUbykKMrNcrl8F8AnAD/oWiMtswugpTrtaL2aqLWhwiipNyvd+Tfa0ejkyC3zT6YKQVOforXUn7gbLaufxATmAAAAAElFTkSuQmCC') 19 12;
 }
 
-.cursor-default { cursor: var(--cursor-default), auto; }
-.cursor-pointer { cursor: var(--cursor-pointer), pointer; }
-.cursor-grab { cursor: var(--cursor-grab), grab; }
+.cursor-default {
+  cursor: var(--cursor-default), auto;
+}
+
+.cursor-pointer {
+  cursor: var(--cursor-pointer), pointer;
+}
+
+.cursor-grab {
+  cursor: var(--cursor-grab), grab;
+}
+
 .cursor-grabbing,
-.active\:cursor-grabbing:active { cursor: var(--cursor-grabbing), grabbing; }
-.cursor-text { cursor: var(--cursor-text), text; }
-.cursor-not-allowed { cursor: var(--cursor-not-allowed), not-allowed; }
-.cursor-move { cursor: var(--cursor-move), move; }
-.cursor-help { cursor: var(--cursor-help), help; }
-.cursor-w-resize { cursor: var(--cursor-resize-w), w-resize; }
-.cursor-e-resize { cursor: var(--cursor-resize-e), e-resize; }
-.cursor-n-resize { cursor: var(--cursor-resize-n), n-resize; }
-.cursor-s-resize { cursor: var(--cursor-resize-s), s-resize; }
-.cursor-col-resize { cursor: var(--cursor-resize-w), col-resize; }
-.cursor-row-resize { cursor: var(--cursor-resize-n), row-resize; }
+.active\:cursor-grabbing:active {
+  cursor: var(--cursor-grabbing), grabbing;
+}
+
+.cursor-text {
+  cursor: var(--cursor-text), text;
+}
+
+.cursor-not-allowed {
+  cursor: var(--cursor-not-allowed), not-allowed;
+}
+
+.cursor-move {
+  cursor: var(--cursor-move), move;
+}
+
+.cursor-help {
+  cursor: var(--cursor-help), help;
+}
+
+.cursor-w-resize {
+  cursor: var(--cursor-resize-w), w-resize;
+}
+
+.cursor-e-resize {
+  cursor: var(--cursor-resize-e), e-resize;
+}
+
+.cursor-n-resize {
+  cursor: var(--cursor-resize-n), n-resize;
+}
+
+.cursor-s-resize {
+  cursor: var(--cursor-resize-s), s-resize;
+}
+
+.cursor-col-resize {
+  cursor: var(--cursor-resize-w), col-resize;
+}
+
+.cursor-row-resize {
+  cursor: var(--cursor-resize-n), row-resize;
+}
 
 /* While a drag is in progress, force the grabbing cursor everywhere.
    The CSS cursor follows the element UNDER the pointer — not the element
@@ -1137,6 +1162,7 @@ input[type="image"],
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -1157,12 +1183,14 @@ input[type="image"],
    button-based draggables (e.g. the floating 3D cube launcher). */
 @layer base {
   @media (hover: none) {
+
     button:active,
     [role="button"]:active,
     a:active,
     summary:active {
       filter: brightness(0.94);
     }
+
     button,
     [role="button"],
     a,
@@ -1180,6 +1208,7 @@ input[type="image"],
      prevent double-tap-to-zoom delays on buttons. Desktop: untouched. Also in
      @layer base so touch-none/touch-manipulation utilities still win. */
   @media (max-width: 767px) {
+
     html,
     body {
       height: 100%;
@@ -1189,24 +1218,30 @@ input[type="image"],
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
+
     input,
     textarea,
     [contenteditable="true"] {
       user-select: text;
       -webkit-user-select: text;
     }
+
     button,
     [role="button"],
     a {
       touch-action: manipulation;
     }
+
     /* Hide scrollbars on touch: mobile scrolling is gesture-driven and native
        overlays/scroll affordances replace the visible thumbs — the styled 6px
        bars above would only clutter the stage. Scrolling still works. */
     * {
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* legacy Edge/IE */
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* legacy Edge/IE */
     }
+
     *::-webkit-scrollbar {
       display: none;
     }
@@ -1221,6 +1256,7 @@ input[type="image"],
     opacity: 0;
     scale: 0.94;
   }
+
   100% {
     opacity: 1;
     scale: 1;
@@ -1239,9 +1275,11 @@ input[type="image"],
   .animate-widget-mount {
     animation: none;
   }
+
   .animate-pulse {
     animation: none;
   }
+
   * {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
@@ -1303,47 +1341,135 @@ input[type="image"],
 }
 
 @keyframes cf-sq1 {
-  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
+  0% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  8.333% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  100% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq2 {
-  0% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  8.333% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  100% { transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+  0% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  8.333% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  16.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  25.00% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  83.33% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  91.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  100% {
+    transform: translate3d(calc(0 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq3 {
-  0%, 100% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  16.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  25.00% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  83.33% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  91.67% { transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  16.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  25.00% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  33.33% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  41.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  66.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  75.00% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  83.33% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  91.67% {
+    transform: translate3d(calc(1 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq4 {
-  0%, 100% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  33.33% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  41.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0); }
-  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  33.33% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  41.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  50.00% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(2 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  58.33% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 @keyframes cf-sq5 {
-  0%, 100% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  50.00% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
-  58.33% { transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  66.67% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0); }
-  75.00% { transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0); }
+
+  0%,
+  100% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  50.00% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  58.33% {
+    transform: translate3d(calc(3 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  66.67% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(0 * var(--cf-spinner-offset, 18px)), 0);
+  }
+
+  75.00% {
+    transform: translate3d(calc(2 * var(--cf-spinner-offset, 18px)), calc(1 * var(--cf-spinner-offset, 18px)), 0);
+  }
 }
 
 /* ── In-App Fullscreen Replay Mode (Hide Chrome & Sidebar) ────────────────── */
@@ -1363,9 +1489,11 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     height: 0;
     opacity: 0.4;
   }
+
   30% {
     opacity: 1;
   }
+
   100% {
     height: var(--radix-accordion-content-height);
     opacity: 1;
@@ -1377,9 +1505,11 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     height: var(--radix-accordion-content-height);
     opacity: 1;
   }
+
   70% {
     opacity: 0.3;
   }
+
   100% {
     height: 0;
     opacity: 0;
@@ -1407,9 +1537,9 @@ body.replay-fullscreen-active [class*="relative z-1"] {
     opacity: 0;
     transform: translate3d(0, -10px, 0);
   }
+
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
-
