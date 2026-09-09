@@ -108,7 +108,6 @@ export function TimerStage(props: TimerStageProps) {
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
   const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel);
-  const hyprlandBorder = useStore(preferencesStore, (s) => s.hyprlandBorder ?? 'none');
   const scrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode);
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
@@ -205,8 +204,6 @@ export function TimerStage(props: TimerStageProps) {
             className={cn(
               "w-full transition-all duration-200",
               scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
-              scramblePanel && hyprlandBorder === 'accent' && 'hyprland-border-accent',
-              scramblePanel && hyprlandBorder === 'gradient' && 'hyprland-border-gradient',
             )}
           >
             {scrambleElement}

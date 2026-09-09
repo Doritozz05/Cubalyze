@@ -77,7 +77,6 @@ export function ScaledTimerPreview({
   const storeLiquidOpacity = useStore(preferencesStore, (s) => s.liquidGlassOpacity ?? 65);
   const storeLiquidBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const storeScramblePanel = useStore(preferencesStore, (s) => s.scramblePanel ?? false);
-  const storeHyprlandBorder = useStore(preferencesStore, (s) => s.hyprlandBorder ?? 'none');
   const storeScrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode ?? 'default');
   const storeTimerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
 
@@ -182,8 +181,6 @@ export function ScaledTimerPreview({
       className={cn(
         'w-full transition-all duration-200',
         storeScramblePanel && 'rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs',
-        storeScramblePanel && storeHyprlandBorder === 'accent' && 'hyprland-border-accent',
-        storeScramblePanel && storeHyprlandBorder === 'gradient' && 'hyprland-border-gradient',
       )}
     >
       <ScrambleDisplay
@@ -413,7 +410,7 @@ export function ScaledTimerPreview({
                   <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-2">
                     {scrambleElement}
                     <div className="mt-1 flex min-h-0 flex-1 flex-col">
-                      <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} hyprlandBorder={storeHyprlandBorder} />
+                      <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
                     </div>
                     <PreviewBottom deviceMode={deviceMode} />
                   </div>
@@ -432,7 +429,7 @@ export function ScaledTimerPreview({
                     <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
                       {scrambleElement}
                       <div className="mt-1 flex min-h-0 flex-1 flex-col">
-                        <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} hyprlandBorder={storeHyprlandBorder} />
+                        <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
                       </div>
                       <PreviewBottom deviceMode={deviceMode} />
                     </div>

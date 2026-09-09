@@ -30,12 +30,10 @@ const HALO: Partial<Record<TimerState, string>> = {
   inspection: 'bg-caution-soft/30',
 };
 
-interface PreviewTimerProps {
-  deviceMode: DeviceMode;
-  timerState: TimerPreviewState;
-  panel?: boolean;
-  hyprlandBorder?: 'none' | 'accent' | 'gradient';
-}
+interface PreviewTimerProps {   deviceMode: DeviceMode;
+   timerState: TimerPreviewState;
+   panel?: boolean;
+ }
 
 function resolveFace(timerState: TimerPreviewState): {
   state: TimerState;
@@ -70,7 +68,7 @@ function resolveFace(timerState: TimerPreviewState): {
  * PB delta, real `hintFor` copy) inside the REAL `TimerContainer` surface
  * geometry, with viewport units evaluated against the virtual device.
  */
-export function PreviewTimer({ deviceMode, timerState, panel, hyprlandBorder = 'none' }: PreviewTimerProps) {
+export function PreviewTimer({ deviceMode, timerState, panel }: PreviewTimerProps) {
   const { t } = useTranslation('timer');
   const isMobile = deviceMode === 'mobile';
   const { w, h } = VIRTUAL_SIZE[deviceMode];
@@ -104,8 +102,6 @@ export function PreviewTimer({ deviceMode, timerState, panel, hyprlandBorder = '
       className={cn(
         'group relative flex w-full flex-1 touch-manipulation select-none flex-col items-center justify-center rounded-lg transition-all duration-300',
         panel && 'rounded-2xl border border-line bg-surface p-6 shadow-2xs',
-        panel && hyprlandBorder === 'accent' && 'hyprland-border-accent',
-        panel && hyprlandBorder === 'gradient' && 'hyprland-border-gradient',
       )}
       style={{ minHeight: minH }}
       role="button"
