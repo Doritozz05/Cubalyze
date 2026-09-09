@@ -82,6 +82,7 @@ export function ScaledTimerPreview({
   const timerBackgroundBlur = useStore(preferencesStore, (s) => s.timerBackgroundBlur);
   const timerBackgroundFit = useStore(preferencesStore, (s) => s.timerBackgroundFit);
   const timerBackgroundOverlay = useStore(preferencesStore, (s) => s.timerBackgroundOverlay);
+  const timerBackgroundAlwaysAnimate = useStore(preferencesStore, (s) => s.timerBackgroundAlwaysAnimate ?? true);
 
   const mediaUrl = useBackgroundMediaStore((s) => s.mediaUrl);
   const mediaType = useBackgroundMediaStore((s) => s.mediaType);
@@ -360,7 +361,7 @@ export function ScaledTimerPreview({
                       src={effectiveMediaUrl}
                       loop
                       muted
-                      autoPlay
+                      autoPlay={timerBackgroundAlwaysAnimate}
                       playsInline
                       className="absolute inset-0 size-full object-cover"
                       style={{

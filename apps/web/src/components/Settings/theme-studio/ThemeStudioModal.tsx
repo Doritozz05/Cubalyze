@@ -39,9 +39,11 @@ import {
 } from '@/theme/customFonts';
 import { findPreset } from '@/theme/customThemes';
 import { getPresetIcon } from '@/theme/themePresetIcons';
+import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
 import { ThemeColorSection } from './ThemeColorSection';
 import { CustomThemesSection } from './CustomThemesSection';
+import { ThemeShareSection } from './ThemeShareSection';
 import { PresetDots } from './PresetDots';
 import { isColorPickerOpen } from '@/components/Settings/components/ColorPicker';
 import { CustomBackgroundSetting } from '@/components/Settings/components/CustomBackgroundSetting';
@@ -100,7 +102,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setFontSans = useStore(preferencesStore, (s) => s.setFontSans);
   const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
   const setFontMono = useStore(preferencesStore, (s) => s.setFontMono);
-  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'dotted');
+  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'slashed');
   const setZeroStyle = useStore(preferencesStore, (s) => s.setZeroStyle);
   const customFonts = useStore(preferencesStore, (s) => s.customFonts);
   const [uploadingFont, setUploadingFont] = useState(false);
@@ -212,8 +214,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
         <div className="flex shrink-0 items-center gap-1 border-b border-line bg-surface-2/40 p-2 lg:hidden">
           {(
             [
-              { id: 'preview', label: t('appearance.viewPreview', 'Vista previa'), icon: Eye },
-              { id: 'customize', label: t('appearance.viewCustomize', 'Personalizar'), icon: Settings2 },
+              { id: 'preview', label: t('appearance.viewPreview'), icon: Eye },
+              { id: 'customize', label: t('appearance.viewCustomize'), icon: Settings2 },
             ] as const
           ).map((v) => {
             const Icon = v.icon;
@@ -264,7 +266,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
             <div
               ref={tabsRef}
               role="tablist"
-              aria-label={t('appearance.tabsLabel', 'Theme sections')}
+              aria-label={t('appearance.tabsLabel')}
               onKeyDown={handleTabKeyDown}
               className="flex shrink-0 gap-1 border-b border-line bg-surface-2/40 px-3 py-2 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
             >
@@ -357,6 +359,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                   </div>
 
                   <CustomThemesSection />
+                  <ThemeShareSection />
                 </div>
               )}
 
@@ -707,15 +710,29 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                       <button
                         type="button"
                         onClick={() => {
-                          // Factory defaults: classic light theme, no overrides.
+                          // Factory defaults: classic light theme, no overrides,
+                          // default fonts, glass off, no background media.
+                          // The user's own library (uploaded fonts, saved
+                          // custom themes) is preserved — only the active
+                          // selection is reverted.
+                          const prefs = preferencesStore.getState();
                           setThemePreset('default');
-                          preferencesStore.getState().setTheme('light');
+                          prefs.setTheme('light');
                           resetCustomThemeColors();
                           setLiquidGlass(false);
                           setLiquidGlassOpacity(65);
                           setLiquidGlassBlur(null);
                           setFontSans('open-sans');
                           setFontMono('cascadia-code');
+                          setZeroStyle('slashed');
+                          prefs.setTimerBackgroundImage(null);
+                          prefs.setTimerBackgroundOpacity(100);
+                          prefs.setTimerBackgroundBlur(0);
+                          prefs.setTimerBackgroundFit('cover');
+                          prefs.setTimerBackgroundOverlay(0);
+                          prefs.setTimerBackgroundAllViews(true);
+                          prefs.setTimerBackgroundAlwaysAnimate(true);
+                          void useBackgroundMediaStore.getState().clearMedia();
                         }}
                         className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"
                       >

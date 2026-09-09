@@ -178,7 +178,7 @@ export function CustomThemesSection() {
                               e.stopPropagation();
                               handleDuplicate(preset.id, preset.isDark ? 'dark' : 'light');
                             }}
-                            aria-label={t('appearance.duplicateTheme', 'Duplicar tema')}
+                            aria-label={t('appearance.duplicateTheme')}
                             className="flex size-6 items-center justify-center rounded-md text-ink-3 opacity-0 transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
                           >
                             <Copy className="size-3" />

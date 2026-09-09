@@ -36,7 +36,7 @@ function ThemeSync() {
   const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
   const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
-  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'dotted');
+  const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'slashed');
   const customFonts = useStore(preferencesStore, (s) => s.customFonts);
   const { theme: nextTheme, setTheme } = useTheme();
 

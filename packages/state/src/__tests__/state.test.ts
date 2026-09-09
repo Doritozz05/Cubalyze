@@ -86,7 +86,7 @@ describe('PreferencesStore', () => {
     expect(copyId).not.toBe(id);
     const themes = preferencesStore.getState().customThemes;
     expect(themes).toHaveLength(2);
-    expect(themes[1].name).toBe('Original (copia)');
+    expect(themes[1].name).toBe('Original (copy)');
     expect(themes[1].base).toBe('dark');
     expect(themes[1].colors).toEqual({ '--canvas': '#111111' });
 

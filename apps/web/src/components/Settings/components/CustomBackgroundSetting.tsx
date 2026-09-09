@@ -59,6 +59,16 @@ export function CustomBackgroundSetting() {
 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Tiling only makes sense for static images — video frames and animated
+  // GIFs always render cover/contain. Coerce a stale 'tile' back to cover
+  // so the stored value never disagrees with what is rendered.
+  const canTile = mediaType === 'image' || !mediaType;
+  useEffect(() => {
+    if (!canTile && timerBackgroundFit === 'tile') {
+      setTimerBackgroundFit('cover');
+    }
+  }, [canTile, timerBackgroundFit, setTimerBackgroundFit]);
+
   // Synchronize preview video playback
   useEffect(() => {
     const video = previewVideoRef.current;
@@ -391,7 +401,9 @@ export function CustomBackgroundSetting() {
                 <SelectContent>
                   <SelectItem value="cover">{t('appearance.fitCover')}</SelectItem>
                   <SelectItem value="contain">{t('appearance.fitContain')}</SelectItem>
-                  <SelectItem value="tile">{t('appearance.fitTile')}</SelectItem>
+                  {canTile && (
+                    <SelectItem value="tile">{t('appearance.fitTile')}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

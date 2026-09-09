@@ -413,8 +413,8 @@ const DEFAULT_VALUES = {
   timerBackgroundBlur: 0,
   timerBackgroundFit: 'cover' as const,
   timerBackgroundOverlay: 0,
-  timerBackgroundAllViews: false,
-  timerBackgroundAlwaysAnimate: false,
+  timerBackgroundAllViews: true,
+  timerBackgroundAlwaysAnimate: true,
   liquidGlass: false,
   liquidGlassOpacity: 65,
   liquidGlassBlur: null,
@@ -459,7 +459,7 @@ export const createPreferencesStore = () => {
         saveCustomTheme: (input) => {
           const { customThemes } = get();
           if (customThemes.length >= MAX_CUSTOM_THEMES) return null;
-          const name = input.name.trim().slice(0, 40) || 'Mi tema';
+          const name = input.name.trim().slice(0, 40) || 'My theme';
           const theme: CustomTheme = {
             id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
             name,
@@ -488,7 +488,7 @@ export const createPreferencesStore = () => {
           if (!source) return null;
           const theme: CustomTheme = {
             id: `custom-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffff).toString(36)}`,
-            name: `${source.name} (copia)`.slice(0, 40),
+            name: `${source.name} (copy)`.slice(0, 40),
             base: source.base,
             colors: { ...source.colors },
             createdAt: Date.now(),

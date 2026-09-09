@@ -46,6 +46,7 @@ export function AppearanceSection() {
   const themePreset = useStore(preferencesStore, (s) => s.themePreset ?? 'default');
   const setThemePreset = useStore(preferencesStore, (s) => s.setThemePreset);
   const customThemes = useStore(preferencesStore, (s) => s.customThemes);
+  const resetCustomThemeColors = useStore(preferencesStore, (s) => s.resetCustomThemeColors);
   const allPresets = useMemo(() => getAllPresets(customThemes), [customThemes]);
   // Selector mirrors the full Theme Studio catalog: system follows the OS
   // (classic light/dark), any other value is the active preset id.
@@ -56,12 +57,16 @@ export function AppearanceSection() {
     if (value === 'system') {
       setThemePreset('default');
       setTheme('system');
+      resetCustomThemeColors();
       return;
     }
     const preset = findPreset(value, customThemes);
     if (!preset) return;
     setThemePreset(preset.id);
     setTheme(preset.isDark ? 'dark' : 'light');
+    // Same as the studio path: a new preset starts without overrides so a
+    // previous accent cannot leak onto it.
+    resetCustomThemeColors();
   };
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
   const setHeaderMode = useStore(preferencesStore, (s) => s.setHeaderMode);
