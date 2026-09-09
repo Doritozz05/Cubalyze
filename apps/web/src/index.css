@@ -572,68 +572,76 @@ html.liquid-glass [data-slot="button"]:not([data-glass-panel]):not([data-slot="c
    (e.g. Insights session & cube selectors, Dock puzzle selector).
    They carry the full liquid-glass backdrop blur and frosted backplate,
    harmonizing with the open select-content menu and surrounding panels. */
-html.liquid-glass [data-slot="select-trigger"],
-html.liquid-glass button[data-slot="select-trigger"] {
+html.liquid-glass [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-piece="puzzle"]) {
   background-color: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass button[data-slot="select-trigger"]:hover:not(:disabled) {
+html.liquid-glass [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass button[data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.12);
 }
 
 /* Nested select triggers (inside a glass card/dialog/sheet): half-blur */
-html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"],
-html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"],
-html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"],
-html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"],
-html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"],
-html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"],
-html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"] {
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]) {
   background-color: var(--glass-nested-bg) !important;
   -webkit-backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   backdrop-filter: blur(var(--glass-nested-blur)) saturate(140%) !important;
   border-color: var(--glass-border) !important;
 }
 
-html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:hover:not(:disabled),
-html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:hover:not(:disabled) {
+html.liquid-glass div[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass div[class*="bg-surface-2"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass section[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass aside[class*="bg-surface"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="dialog-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="sheet-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled),
+html.liquid-glass [data-slot="drawer-content"] [data-slot="select-trigger"]:not([data-piece="puzzle"]):hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
 }
 
-/* ── Puzzle / Cube Select Trigger in Mobile Header: Flat by design ──
-   The minimal mobile header (header[data-slot="app-header"], [data-context-zone="mobile-header"])
-   hosts the center puzzle category selector with the active session beneath it.
-   As designed in the main branch, this center selector is completely flat,
-   clean, and borderless at rest (no rounded rectangular frame / marco around 2x2/session).
-   On the other hand, the desktop dock select trigger retains its frosted glass frame (marco)
-   and subtle hover chip. */
+/* ── Puzzle Select Trigger in Dock (PC) and Mobile Header: Transparent at rest ──
+   In both desktop dock and mobile header, the puzzle selector sits transparently
+   on the glass bar at rest (no rectangular pill, no border), and raises a subtle
+   frosted hover chip on hover. */
+html.liquid-glass [data-piece="puzzle"],
+html.liquid-glass [data-piece="puzzle"][data-slot="select-trigger"],
+html.liquid-glass [data-context-zone="dock"] [data-piece="puzzle"],
+html.liquid-glass [data-context-zone="mobile-header"] [data-piece="puzzle"],
+html.liquid-glass header[data-slot="app-header"] [data-piece="puzzle"],
+html.liquid-glass [data-context-zone="dock"] [data-slot="select-trigger"],
 html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"],
-html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"],
-html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"] {
   background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   border-color: transparent !important;
   border-width: 0 !important;
   box-shadow: none !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
 }
 
-html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"]:hover,
-html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"]:hover,
-html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"]:hover {
+html.liquid-glass [data-piece="puzzle"]:hover:not(:disabled),
+html.liquid-glass [data-piece="puzzle"][data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-context-zone="dock"] [data-piece="puzzle"]:hover:not(:disabled),
+html.liquid-glass [data-context-zone="mobile-header"] [data-piece="puzzle"]:hover:not(:disabled),
+html.liquid-glass header[data-slot="app-header"] [data-piece="puzzle"]:hover:not(:disabled),
+html.liquid-glass [data-context-zone="dock"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-context-zone="mobile-header"] [data-slot="select-trigger"]:hover:not(:disabled),
+html.liquid-glass [data-context-zone="mobile-header"] button[data-slot="select-trigger"]:hover:not(:disabled) {
   background-color: var(--glass-btn-bg-hover) !important;
   border-color: transparent !important;
   border-width: 0 !important;
+  box-shadow: none !important;
 }
 
 /* ── Card buttons & standalone panel triggers: frosted glass with backdrop blur ──
@@ -698,14 +706,14 @@ html.liquid-glass [data-slot="button"][class*="hover:bg-surface-2"]:hover:not(:d
   background-color: var(--glass-btn-bg-hover) !important;
 }
 
-html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-no-glass]),
+html.liquid-glass [data-context-zone="dock"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-piece="puzzle"]):not([data-no-glass]),
 html.liquid-glass [data-context-zone="context-menu"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="session"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="settings-sidebar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="algorithms-nav"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"]:not([data-slot="select-trigger"]):not([data-piece="puzzle"]),
 html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface-2"] {

@@ -35,6 +35,7 @@ export function PuzzlePiece({
   return (
     <Select value={puzzle} onValueChange={(v) => onPuzzleChange?.(v as PuzzleCategory)}>
       <SelectTrigger
+        data-piece="puzzle"
         size="sm"
         className={
           variant === "tray"
