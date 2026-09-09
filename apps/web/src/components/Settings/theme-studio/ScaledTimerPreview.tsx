@@ -13,6 +13,14 @@ import {
   getDerivedThemeTokens,
   getDerivedLiquidGlassTokens,
 } from '@/theme/themePresets';
+import { ScrambleDisplay } from '@/components/Scramble/ScrambleDisplay';
+import { PreviewRail } from './preview/PreviewRail';
+import { PreviewDock } from './preview/PreviewDock';
+import { PreviewMobileHeader, PreviewMobileTabBar } from './preview/PreviewMobileChrome';
+import { PreviewTimer } from './preview/PreviewTimer';
+import { PreviewBottom } from './preview/PreviewBottom';
+import { evalScrambleToken, px } from './preview/evalViewport';
+import { DEMO_SCRAMBLE, DEMO_SCRAMBLE_INDEX } from './preview/demoData';
 
 export type DeviceMode = 'mobile' | 'tablet' | 'desktop';
 export type TimerPreviewState = 'idle' | 'inspection' | 'holding' | 'ready' | 'running' | 'penalty';
@@ -104,6 +112,19 @@ export function ScaledTimerPreview({
   const [scale, setScale] = useState(0.5);
 
   const targetDim = DEVICE_CONFIG[deviceMode];
+  const isMobileFrame = deviceMode === 'mobile';
+
+  const scaledWidth = Math.round(targetDim.width * scale);
+  const scaledHeight = Math.round(targetDim.height * scale);
+  const exactScaleX = targetDim.width > 0 ? scaledWidth / targetDim.width : scale;
+  const exactScaleY = targetDim.height > 0 ? scaledHeight / targetDim.height : scale;
+
+  // Viewport-evaluated scramble token size (desktop/tablet frames only;
+  // the mobile frame uses the real component's compact phone density).
+  const scrambleTokenPx = useMemo(() => {
+    if (isMobileFrame) return undefined;
+    return px(evalScrambleToken(targetDim.width, targetDim.height));
+  }, [isMobileFrame, targetDim]);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -132,26 +153,13 @@ export function ScaledTimerPreview({
     };
   }, [targetDim, expanded]);
 
-  // Timer state visuals
-  const getTimerDisplay = () => {
-    switch (timerState) {
-      case 'inspection':
-        return { time: '12', color: 'text-caution', hint: t('appearance.hintInspection') };
-      case 'holding':
-        return { time: '0.00', color: 'text-hold', hint: t('appearance.hintHolding') };
-      case 'ready':
-        return { time: '0.00', color: 'text-ready', hint: t('appearance.hintReady') };
-      case 'running':
-        return { time: '6.42', color: 'text-ink', hint: t('appearance.hintRunning') };
-      case 'penalty':
-        return { time: '11.85 +2', color: 'text-plus2', hint: t('appearance.hintPenalty') };
-      case 'idle':
-      default:
-        return { time: '9.84', color: 'text-ink', hint: t('appearance.hintIdle') };
-    }
-  };
-
-  const timerDisplay = getTimerDisplay();
+  // Chrome fills, threaded explicitly (not via utilities) so the simulated
+  // rail/dock/header/tabbar can never lose their fill to a global override.
+  // Under liquid glass the !important glass rules still win, like the app.
+  const tokenRecord = containerTokens as unknown as Record<string, string>;
+  const chromeSurface = tokenRecord['--surface'];
+  const chromeSidebar = tokenRecord['--sidebar'] ?? chromeSurface;
+  const chromeTabbar = `color-mix(in oklab, ${chromeSurface} 95%, transparent)`;
 
   const timerStates = [
     { id: 'idle' as const, label: t('appearance.stateIdle') },
@@ -162,11 +170,22 @@ export function ScaledTimerPreview({
     { id: 'penalty' as const, label: t('appearance.statePenalty') },
   ];
 
+  const scrambleElement = (
+    <ScrambleDisplay
+      scramble={DEMO_SCRAMBLE}
+      indexLabel={DEMO_SCRAMBLE_INDEX}
+      isScrambled
+      onRegenerate={() => {}}
+      compact={isMobileFrame}
+      tokenSizePx={scrambleTokenPx}
+    />
+  );
+
   return (
     <>
       {expanded && (
         <div
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm"
           onClick={() => setExpanded(false)}
           aria-hidden="true"
         />
@@ -177,7 +196,7 @@ export function ScaledTimerPreview({
         expanded
           // Fullscreen: invisible chrome — no outer panel, only the device
           // frame + floating close are visible over the dimmed backdrop.
-          ? 'fixed inset-0 z-[61] h-auto max-h-none rounded-none border-0 bg-transparent shadow-none'
+          ? 'fixed inset-0 z-61 h-auto max-h-none rounded-none border-0 bg-transparent shadow-none'
           : 'h-full rounded-2xl border border-line bg-surface-2/40 shadow-inner'
       )}
     >
@@ -289,181 +308,122 @@ export function ScaledTimerPreview({
       >
         <div
           style={{
-            width: targetDim.width * scale,
-            height: targetDim.height * scale,
+            width: scaledWidth,
+            height: scaledHeight,
+            boxSizing: 'content-box',
           }}
-          // border (not ring) + bg-canvas base + isolate: the transformed
-          // virtual screen inside can no longer paint square corners over
-          // the rounded frame (Chromium overflow+transform clipping bug).
-          className="relative isolate shrink-0 overflow-hidden rounded-2xl border border-line bg-canvas shadow-2xl transition-all duration-300"
+          className="relative isolate shrink-0 rounded-2xl shadow-2xl transition-all duration-300"
         >
-          {/* Scaled Virtual Screen */}
+          {/* Hardware-clipped inner screen container: clips all scaled GPU layers strictly to the frame radius */}
           <div
             style={{
-              width: targetDim.width,
-              height: targetDim.height,
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              ...(containerTokens as unknown as React.CSSProperties),
-              ...(effectiveLiquid
-                ? {
-                    '--glass-opacity': `${effectiveLiquidOpacity / 100}`,
-                  }
-                : {}),
+              clipPath: 'inset(0 round 1rem)',
             }}
-            className={cn(
-              'absolute inset-0 flex flex-col overflow-hidden rounded-[inherit] bg-canvas text-ink [backface-visibility:hidden]',
-              effectiveLiquid && 'liquid-glass'
-            )}
-            data-glass-panel={effectiveLiquid || undefined}
+            className="absolute inset-0 overflow-hidden rounded-2xl bg-canvas"
           >
-            {/* Background Media inside preview */}
-            {effectiveMediaUrl && (
-              <div
-                className="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none"
-                style={{ opacity: (timerBackgroundOpacity ?? 100) / 100 }}
-              >
-                {mediaType === 'video' ? (
-                  <video
-                    src={effectiveMediaUrl}
-                    loop
-                    muted
-                    autoPlay
-                    playsInline
-                    className="absolute inset-0 size-full object-cover"
-                    style={{
-                      objectFit: timerBackgroundFit === 'contain' ? 'contain' : 'cover',
-                      filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="absolute inset-0 bg-center"
-                    style={{
-                      backgroundImage: `url("${effectiveMediaUrl}")`,
-                      backgroundSize: timerBackgroundFit === 'tile' ? 'auto' : (timerBackgroundFit || 'cover'),
-                      backgroundRepeat: timerBackgroundFit === 'tile' ? 'repeat' : 'no-repeat',
-                      filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
-                    }}
-                  />
-                )}
-                {timerBackgroundOverlay > 0 && (
-                  <div
-                    className="absolute inset-0 bg-black"
-                    style={{ opacity: timerBackgroundOverlay / 100 }}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Simulated Timer Screen UI */}
-            <div className="relative z-10 flex h-full flex-col justify-between p-4">
-              {/* Top Bar / Scramble */}
-              <div className="flex flex-col items-center gap-2">
-                {/* Header chips */}
-                <div className="flex w-full items-center justify-between">
-                  <div className="flex items-center gap-2 rounded-lg border border-line bg-surface/90 px-2.5 py-1 text-xs font-semibold shadow-xs backdrop-blur-sm">
-                    <span className="size-2 rounded-full bg-ready" />
-                    <span>3×3×3</span>
-                    <span className="text-[0.65rem] text-ink-3">#42</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface/90 px-2.5 py-1 text-[0.7rem] font-mono text-ink-2 shadow-xs backdrop-blur-sm">
-                    <span>{t('appearance.previewSession')}</span>
-                  </div>
-                </div>
-
-                {/* Scramble display */}
-                <div className="w-full rounded-xl border border-line bg-surface/90 p-3 text-center shadow-xs backdrop-blur-sm">
-                  <p className="font-mono text-sm sm:text-base font-semibold tracking-wide text-ink">
-                    R U R&apos; U&apos; R&apos; F R2 U&apos; R&apos; U&apos; R U R&apos; F&apos;
-                  </p>
-                </div>
-              </div>
-
-              {/* Central Timer Face */}
-              <div className="my-auto flex flex-col items-center justify-center text-center">
-                {/* PB Delta tag */}
-                <div className="mb-2 inline-flex items-center gap-1 rounded-full border border-line bg-surface/80 px-2.5 py-0.5 text-xs font-mono font-medium text-ready shadow-xs backdrop-blur-sm">
-                  <span>-0.42</span>
-                  <span className="text-[0.65rem] text-ink-3">{t('appearance.previewVsPb')}</span>
-                </div>
-
-                {/* Main Digits */}
+            {/* Scaled Virtual Screen */}
+            <div
+              data-testid="theme-preview-virtual"
+              style={{
+                width: targetDim.width,
+                height: targetDim.height,
+                transform: `scale(${exactScaleX}, ${exactScaleY})`,
+                transformOrigin: 'top left',
+                ...(containerTokens as unknown as React.CSSProperties),
+                ...(effectiveLiquid
+                  ? {
+                      '--glass-opacity': `${effectiveLiquidOpacity / 100}`,
+                    }
+                  : {}),
+              }}
+              className={cn(
+                'absolute inset-0 flex flex-col overflow-visible bg-canvas text-ink backface-hidden',
+                effectiveLiquid && 'liquid-glass'
+              )}
+              data-glass-panel={effectiveLiquid || undefined}
+            >
+              {/* Background Media inside preview */}
+              {effectiveMediaUrl && (
                 <div
-                  className={cn(
-                    'font-mono text-6xl sm:text-7xl md:text-8xl font-black tracking-tight transition-colors duration-150',
-                    timerDisplay.color
-                  )}
+                  className="pointer-events-none absolute -inset-6 z-0 overflow-hidden select-none"
+                  style={{ opacity: (timerBackgroundOpacity ?? 100) / 100 }}
                 >
-                  {timerDisplay.time}
+                  {mediaType === 'video' ? (
+                    <video
+                      src={effectiveMediaUrl}
+                      loop
+                      muted
+                      autoPlay
+                      playsInline
+                      className="absolute inset-0 size-full object-cover"
+                      style={{
+                        objectFit: timerBackgroundFit === 'contain' ? 'contain' : 'cover',
+                        filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 bg-center"
+                      style={{
+                        backgroundImage: `url("${effectiveMediaUrl}")`,
+                        backgroundSize: timerBackgroundFit === 'tile' ? 'auto' : (timerBackgroundFit || 'cover'),
+                        backgroundRepeat: timerBackgroundFit === 'tile' ? 'repeat' : 'no-repeat',
+                        filter: timerBackgroundBlur ? `blur(${timerBackgroundBlur}px)` : undefined,
+                      }}
+                    />
+                  )}
+                  {timerBackgroundOverlay > 0 && (
+                    <div
+                      className="absolute inset-0 bg-black"
+                      style={{ opacity: timerBackgroundOverlay / 100 }}
+                    />
+                  )}
                 </div>
+              )}
 
-                {/* State / Hint caption */}
-                <p className="mt-3 text-xs font-medium text-ink-3">
-                  {timerDisplay.hint}
-                </p>
-              </div>
-
-              {/* Bottom Layout Strip / Mini Widgets */}
-              <div className="grid grid-cols-3 gap-2.5">
-                {/* Stats Widget */}
-                <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface/90 p-2.5 shadow-xs backdrop-blur-sm">
-                  <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3">
-                    {t('appearance.previewStats')}
-                  </span>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-ink-3">PB:</span>
-                    <span className="font-bold text-ready">8.94</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-ink-3">Ao5:</span>
-                    <span className="font-medium text-ink">10.82</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-ink-3">Ao12:</span>
-                    <span className="font-medium text-ink">11.45</span>
-                  </div>
-                </div>
-
-                {/* Times List Widget */}
-                <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface/90 p-2.5 shadow-xs backdrop-blur-sm">
-                  <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3">
-                    {t('appearance.previewTimes')}
-                  </span>
-                  <div className="space-y-0.5 font-mono text-[0.7rem] text-ink-2">
-                    <div className="flex justify-between">
-                      <span className="text-ink-3">1.</span>
-                      <span>9.84</span>
+              {/* Content sits above the background media (absolute z-0). */}
+              <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+              {isMobileFrame ? (
+                <>
+                  <PreviewMobileHeader background={chromeSurface} />
+                  <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-2">
+                    {scrambleElement}
+                    <div className="mt-1 flex min-h-0 flex-1 flex-col">
+                      <PreviewTimer deviceMode={deviceMode} timerState={timerState} />
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-ink-3">2.</span>
-                      <span>11.20</span>
+                    <PreviewBottom deviceMode={deviceMode} />
+                  </div>
+                  <PreviewMobileTabBar background={chromeTabbar} />
+                </>
+              ) : (
+                <div className="flex min-h-0 flex-1">
+                  {/* 1. Left sidebar flush against left, top and bottom */}
+                  <PreviewRail background={chromeSidebar} />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    {/* 2. Header strip spanning all the way from sidebar to right edge with bleed */}
+                    <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center border-b border-line/40 pt-6 pr-6">
+                      <PreviewDock background={chromeSurface} />
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-ink-3">3.</span>
-                      <span>10.55</span>
+                    {/* 3. Stage content area */}
+                    <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
+                      {scrambleElement}
+                      <div className="mt-1 flex min-h-0 flex-1 flex-col">
+                        <PreviewTimer deviceMode={deviceMode} timerState={timerState} />
+                      </div>
+                      <PreviewBottom deviceMode={deviceMode} />
                     </div>
                   </div>
                 </div>
-
-                {/* Scramble 2D Net Widget */}
-                <div className="flex flex-col items-center justify-center rounded-xl border border-line bg-surface/90 p-2 text-center shadow-xs backdrop-blur-sm">
-                  <span className="text-[0.62rem] font-semibold uppercase tracking-wider text-ink-3 mb-1">
-                    {t('appearance.previewCube2d')}
-                  </span>
-                  <div className="grid grid-cols-4 gap-0.5">
-                    {['#facc15', '#ffffff', '#22c55e', '#3b82f6', '#ef4444', '#f97316'].map((col, idx) => (
-                      <div
-                        key={idx}
-                        className="size-3 rounded-xs border border-black/20"
-                        style={{ backgroundColor: col }}
-                      />
-                    ))}
-                  </div>
-                </div>
+              )}
               </div>
             </div>
           </div>
+
+          {/* Physical Frame Border Overlay: sits at z-30 ABOVE the clipped virtual screen */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-30 rounded-2xl border border-line ring-1 ring-white/5"
+          />
         </div>
       </div>
     </div>
