@@ -136,16 +136,27 @@ export function Header({
   }, []);
 
   // ── Dropdown/popover guard ──────────────────────────────────────────
-  // When a Radix dropdown/select/popover is open its content lives in a
-  // portal OUTSIDE the header DOM, so the header's pointerleave fires and
-  // the dock retracts — leaving the dropdown floating over empty space.
-  // Check the document for any open Radix popper and, when one is open,
-  // cancel any pending retract and keep the dock pinned until it closes.
+  // When a Radix dropdown/select/popover originating from the header or dock
+  // is open, its content lives in a portal OUTSIDE the header DOM. Without a guard,
+  // the header's pointerleave fires and the dock retracts — leaving the dropdown
+  // floating over empty space.
+  //
+  // NOTE: We check specifically for dropdowns, popovers and selects (or triggers
+  // inside the header with open state) rather than a generic [data-state="open"],
+  // because otherwise open Dialogs, Sheets, Tooltips, or other components anywhere
+  // in the app would permanently freeze the dock in revealed mode.
   const anyPopoverOpen = useCallback((): boolean => {
-    // Radix marks open popper content with data-state="open". The trigger
-    // also carries data-state="open". Checking both covers dropdown menus,
-    // select content, and popovers.
-    return !!document.querySelector('[data-state="open"]');
+    // 1. Check if any trigger inside the header is currently in an open state
+    if (headerRef.current?.querySelector('[data-state="open"]')) {
+      return true;
+    }
+    // 2. Check for portaled dropdown menus, select dropdowns, or popovers
+    const openFloatingMenus = document.querySelectorAll(
+      '[data-slot="dropdown-menu-content"][data-state="open"], ' +
+      '[data-slot="select-content"][data-state="open"], ' +
+      '[data-slot="popover-content"][data-state="open"]'
+    );
+    return openFloatingMenus.length > 0;
   }, []);
 
   const revealDock = useCallback(() => {
