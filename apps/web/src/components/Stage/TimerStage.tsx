@@ -107,6 +107,7 @@ export function TimerStage(props: TimerStageProps) {
   const holdDelay = useStore(preferencesStore, (s) => s.spacebarHoldDelay);
   const showPbDelta = useStore(preferencesStore, (s) => s.showPbDelta);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
+  const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel);
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const startTimerKey = useStore(preferencesStore, (s) => s.shortcuts.startTimer);
@@ -197,7 +198,11 @@ export function TimerStage(props: TimerStageProps) {
             initial={{ y: "-100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={SIDEBAR_MOTION.panel}
-            className="w-full"
+            data-glass-panel={scramblePanel ? "true" : undefined}
+            className={cn(
+              "w-full transition-all duration-200",
+              scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+            )}
           >
             {scrambleElement}
           </motion.div>

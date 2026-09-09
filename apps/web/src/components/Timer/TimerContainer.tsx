@@ -96,6 +96,7 @@ export function TimerContainer({
   const isTouch = useIsTouch();
   const isCoarsePointer = useIsCoarsePointer();
   const hasBackgroundImage = !!useStore(preferencesStore, (s) => s.timerBackgroundImage);
+  const timerPanel = useStore(preferencesStore, (s) => s.timerPanel);
   // Touch devices always enable click/tap to start & stop because there is no
   // keyboard. The coarse-pointer check extends that to large tablets (iPads
   // >=768px) that render the desktop layout — they have no hover either, so
@@ -225,8 +226,10 @@ export function TimerContainer({
           : undefined
       }
       onContextMenu={(e) => e.preventDefault()}
+      data-glass-panel={timerPanel ? "true" : undefined}
       className={cn(
         "group relative flex w-full flex-col items-center justify-center rounded-lg transition-all duration-300 select-none",
+        timerPanel && "rounded-2xl border border-line bg-surface p-6 sm:p-8 shadow-2xs",
         // Touch (<768px): the timer stays thumb-friendly but compact enough
         // that scramble + timer + bottom layout strip fit between the header
         // and the bottom tab bar on small phones (the stage also scrolls as a
@@ -257,7 +260,7 @@ export function TimerContainer({
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 rounded-lg transition-all duration-300",
+          "pointer-events-none absolute inset-0 rounded-[inherit] transition-all duration-300",
           !hasBackgroundImage && phase === "ready" && "bg-ready-soft/60",
           !hasBackgroundImage && phase === "holding" && "bg-hold-soft/40",
           !hasBackgroundImage && phase === "ready_for_move" && "bg-ready-soft/40",

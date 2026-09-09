@@ -284,6 +284,14 @@ export interface PreferencesState {
   liquidGlassBlur: number | null;
   setLiquidGlassBlur: (value: number | null) => void;
 
+  /** Whether the scramble display is rendered inside a bordered container panel. Default false. */
+  scramblePanel: boolean;
+  setScramblePanel: (value: boolean) => void;
+
+  /** Whether the timer display is rendered inside a bordered container panel. Default false. */
+  timerPanel: boolean;
+  setTimerPanel: (value: boolean) => void;
+
   /**
    * Theme Studio typography: registry ids resolved to font stacks by the
    * web app ('open-sans' + 'cascadia-code' by default, 'system' keeps the
@@ -428,6 +436,8 @@ const DEFAULT_VALUES = {
   liquidGlass: false,
   liquidGlassOpacity: 65,
   liquidGlassBlur: null,
+  scramblePanel: false,
+  timerPanel: false,
   fontSans: 'open-sans',
   fontMono: 'cascadia-code',
   zeroStyle: 'slashed' as const,
@@ -550,6 +560,8 @@ export const createPreferencesStore = () => {
         setLiquidGlass: (liquidGlass) => set({ liquidGlass }),
         setLiquidGlassOpacity: (liquidGlassOpacity) => set({ liquidGlassOpacity }),
         setLiquidGlassBlur: (liquidGlassBlur) => set({ liquidGlassBlur }),
+        setScramblePanel: (scramblePanel) => set({ scramblePanel }),
+        setTimerPanel: (timerPanel) => set({ timerPanel }),
         setFontSans: (fontSans) => set({ fontSans }),
         setFontMono: (fontMono) => set({ fontMono }),
         setZeroStyle: (zeroStyle) => set({ zeroStyle }),
@@ -628,9 +640,12 @@ export const createPreferencesStore = () => {
           liquidGlass: state.liquidGlass,
           liquidGlassOpacity: state.liquidGlassOpacity,
           liquidGlassBlur: state.liquidGlassBlur,
+          scramblePanel: state.scramblePanel,
+          timerPanel: state.timerPanel,
           fontSans: state.fontSans,
           fontMono: state.fontMono,
           zeroStyle: state.zeroStyle,
+          fontDigitMode: state.fontDigitMode,
           customFonts: state.customFonts,
           notificationsEnabled: state.notificationsEnabled,
           soundsEnabled: state.soundsEnabled,

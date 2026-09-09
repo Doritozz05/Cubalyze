@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Palette,
   Sliders,
-  Droplets,
+  SlidersHorizontal,
   Image as ImageIcon,
   RotateCcw,
   Type,
@@ -60,7 +60,7 @@ export interface ThemeStudioModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type StudioTab = 'presets' | 'colors' | 'typography' | 'liquid' | 'background' | 'reset';
+type StudioTab = 'presets' | 'colors' | 'typography' | 'general' | 'background' | 'reset';
 
 export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) {
   const { t } = useTranslation('settings');
@@ -71,7 +71,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const handleTabKeyDown = (e: React.KeyboardEvent) => {
-    const order: StudioTab[] = ['presets', 'colors', 'typography', 'liquid', 'background', 'reset'];
+    const order: StudioTab[] = ['presets', 'colors', 'typography', 'general', 'background', 'reset'];
     const idx = order.indexOf(activeTab);
     let next: number | null = null;
     if (e.key === 'ArrowRight') next = (idx + 1) % order.length;
@@ -108,28 +108,30 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     updateScrollBounds();
 
     const onWheel = (e: WheelEvent) => {
+      // Only process when cursor is over the tabs strip or its children
+      if (!el.contains(e.target as Node)) return;
       const overflow = el.scrollWidth > el.clientWidth + 1;
       if (!overflow) return;
-      // Stop propagation so react-remove-scroll does not block it
-      e.stopPropagation();
+      // Stop propagation immediately on window capture before Radix / react-remove-scroll intercepts it
+      e.stopImmediatePropagation();
+      e.preventDefault();
       const factor = e.deltaMode === 1 ? 16 : 1;
       const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY)
         ? e.deltaX * factor
         : e.deltaY * factor;
       if (dx !== 0) {
-        e.preventDefault();
         el.scrollLeft += dx;
         updateScrollBounds();
       }
     };
 
-    el.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
     const onScroll = () => updateScrollBounds();
     el.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', updateScrollBounds);
 
     return () => {
-      el.removeEventListener('wheel', onWheel, { capture: true });
+      window.removeEventListener('wheel', onWheel, { capture: true });
       el.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', updateScrollBounds);
     };
@@ -165,15 +167,31 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     const el = tabsRef.current;
     if (!el) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 4) {
+    if (Math.abs(dx) > 8) {
+      if (!dragRef.current.moved && e.pointerType === 'mouse') {
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // Ignore pointer capture errors if pointer is no longer active
+        }
+      }
       dragRef.current.moved = true;
+      el.scrollLeft = dragRef.current.startScrollLeft - dx;
+      updateScrollBounds();
     }
-    el.scrollLeft = dragRef.current.startScrollLeft - dx;
-    updateScrollBounds();
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     dragRef.current.isDown = false;
+    if (e.pointerType === 'mouse') {
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // Ignore pointer release errors
+      }
+    }
   };
 
   // Preferences Store
@@ -191,6 +209,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const setLiquidGlassOpacity = useStore(preferencesStore, (s) => s.setLiquidGlassOpacity);
   const liquidGlassBlur = useStore(preferencesStore, (s) => s.liquidGlassBlur ?? null);
   const setLiquidGlassBlur = useStore(preferencesStore, (s) => s.setLiquidGlassBlur);
+  const scramblePanel = useStore(preferencesStore, (s) => s.scramblePanel ?? false);
+  const setScramblePanel = useStore(preferencesStore, (s) => s.setScramblePanel);
+  const timerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
+  const setTimerPanel = useStore(preferencesStore, (s) => s.setTimerPanel);
   const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
   const setFontSans = useStore(preferencesStore, (s) => s.setFontSans);
   const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
@@ -245,7 +267,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     { id: 'presets' as const, label: t('appearance.tabs.presets'), icon: Palette },
     { id: 'colors' as const, label: t('appearance.tabs.colors'), icon: Sliders },
     { id: 'typography' as const, label: t('appearance.tabs.typography'), icon: Type },
-    { id: 'liquid' as const, label: t('appearance.tabs.liquid'), icon: Droplets },
+    { id: 'general' as const, label: t('appearance.tabs.general'), icon: SlidersHorizontal },
     { id: 'background' as const, label: t('appearance.tabs.background'), icon: ImageIcon },
     { id: 'reset' as const, label: t('appearance.tabs.reset'), icon: RotateCcw },
   ];
@@ -362,7 +384,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                     tabsRef.current?.scrollBy({ left: -140, behavior: 'smooth' });
                   }}
                   aria-label="Scroll tabs left"
-                  className="absolute left-0 z-10 flex h-full items-center px-1.5 bg-gradient-to-r from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
+                  className="absolute left-0 z-10 flex h-full items-center px-1.5 bg-linear-to-r from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="size-4" />
                 </button>
@@ -403,7 +425,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         });
                       }}
                       className={cn(
-                        'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink cursor-pointer',
+                        'shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink cursor-pointer',
                         active
                           ? 'bg-surface text-ink shadow-xs font-semibold'
                           : 'text-ink-3 hover:text-ink hover:bg-surface-2'
@@ -423,7 +445,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                     tabsRef.current?.scrollBy({ left: 140, behavior: 'smooth' });
                   }}
                   aria-label="Scroll tabs right"
-                  className="absolute right-0 z-10 flex h-full items-center px-1.5 bg-gradient-to-l from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
+                  className="absolute right-0 z-10 flex h-full items-center px-1.5 bg-linear-to-l from-surface-2 via-surface-2/95 to-transparent text-ink-3 hover:text-ink transition-colors cursor-pointer"
                 >
                   <ChevronRight className="size-4" />
                 </button>
@@ -754,93 +776,147 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 </div>
               )}
 
-              {/* Tab 4: Liquid Glass */}
-              {activeTab === 'liquid' && (
+              {/* Tab 4: General */}
+              {activeTab === 'general' && (
                 <div className="flex flex-col gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-ink">
-                      {t('appearance.liquidGlass')}
+                      {t('appearance.generalTitle', 'General')}
                     </h4>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {t('appearance.liquidGlassHint')}
+                      {t('appearance.generalSubtitle', 'Paneles de visualización del cronómetro y efectos visuales')}
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-ink">
-                        {t('appearance.liquidGlassEnabled')}
-                      </span>
-                      <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
+                  {/* Timer Stage Panels */}
+                  <div className="flex flex-col gap-2.5">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                        {t('appearance.panelsSectionTitle', 'Paneles del cronómetro')}
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.panelsSectionDesc', 'Convierte los elementos del cronómetro en tarjetas contenedor como las estadísticas inferiores.')}
+                      </p>
                     </div>
 
-                    {liquidGlass && (
-                      <div className="flex flex-col gap-3 border-t border-line pt-4">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-ink">
-                            {t('appearance.liquidGlassOpacity')}
-                          </span>
-                          <span className="font-mono font-semibold text-ink">
-                            {liquidGlassOpacity}%
-                          </span>
-                        </div>
-                        <Slider
-                          value={[liquidGlassOpacity]}
-                          onValueChange={([val]) => setLiquidGlassOpacity(val)}
-                          min={15}
-                          max={95}
-                          step={5}
-                          className="w-full"
-                        />
-                        <p className="text-[0.7rem] text-ink-3">
-                          {t('appearance.liquidGlassOpacityHint')}
-                        </p>
-                      </div>
-                    )}
-
-                    {liquidGlass && (
-                      <div className="flex flex-col gap-3 border-t border-line pt-4">
-                        <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+                      {/* Scramble panel toggle */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-ink">
-                            {t('appearance.liquidGlassCustomBlur')}
+                            {t('appearance.scramblePanel', 'Panel para scramble')}
                           </span>
-                          <Switch
-                            checked={liquidGlassBlur != null}
-                            onCheckedChange={(on) =>
-                              setLiquidGlassBlur(on ? (liquidGlassBlur ?? 14) : null)
-                            }
-                          />
+                          <span className="text-[0.72rem] text-ink-3">
+                            {t('appearance.scramblePanelDesc', 'Muestra la notación de la mezcla dentro de un panel contenedor estilizado.')}
+                          </span>
                         </div>
-                        {liquidGlassBlur != null && (
-                          <>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-ink">
-                                {t('appearance.liquidGlassBlur')}
-                              </span>
-                              <span className="font-mono font-semibold text-ink">
-                                {liquidGlassBlur}px
-                              </span>
-                            </div>
-                            <Slider
-                              value={[liquidGlassBlur]}
-                              onValueChange={([val]) => {
-                                if (val !== undefined) setLiquidGlassBlur(val);
-                              }}
-                              min={0}
-                              max={24}
-                              step={1}
-                              className="w-full"
-                            />
-                            <p className="text-[0.7rem] text-ink-3">
-                              {t(
-                                'appearance.liquidGlassCustomBlurHint',
-                                'Desactivado usa la fórmula automática ligada a la opacidad.',
-                              )}
-                            </p>
-                          </>
-                        )}
+                        <Switch checked={scramblePanel} onCheckedChange={setScramblePanel} />
                       </div>
-                    )}
+
+                      <div className="h-px bg-line/60" />
+
+                      {/* Timer panel toggle */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-ink">
+                            {t('appearance.timerPanel', 'Panel para cronómetro')}
+                          </span>
+                          <span className="text-[0.72rem] text-ink-3">
+                            {t('appearance.timerPanelDesc', 'Muestra los dígitos del temporizador dentro de un panel contenedor estilizado (similar a entrada manual).')}
+                          </span>
+                        </div>
+                        <Switch checked={timerPanel} onCheckedChange={setTimerPanel} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Liquid Glass Effect */}
+                  <div className="flex flex-col gap-2.5 mt-1">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                        {t('appearance.liquidSectionTitle', 'Efecto Liquid Glass')}
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.liquidSectionDesc', 'Translucidez y desenfoque vítreo en paneles y tarjetas compatibles.')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-ink">
+                          {t('appearance.liquidGlassEnabled')}
+                        </span>
+                        <Switch checked={liquidGlass} onCheckedChange={setLiquidGlass} />
+                      </div>
+
+                      {liquidGlass && (
+                        <div className="flex flex-col gap-3 border-t border-line pt-4">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-ink">
+                              {t('appearance.liquidGlassOpacity')}
+                            </span>
+                            <span className="font-mono font-semibold text-ink">
+                              {liquidGlassOpacity}%
+                            </span>
+                          </div>
+                          <Slider
+                            value={[liquidGlassOpacity]}
+                            onValueChange={([val]) => setLiquidGlassOpacity(val)}
+                            min={15}
+                            max={95}
+                            step={5}
+                            className="w-full"
+                          />
+                          <p className="text-[0.7rem] text-ink-3">
+                            {t('appearance.liquidGlassOpacityHint')}
+                          </p>
+                        </div>
+                      )}
+
+                      {liquidGlass && (
+                        <div className="flex flex-col gap-3 border-t border-line pt-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-ink">
+                              {t('appearance.liquidGlassCustomBlur')}
+                            </span>
+                            <Switch
+                              checked={liquidGlassBlur != null}
+                              onCheckedChange={(on) =>
+                                setLiquidGlassBlur(on ? (liquidGlassBlur ?? 14) : null)
+                              }
+                            />
+                          </div>
+                          {liquidGlassBlur != null && (
+                            <>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-ink">
+                                  {t('appearance.liquidGlassBlur')}
+                                </span>
+                                <span className="font-mono font-semibold text-ink">
+                                  {liquidGlassBlur}px
+                                </span>
+                              </div>
+                              <Slider
+                                value={[liquidGlassBlur]}
+                                onValueChange={([val]) => {
+                                  if (val !== undefined) setLiquidGlassBlur(val);
+                                }}
+                                min={0}
+                                max={24}
+                                step={1}
+                                className="w-full"
+                              />
+                              <p className="text-[0.7rem] text-ink-3">
+                                {t(
+                                  'appearance.liquidGlassCustomBlurHint',
+                                  'Desactivado usa la fórmula automática ligada a la opacidad.',
+                                )}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

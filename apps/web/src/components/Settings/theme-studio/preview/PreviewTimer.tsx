@@ -33,6 +33,7 @@ const HALO: Partial<Record<TimerState, string>> = {
 interface PreviewTimerProps {
   deviceMode: DeviceMode;
   timerState: TimerPreviewState;
+  panel?: boolean;
 }
 
 function resolveFace(timerState: TimerPreviewState): {
@@ -68,7 +69,7 @@ function resolveFace(timerState: TimerPreviewState): {
  * PB delta, real `hintFor` copy) inside the REAL `TimerContainer` surface
  * geometry, with viewport units evaluated against the virtual device.
  */
-export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
+export function PreviewTimer({ deviceMode, timerState, panel }: PreviewTimerProps) {
   const { t } = useTranslation('timer');
   const isMobile = deviceMode === 'mobile';
   const { w, h } = VIRTUAL_SIZE[deviceMode];
@@ -98,12 +99,16 @@ export function PreviewTimer({ deviceMode, timerState }: PreviewTimerProps) {
 
   return (
     <div
-      className="group relative flex w-full flex-1 touch-manipulation select-none flex-col items-center justify-center rounded-lg transition-all duration-300"
+      data-glass-panel={panel ? 'true' : undefined}
+      className={cn(
+        'group relative flex w-full flex-1 touch-manipulation select-none flex-col items-center justify-center rounded-lg transition-all duration-300',
+        panel && 'rounded-2xl border border-line bg-surface p-6 shadow-2xs'
+      )}
       style={{ minHeight: minH }}
       role="button"
       aria-label={t('timerAriaSpace')}
     >
-      {halo && <div aria-hidden="true" className={cn('absolute inset-0 rounded-lg', halo)} />}
+      {halo && <div aria-hidden="true" className={cn('absolute inset-0 rounded-[inherit]', halo)} />}
       <TimerDisplay
         state={face.state}
         displayTime={face.displayTime}
