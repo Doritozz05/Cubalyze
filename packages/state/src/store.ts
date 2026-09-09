@@ -302,6 +302,16 @@ export interface PreferencesState {
   zeroStyle: 'dotted' | 'slashed';
   setZeroStyle: (value: 'dotted' | 'slashed') => void;
 
+  /**
+   * How the digit font applies across the app:
+   * - 'timer-only': Digit font is used exclusively on the main timer display. Everything else uses fontSans.
+   * - 'hybrid': Default/current method. Elements with .nums use fontMono; regular text uses fontSans.
+   * - 'composite': Universal composite font mode (unicode-range). In the entire web, digits and math/cubing symbols
+   *   always use fontMono, while letters always use fontSans, even within the same string (R2, 3x3).
+   */
+  fontDigitMode: 'timer-only' | 'hybrid' | 'composite';
+  setFontDigitMode: (value: 'timer-only' | 'hybrid' | 'composite') => void;
+
   /** User-uploaded fonts (metadata; file blobs live in IndexedDB). */
   customFonts: CustomFontMeta[];
   /** Registers metadata, returns its id (or null when the cap is reached). */
@@ -421,6 +431,7 @@ const DEFAULT_VALUES = {
   fontSans: 'open-sans',
   fontMono: 'cascadia-code',
   zeroStyle: 'slashed' as const,
+  fontDigitMode: 'hybrid' as const,
   customFonts: [],
   notificationsEnabled: true,
   soundsEnabled: true,
@@ -542,6 +553,7 @@ export const createPreferencesStore = () => {
         setFontSans: (fontSans) => set({ fontSans }),
         setFontMono: (fontMono) => set({ fontMono }),
         setZeroStyle: (zeroStyle) => set({ zeroStyle }),
+        setFontDigitMode: (fontDigitMode) => set({ fontDigitMode }),
         addCustomFont: (input) => {
           const { customFonts } = get();
           if (customFonts.length >= MAX_CUSTOM_FONTS) return null;

@@ -1,3 +1,12 @@
+import cascadiaWoff2 from '@/assets/fonts/cascadia-code-latin.woff2';
+import jetbrainsWoff2 from '@/assets/fonts/jetbrains-mono-latin.woff2';
+import ibmPlexWoff2 from '@/assets/fonts/ibm-plex-mono-400-latin.woff2';
+import openSansWoff2 from '@fontsource/open-sans/files/open-sans-latin-400-normal.woff2';
+import interWoff2 from '@fontsource/inter/files/inter-latin-400-normal.woff2';
+import spaceGroteskWoff2 from '@fontsource/space-grotesk/files/space-grotesk-latin-400-normal.woff2';
+import type { CustomFontMeta } from '@cubeforge/state';
+import { getCustomFontBlobUrl } from './customFonts';
+
 /**
  * Theme Studio typography registry.
  *
@@ -76,3 +85,33 @@ export function fontStack(list: FontOption[], id: string | undefined): string {
 export function slashedZeroFeature(id: string | undefined): string {
   return id === 'ibm-plex-mono' ? '"ss03" 1' : '"zero" 1';
 }
+
+/**
+ * Universal Unicode range for digits, numeric separators, and cubing/math symbols:
+ * - 0-9: U+0030-0039
+ * - Decimal/time delimiters (. , :): U+002E, U+002C, U+003A
+ * - Math & penalties (+ - ±): U+002B, U+002D, U+00B1
+ * - Cube notation turns (' ′ ² ³): U+0027, U+2032, U+00B2, U+00B3
+ * - Math operators (/ % − –): U+002F, U+0025, U+2212, U+2013
+ */
+export const DIGIT_UNICODE_RANGE =
+  'U+0030-0039, U+002E, U+003A, U+002C, U+002B, U+002D, U+00B1, U+0027, U+2032, U+00B2, U+00B3, U+002F, U+0025, U+2212, U+2013';
+
+/**
+ * Resolves the CSS `src` descriptor for the given font id (built-in or user blob).
+ */
+export function resolveDigitFontSrc(id: string | undefined, customs: CustomFontMeta[]): string {
+  const custom = customs.find((f) => f.id === id);
+  if (custom) {
+    const blobUrl = getCustomFontBlobUrl(custom.id);
+    if (blobUrl) return `url("${blobUrl}")`;
+  }
+  if (id === 'cascadia-code') return `url("${cascadiaWoff2}") format("woff2")`;
+  if (id === 'jetbrains-mono') return `url("${jetbrainsWoff2}") format("woff2")`;
+  if (id === 'ibm-plex-mono') return `url("${ibmPlexWoff2}") format("woff2")`;
+  if (id === 'open-sans') return `url("${openSansWoff2}") format("woff2")`;
+  if (id === 'inter') return `url("${interWoff2}") format("woff2")`;
+  if (id === 'space-grotesk') return `url("${spaceGroteskWoff2}") format("woff2")`;
+  return `local('Cascadia Code'), local('Source Code Pro'), local('Menlo'), local('Consolas'), monospace`;
+}
+

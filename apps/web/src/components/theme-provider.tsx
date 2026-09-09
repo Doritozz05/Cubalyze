@@ -10,10 +10,42 @@ import {
   getDerivedThemeTokens,
   getDerivedLiquidGlassTokens,
 } from "@/theme/themePresets";
-import { ALL_FONTS, fontStack, slashedZeroFeature } from "@/theme/fonts";
+import {
+  ALL_FONTS,
+  fontStack,
+  slashedZeroFeature,
+  DIGIT_UNICODE_RANGE,
+  resolveDigitFontSrc,
+} from "@/theme/fonts";
 import { customFontFamily } from "@/theme/customFonts";
 import type { CustomFontMeta } from "@cubeforge/state";
 import { findPreset } from "@/theme/customThemes";
+
+function updateCompositeStyle(digitSrc: string): void {
+  if (typeof document === 'undefined') return;
+  let tag = document.getElementById('cubeforge-composite-font') as HTMLStyleElement | null;
+  if (!tag) {
+    tag = document.createElement('style');
+    tag.id = 'cubeforge-composite-font';
+    document.head.appendChild(tag);
+  }
+  tag.textContent = `
+@font-face {
+  font-family: 'CubeforgeCompositeDigits';
+  src: ${digitSrc};
+  unicode-range: ${DIGIT_UNICODE_RANGE};
+  font-display: swap;
+  font-weight: 100 900;
+  font-style: normal;
+}
+`;
+}
+
+function removeCompositeStyle(): void {
+  if (typeof document === 'undefined') return;
+  const tag = document.getElementById('cubeforge-composite-font');
+  if (tag) tag.remove();
+}
 
 /** Resolve a stored id across built-ins + customs (custom family first). */
 function resolveFontStack(
@@ -36,6 +68,7 @@ function ThemeSync() {
   const fontSans = useStore(preferencesStore, (s) => s.fontSans ?? 'open-sans');
   const fontMono = useStore(preferencesStore, (s) => s.fontMono ?? 'cascadia-code');
   const zeroStyle = useStore(preferencesStore, (s) => s.zeroStyle ?? 'slashed');
+  const fontDigitMode = useStore(preferencesStore, (s) => s.fontDigitMode ?? 'hybrid');
   const customFonts = useStore(preferencesStore, (s) => s.customFonts);
   const { theme: nextTheme, setTheme } = useTheme();
 
@@ -169,8 +202,21 @@ function ThemeSync() {
 
     // Theme Studio typography: registry stacks win over the stylesheet
     // defaults so the selected pair applies everywhere instantly.
-    root.style.setProperty('--app-font-sans', resolveFontStack(customFonts, fontSans));
-    root.style.setProperty('--app-font-mono', resolveFontStack(customFonts, fontMono));
+    root.setAttribute('data-font-mode', fontDigitMode);
+
+    const resolvedSans = resolveFontStack(customFonts, fontSans);
+    const resolvedMono = resolveFontStack(customFonts, fontMono);
+
+    if (fontDigitMode === 'composite') {
+      const digitSrc = resolveDigitFontSrc(fontMono, customFonts);
+      updateCompositeStyle(digitSrc);
+      root.style.setProperty('--app-font-sans', `'CubeforgeCompositeDigits', ${resolvedSans}`);
+      root.style.setProperty('--app-font-mono', `'CubeforgeCompositeDigits', ${resolvedMono}`);
+    } else {
+      removeCompositeStyle();
+      root.style.setProperty('--app-font-sans', resolvedSans);
+      root.style.setProperty('--app-font-mono', resolvedMono);
+    }
 
     // Tabular zero style for digits (per-family slashed-zero feature).
     if (zeroStyle === 'slashed') {
@@ -184,7 +230,7 @@ function ThemeSync() {
       root.removeAttribute('data-zero');
       root.removeAttribute('data-zero-feature');
     }
-  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity, liquidGlassBlur, fontSans, fontMono, zeroStyle, customFonts]);
+  }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity, liquidGlassBlur, fontSans, fontMono, zeroStyle, fontDigitMode, customFonts]);
 
   return null;
 }

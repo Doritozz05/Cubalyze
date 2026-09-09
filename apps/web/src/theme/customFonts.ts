@@ -97,6 +97,11 @@ export function customFontFamily(id: string): string {
 const injectedFamilies = new Set<string>();
 const objectUrls = new Map<string, string>();
 
+/** Retrieve the active in-memory object URL for a custom font. */
+export function getCustomFontBlobUrl(id: string): string | undefined {
+  return objectUrls.get(id);
+}
+
 function injectFace(id: string, url: string): void {
   const family = customFontFamily(id);
   if (injectedFamilies.has(family)) return;

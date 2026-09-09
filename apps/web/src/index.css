@@ -987,11 +987,7 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   }
 
   /* Tabular, monospaced figures for any element opted in via .nums.
-     Hybrid stack: digits & numeric symbols (0-9, :, ., +, -, etc.) render using
-     the chosen mono typeface (--app-font-mono), while alphabetic characters (A-Z, a-z)
-     gracefully fall back to the interface typeface (--app-font-sans).
-     Default keeps each typeface's native zero (e.g. Cascadia's dotted
-     zero); html[data-zero="slashed"] enables the `zero` OpenType feature. */
+     Default keeps each typeface's native zero; html[data-zero="slashed"] enables the `zero` OpenType feature. */
   .nums {
     font-family: var(--font-mono), var(--font-sans), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
@@ -999,14 +995,40 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
     letter-spacing: -0.01em;
   }
 
-  html[data-zero="slashed"] .nums {
+  /* Mode 1: Timer Only. Only the main timer display uses the mono typeface;
+     all other .nums elements use the interface typeface with tabular figures. */
+  html[data-font-mode="timer-only"] .nums:not([data-main-timer]) {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  html[data-font-mode="timer-only"] [data-main-timer] {
+    font-family: var(--font-mono), var(--font-sans), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Mode 2: Hybrid (Default). Dedicated numeric elements use mono; text uses sans. */
+  html[data-font-mode="hybrid"] .nums {
+    font-family: var(--font-mono), var(--font-sans), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Mode 3: Composite. Digits and math symbols throughout the entire page render
+     via CubeforgeCompositeDigits (defined by dynamic unicode-range). */
+  html[data-font-mode="composite"] .nums {
+    font-family: 'CubeforgeCompositeDigits', var(--font-mono), var(--font-sans), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  html[data-zero="slashed"] .nums,
+  html[data-font-mode="composite"][data-zero="slashed"] {
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: "tnum" 1, "zero" 1;
   }
 
   /* IBM Plex Mono answers slashed zero via `ss03`, not `zero` (per IBM).
      Scoped behind its own attribute so other families never see ss03. */
-  html[data-zero="slashed"][data-zero-feature="ss03"] .nums {
+  html[data-zero="slashed"][data-zero-feature="ss03"] .nums,
+  html[data-font-mode="composite"][data-zero="slashed"][data-zero-feature="ss03"] {
     font-feature-settings: "tnum" 1, "ss03" 1;
   }
 

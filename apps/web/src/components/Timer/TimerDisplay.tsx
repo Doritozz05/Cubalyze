@@ -114,6 +114,7 @@ export function TimerDisplay({
         {deltaMs != null && (
           <span
             aria-hidden="true"
+            data-main-timer
             className={cn("nums invisible font-medium leading-none", deltaFontSizePx == null && "text-[clamp(1rem,3vw,1.8rem)]")}
             style={deltaFontSizePx != null ? { fontSize: deltaFontSizePx } : undefined}
           >
@@ -121,6 +122,7 @@ export function TimerDisplay({
           </span>
         )}
         <div
+          data-main-timer
           className={cn(
             "nums leading-none tracking-tight transition-[color,transform] duration-150 ease-out",
             // Cap the time by viewport HEIGHT too (not just width): on wide
@@ -143,6 +145,7 @@ export function TimerDisplay({
         </div>
         {deltaMs != null && (
           <span
+            data-main-timer
             className={cn(
               "nums font-medium leading-none",
               deltaFontSizePx == null && "text-[clamp(1rem,3vw,1.8rem)]",
