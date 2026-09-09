@@ -581,7 +581,9 @@ html.liquid-glass [data-context-zone="explorer-sidebar"] button[class*="hover:bg
 html.liquid-glass [data-context-zone="training-methods"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="algorithms-nav"] button[class*="hover:bg-surface"],
 html.liquid-glass [data-context-zone="mobile-header"] button[class*="hover:bg-surface"],
-html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"] {
+html.liquid-glass [data-context-zone="timer-actions"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface"],
+html.liquid-glass [data-context-zone="preview-toolbar"] button[class*="hover:bg-surface-2"] {
   background-color: transparent !important;
 }
 

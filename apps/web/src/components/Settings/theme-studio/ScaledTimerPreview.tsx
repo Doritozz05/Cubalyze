@@ -219,7 +219,10 @@ export function ScaledTimerPreview({
           square corners paint over the rounded frame. Hidden in fullscreen:
           only the live device preview is shown. */}
       {!expanded && (
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/80 px-3.5 py-2.5 backdrop-blur-md">
+      <div
+        data-context-zone="preview-toolbar"
+        className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-t-[inherit] border-b border-line bg-surface/75 px-3.5 py-2.5 backdrop-blur-md"
+      >
         {/* Expand (mobile "ver en grande") — Radix tooltip, never `title` */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -227,7 +230,7 @@ export function ScaledTimerPreview({
               type="button"
               onClick={() => setExpanded(true)}
               aria-label={t('appearance.previewExpand', 'Ver en grande')}
-              className="flex size-7 items-center justify-center rounded-md border border-line bg-surface-2 text-ink-3 transition-colors hover:text-ink hover:bg-surface"
+              className="flex size-7 items-center justify-center rounded-md border border-line/60 bg-surface-2/60 text-ink-2 transition-colors hover:text-ink hover:bg-surface cursor-pointer"
             >
               <Maximize2 className="size-3.5" />
             </button>
@@ -237,7 +240,7 @@ export function ScaledTimerPreview({
           </TooltipContent>
         </Tooltip>
         {/* Device Switcher */}
-        <div className="flex items-center gap-1 rounded-lg border border-line bg-surface-2 p-0.5">
+        <div className="flex items-center gap-1 rounded-lg border border-line/50 bg-surface-2/60 p-0.5">
           {(['mobile', 'tablet', 'desktop'] as DeviceMode[]).map((mode) => {
             const Icon = mode === 'mobile' ? Smartphone : mode === 'tablet' ? Tablet : Monitor;
             const active = deviceMode === mode;
@@ -252,10 +255,10 @@ export function ScaledTimerPreview({
                     aria-label={deviceLabel}
                     aria-pressed={active}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                      'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all cursor-pointer',
                       active
-                        ? 'bg-surface text-ink shadow-xs'
-                        : 'text-ink-3 hover:text-ink hover:bg-surface/50'
+                        ? 'border border-line/60 bg-surface text-ink font-semibold shadow-xs'
+                        : 'border border-transparent bg-transparent text-ink-3 hover:text-ink hover:bg-surface/40'
                     )}
                   >
                     <Icon className="size-3.5" />
@@ -270,7 +273,7 @@ export function ScaledTimerPreview({
 
         {/* Timer State Simulator */}
         <div className="flex items-center gap-1">
-          <span className="mr-1 text-[0.7rem] font-medium text-ink-3 max-md:hidden">
+          <span className="mr-1 text-[0.7rem] font-medium text-ink-2 max-md:hidden">
             {t('appearance.timerStateLabel')}
           </span>
           {timerStates.map((s) => {
@@ -281,10 +284,10 @@ export function ScaledTimerPreview({
                 type="button"
                 onClick={() => setTimerState(s.id)}
                 className={cn(
-                  'rounded-md px-2 py-1 text-[0.68rem] font-medium transition-colors',
+                  'rounded-md px-2 py-1 text-[0.68rem] font-medium transition-all cursor-pointer',
                   active
-                    ? 'bg-ink text-surface shadow-xs font-semibold'
-                    : 'bg-surface border border-line text-ink-3 hover:text-ink hover:bg-surface-2'
+                    ? 'border border-ink/40 bg-surface-2 text-ink font-semibold shadow-xs ring-1 ring-ink/20'
+                    : 'border border-line/40 bg-transparent text-ink-3 hover:text-ink hover:bg-surface-2/40'
                 )}
               >
                 {s.label}

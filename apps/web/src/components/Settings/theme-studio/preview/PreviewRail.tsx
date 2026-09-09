@@ -50,9 +50,6 @@ export function PreviewRail({ background }: { background: string }) {
           >
             {i === 0 && <div className="absolute inset-0 rounded-md bg-sidebar-accent" />}
             <Icon className="relative size-4" />
-            {i === 0 && (
-              <span className="absolute right-1.5 top-1/2 size-1 -translate-y-1/2 rounded-full bg-ready" />
-            )}
           </div>
         ))}
       </div>

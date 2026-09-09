@@ -104,6 +104,8 @@ function ThemeSync() {
         root.style.removeProperty("--glass-bg-subtle");
         root.style.removeProperty("--glass-btn-bg");
         root.style.removeProperty("--glass-btn-bg-hover");
+        root.style.removeProperty("--glass-nested-bg");
+        root.style.removeProperty("--glass-nested-blur");
         root.style.removeProperty("--glass-border");
       } else {
         const glassTokens = getDerivedLiquidGlassTokens(
@@ -124,6 +126,8 @@ function ThemeSync() {
       root.style.removeProperty("--glass-bg-subtle");
       root.style.removeProperty("--glass-btn-bg");
       root.style.removeProperty("--glass-btn-bg-hover");
+      root.style.removeProperty("--glass-nested-bg");
+      root.style.removeProperty("--glass-nested-blur");
       root.style.removeProperty("--glass-border");
     }
   }, [themePreset, customThemeColors, customThemes, storeTheme, resolvedBase, presetObj, liquidGlass, liquidGlassOpacity]);

@@ -371,7 +371,7 @@ export function InfiniteF2LSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col sm:max-w-[960px] h-145 max-h-[85vh] max-lg:h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line shadow-2xl">
+      <DialogContent className="flex flex-col sm:max-w-240 h-145 max-h-[85vh] max-lg:h-[85vh] overflow-hidden p-0 bg-surface text-ink border-line shadow-2xl">
         <DialogHeader className="shrink-0 border-b border-line px-6 py-4" data-modal-header>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-ink">
             <InfinityIcon className="size-5 text-ink" />
