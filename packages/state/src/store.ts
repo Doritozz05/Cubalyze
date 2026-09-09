@@ -52,7 +52,7 @@ export interface PreferencesState {
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
 
-  /** Active preset theme ('default' | 'midnight' | 'nord' | 'cyberpunk' | 'forest' | 'sunset' | 'tokyo-night' | 'custom'). */
+  /** Active preset theme ('default' | 'dark' | 'light' | 'midnight' | 'custom'). */
   themePreset: string;
   setThemePreset: (preset: string) => void;
 

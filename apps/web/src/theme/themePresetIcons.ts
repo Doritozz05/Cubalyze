@@ -1,11 +1,10 @@
 import {
+  Cat,
+  Flower2,
   Moon,
   MoonStar,
-  Sun,
   Snowflake,
-  Zap,
-  TreePine,
-  Sunset,
+  Sun,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -15,11 +14,9 @@ export const THEME_PRESET_ICONS: Record<string, LucideIcon> = {
   dark: Moon,
   light: Sun,
   midnight: MoonStar,
+  "catppuccin-mocha": Cat,
+  "rose-pine": Flower2,
   nord: Snowflake,
-  cyberpunk: Zap,
-  forest: TreePine,
-  sunset: Sunset,
-  "tokyo-night": Sparkles,
 };
 
 export function getPresetIcon(id: string): LucideIcon {

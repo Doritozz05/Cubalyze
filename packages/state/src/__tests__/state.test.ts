@@ -25,8 +25,8 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().themePreset).toBe('default');
     expect(preferencesStore.getState().customThemeColors).toBeNull();
 
-    preferencesStore.getState().setThemePreset('nord');
-    expect(preferencesStore.getState().themePreset).toBe('nord');
+    preferencesStore.getState().setThemePreset('midnight');
+    expect(preferencesStore.getState().themePreset).toBe('midnight');
 
     preferencesStore.getState().setCustomThemeColor('--canvas', '#2e3440');
     expect(preferencesStore.getState().customThemeColors).toEqual({ '--canvas': '#2e3440' });
@@ -54,7 +54,7 @@ describe('PreferencesStore', () => {
     });
     expect(typeof id).toBe('string');
 
-    let themes = preferencesStore.getState().customThemes;
+    const themes = preferencesStore.getState().customThemes;
     expect(themes).toHaveLength(1);
     expect(themes[0].name).toBe('Mi tema');
     expect(themes[0].base).toBe('dark');
