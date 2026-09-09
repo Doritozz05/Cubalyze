@@ -208,7 +208,7 @@ describe('PreferencesStore', () => {
     expect(s.notificationsEnabled).toBe(true);
     expect(s.soundsEnabled).toBe(true);
     expect(s.soundVolume).toBe(80);
-    expect(s.cubeTurnSoundsEnabled).toBe(true);
+    expect(s.cubeTurnSoundsEnabled).toBe(false);
     expect(s.practiceReminders).toBe(false);
     expect(s.practiceReminderTime).toBe('19:00');
     expect(s.reviewReminders).toBe(false);
@@ -221,7 +221,7 @@ describe('PreferencesStore', () => {
     store.setNotificationsEnabled(false);
     store.setSoundsEnabled(false);
     store.setSoundVolume(35);
-    store.setCubeTurnSoundsEnabled(false);
+    store.setCubeTurnSoundsEnabled(true);
     store.setPracticeReminders(true);
     store.setPracticeReminderTime('07:30');
     store.setReviewReminders(true);
@@ -232,7 +232,7 @@ describe('PreferencesStore', () => {
     expect(updated.notificationsEnabled).toBe(false);
     expect(updated.soundsEnabled).toBe(false);
     expect(updated.soundVolume).toBe(35);
-    expect(updated.cubeTurnSoundsEnabled).toBe(false);
+    expect(updated.cubeTurnSoundsEnabled).toBe(true);
     expect(updated.practiceReminders).toBe(true);
     expect(updated.practiceReminderTime).toBe('07:30');
     expect(updated.reviewReminders).toBe(true);
@@ -249,6 +249,7 @@ describe('PreferencesStore', () => {
     store.setBetaFeatures(true);
     store.setMethod('Roux');
     store.setLanguage('es');
+    store.setCubeTurnSoundsEnabled(true);
 
     store.resetPreferences();
 
@@ -262,7 +263,7 @@ describe('PreferencesStore', () => {
     expect(reset.language).toBe('auto');
     expect(reset.notificationsEnabled).toBe(true);
     expect(reset.soundsEnabled).toBe(true);
-    expect(reset.cubeTurnSoundsEnabled).toBe(true);
+    expect(reset.cubeTurnSoundsEnabled).toBe(false);
   });
 });
 

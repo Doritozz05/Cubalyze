@@ -49,6 +49,8 @@ describe("CubeTurnSounds", () => {
     windowTarget = env.windowTarget;
     documentTarget = env.documentTarget;
     fetchMock = env.fetchMock;
+    // Enable cube turn sounds during test runs that test the player
+    preferencesStore.getState().setCubeTurnSoundsEnabled(true);
   });
 
   afterEach(() => {
@@ -57,7 +59,7 @@ describe("CubeTurnSounds", () => {
     preferencesStore.getState().setNotificationsEnabled(true);
     preferencesStore.getState().setSoundsEnabled(true);
     preferencesStore.getState().setSoundVolume(80);
-    preferencesStore.getState().setCubeTurnSoundsEnabled(true);
+    preferencesStore.getState().setCubeTurnSoundsEnabled(false);
   });
 
   it("picks a valid source index within range", () => {

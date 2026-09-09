@@ -460,7 +460,7 @@ const DEFAULT_VALUES = {
   notificationsEnabled: true,
   soundsEnabled: true,
   soundVolume: 80,
-  cubeTurnSoundsEnabled: true,
+  cubeTurnSoundsEnabled: false,
   practiceReminders: false,
   practiceReminderTime: '19:00',
   reviewReminders: false,
