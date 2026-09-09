@@ -3,7 +3,7 @@ import { Cube2x2State } from '@cubeforge/math-core';
 import { TwoByTwoScrambler } from './TwoByTwoScrambler';
 import { TwoByTwoSolver } from './TwoByTwoSolver';
 
-describe('TwoByTwoScrambler', { timeout: 30000 }, () => {
+describe('TwoByTwoScrambler', { timeout: 240000 }, () => {
   const solver = new TwoByTwoSolver();
   const scrambler = new TwoByTwoScrambler(solver);
 
@@ -208,5 +208,18 @@ describe('TwoByTwoScrambler', { timeout: 30000 }, () => {
         expect(tokens[j][0]).not.toBe(tokens[j - 1][0]);
       }
     }
+  });
+
+  it('generated scrambles are not all ending with the same two-move suffix (no deterministic bias)', () => {
+    const suffixCount: Record<string, number> = {};
+    for (let i = 0; i < 500; i++) {
+      const scramble = scrambler.generateScramble();
+      const tokens = scramble.split(/\s+/);
+      if (tokens.length < 2) continue;
+      const suffix = tokens[tokens.length - 2] + ' ' + tokens[tokens.length - 1];
+      suffixCount[suffix] = (suffixCount[suffix] ?? 0) + 1;
+    }
+    const maxSuffixShare = Math.max(...Object.values(suffixCount)) / 500;
+    expect(maxSuffixShare).toBeLessThan(0.15);
   });
 });

@@ -178,6 +178,20 @@ describe('TwoByTwoSolver', { timeout: 30000 }, () => {
     expect(solved).toBeGreaterThanOrEqual(90);
   });
 
+  it('solveDetailedExact produces varied move patterns across repeated calls (no fixed bias)', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    const samples: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailedExact(state, 11);
+      expect(result).not.toBeNull();
+      samples.push(result!.notation);
+    }
+    const unique = new Set(samples);
+    expect(unique.size).toBeGreaterThan(1);
+  });
+
   // ── solveDetailedExact (TNoodle generateExactly, exact length) ───────
 
   it('solveDetailedExact returns a solution of EXACTLY the requested length', () => {
@@ -205,6 +219,58 @@ describe('TwoByTwoSolver', { timeout: 30000 }, () => {
     }
   });
 
+  it('solveDetailedExact produces varied move patterns across repeated calls (no fixed bias)', () => {
+    const solver = new TwoByTwoSolver();
+    solver.init();
+    const samples: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailedExact(state, 11);
+      expect(result).not.toBeNull();
+      samples.push(result!.notation);
+    }
+    // Not statistically strict; the point is that we don't produce the same
+    // suffix on every call because the search now randomizes move order.
+    const unique = new Set(samples);
+    expect(unique.size).toBeGreaterThan(1);
+  });
+
+  it('solveDetailed solution only contains U, R, F moves', () => {
+    const solver = new TwoByTwoSolver();
+    for (let i = 0; i < 50; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailed(state);
+      if (result && result.moveCount > 0) {
+        const tokens = result.notation.split(' ');
+        for (const token of tokens) {
+          expect(['U', 'R', 'F']).toContain(token[0]);
+        }
+      }
+    }
+  });
+
+  it('solveDetailed has no consecutive same-face moves', () => {
+    const solver = new TwoByTwoSolver();
+    for (let i = 0; i < 50; i++) {
+      const state = TwoByTwoScrambler.generateRandomState();
+      const result = solver.solveDetailed(state);
+      if (result && result.moveCount > 0) {
+        const faces = result.notation.split(' ').map(t => t[0]);
+        for (let j = 1; j < faces.length; j++) {
+          expect(faces[j]).not.toBe(faces[j - 1]);
+        }
+      }
+    }
+  });
+
+  it('returns null for invalid state (DBL not fixed)', () => {
+    const solver = new TwoByTwoSolver();
+    const state = new Cube2x2State();
+    state.applySequence("D R"); // D move moves DBL
+    const result = solver.solveDetailed(state);
+    expect(result).toBeNull();
+  });
+
   it('solveDetailedExact solution has no consecutive same-face moves', () => {
     const solver = new TwoByTwoSolver();
     solver.init();
@@ -217,6 +283,14 @@ describe('TwoByTwoSolver', { timeout: 30000 }, () => {
         expect(faces[j], `consecutive same face in "${result!.notation}"`).not.toBe(faces[j - 1]);
       }
     }
+  });
+
+  it('returns null for invalid state (DBL not fixed) — exact', () => {
+    const solver = new TwoByTwoSolver();
+    const state = new Cube2x2State();
+    state.applySequence("D R"); // D move moves DBL
+    const result = solver.solveDetailedExact(state, 11);
+    expect(result).toBeNull();
   });
 
   it('solveDetailedExact returns null for target length below optimal depth', () => {

@@ -61,6 +61,16 @@ const POS_TO_TRACKED: number[] = (() => {
 const MOVE_FACE = [0, 0, 0, 1, 1, 1, 2, 2, 2];
 const FACE_NAMES = ['U', 'R', 'F'];
 
+/** Fisher-Yates shuffle in-place over an array of move indices. */
+function fisherYatesShuffle(arr: number[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
+
 // ── 7-corner coordinate encoding ─────────────────────────────────────────
 //
 // Permutation: Lehmer code over 7 tracked positions.
@@ -232,6 +242,7 @@ function idaSearch(
   depthLimit: number,
   path: number[],
   lastFace: number,
+  moveOrder: number[],
 ): number[] | null {
   if (permIdx === 0 && twistIdx === 0) {
     return path.slice();
@@ -240,7 +251,8 @@ function idaSearch(
   const h = combinedDist![permIdx * N_TWIST + twistIdx];
   if (depth + h > depthLimit) return null;
 
-  for (let m = 0; m < NUM_MOVES; m++) {
+  for (let mi = 0; mi < NUM_MOVES; mi++) {
+    const m = moveOrder[mi];
     const face = MOVE_FACE[m];
     if (face === lastFace) continue;
 
@@ -248,7 +260,7 @@ function idaSearch(
     const nextTwist = tables!.twistMove[m][twistIdx];
 
     path.push(m);
-    const result = idaSearch(nextPerm, nextTwist, depth + 1, depthLimit, path, face);
+    const result = idaSearch(nextPerm, nextTwist, depth + 1, depthLimit, path, face, moveOrder);
     if (result !== null) return result;
     path.pop();
   }
@@ -285,6 +297,7 @@ function idaSearchExact(
   targetLength: number,
   path: number[],
   lastFace: number,
+  moveOrder: number[],
 ): number[] | null {
   // Solved with exactly `targetLength` moves → done.
   if (permIdx === 0 && twistIdx === 0) {
@@ -297,7 +310,8 @@ function idaSearchExact(
   const h = combinedDist![permIdx * N_TWIST + twistIdx];
   if (depth + h > targetLength) return null;
 
-  for (let m = 0; m < NUM_MOVES; m++) {
+  for (let mi = 0; mi < NUM_MOVES; mi++) {
+    const m = moveOrder[mi];
     const face = MOVE_FACE[m];
     if (face === lastFace) continue;
 
@@ -305,7 +319,7 @@ function idaSearchExact(
     const nextTwist = tables!.twistMove[m][twistIdx];
 
     path.push(m);
-    const result = idaSearchExact(nextPerm, nextTwist, depth + 1, targetLength, path, face);
+    const result = idaSearchExact(nextPerm, nextTwist, depth + 1, targetLength, path, face, moveOrder);
     if (result !== null) return result;
     path.pop();
   }
@@ -387,8 +401,10 @@ export class TwoByTwoSolver {
     // With exact heuristic, the first success at depthLimit = optimal distance.
     this.lastSearchNodes = 0;
     const path: number[] = [];
+    const moveOrder: number[] = Array.from({ length: NUM_MOVES }, (_, i) => i);
+    fisherYatesShuffle(moveOrder);
     for (let d = 1; d <= MAX_DEPTH; d++) {
-      const result = idaSearch(permIdx, twistIdx, 0, d, path, -1);
+      const result = idaSearch(permIdx, twistIdx, 0, d, path, -1, moveOrder);
       if (result !== null) {
         const moves = result.map((m) => m as Move2x2);
         const notation = moves.map((m) => MOVE_2X2_NOTATION[m]).join(' ');
@@ -441,7 +457,9 @@ export class TwoByTwoSolver {
     if (length < 1 || length > 32) return null;
 
     const path: number[] = [];
-    const result = idaSearchExact(permIdx, twistIdx, 0, length, path, -1);
+    const moveOrder: number[] = Array.from({ length: NUM_MOVES }, (_, i) => i);
+    fisherYatesShuffle(moveOrder);
+    const result = idaSearchExact(permIdx, twistIdx, 0, length, path, -1, moveOrder);
     if (result === null) return null;
 
     const moves = result.map((m) => m as Move2x2);

@@ -84,6 +84,19 @@ describe('WCA compliance: 2x2 scrambles (4b3b: state ≥ 4 moves to solve)', { t
     }
     console.log('[2x2] all scrambles are exactly 11 moves (N =', N, ')');
   });
+
+  it('scramble suffixes are not degenerate — no move appears as the last move in the majority of scrambles', () => {
+    const suffixCount: Record<string, number> = {};
+    for (const s of list) {
+      const t = tokens(s);
+      const last = t[t.length - 1];
+      suffixCount[last] = (suffixCount[last] ?? 0) + 1;
+    }
+    const maxSuffixShare = Math.max(...Object.values(suffixCount)) / list.length;
+    // With 9 legal moves and a reasonably randomized generator, no single move
+    // should occupy more than ~25% of the last position in a 300-sample batch.
+    expect(maxSuffixShare).toBeLessThan(0.28);
+  });
 });
 
 describe('WCA compliance: 3x3 scrambles (4b3: state ≥ 2 moves to solve)', { timeout: 300000 }, () => {
