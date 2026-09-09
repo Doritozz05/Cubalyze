@@ -298,6 +298,7 @@
         "title": "Personalización de colores",
         "subtitle": "Ajusta cada color individual del sistema",
         "reset": "Restablecer colores",
+        "resetColor": "Restablecer al color original del tema",
         "groupSurfaces": "Lienzo y superficies",
         "groupTypography": "Textos y tipografía",
         "groupAccents": "Acentos y estados del temporizador",

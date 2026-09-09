@@ -95,6 +95,7 @@ export interface PreferencesState {
   setCustomThemeColor: (token: string, color: string) => void;
   setCustomThemeColors: (colors: Record<string, string> | null) => void;
   resetCustomThemeColors: () => void;
+  resetSingleCustomThemeColor: (token: string) => void;
 
   /** User-created full themes (snapshots). Persisted; capped at MAX_CUSTOM_THEMES. */
   customThemes: CustomTheme[];
@@ -477,6 +478,19 @@ export const createPreferencesStore = () => {
           }),
         setCustomThemeColors: (customThemeColors) => set({ customThemeColors }),
         resetCustomThemeColors: () => set({ customThemeColors: null }),
+        resetSingleCustomThemeColor: (token) =>
+          set((state) => {
+            if (!state.customThemeColors || !(token in state.customThemeColors)) return {};
+            const customThemeColors = { ...state.customThemeColors };
+            delete customThemeColors[token];
+            const softToken = ACCENT_SOFT_TOKENS[token];
+            if (softToken) {
+              delete customThemeColors[softToken];
+            }
+            return {
+              customThemeColors: Object.keys(customThemeColors).length > 0 ? customThemeColors : null,
+            };
+          }),
         saveCustomTheme: (input) => {
           const { customThemes } = get();
           if (customThemes.length >= MAX_CUSTOM_THEMES) return null;

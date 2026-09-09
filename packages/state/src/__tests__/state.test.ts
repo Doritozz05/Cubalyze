@@ -38,6 +38,15 @@ describe('PreferencesStore', () => {
       '--ready-soft': 'rgba(163, 190, 140, 0.14)',
     });
 
+    preferencesStore.getState().resetSingleCustomThemeColor('--ready');
+    expect(preferencesStore.getState().customThemeColors).toEqual({
+      '--canvas': '#2e3440',
+    });
+
+    preferencesStore.getState().resetSingleCustomThemeColor('--canvas');
+    expect(preferencesStore.getState().customThemeColors).toBeNull();
+
+    preferencesStore.getState().setCustomThemeColor('--ready', '#a3be8c');
     preferencesStore.getState().resetCustomThemeColors();
     expect(preferencesStore.getState().customThemeColors).toBeNull();
 

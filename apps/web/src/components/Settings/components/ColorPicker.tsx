@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Pipette, Plus } from "lucide-react";
+import { Check, Pipette, Plus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,8 @@ export interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
   label: string;
+  defaultColor?: string;
+  onResetToDefault?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -63,13 +65,19 @@ let openPickerCount = 0;
 export function isColorPickerOpen(): boolean {
   return openPickerCount > 0;
 }
-export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, label, defaultColor, onResetToDefault }: ColorPickerProps) {
   const { t } = useTranslation("settings");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<HSV>(() => hexToHsv(value));
   const [hoverHex, setHoverHex] = useState<string | null>(null);
   const nativeInputRef = useRef<HTMLInputElement>(null);
   const favorites = useFavoriteColors();
+
+  const isOverridden = Boolean(
+    defaultColor &&
+      onResetToDefault &&
+      value.trim().toLowerCase() !== defaultColor.trim().toLowerCase(),
+  );
 
   const draftHex = useMemo(() => hsvToHex(draft.h, draft.s, draft.v), [draft]);
   const draftRgb = useMemo(() => hsvToRgb(draft.h, draft.s, draft.v), [draft]);
@@ -170,30 +178,51 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const pickNativeLabel = t("appearance.colorPicker.pickNative", "Selector del sistema");
   const saveLabel = t("appearance.colorPicker.saveFavorite", "Guardar en favoritos");
   const removeLabel = t("appearance.colorPicker.removeFavorite", "Quitar de favoritos");
+  const resetTokenLabel = t("appearance.colors.resetColor", "Restablecer al color original del tema");
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-label={label}
-          className="group flex max-lg:min-h-11 max-lg:w-full items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
-        >
-          <div
-            className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
-            style={{ backgroundColor: value }}
-          />
-          <div className="text-left min-w-0">
-            <span className="block text-[0.75rem] font-medium text-ink leading-tight">
-              {label}
-            </span>
-            <span className="block text-[0.62rem] text-ink-3 font-mono">
-              {value}
-            </span>
-          </div>
-        </button>
-      </DialogTrigger>
+      <div className="group relative flex max-lg:min-h-11 max-lg:w-full items-center">
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-label={label}
+            className="flex w-full min-w-0 items-center gap-3 rounded-lg border border-line bg-surface-2/50 px-3 py-2.5 text-left transition-all duration-150 hover:border-ink/20 hover:bg-surface-2"
+          >
+            <div
+              className="size-7 shrink-0 rounded-md border-2 border-line shadow-sm transition-transform duration-150 group-hover:scale-105"
+              style={{ backgroundColor: value }}
+            />
+            <div className="text-left min-w-0 flex-1">
+              <span className="block text-[0.75rem] font-medium text-ink leading-tight truncate">
+                {label}
+              </span>
+              <span className="block text-[0.62rem] text-ink-3 font-mono">
+                {value}
+              </span>
+            </div>
+          </button>
+        </DialogTrigger>
+        {isOverridden && onResetToDefault && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResetToDefault();
+                }}
+                aria-label={resetTokenLabel}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex size-7 items-center justify-center rounded-md border border-line bg-surface/80 text-ink-3 shadow-2xs backdrop-blur-xs transition-all hover:bg-surface hover:text-ink hover:scale-105 active:scale-95 cursor-pointer z-10"
+              >
+                <RotateCcw className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{resetTokenLabel}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
       <DialogContent
         aria-label={label}
@@ -351,15 +380,32 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
             />
             <span className="truncate font-mono text-[0.65rem] text-ink">{footerHex}</span>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setOpen(false)}
-            className="h-7 shrink-0 border-line bg-surface-2 px-3 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-ink cursor-pointer"
-          >
-            {t("appearance.colorPicker.done", "Listo")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {isOverridden && onResetToDefault && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onResetToDefault();
+                  setOpen(false);
+                }}
+                className="h-7 shrink-0 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink hover:bg-surface-2 cursor-pointer"
+              >
+                <RotateCcw className="size-3.5" />
+                <span>{t("common.reset", "Restablecer")}</span>
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(false)}
+              className="h-7 shrink-0 border-line bg-surface-2 px-3 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-ink cursor-pointer"
+            >
+              {t("appearance.colorPicker.done", "Listo")}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

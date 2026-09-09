@@ -298,6 +298,7 @@
         "title": "Color customizer",
         "subtitle": "Adjust individual system tokens",
         "reset": "Reset colors",
+        "resetColor": "Reset to default theme color",
         "groupSurfaces": "Canvas and surfaces",
         "groupTypography": "Typography and texts",
         "groupAccents": "Timer accents and states",

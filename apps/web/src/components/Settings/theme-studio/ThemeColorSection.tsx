@@ -7,8 +7,10 @@ import { RotateCcw } from 'lucide-react';
 
 interface ThemeColorSectionProps {
   currentColors: ThemeColors;
+  defaultColors: ThemeColors;
   onColorChange: (token: ThemeTokenKey, color: string) => void;
   onResetColors: () => void;
+  onResetToken: (token: ThemeTokenKey) => void;
   hasCustomOverrides: boolean;
 }
 
@@ -41,8 +43,10 @@ const ACCENT_GROUP: ColorGroupItem[] = [
 
 export function ThemeColorSection({
   currentColors,
+  defaultColors,
   onColorChange,
   onResetColors,
+  onResetToken,
   hasCustomOverrides,
 }: ThemeColorSectionProps) {
   const { t } = useTranslation('settings');
@@ -82,6 +86,8 @@ export function ThemeColorSection({
               key={token}
               label={t(labelKey, token)}
               value={currentColors[token]}
+              defaultColor={defaultColors[token]}
+              onResetToDefault={() => onResetToken(token)}
               onChange={(color) => onColorChange(token, color)}
             />
           ))}
@@ -99,6 +105,8 @@ export function ThemeColorSection({
               key={token}
               label={t(labelKey, token)}
               value={currentColors[token]}
+              defaultColor={defaultColors[token]}
+              onResetToDefault={() => onResetToken(token)}
               onChange={(color) => onColorChange(token, color)}
             />
           ))}
@@ -116,6 +124,8 @@ export function ThemeColorSection({
               key={token}
               label={t(labelKey, token)}
               value={currentColors[token]}
+              defaultColor={defaultColors[token]}
+              onResetToDefault={() => onResetToken(token)}
               onChange={(color) => onColorChange(token, color)}
             />
           ))}

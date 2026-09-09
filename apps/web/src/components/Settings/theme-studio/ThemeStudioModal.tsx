@@ -230,6 +230,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const customThemeColors = useStore(preferencesStore, (s) => s.customThemeColors);
   const setCustomThemeColor = useStore(preferencesStore, (s) => s.setCustomThemeColor);
   const resetCustomThemeColors = useStore(preferencesStore, (s) => s.resetCustomThemeColors);
+  const resetSingleCustomThemeColor = useStore(preferencesStore, (s) => s.resetSingleCustomThemeColor);
   const customThemes = useStore(preferencesStore, (s) => s.customThemes);
 
   const liquidGlass = useStore(preferencesStore, (s) => s.liquidGlass);
@@ -291,6 +292,8 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
 
   // Computed active colors
   const resolvedColors = resolveThemeColors(themePreset, storeTheme, customThemeColors, customThemes);
+  // Default base colors of current preset (without custom overrides)
+  const defaultPresetColors = resolveThemeColors(themePreset, storeTheme, null, customThemes);
 
   const tabs = [
     { id: 'presets' as const, label: t('appearance.tabs.presets'), icon: Palette },
@@ -545,10 +548,12 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
               {activeTab === 'colors' && (
                 <ThemeColorSection
                   currentColors={resolvedColors}
+                  defaultColors={defaultPresetColors}
                   onColorChange={(token, color) => {
                     setCustomThemeColor(token, color);
                   }}
                   onResetColors={resetCustomThemeColors}
+                  onResetToken={(token) => resetSingleCustomThemeColor(token)}
                   hasCustomOverrides={!!customThemeColors && Object.keys(customThemeColors).length > 0}
                 />
               )}

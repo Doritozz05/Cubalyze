@@ -146,8 +146,8 @@ export function Header({
   // because otherwise open Dialogs, Sheets, Tooltips, or other components anywhere
   // in the app would permanently freeze the dock in revealed mode.
   const anyPopoverOpen = useCallback((): boolean => {
-    // 1. Check if any trigger inside the header is currently in an open state
-    if (headerRef.current?.querySelector('[data-state="open"]')) {
+    // 1. Check if any non-tooltip trigger inside the header is currently in an open state
+    if (headerRef.current?.querySelector('[data-state="open"]:not([data-slot="tooltip-trigger"])')) {
       return true;
     }
     // 2. Check for portaled dropdown menus, select dropdowns, or popovers
@@ -233,17 +233,45 @@ export function Header({
     if (!band || !wrap) return;
     const onEnter = () => revealDock();
     const onLeave = () => scheduleRetract();
+
+    // When the cursor moves quickly upwards past the top of the browser window
+    // (into the tab bar or address bar / OS chrome), the cursor exits the document
+    // without triggering pointerleave on the inner elements. Listening to
+    // document mouseleave/pointerout catches when clientY <= 0 or cursor leaves window.
+    const onDocLeave = (e: MouseEvent) => {
+      if (!e.relatedTarget || e.clientY <= 0) {
+        scheduleRetract();
+      }
+    };
+
     band.addEventListener("pointerenter", onEnter);
     band.addEventListener("pointerleave", onLeave);
     wrap.addEventListener("pointerenter", onEnter);
     wrap.addEventListener("pointerleave", onLeave);
+    document.addEventListener("mouseleave", onDocLeave);
+
     return () => {
       band.removeEventListener("pointerenter", onEnter);
       band.removeEventListener("pointerleave", onLeave);
       wrap.removeEventListener("pointerenter", onEnter);
       wrap.removeEventListener("pointerleave", onLeave);
+      document.removeEventListener("mouseleave", onDocLeave);
     };
   }, [dockAutoHide, isCoarsePointer, revealDock, scheduleRetract]);
+
+  // When the dock retracts or hides, automatically dismiss any lingering tooltips
+  // that were opened by hovering dock items (which portal to document.body).
+  useEffect(() => {
+    if (!dockVisible) {
+      // Dispatch pointercancel or escape to ensure radix tooltips unmount cleanly
+      // and blur active element inside header if focused.
+      const activeEl = document.activeElement;
+      if (activeEl && headerRef.current?.contains(activeEl)) {
+        (activeEl as HTMLElement).blur();
+      }
+      document.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
+    }
+  }, [dockVisible]);
 
   // Coarse pointers (iPad): no hover, so the dock reveal/retract is tap-
   // driven — deterministic, never stuck. Tapping the (hidden) top band
