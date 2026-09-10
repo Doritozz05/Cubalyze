@@ -741,9 +741,12 @@ export const createPreferencesStore = () => {
             }
           }
           if (version < 9) {
-            // Legacy column templates (`session-stats`, `split`, …) no longer
-            // exist — any non-slot template falls back to the default.
-            if (
+            // Legacy column templates (`session-stats`, `split`, …) and `slot-hidden`
+            // no longer exist — turn off the switch if hidden, or fallback to default.
+            if (migrated.bottomLayoutTemplate === 'slot-hidden') {
+              migrated.showBottomLayout = false;
+              migrated.bottomLayoutTemplate = 'slot-hero-left';
+            } else if (
               typeof migrated.bottomLayoutTemplate !== 'string' ||
               !(migrated.bottomLayoutTemplate as string).startsWith('slot-')
             ) {

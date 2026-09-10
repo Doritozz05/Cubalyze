@@ -15,18 +15,26 @@ import {
 /** Preview puzzle (mocked, like the rest of the demo data). */
 export type PreviewPuzzle = '333' | '222';
 
+import { cn } from '@/lib/utils';
+
 interface PreviewBottomProps {
   deviceMode: DeviceMode;
   /** Right-rail mode: vertical slot stack (desktop/tablet rail templates). */
   vertical?: boolean;
   puzzle?: PreviewPuzzle;
+  className?: string;
 }
 
 /**
  * The user's real slot layout rendered with fixed demo solves for the
  * selected puzzle, so stats and averages compute exactly like the live app.
  */
-export function PreviewBottom({ deviceMode, vertical = false, puzzle = '333' }: PreviewBottomProps) {
+export function PreviewBottom({
+  deviceMode,
+  vertical = false,
+  puzzle = '333',
+  className,
+}: PreviewBottomProps) {
   const templateId = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const isMobile = deviceMode === 'mobile';
   const demoScramble = puzzle === '222' ? DEMO_SCRAMBLE_222 : DEMO_SCRAMBLE_333;
@@ -39,6 +47,7 @@ export function PreviewBottom({ deviceMode, vertical = false, puzzle = '333' }: 
       puzzleFilter={puzzle}
       compact={isMobile}
       vertical={vertical}
+      className={cn(vertical && 'h-full', className)}
       scramble2d={<Scramble2DNet scramble={demoScramble} compact />}
     />
   );

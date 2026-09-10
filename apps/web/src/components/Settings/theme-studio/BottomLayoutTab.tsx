@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
-import { ArrowRight, EyeOff } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -28,11 +28,11 @@ import type {
 } from '@/bottom-layout/types';
 
 /** Stat groups shown in the picker (visual grouping only; model stays flat). */
-const STAT_GROUPS: { title: string; stats: BottomLayoutStatId[] }[] = [
-  { title: 'Medias', stats: ['ao5', 'ao12', 'ao50', 'ao100', 'mo3'] },
-  { title: 'Récords', stats: ['best', 'bestAo5', 'bestAo12', 'worst'] },
-  { title: 'Sesión', stats: ['mean', 'deviation', 'count', 'sessionTime', 'tps'] },
-  { title: 'Proyección', stats: ['bpa', 'wpa'] },
+const STAT_GROUPS: { titleKey: string; stats: BottomLayoutStatId[] }[] = [
+  { titleKey: 'slotGroupAverages', stats: ['ao5', 'ao12', 'ao50', 'ao100', 'mo3'] },
+  { titleKey: 'slotGroupRecords', stats: ['best', 'bestAo5', 'bestAo12', 'worst'] },
+  { titleKey: 'slotGroupSession', stats: ['mean', 'deviation', 'count', 'sessionTime', 'tps'] },
+  { titleKey: 'slotGroupProjection', stats: ['bpa', 'wpa'] },
 ];
 
 const DISPLAY_OPTIONS: SlotDisplayId[] = ['scramble-2d'];
@@ -41,32 +41,37 @@ const DISPLAY_LABEL: Record<SlotDisplayId, string> = {
   'scramble-2d': 'Scramble 2D',
 };
 
-/** CSS-only thumbnail: blocks proportional to weights, R badge for rail. */
+/** CSS-only thumbnail: blocks proportional to weights, vertical aside for rail. */
 function TemplateThumb({ template }: { template: SlotLayoutDefinition }) {
-  if (template.placement === 'hidden') {
-    return (
-      <div className="flex h-10 items-center justify-center rounded-md border border-dashed border-line bg-surface-2/50">
-        <EyeOff className="size-4 text-ink-3" />
-      </div>
-    );
-  }
   if (template.placement === 'right') {
+    const railWeights =
+      template.weights && template.weights.length === template.slots.length
+        ? template.weights
+        : template.slots.map(() => 1);
+    const railTotal = railWeights.reduce((a, b) => a + b, 0);
+
     return (
       <div className="flex h-10 gap-1">
         <div className="flex-1 rounded-md border border-line bg-surface-2/50" />
         <div className="flex w-8 flex-col gap-0.5">
-          {template.slots.map((s) => (
-            <div key={s.id} className="flex-1 rounded-[3px] bg-ink/70" />
+          {railWeights.map((w, i) => (
+            <div
+              key={i}
+              className={cn('rounded-[2px]', i === 0 ? 'bg-ink/80' : 'bg-ink/40')}
+              style={{ flexGrow: w, flexBasis: `${(w / railTotal) * 100}%` }}
+            />
           ))}
         </div>
       </div>
     );
   }
+
   const weights =
     template.weights && template.weights.length === template.slots.length
       ? template.weights
       : template.slots.map(() => 1);
   const total = weights.reduce((a, b) => a + b, 0);
+
   return (
     <div className="flex h-10 gap-1">
       {weights.map((w, i) => (
@@ -116,6 +121,7 @@ function SlotContentPicker({
   onChange: (c: SlotContentConfig) => void;
 }) {
   const { t: tTimer } = useTranslation('timer');
+
   return (
     <div className="rounded-xl border border-line bg-surface px-3.5 py-3">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -142,9 +148,9 @@ function SlotContentPicker({
       {value.kind === 'stats' ? (
         <div className="flex flex-col gap-2">
           {STAT_GROUPS.map((group) => (
-            <div key={group.title}>
+            <div key={group.titleKey}>
               <p className="mb-1 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
-                {group.title}
+                {tTimer(group.titleKey as never, { defaultValue: group.titleKey })}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {group.stats.map((s) => {
@@ -203,6 +209,40 @@ function SlotContentPicker({
   );
 }
 
+function TemplateCard({
+  tpl,
+  selected,
+  onSelect,
+}: {
+  tpl: SlotLayoutDefinition;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { t: tTimer } = useTranslation('timer');
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn(
+        'flex flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150 cursor-pointer',
+        selected
+          ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-sm'
+          : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2',
+      )}
+    >
+      <TemplateThumb template={tpl} />
+      <span className="text-xs font-bold text-ink">
+        {tTimer(tpl.nameKey as never, { defaultValue: tpl.id })}
+      </span>
+      <span className="text-[0.68rem] text-ink-3 leading-snug">
+        {tTimer(tpl.descriptionKey as never, { defaultValue: '' })}
+      </span>
+    </button>
+  );
+}
+
 /**
  * Theme-studio "Layout" tab: shape gallery + per-slot content pickers.
  *
@@ -223,6 +263,12 @@ export function BottomLayoutTab() {
 
   const activeTemplate = getSlotTemplate(templateId) ?? DEFAULT_SLOT_TEMPLATE;
 
+  // Show first 4 templates by default; auto-expand if the active template is further down.
+  const [showAllLayouts, setShowAllLayouts] = useState(() => {
+    const idx = SLOT_LAYOUT_TEMPLATES.findIndex((t) => t.id === templateId);
+    return idx >= 4;
+  });
+
   const slotContent = useMemo(() => {
     const out: Record<string, SlotContentConfig> = {};
     for (const slot of activeTemplate.slots) {
@@ -242,6 +288,9 @@ export function BottomLayoutTab() {
     prefs.resetBottomLayoutSlots();
     prefs.setShowBottomLayout(true);
   };
+
+  const primaryTemplates = SLOT_LAYOUT_TEMPLATES.slice(0, 4);
+  const extraTemplates = SLOT_LAYOUT_TEMPLATES.slice(4);
 
   return (
     <div className="flex flex-col gap-4">
@@ -269,51 +318,73 @@ export function BottomLayoutTab() {
 
       {showBottomLayout && (
         <>
-          {/* Shape gallery */}
+          {/* Shape gallery: Primary (top 4) */}
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {SLOT_LAYOUT_TEMPLATES.map((tpl) => {
-              const selected = tpl.id === activeTemplate.id;
-              return (
-                <button
-                  key={tpl.id}
-                  type="button"
-                  onClick={() => setTemplate(tpl.id)}
-                  aria-pressed={selected}
-                  className={cn(
-                    'flex flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150 cursor-pointer',
-                    selected
-                      ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-sm'
-                      : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2',
-                  )}
-                >
-                  <TemplateThumb template={tpl} />
-                  <span className="text-xs font-bold text-ink">
-                    {tTimer(tpl.nameKey as never, { defaultValue: tpl.id })}
-                    {tpl.placement === 'right' && (
-                      <span className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-line px-1 py-px align-middle font-mono text-[0.58rem] uppercase text-ink-3">
-                        <ArrowRight className="size-2.5" /> rail
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-[0.68rem] text-ink-3 leading-snug">
-                    {tTimer(tpl.descriptionKey as never, { defaultValue: '' })}
-                  </span>
-                </button>
-              );
-            })}
+            {primaryTemplates.map((tpl) => (
+              <TemplateCard
+                key={tpl.id}
+                tpl={tpl}
+                selected={tpl.id === activeTemplate.id}
+                onSelect={() => setTemplate(tpl.id)}
+              />
+            ))}
           </div>
+
+          {/* Expandable Extra Templates (Show More) */}
+          {extraTemplates.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowAllLayouts((prev) => !prev)}
+                className="flex w-full items-center justify-between rounded-xl border border-line/70 bg-surface px-4 py-2.5 text-xs font-medium text-ink-2 transition-colors hover:border-ink/20 hover:bg-surface-2 hover:text-ink cursor-pointer"
+              >
+                <span>
+                  {showAllLayouts
+                    ? tTimer('collapseLayouts', { defaultValue: 'Mostrar menos plantillas' })
+                    : tTimer('browseMoreLayouts', { defaultValue: 'Explorar más plantillas' })}
+                </span>
+                <div className="flex items-center gap-1.5 font-mono text-[0.68rem] text-ink-3">
+                  <span>+{extraTemplates.length}</span>
+                  <ChevronDown
+                    className={cn(
+                      'size-3.5 transition-transform duration-200',
+                      showAllLayouts && 'rotate-180 text-ink',
+                    )}
+                  />
+                </div>
+              </button>
+
+              {showAllLayouts && (
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {extraTemplates.map((tpl) => (
+                    <TemplateCard
+                      key={tpl.id}
+                      tpl={tpl}
+                      selected={tpl.id === activeTemplate.id}
+                      onSelect={() => setTemplate(tpl.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Per-slot content */}
           {activeTemplate.slots.length > 0 && (
             <div className="flex flex-col gap-2.5">
-              {activeTemplate.slots.map((slot) => (
-                <SlotContentPicker
-                  key={slot.id}
-                  slotLabel={slot.label}
-                  value={slotContent[slot.id]}
-                  onChange={(c) => setSlot(activeTemplate.id, slot.id, c)}
-                />
-              ))}
+              {activeTemplate.slots.map((slot) => {
+                const label = slot.labelKey
+                  ? tTimer(slot.labelKey as never, { defaultValue: slot.label ?? slot.id })
+                  : (slot.label ?? slot.id);
+                return (
+                  <SlotContentPicker
+                    key={slot.id}
+                    slotLabel={label}
+                    value={slotContent[slot.id]}
+                    onChange={(c) => setSlot(activeTemplate.id, slot.id, c)}
+                  />
+                );
+              })}
             </div>
           )}
 

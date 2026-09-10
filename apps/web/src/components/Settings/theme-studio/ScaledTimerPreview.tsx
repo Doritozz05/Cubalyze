@@ -476,18 +476,21 @@ export function ScaledTimerPreview({
                     </div>
                     {/* 3. Stage content area */}
                     <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
-                      {scrambleElement}
                       {isRailPreview ? (
-                        <div className="flex min-h-0 flex-1 gap-4">
-                          <div className="mt-1 flex min-w-0 min-h-0 flex-1 flex-col">
-                            <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
+                        <div className="flex min-h-0 flex-1 gap-6">
+                          <div className="flex min-w-0 min-h-0 flex-1 flex-col gap-4">
+                            {scrambleElement}
+                            <div className="mt-1 flex min-h-0 flex-1 flex-col">
+                              <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
+                            </div>
                           </div>
-                          <div className="w-60 shrink-0 overflow-y-auto">
-                            <PreviewBottom deviceMode={deviceMode} vertical puzzle={previewPuzzle} />
+                          <div className="flex w-64 shrink-0 flex-col overflow-y-auto">
+                            <PreviewBottom deviceMode={deviceMode} vertical puzzle={previewPuzzle} className="h-full" />
                           </div>
                         </div>
                       ) : (
                         <>
+                          {scrambleElement}
                           <div className="mt-1 flex min-h-0 flex-1 flex-col">
                             <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
                           </div>

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Solve } from "@/types";
 import { useBottomLayoutStats } from "./useBottomLayoutStats";
@@ -77,24 +76,8 @@ export function SlotLayout({
 }: SlotLayoutProps) {
   const { t } = useTranslation("timer");
   const values = useBottomLayoutStats(solves, puzzleFilter);
-  const [minimized, setMinimized] = useState(false);
 
-  if (template.placement === "hidden" || template.slots.length === 0) return null;
-
-  if (minimized) {
-    return (
-      <div className={cn("flex w-full items-center justify-center py-1", className)}>
-        <button
-          type="button"
-          onClick={() => setMinimized(false)}
-          aria-label={t("slotRestore")}
-          className="flex size-7 items-center justify-center rounded-full border border-line bg-surface text-ink-3 shadow-xs transition-colors hover:border-ink-2/40 hover:text-ink"
-        >
-          <ChevronUp className="size-4" />
-        </button>
-      </div>
-    );
-  }
+  if (template.slots.length === 0) return null;
 
   const renderContent = (slotId: string) => {
     const config = slotContent[slotId];
@@ -102,12 +85,12 @@ export function SlotLayout({
     if (config.kind === "display") {
       if (!config.displays.includes("scramble-2d")) return null;
       return (
-        <div className="flex min-w-0 items-center justify-center">{scramble2d}</div>
+        <div className="flex min-w-0 flex-1 items-center justify-center py-1">{scramble2d}</div>
       );
     }
     if (config.stats.length === 0) return null;
     return (
-      <div className="flex min-w-0 flex-col justify-center gap-1">
+      <div className="flex min-w-0 flex-col justify-center gap-1.5">
         {config.stats.map((s) => (
           <StatRow key={s} stat={s} value={values[s]} accent={s === "bpa"} />
         ))}
@@ -123,61 +106,50 @@ export function SlotLayout({
           {template.slots.map((slot) => {
             const body = renderContent(slot.id);
             if (!body) return null;
+            const label = slot.labelKey ? t(slot.labelKey as never, { defaultValue: slot.label ?? slot.id }) : (slot.label ?? slot.id);
             return (
               <div
                 key={slot.id}
-                className="min-w-[200px] flex-1 snap-start rounded-lg border border-line bg-surface px-3 py-2"
+                className="min-w-[200px] flex-1 snap-start rounded-lg border border-line bg-surface px-3 py-2.5"
               >
-                <p className="mb-1 text-[0.55rem] uppercase tracking-[0.18em] text-ink-3">
-                  {slot.label}
+                <p className="mb-1.5 text-[0.55rem] uppercase tracking-[0.18em] text-ink-3">
+                  {label}
                 </p>
                 {body}
               </div>
             );
           })}
         </div>
-        <button
-          type="button"
-          onClick={() => setMinimized(true)}
-          aria-label={t("slotMinimize")}
-          className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-        >
-          <ChevronDown className="size-4" />
-        </button>
       </div>
     );
   }
 
-  // Right rail: vertical stack of labeled slot cards.
+  // Right rail: vertical stack of labeled slot cards that fills the stage height.
   if (vertical) {
+    const weights =
+      template.weights && template.weights.length === template.slots.length
+        ? template.weights
+        : template.slots.map(() => 1);
+
     return (
-      <div className={cn("flex w-full flex-col gap-3", className)}>
-        {template.slots.map((slot) => {
+      <div className={cn("flex size-full flex-col gap-3", className)}>
+        {template.slots.map((slot, i) => {
           const body = renderContent(slot.id);
           if (!body) return null;
+          const label = slot.labelKey ? t(slot.labelKey as never, { defaultValue: slot.label ?? slot.id }) : (slot.label ?? slot.id);
           return (
             <section
               key={slot.id}
-              aria-label={slot.label}
-              className="rounded-lg border border-line bg-surface px-3 py-2"
+              aria-label={label}
+              style={{ flexGrow: weights[i] }}
+              className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-line bg-surface p-3.5 shadow-2xs"
             >
-              <header className="mb-1 flex items-center justify-between">
-                <p className="text-[0.55rem] uppercase tracking-[0.18em] text-ink-3">
-                  {slot.label}
-                </p>
-              </header>
-              {body}
+              <div className="flex min-h-0 flex-1 flex-col justify-center">
+                {body}
+              </div>
             </section>
           );
         })}
-        <button
-          type="button"
-          onClick={() => setMinimized(true)}
-          aria-label={t("slotMinimize")}
-          className="mx-auto flex size-6 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-        >
-          <ChevronDown className="size-3.5" />
-        </button>
       </div>
     );
   }
@@ -193,7 +165,7 @@ export function SlotLayout({
   return (
     <div className={cn("relative w-full", className)}>
       <div
-        className="grid w-full items-stretch gap-3 rounded-lg border border-line bg-surface px-3 py-2"
+        className="grid w-full items-stretch gap-3 rounded-xl border border-line bg-surface px-4 py-3 shadow-2xs"
         style={{ gridTemplateColumns }}
       >
         {template.slots.map((slot, i) => {
@@ -204,7 +176,7 @@ export function SlotLayout({
               key={slot.id}
               className={cn(
                 "flex min-w-0 flex-col justify-center gap-1",
-                i > 0 && "border-l border-line pl-3",
+                i > 0 && "border-l border-line pl-4",
               )}
             >
               {body}
@@ -212,14 +184,6 @@ export function SlotLayout({
           );
         })}
       </div>
-      <button
-        type="button"
-        onClick={() => setMinimized(true)}
-        aria-label={t("slotMinimize")}
-        className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-ink"
-      >
-        <ChevronDown className="size-3" />
-      </button>
     </div>
   );
 }

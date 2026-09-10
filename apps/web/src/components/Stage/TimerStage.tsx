@@ -194,47 +194,49 @@ export function TimerStage(props: TimerStageProps) {
     />
   ) : null;
 
+  const topScrambleBlock = (
+    <AnimatePresence mode="wait">
+      {scrambleElement ? (
+        // No exit animation: in focus mode the scramble must leave the
+        // layout instantly so the timer fills the stage immediately. An
+        // animated exit keeps its layout slot for ~250ms, which made the
+        // timer appear clipped at the top and then suddenly grow.
+        <motion.div
+          key="scramble-display-container"
+          initial={{ y: "-100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={SIDEBAR_MOTION.panel}
+          data-glass-panel={scramblePanel ? "true" : undefined}
+          className={cn(
+            "w-full transition-all duration-200",
+            scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+          )}
+        >
+          {scrambleElement}
+        </motion.div>
+      ) : isManualMode && focusMode ? (
+        <motion.div
+          key="manual-focus-button"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={SIDEBAR_MOTION.panel}
+          className="flex w-full justify-end mb-2"
+        >
+          {renderManualFocusAction(true)}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+
   return (
     <>
-      <AnimatePresence mode="wait">
-        {scrambleElement ? (
-          // No exit animation: in focus mode the scramble must leave the
-          // layout instantly so the timer fills the stage immediately. An
-          // animated exit keeps its layout slot for ~250ms, which made the
-          // timer appear clipped at the top and then suddenly grow.
-          <motion.div
-            key="scramble-display-container"
-            initial={{ y: "-100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={SIDEBAR_MOTION.panel}
-            data-glass-panel={scramblePanel ? "true" : undefined}
-            className={cn(
-              "w-full transition-all duration-200",
-              scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
-            )}
-          >
-            {scrambleElement}
-          </motion.div>
-        ) : isManualMode && focusMode ? (
-          <motion.div
-            key="manual-focus-button"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={SIDEBAR_MOTION.panel}
-            className="flex w-full justify-end mb-2"
-          >
-            {renderManualFocusAction(true)}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
       {isRail && showBottomLayout && !isFocused ? (
-        // Right-rail placement: timer column + vertical slot rail on desktop,
-        // compact bottom strip on mobile. The rail owns a fixed 240px lane so
-        // the timer keeps its size class instead of being squeezed.
-        <div className="mt-1 flex w-full flex-1 gap-4">
-          <div className="flex min-w-0 flex-1 flex-col">
+        // Right-rail placement: timer column (with aligned scramble on top)
+        // + vertical slot rail on desktop, compact bottom strip on mobile.
+        <div className="flex w-full min-h-0 flex-1 gap-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {topScrambleBlock}
             {isManualMode ? (
               <ManualTimeInput onSubmit={onManualSubmit} className="flex-1" />
             ) : (
@@ -267,12 +269,12 @@ export function TimerStage(props: TimerStageProps) {
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
               compact
-              className="mt-3 lg:hidden"
+              className="mt-2 lg:hidden"
             />
           </div>
           <aside
             aria-label={t("slotRailLabel")}
-            className="hidden w-60 shrink-0 overflow-y-auto lg:block"
+            className="hidden w-64 shrink-0 overflow-y-auto lg:flex lg:flex-col"
           >
             <BottomLayout
               templateId={bottomLayoutTemplate}
@@ -280,11 +282,13 @@ export function TimerStage(props: TimerStageProps) {
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
               vertical
+              className="h-full"
             />
           </aside>
         </div>
       ) : (
         <>
+          {topScrambleBlock}
           {isManualMode ? (
             <ManualTimeInput
               onSubmit={onManualSubmit}

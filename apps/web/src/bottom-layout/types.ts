@@ -35,7 +35,7 @@ export type BottomLayoutStatId =
 export type SlotDisplayId = "scramble-2d";
 
 /** Where the template renders. */
-export type SlotPlacement = "bottom" | "right" | "hidden";
+export type SlotPlacement = "bottom" | "right";
 
 /** Configurable content of one slot (persisted per template+slot). */
 export type SlotContentConfig =
@@ -46,8 +46,10 @@ export type SlotContentConfig =
 export interface SlotDef {
   /** Stable id within the template (e.g. "left", "center"). */
   id: string;
-  /** Short label shown in the editor (e.g. "Izquierda"). */
-  label: string;
+  /** i18n key (timer namespace) for the slot label (e.g. "slotLabelLeft"). */
+  labelKey: string;
+  /** Optional fallback label if translation is missing. */
+  label?: string;
   /** Default content when the user never customized the slot. */
   defaultContent: SlotContentConfig;
 }
