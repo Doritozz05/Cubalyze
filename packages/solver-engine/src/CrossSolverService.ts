@@ -27,6 +27,7 @@
 import { CubeState, MoveTransformer, OrientationTable } from '@cubeforge/math-core';
 import {
   PhaseSolver,
+  bestCrossFace,
   solveCross,
   type PhaseSolution,
 } from './PhaseSolver';
@@ -48,6 +49,11 @@ export interface CrossSolutionResult {
   face: CubeFace;
   depth: number;
   solutions: CrossSolutionItem[];
+  /** Color-neutral best cross across all 6 faces (if a face has fewer moves). */
+  bestColorNeutral?: {
+    face: CubeFace;
+    depth: number;
+  };
 }
 
 export interface CrossSolverOptions {
@@ -133,11 +139,12 @@ export class CrossSolverService {
     const optimalDepth = optimalSolutions[0].moveCount;
     const results: CrossSolutionItem[] = optimalSolutions.map(mapSolution);
 
-    // If we only found 1 optimal solution but user wants 2, we can search at optimalDepth + 1
+    // If fewer than maxSolutions found at optimal depth, search deeper depths to guarantee maxSolutions (e.g. 2)
     if (results.length < maxSolutions && optimalDepth < maxDepth) {
       const moreSolutions = solveCross(state, face, {
-        maxDepth: optimalDepth + 1,
-        maxSolutions: maxSolutions * 2,
+        minDepth: optimalDepth + 1,
+        maxDepth,
+        maxSolutions: maxSolutions - results.length,
       });
       const existingKeys = new Set(results.map((r) => r.moves));
       for (const s of moreSolutions) {
@@ -150,10 +157,23 @@ export class CrossSolverService {
       }
     }
 
+    // Color-neutral analysis: find the best face across all 6 faces
+    let bestColorNeutral: { face: CubeFace; depth: number } | undefined;
+    if (scramble && scramble.trim().length > 0) {
+      const best = bestCrossFace(state, maxDepth);
+      if (best && best.depth >= 0) {
+        bestColorNeutral = {
+          face: best.face as CubeFace,
+          depth: best.depth,
+        };
+      }
+    }
+
     return {
       face,
       depth: optimalDepth,
       solutions: results.slice(0, maxSolutions),
+      bestColorNeutral,
     };
   }
 }

@@ -18,11 +18,14 @@ describe('CrossSolverService', () => {
     const res = CrossSolverService.solve("U", { face: 'U', maxSolutions: 2 });
     expect(res.face).toBe('U');
     expect(res.depth).toBe(1);
-    expect(res.solutions.length).toBeGreaterThanOrEqual(1);
+    expect(res.solutions.length).toBe(2);
     expect(res.solutions[0].preRotation).toBe('z2');
     expect(res.solutions[0].moves).toBe("D'");
     expect(res.solutions[0].notation).toBe("z2 D'");
     expect(res.solutions[0].moveCount).toBe(1);
+    expect(res.bestColorNeutral).toBeDefined();
+    expect(res.bestColorNeutral?.face).toBe('D');
+    expect(res.bestColorNeutral?.depth).toBe(0);
 
     // Verify executing "z2 D'" on a scrambled cube (scramble "U") places all 4 white edges on the bottom D face
     const cube = new CubeState();

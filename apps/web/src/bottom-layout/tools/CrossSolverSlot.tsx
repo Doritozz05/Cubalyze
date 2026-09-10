@@ -48,14 +48,16 @@ export function CrossSolverSlot({
     });
   }, [scramble, selectedFace]);
 
-  const { solutions } = solutionResult;
+  const { solutions, bestColorNeutral } = solutionResult;
+  const bestFaceMeta = bestColorNeutral ? FACES.find((f) => f.face === bestColorNeutral.face) : undefined;
+  const bestFaceName = bestFaceMeta ? t(bestFaceMeta.labelKey, { defaultValue: bestFaceMeta.fallbackLabel }) : bestColorNeutral?.face;
 
   return (
-    <div className={cn("flex size-full flex-col justify-center gap-1.5 min-w-0 p-1", className)}>
+    <div className={cn("flex size-full flex-col justify-between gap-1.5 min-w-0 p-1", className)}>
       {/* Face selector with visual colors & Radix Tooltip */}
       <div className="flex items-center justify-between gap-1 pb-1 border-b border-line/40">
         <span className="text-[0.6rem] font-medium tracking-wider uppercase text-ink-3">
-          {t("crossTitle", { defaultValue: "Cruz" })}
+          {t("crossTitle", { defaultValue: "Cross" })}
         </span>
         <div className="flex items-center gap-1">
           {FACES.map((f) => {
@@ -92,8 +94,8 @@ export function CrossSolverSlot({
         {solutions.length === 0 ? (
           <div className="text-center text-[0.7rem] text-ink-3 py-1">
             {scramble
-              ? t("crossSearching", { defaultValue: "Buscando solución..." })
-              : t("crossSolved", { defaultValue: "Resuelto" })}
+              ? t("crossSearching", { defaultValue: "Searching solution..." })
+              : t("crossSolved", { defaultValue: "Solved" })}
           </div>
         ) : (
           solutions.map((sol, i) => {
@@ -112,13 +114,36 @@ export function CrossSolverSlot({
                       [{sol.preRotation}]
                     </span>
                   )}
-                  {movesText || (sol.moveCount === 0 ? t("crossSolved", { defaultValue: "Resuelto" }) : "")}
+                  {movesText || (sol.moveCount === 0 ? t("crossSolved", { defaultValue: "Solved" }) : "")}
                 </span>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Color-neutral insight: if another face has a better cross */}
+      {bestColorNeutral && bestColorNeutral.face !== selectedFace && (
+        <div className="flex items-center justify-center pt-0.5">
+          <button
+            type="button"
+            onClick={() => setSelectedFace(bestColorNeutral.face)}
+            className="group flex items-center gap-1.5 rounded-full bg-surface-2/60 hover:bg-surface-2 border border-line/40 px-2 py-0.5 text-[0.62rem] text-ink-3 hover:text-ink transition-colors cursor-pointer"
+          >
+            <span
+              className="size-2 rounded-full border border-black/20 shrink-0"
+              style={{ backgroundColor: bestFaceMeta?.colorHex }}
+            />
+            <span className="truncate">
+              {t("bestCrossSuggestion", {
+                face: bestFaceName,
+                count: bestColorNeutral.depth,
+                defaultValue: `Best: ${bestFaceName} (${bestColorNeutral.depth}m)`,
+              })}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -904,6 +904,7 @@
     "crossFaceTooltip": "Cross on {{face}} face",
     "crossSearching": "Searching solution...",
     "crossSolved": "Solved",
+    "bestCrossSuggestion": "Best: {{face}} ({{count}}m)",
     "noImageConfigured": "No image configured",
     "solvesCount": "{{count}} solves",
     "solvesCountShort": "{{count}} solves",

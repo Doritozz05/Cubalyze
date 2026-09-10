@@ -273,6 +273,8 @@ function invertMoves(moves: Move[]): Move[] {
 // ── PhaseSolver ────────────────────────────────────────────────────────────
 
 export interface SolvePhaseOptions {
+  /** Minimum search depth (move count). Default 0. */
+  minDepth?: number;
   /** Maximum search depth (move count). Default 8. */
   maxDepth?: number;
   /** Maximum number of solutions to collect at the optimal depth. Default 1. */
@@ -325,6 +327,7 @@ export class PhaseSolver {
     opts: SolvePhaseOptions = {},
   ): PhaseSolution[] {
     const {
+      minDepth = 0,
       maxDepth = 8,
       maxSolutions = 1,
       allowedMoves,
@@ -355,12 +358,12 @@ export class PhaseSolver {
     const foundKeys = new Set<string>();
     const path: Move[] = [];
 
-    // IDDFS: try depth 0, 1, 2, … maxDepth. Stop at the FIRST depth that
-    // yields solutions (all solutions at that depth are optimal).
-    for (let depth = 0; depth <= maxDepth; depth++) {
+    // IDDFS: try depth minDepth, … maxDepth. Stop at the FIRST depth that
+    // yields solutions (all solutions at that depth are optimal for the depth window).
+    for (let depth = minDepth; depth <= maxDepth; depth++) {
       const solutionsBefore = solutions.length;
-      iddfsSearch(work, mask, pdb, moveIndices, depth, 0, path, -1, solutions, foundKeys, maxSolutions);
-      if (solutions.length > solutionsBefore) break; // found optimal-depth solutions
+      iddfsSearch(work, mask, pdb, moveIndices, depth, 0, path, -1, solutions, foundKeys, maxSolutions, minDepth);
+      if (solutions.length > solutionsBefore) break; // found solutions at current depth
     }
 
     return solutions;
@@ -422,23 +425,27 @@ function iddfsSearch(
   solutions: PhaseSolution[],
   foundKeys: Set<string>,
   maxSolutions: number,
+  minDepth: number = 0,
 ): void {
   // ── Goal check (at EVERY depth, including 0) ──────────────────────────
   if (matchesGoal(state, mask, pdb)) {
-    const notation = movesToNotation(path);
-    if (!foundKeys.has(notation)) {
-      foundKeys.add(notation);
-      solutions.push({
-        notation,
-        moveCount: path.length,
-        moves: path.slice(),
-      });
+    if (depth >= minDepth) {
+      const notation = movesToNotation(path);
+      if (!foundKeys.has(notation)) {
+        foundKeys.add(notation);
+        solutions.push({
+          notation,
+          moveCount: path.length,
+          moves: path.slice(),
+        });
+      }
     }
     return; // Don't expand from a goal state
   }
 
   // ── Depth limit ────────────────────────────────────────────────────────
   if (depth >= depthLimit) return;
+  if (solutions.length >= maxSolutions) return;
 
   // ── PDB pruning ────────────────────────────────────────────────────────
   if (pdb) {
@@ -459,7 +466,7 @@ function iddfsSearch(
     const next = state.clone();
     next.applyMove(move);
     path.push(move);
-    iddfsSearch(next, mask, pdb, moveIndices, depthLimit, depth + 1, path, faceIdx, solutions, foundKeys, maxSolutions);
+    iddfsSearch(next, mask, pdb, moveIndices, depthLimit, depth + 1, path, faceIdx, solutions, foundKeys, maxSolutions, minDepth);
     path.pop();
 
     if (solutions.length >= maxSolutions) return;

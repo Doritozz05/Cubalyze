@@ -904,6 +904,7 @@
     "crossFaceTooltip": "Cruz en cara {{face}}",
     "crossSearching": "Buscando solución...",
     "crossSolved": "Resuelto",
+    "bestCrossSuggestion": "Mejor: {{face}} ({{count}}m)",
     "noImageConfigured": "Sin imagen configurada",
     "solvesCount": "{{count}} resoluciones",
     "solvesCountShort": "{{count}} solves",
