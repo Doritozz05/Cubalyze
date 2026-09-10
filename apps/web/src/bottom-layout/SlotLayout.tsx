@@ -110,7 +110,7 @@ export function SlotLayout({
             return (
               <div
                 key={slot.id}
-                className="min-w-[200px] flex-1 snap-start rounded-lg border border-line bg-surface px-3 py-2.5"
+                className="min-w-50 flex-1 snap-start rounded-lg border border-line bg-surface px-3 py-2.5"
               >
                 <p className="mb-1.5 text-[0.55rem] uppercase tracking-[0.18em] text-ink-3">
                   {label}

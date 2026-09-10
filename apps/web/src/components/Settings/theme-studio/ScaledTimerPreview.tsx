@@ -471,7 +471,7 @@ export function ScaledTimerPreview({
                     <div
                       className={cn(
                         'relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 transition-all duration-300',
-                        isRailPreview && storeDynamicDock ? 'pr-[304px]' : 'pr-6',
+                        isRailPreview && storeDynamicDock ? 'pr-76' : 'pr-6',
                       )}
                     >
                       <PreviewDock

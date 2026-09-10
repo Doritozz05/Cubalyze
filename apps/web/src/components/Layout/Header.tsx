@@ -437,7 +437,7 @@ export function Header({
         <div
           className={cn(
             "flex min-w-0 flex-1 items-center justify-center transition-all duration-300",
-            isDynamicDockActive && "lg:pr-[280px]",
+            isDynamicDockActive && "lg:pr-70",
           )}
         >
           <motion.div
