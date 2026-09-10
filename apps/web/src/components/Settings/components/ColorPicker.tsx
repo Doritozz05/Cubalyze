@@ -396,7 +396,7 @@ export function ColorPicker({ value, onChange, label, defaultColor, onResetToDef
                 className="h-7 shrink-0 gap-1.5 px-2 text-xs text-ink-3 hover:text-ink hover:bg-surface-2 cursor-pointer"
               >
                 <RotateCcw className="size-3.5" />
-                <span>{t("common.reset", "Restablecer")}</span>
+                <span>{t("appearance.tabs.reset", "Restablecer")}</span>
               </Button>
             )}
             <Button

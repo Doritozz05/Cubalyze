@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ALL_FONTS, slashedZeroFeature } from '@/theme/fonts';
+import { ALL_FONTS, slashedZeroFeature, supportsSlashedZero } from '@/theme/fonts';
 import { MAX_CUSTOM_FONTS } from '@cubeforge/state';
 import {
   customFontFamily,
@@ -579,108 +579,136 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-medium text-ink">
-                        {t('appearance.fontSans')}
-                      </span>
-                      <Select value={fontSans} onValueChange={setFontSans}>
-                        <SelectTrigger className="w-full text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ALL_FONTS.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              <span style={{ fontFamily: f.stack }}>{f.label}</span>
-                            </SelectItem>
-                          ))}
-                          {customFonts.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              <span style={{ fontFamily: `'${customFontFamily(f.id)}', sans-serif` }}>
-                                {f.name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Fonts */}
+                  <div className="flex flex-col gap-2.5">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                        {t('appearance.fontsSectionTitle', 'Fuentes')}
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.fontsSectionDesc', 'Fuente de interfaz para texto y fuente de dígitos para tiempos y códigos.')}
+                      </p>
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-medium text-ink">
-                        {t('appearance.fontMono')}
-                      </span>
-                      <Select value={fontMono} onValueChange={setFontMono}>
-                        <SelectTrigger className="w-full text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ALL_FONTS.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              <span style={{ fontFamily: f.stack }}>{f.label}</span>
-                            </SelectItem>
-                          ))}
-                          {customFonts.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              <span style={{ fontFamily: `'${customFontFamily(f.id)}', monospace` }}>
-                                {f.name}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-ink">
+                          {t('appearance.fontSans')}
+                        </span>
+                        <Select value={fontSans} onValueChange={setFontSans}>
+                          <SelectTrigger className="w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ALL_FONTS.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: f.stack }}>{f.label}</span>
+                              </SelectItem>
+                            ))}
+                            {customFonts.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: `'${customFontFamily(f.id)}', sans-serif` }}>
+                                  {f.name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    {/* Single unified custom fonts upload & management */}
-                    <div className="flex flex-col gap-2 border-t border-line pt-3">
-                      <input
-                        ref={fontUploadRef}
-                        type="file"
-                        accept=".woff2,.woff,.ttf,.otf"
-                        className="hidden"
-                        onChange={(e) => {
-                          void handleFontUpload(e.target.files?.[0]);
-                          e.target.value = '';
-                        }}
-                      />
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {canUploadMore && (
-                          <button
-                            type="button"
-                            disabled={uploadingFont}
-                            onClick={() => fontUploadRef.current?.click()}
-                            className="flex items-center gap-1.5 rounded-md border border-dashed border-line px-2.5 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50 cursor-pointer"
-                          >
-                            {uploadingFont ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : (
-                              <Plus className="size-3" />
-                            )}
-                            {t('appearance.uploadFont')}
-                          </button>
-                        )}
-                        {customFonts.map((f) => (
-                          <span
-                            key={f.id}
-                            className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
-                          >
-                            <span className="max-w-32 truncate">{f.name}</span>
+                      <div className="h-px bg-line/60" />
+
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-ink">
+                          {t('appearance.fontMono')}
+                        </span>
+                        <Select value={fontMono} onValueChange={setFontMono}>
+                          <SelectTrigger className="w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ALL_FONTS.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: f.stack }}>{f.label}</span>
+                              </SelectItem>
+                            ))}
+                            {customFonts.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                <span style={{ fontFamily: `'${customFontFamily(f.id)}', monospace` }}>
+                                  {f.name}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="h-px bg-line/60" />
+
+                      {/* Single unified custom fonts upload & management */}
+                      <div className="flex flex-col gap-2">
+                        <input
+                          ref={fontUploadRef}
+                          type="file"
+                          accept=".woff2,.woff,.ttf,.otf"
+                          className="hidden"
+                          onChange={(e) => {
+                            void handleFontUpload(e.target.files?.[0]);
+                            e.target.value = '';
+                          }}
+                        />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {canUploadMore && (
                             <button
                               type="button"
-                              onClick={() => handleDeleteFont(f.id)}
-                              aria-label={t('appearance.deleteFont')}
-                              className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf cursor-pointer"
+                              disabled={uploadingFont}
+                              onClick={() => fontUploadRef.current?.click()}
+                              className="flex items-center gap-1.5 rounded-md border border-dashed border-line px-2.5 py-1 text-[0.68rem] font-medium text-ink-3 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50 cursor-pointer"
                             >
-                              <X className="size-2.5" />
+                              {uploadingFont ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Plus className="size-3" />
+                              )}
+                              {t('appearance.uploadFont')}
                             </button>
-                          </span>
-                        ))}
+                          )}
+                          {customFonts.map((f) => (
+                            <span
+                              key={f.id}
+                              className="flex items-center gap-1 rounded-md border border-line bg-surface-2/60 py-1 pr-1 pl-2 text-[0.68rem] font-medium text-ink-2"
+                            >
+                              <span className="max-w-32 truncate">{f.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteFont(f.id)}
+                                aria-label={t('appearance.deleteFont')}
+                                className="flex size-4 items-center justify-center rounded text-ink-3 transition-colors hover:bg-surface hover:text-dnf cursor-pointer"
+                              >
+                                <X className="size-2.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex flex-col gap-1.5 border-t border-line pt-3">
-                      <span className="text-xs font-medium text-ink">
+                  {/* Tabular zero — only for digit fonts shipping a
+                      slashed-zero glyph (Open Sans has none; the toggle
+                      would be a no-op there). */}
+                  {supportsSlashedZero(fontMono) && (
+                  <div className="flex flex-col gap-2.5 mt-1">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                         {t('appearance.zeroStyle')}
-                      </span>
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.zeroStyleDesc', 'Elige cómo se dibuja el cero en los dígitos tabulares.')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
                       <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5">
                         {(['dotted', 'slashed'] as const).map((mode) => (
                           <button
@@ -713,92 +741,112 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                         ))}
                       </div>
                     </div>
+                  </div>
+                  )}
 
-                    {/* 3 Font Application Modes */}
-                    <div className="flex flex-col gap-2 border-t border-line pt-4">
-                      <div>
-                        <span className="text-xs font-semibold text-ink">
-                          {t('appearance.fontDigitModeTitle')}
+                  {/* 3 Font Application Modes */}
+                  <div className="flex flex-col gap-2.5 mt-1">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                        {t('appearance.fontDigitModeTitle')}
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.fontDigitModeSubtitle')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+                      {(
+                        [
+                          {
+                            id: 'timer-only' as const,
+                            title: t('appearance.fontDigitModeTimerOnly'),
+                            desc: t('appearance.fontDigitModeTimerOnlyDesc'),
+                          },
+                          {
+                            id: 'hybrid' as const,
+                            title: t('appearance.fontDigitModeHybrid'),
+                            desc: t('appearance.fontDigitModeHybridDesc'),
+                          },
+                          {
+                            id: 'composite' as const,
+                            title: t('appearance.fontDigitModeComposite'),
+                            desc: t('appearance.fontDigitModeCompositeDesc'),
+                          },
+                        ] as const
+                      ).map((mode, i, arr) => (
+                        <div key={mode.id}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-xs font-medium text-ink">
+                                {mode.title}
+                              </span>
+                              <span className="text-[0.72rem] text-ink-3 leading-snug">
+                                {mode.desc}
+                              </span>
+                            </div>
+                            <Switch
+                              checked={fontDigitMode === mode.id}
+                              onCheckedChange={(on) => {
+                                if (on) setFontDigitMode(mode.id);
+                              }}
+                              aria-label={mode.title}
+                            />
+                          </div>
+                          {i < arr.length - 1 && <div className="mt-3 h-px bg-line/60" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live preview */}
+                  <div className="flex flex-col gap-2.5 mt-1">
+                    <div>
+                      <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                        {t('appearance.fontPreviewTitle', 'Vista previa')}
+                      </h5>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {t('appearance.fontPreviewSubtitle', 'Así se ven las fuentes aplicadas en la app.')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-3">
+                      <div className="flex items-center text-[0.68rem] font-semibold text-ink-3">
+                        <span>{t('appearance.fontPreviewScramble')}</span>
+                      </div>
+                      {/* Misma presentación que el scramble real: tokens en peso
+                          normal, centrados y con el mismo aire entre giros. Sin
+                          `font-semibold` para no falsear el grosor. */}
+                      <div className="rounded-lg border border-line bg-surface p-2 text-center text-sm text-ink">
+                        <span translate="no" className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                          {['R', 'U', 'R2', "U'", 'F2', 'B2', 'D2', "L'"].map((m) => (
+                            <span key={m} className="inline-block origin-center whitespace-nowrap">
+                              {m}
+                            </span>
+                          ))}
                         </span>
-                        <p className="mt-0.5 text-[0.68rem] text-ink-3">
-                          {t('appearance.fontDigitModeSubtitle')}
-                        </p>
                       </div>
 
-                      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 mt-1">
-                        {(
-                          [
-                            {
-                              id: 'timer-only' as const,
-                              title: t('appearance.fontDigitModeTimerOnly'),
-                              desc: t('appearance.fontDigitModeTimerOnlyDesc'),
-                            },
-                            {
-                              id: 'hybrid' as const,
-                              title: t('appearance.fontDigitModeHybrid'),
-                              desc: t('appearance.fontDigitModeHybridDesc'),
-                            },
-                            {
-                              id: 'composite' as const,
-                              title: t('appearance.fontDigitModeComposite'),
-                              desc: t('appearance.fontDigitModeCompositeDesc'),
-                            },
-                          ] as const
-                        ).map((mode, i, arr) => (
-                          <div key={mode.id}>
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex flex-col gap-0.5 min-w-0">
-                                <span className="text-xs font-medium text-ink">
-                                  {mode.title}
-                                </span>
-                                <span className="text-[0.72rem] text-ink-3 leading-snug">
-                                  {mode.desc}
-                                </span>
-                              </div>
-                              <Switch
-                                checked={fontDigitMode === mode.id}
-                                onCheckedChange={(on) => {
-                                  if (on) setFontDigitMode(mode.id);
-                                }}
-                                aria-label={mode.title}
-                              />
-                            </div>
-                            {i < arr.length - 1 && <div className="mt-3 h-px bg-line/60" />}
+                      <div className="grid grid-cols-2 gap-2 mt-0.5">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewCategories')}</span>
+                          <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink">
+                            <span>3x3x3 · 4x4x4 · 3BLD</span>
                           </div>
-                        ))}
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewSolves')}</span>
+                          <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink">
+                            <span className="nums">12:34.56 (+2)</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Live typography interactive preview cards */}
-                      <div className="mt-2 flex flex-col gap-2 rounded-xl border border-line bg-surface-2/40 p-3">
-                        <div className="flex items-center justify-between text-[0.68rem] font-semibold text-ink-3">
-                          <span>{t('appearance.fontPreviewScramble')}</span>
-                          <span className="text-[0.62rem] text-ink-3/70">R2, U2, F2</span>
-                        </div>
-                        <div className="rounded-lg border border-line bg-surface p-2 text-sm font-semibold text-ink">
-                          <span>R U R2 U&apos; F2 B2 D2 L&apos;</span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 mt-0.5">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewCategories')}</span>
-                            <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink">
-                              <span>3x3x3 · 4x4x4 · 3BLD</span>
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewSolves')}</span>
-                            <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink">
-                              <span className="nums">12:34.56 (+2)</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1 mt-0.5">
-                          <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewText')}</span>
-                          <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink flex items-center justify-between">
-                            <span>AaBbCcDd · CubeForge</span>
-                            <span className="nums text-ink-2">Sesión 1</span>
-                          </div>
+                      <div className="flex flex-col gap-1 mt-0.5">
+                        <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewText')}</span>
+                        <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink flex items-center justify-between">
+                          <span>AaBbCcDd · CubeForge</span>
+                          <span className="nums text-ink-2">Sesión 1</span>
                         </div>
                       </div>
                     </div>

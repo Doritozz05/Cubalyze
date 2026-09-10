@@ -87,6 +87,18 @@ export function slashedZeroFeature(id: string | undefined): string {
 }
 
 /**
+ * Whether the given digit-font id is known to ship a slashed-zero glyph.
+ * Cascadia, JetBrains Mono (`zero`), IBM Plex Mono (`ss03`), Inter and
+ * Space Grotesk (`zero`) all do. Open Sans has no slashed-zero feature, so
+ * the toggle would be a no-op for it. Unknown ids (system stack, user
+ * uploads) default to true — the feature is safely ignored when absent,
+ * and hiding the control could remove a working option.
+ */
+export function supportsSlashedZero(id: string | undefined): boolean {
+  return id !== 'open-sans';
+}
+
+/**
  * Universal Unicode range for digits, numeric separators, and cubing/math symbols:
  * - 0-9: U+0030-0039
  * - Decimal/time delimiters (. , :): U+002E, U+002C, U+003A
