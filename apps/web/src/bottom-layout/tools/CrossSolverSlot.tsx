@@ -70,10 +70,10 @@ export function CrossSolverSlot({
                     type="button"
                     onClick={() => setSelectedFace(f.face)}
                     className={cn(
-                      "relative flex size-4.5 sm:size-5 items-center justify-center rounded-full border transition-all cursor-pointer",
+                      "relative flex size-4 sm:size-4.5 items-center justify-center rounded-full border transition-all cursor-pointer",
                       isSelected
-                        ? "ring-2 ring-ink ring-offset-1 ring-offset-surface scale-105 border-ink"
-                        : "border-black/20 opacity-70 hover:opacity-100 hover:scale-105",
+                        ? "ring-1.5 ring-ink/80 border-surface scale-110 shadow-xs"
+                        : "border-black/20 opacity-60 hover:opacity-100 hover:scale-105",
                     )}
                     style={{ backgroundColor: f.colorHex }}
                   >
@@ -122,13 +122,13 @@ export function CrossSolverSlot({
         )}
       </div>
 
-      {/* Color-neutral insight: if another face has a better cross */}
+      {/* Color-neutral insight: if another face has a better cross (minimal left-aligned text, no pill) */}
       {bestColorNeutral && bestColorNeutral.face !== selectedFace && (
-        <div className="flex items-center justify-center pt-0.5">
+        <div className="flex items-center justify-start pt-0.5">
           <button
             type="button"
             onClick={() => setSelectedFace(bestColorNeutral.face)}
-            className="group flex items-center gap-1.5 rounded-full bg-surface-2/60 hover:bg-surface-2 border border-line/40 px-2 py-0.5 text-[0.62rem] text-ink-3 hover:text-ink transition-colors cursor-pointer"
+            className="group flex items-center gap-1.5 text-[0.62rem] text-ink-3 hover:text-ink transition-colors cursor-pointer"
           >
             <span
               className="size-2 rounded-full border border-black/20 shrink-0"
