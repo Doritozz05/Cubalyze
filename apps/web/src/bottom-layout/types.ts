@@ -40,6 +40,7 @@ export type BottomLayoutStatId =
 /** Visual blocks a display slot can show. */
 export type SlotDisplayId =
   | "scramble-2d"
+  | "scramble-3d"
   | "sparkline"
   | "histogram"
   | "tps-curve"

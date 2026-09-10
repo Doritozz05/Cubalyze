@@ -64,6 +64,7 @@ const STAT_TOOLTIP_KEY: Record<BottomLayoutStatId, string> = {
 
 const DISPLAY_OPTIONS: SlotDisplayId[] = [
   'scramble-2d',
+  'scramble-3d',
   'sparkline',
   'histogram',
   'tps-curve',
@@ -74,6 +75,7 @@ const DISPLAY_OPTIONS: SlotDisplayId[] = [
 
 const DISPLAY_I18N_KEY: Record<SlotDisplayId, string> = {
   'scramble-2d': 'slotDisplayScramble2d',
+  'scramble-3d': 'slotDisplayScramble3d',
   'sparkline': 'slotDisplaySparkline',
   'histogram': 'slotDisplayHistogram',
   'tps-curve': 'slotDisplayTpsCurve',

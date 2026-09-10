@@ -69,6 +69,8 @@ export interface SlotLayoutProps {
   slotContent: Record<string, SlotContentConfig>;
   /** Injected 2D scramble net rendered by slots with a `scramble-2d` display. */
   scramble2d?: ReactNode;
+  /** Injected 3D scramble rendered by slots with a `scramble-3d` display. */
+  scramble3d?: ReactNode;
   /** Raw scramble string used by solvers (e.g. cross solver). */
   currentScramble?: string;
   /** Force the compact mobile density (horizontal snap row). */
@@ -88,6 +90,7 @@ export function SlotLayout({
   className,
   slotContent,
   scramble2d,
+  scramble3d,
   currentScramble,
   compact = false,
   vertical = false,
@@ -130,6 +133,9 @@ export function SlotLayout({
               {scramble2d}
             </div>
           );
+        case "scramble-3d":
+          // Full-bleed 3D canvas — the host wrapper provides the surface.
+          return <div className="relative min-h-22 min-w-0 flex-1">{scramble3d}</div>;
         case "sparkline":
           return <SlotSparkline solves={solves} />;
         case "histogram":

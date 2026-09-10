@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { preferencesStore } from "@cubeforge/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { Scramble2DNet } from "@/components/Scramble/Scramble2DNet";
+import { Scramble3DNet } from "@/components/Scramble/Scramble3DNet";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -19,7 +20,7 @@ import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { shortcutKeyLabel } from "@/utils/keyLabel";
 import { useSolveSession } from "@/hooks/useSolveSession";
-import type { Penalty, Solve } from "@/types";
+import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
 
@@ -45,6 +46,8 @@ export interface TimerStageProps {
   onDeleteSolve: (id: string) => void;
   onManualSubmit: (time: number, penalty: Penalty, note?: string | null) => void;
   puzzleFilter: string;
+  /** Active UI puzzle category — drives which puzzle the 3D scramble renders. */
+  puzzle: PuzzleCategory;
   isFocused: boolean;
 }
 
@@ -74,6 +77,7 @@ export function TimerStage(props: TimerStageProps) {
     onDeleteSolve,
     onManualSubmit,
     puzzleFilter,
+    puzzle,
     isFocused,
   } = props;
 
@@ -124,6 +128,12 @@ export function TimerStage(props: TimerStageProps) {
     >
       <Scramble2DNet scramble={currentScramble} compact />
     </button>
+  );
+
+  // 3D scramble display: the actual puzzle (pyraminx / 2×2 / 3×3) with the
+  // scramble applied, camera-draggable — just another slot display block.
+  const scramble3dElement = (
+    <Scramble3DNet scramble={currentScramble} puzzle={puzzle} />
   );
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
@@ -268,6 +278,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              scramble3d={scramble3dElement}
               currentScramble={currentScramble}
               compact
               className="mt-2 lg:hidden"
@@ -282,6 +293,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              scramble3d={scramble3dElement}
               currentScramble={currentScramble}
               vertical
               className="h-full"
@@ -327,6 +339,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              scramble3d={scramble3dElement}
               currentScramble={currentScramble}
             />
           )}

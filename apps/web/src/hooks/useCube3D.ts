@@ -82,8 +82,8 @@ export interface UseCube3DResult {
   calibrate: () => void;
   /** Reset cube pieces to solved state. */
   reset: () => void;
-  /** Apply a scramble string to the 3D cube model (animated when possible). */
-  applyScramble: (scrambleString?: string) => void;
+  /** Apply a scramble string to the 3D cube model (animated when possible; `durationMs: 0` applies instantly). */
+  applyScramble: (scrambleString?: string, durationMs?: number) => Promise<void>;
   /** Zoom the camera by a wheel-delta-like amount (positive = zoom out). */
   zoomCamera: (delta: number) => void;
   /** Rotate camera view by delta X and delta Y (for orbit controls). */
@@ -420,7 +420,7 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     setRecentMoves([]);
   }, [isPyraminx]);
 
-  const applyScramble = useCallback(async (scrambleString?: string) => {
+  const applyScramble = useCallback(async (scrambleString?: string, durationMs?: number) => {
     const targetScramble = scrambleString || options.scramble;
     if (!engineRef.current || !targetScramble || !targetScramble.trim()) return;
 
@@ -430,21 +430,32 @@ export function useCube3D(options: UseCube3DOptions = {}): UseCube3DResult {
     // Preferred path: play the scramble as animated moves (adaptive duration
     // per angle) for a premium feel. Falls back to instant facelet sync when
     // the scramble has unsupported tokens (wide moves, rotations) or errors.
-    try {
-      const animated = isPyraminx
-        ? await (engine as unknown as PyraminxEngineT).applyScrambleAnimated(trimmed)
-        : await engine.applyScrambleAnimated(trimmed);
-      if (animated) {
-        setRecentMoves([]);
-        return;
+    // durationMs 0 (displays) skips the animation entirely.
+    if ((durationMs ?? 0) > 0) {
+      try {
+        const animated = isPyraminx
+          ? await (engine as unknown as PyraminxEngineT).applyScrambleAnimated(trimmed, durationMs)
+          : await engine.applyScrambleAnimated(trimmed, durationMs);
+        if (animated) {
+          setRecentMoves([]);
+          return;
+        }
+      } catch (e) {
+        console.warn("[useCube3D] Animated scramble failed, falling back:", e);
       }
-    } catch (e) {
-      console.warn("[useCube3D] Animated scramble failed, falling back:", e);
     }
 
-    // The Pyraminx has no facelet encoding — the animated path is its only
-    // one (an invalid token simply returns false above).
-    if (isPyraminx) return;
+    // The Pyraminx has no facelet encoding — its applyMove path is the only
+    // one, so instant application walks the tokens directly.
+    if (isPyraminx) {
+      const pyraminx = engine as unknown as PyraminxEngineT;
+      pyraminx.reset();
+      for (const token of trimmed.split(/\s+/).filter(Boolean)) {
+        await pyraminx.applyMove(token, 0);
+      }
+      setRecentMoves([]);
+      return;
+    }
 
     try {
       if (order === 2) {

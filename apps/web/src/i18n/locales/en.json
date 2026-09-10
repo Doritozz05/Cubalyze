@@ -864,6 +864,7 @@
     "slotCategoryDisplay": "Display",
     "slotCategoryTools": "Tools",
     "slotDisplayScramble2d": "2D scramble",
+    "slotDisplayScramble3d": "3D scramble",
     "slotDisplaySparkline": "Trend (Sparkline)",
     "slotDisplayHistogram": "Distribution",
     "slotDisplayTpsCurve": "TPS Curve",

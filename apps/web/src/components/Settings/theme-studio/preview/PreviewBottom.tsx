@@ -4,6 +4,7 @@ import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
 import { BottomLayout } from '@/bottom-layout/BottomLayout';
 import { Scramble2DNet } from '@/components/Scramble/Scramble2DNet';
+import { Scramble3DNet } from '@/components/Scramble/Scramble3DNet';
 import type { DeviceMode } from '../ScaledTimerPreview';
 import {
   DEMO_SCRAMBLE_222,
@@ -49,6 +50,7 @@ export function PreviewBottom({
       vertical={vertical}
       className={cn(vertical && 'h-full', className)}
       scramble2d={<Scramble2DNet scramble={demoScramble} compact />}
+      scramble3d={<Scramble3DNet scramble={demoScramble} puzzle={puzzle === '222' ? '2x2' : '3x3'} />}
       currentScramble={demoScramble}
     />
   );

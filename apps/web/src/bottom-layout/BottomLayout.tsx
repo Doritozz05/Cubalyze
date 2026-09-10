@@ -21,6 +21,8 @@ export interface BottomLayoutProps {
   puzzleFilter?: string;
   /** Injected 2D scramble net rendered by slots with a `scramble-2d` display. */
   scramble2d?: ReactNode;
+  /** Injected 3D scramble rendered by slots with a `scramble-3d` display. */
+  scramble3d?: ReactNode;
   /** Raw scramble string used by solvers (e.g. cross solver). */
   currentScramble?: string;
   /** Force phone density regardless of the real viewport (theme-studio mobile frame). */
@@ -40,6 +42,7 @@ export function BottomLayout({
   className,
   puzzleFilter,
   scramble2d,
+  scramble3d,
   currentScramble,
   compact = false,
   vertical = false,
@@ -65,6 +68,7 @@ export function BottomLayout({
       className={className}
       slotContent={slotContent}
       scramble2d={scramble2d}
+      scramble3d={scramble3d}
       currentScramble={currentScramble}
       compact={compact}
       vertical={vertical}
