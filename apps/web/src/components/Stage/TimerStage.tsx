@@ -144,7 +144,9 @@ export function TimerStage(props: TimerStageProps) {
     startKeyLabel: shortcutKeyLabel(startTimerKey),
   };
 
-  const scrambleElement = scrambleDisplay && !isFocused ? (
+  // Manual focus keeps scramble visible (with Copy/New/Focus actions) —
+  // only timer-mode focus hides it. Bottom layout still hides via isFocused below.
+  const scrambleElement = scrambleDisplay && (!isFocused || isManualMode) ? (
     <ScrambleDisplay
       scramble={currentScramble}
       displayScramble={displayScramble}
