@@ -14,13 +14,20 @@ import {
   getDerivedLiquidGlassTokens,
 } from '@/theme/themePresets';
 import { ScrambleDisplay } from '@/components/Scramble/ScrambleDisplay';
+import { getSlotTemplate } from '@/bottom-layout/slot-templates';
 import { PreviewRail } from './preview/PreviewRail';
 import { PreviewDock } from './preview/PreviewDock';
 import { PreviewMobileHeader, PreviewMobileTabBar } from './preview/PreviewMobileChrome';
 import { PreviewTimer } from './preview/PreviewTimer';
-import { PreviewBottom } from './preview/PreviewBottom';
+import { PreviewBottom, type PreviewPuzzle } from './preview/PreviewBottom';
 import { evalScrambleToken, px } from './preview/evalViewport';
-import { DEMO_SCRAMBLE, DEMO_SCRAMBLE_INDEX } from './preview/demoData';
+import {
+  DEMO_SCRAMBLE_222,
+  DEMO_SCRAMBLE_333,
+  DEMO_SCRAMBLE_INDEX,
+  DEMO_SOLVES_222,
+  DEMO_SOLVES_333,
+} from './preview/demoData';
 
 export type DeviceMode = 'mobile' | 'tablet' | 'desktop';
 export type TimerPreviewState = 'idle' | 'inspection' | 'holding' | 'ready' | 'running' | 'penalty';
@@ -55,6 +62,11 @@ export function ScaledTimerPreview({
   });
 
   const [timerState, setTimerState] = useState<TimerPreviewState>('idle');
+  // Mocked preview puzzle (like the rest of the demo data): drives the demo
+  // scramble, the 2D net and the demo solves behind the bottom layout.
+  const [previewPuzzle, setPreviewPuzzle] = useState<PreviewPuzzle>('333');
+  const demoScramble = previewPuzzle === '222' ? DEMO_SCRAMBLE_222 : DEMO_SCRAMBLE_333;
+  const demoSolves = previewPuzzle === '222' ? DEMO_SOLVES_222 : DEMO_SOLVES_333;
   // Expanded overlay (mobile "ver en grande"): the root becomes a fixed
   // overlay reusing the same DOM — ResizeObserver rescales automatically.
   const [expanded, setExpanded] = useState(false);
@@ -79,6 +91,7 @@ export function ScaledTimerPreview({
   const storeScramblePanel = useStore(preferencesStore, (s) => s.scramblePanel ?? false);
   const storeScrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode ?? 'default');
   const storeTimerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
+  const storeBottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
 
   const timerBackgroundImage = useStore(preferencesStore, (s) => s.timerBackgroundImage);
   const timerBackgroundOpacity = useStore(preferencesStore, (s) => s.timerBackgroundOpacity);
@@ -118,6 +131,10 @@ export function ScaledTimerPreview({
 
   const targetDim = DEVICE_CONFIG[deviceMode];
   const isMobileFrame = deviceMode === 'mobile';
+  // Faithful rail clone: right-placement templates render as a side rail
+  // (like TimerStage) on tablet/desktop; mobile falls back to the bottom row.
+  const isRailPreview =
+    !isMobileFrame && getSlotTemplate(storeBottomLayoutTemplate)?.placement === 'right';
 
   const scaledWidth = Math.round(targetDim.width * scale);
   const scaledHeight = Math.round(targetDim.height * scale);
@@ -184,7 +201,7 @@ export function ScaledTimerPreview({
       )}
     >
       <ScrambleDisplay
-        scramble={DEMO_SCRAMBLE}
+        scramble={demoScramble}
         indexLabel={DEMO_SCRAMBLE_INDEX}
         isScrambled
         onRegenerate={() => {}}
@@ -282,6 +299,31 @@ export function ScaledTimerPreview({
                 </TooltipTrigger>
                 <TooltipContent side="bottom">{deviceLabel}</TooltipContent>
               </Tooltip>
+            );
+          })}
+        </div>
+
+        {/* Puzzle Switcher (mocked demo data: 3×3 / 2×2) */}
+        <div className="flex items-center gap-1 rounded-lg border border-line/50 bg-surface-2/60 p-0.5">
+          {(['333', '222'] as PreviewPuzzle[]).map((p) => {
+            const active = previewPuzzle === p;
+            const label = p === '333' ? '3×3' : '2×2';
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPreviewPuzzle(p)}
+                aria-label={label}
+                aria-pressed={active}
+                className={cn(
+                  'rounded-md px-2.5 py-1 font-mono text-xs font-medium transition-all cursor-pointer',
+                  active
+                    ? 'border border-line/60 bg-surface text-ink font-semibold shadow-xs'
+                    : 'border border-transparent bg-transparent text-ink-3 hover:text-ink hover:bg-surface-2'
+                )}
+              >
+                {label}
+              </button>
             );
           })}
         </div>
@@ -406,13 +448,16 @@ export function ScaledTimerPreview({
               <div className="relative z-10 flex min-h-0 flex-1 flex-col">
               {isMobileFrame ? (
                 <>
-                  <PreviewMobileHeader background={chromeSurface} />
+                  <PreviewMobileHeader
+                    background={chromeSurface}
+                    puzzleLabel={previewPuzzle === '222' ? '2×2' : '3×3'}
+                  />
                   <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-2">
                     {scrambleElement}
                     <div className="mt-1 flex min-h-0 flex-1 flex-col">
                       <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
                     </div>
-                    <PreviewBottom deviceMode={deviceMode} />
+                    <PreviewBottom deviceMode={deviceMode} puzzle={previewPuzzle} />
                   </div>
                   <PreviewMobileTabBar background={chromeTabbar} />
                 </>
@@ -423,15 +468,32 @@ export function ScaledTimerPreview({
                   <div className="flex min-w-0 flex-1 flex-col">
                     {/* 2. Header strip spanning all the way from sidebar to right edge with bleed */}
                     <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 pr-6">
-                      <PreviewDock background={chromeSurface} />
+                      <PreviewDock
+                        background={chromeSurface}
+                        puzzleLabel={previewPuzzle === '222' ? '2×2' : '3×3'}
+                        solveCount={demoSolves.length}
+                      />
                     </div>
                     {/* 3. Stage content area */}
                     <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
                       {scrambleElement}
-                      <div className="mt-1 flex min-h-0 flex-1 flex-col">
-                        <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
-                      </div>
-                      <PreviewBottom deviceMode={deviceMode} />
+                      {isRailPreview ? (
+                        <div className="flex min-h-0 flex-1 gap-4">
+                          <div className="mt-1 flex min-w-0 min-h-0 flex-1 flex-col">
+                            <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
+                          </div>
+                          <div className="w-60 shrink-0 overflow-y-auto">
+                            <PreviewBottom deviceMode={deviceMode} vertical puzzle={previewPuzzle} />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mt-1 flex min-h-0 flex-1 flex-col">
+                            <PreviewTimer deviceMode={deviceMode} timerState={timerState} panel={storeTimerPanel} />
+                          </div>
+                          <PreviewBottom deviceMode={deviceMode} puzzle={previewPuzzle} />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

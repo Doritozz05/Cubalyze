@@ -214,10 +214,6 @@ export interface PreferencesState {
   spacebarHoldDelay: number;
   setSpacebarHoldDelay: (value: number) => void;
 
-  /** Show Best/Worst Possible Average (BPA/WPA) in active stats. */
-  showBpaWpa: boolean;
-  setShowBpaWpa: (value: boolean) => void;
-
   /** Time precision format: centiseconds (0.01s) or milliseconds (0.001s). */
   timePrecision: 'centiseconds' | 'milliseconds';
   setTimePrecision: (value: 'centiseconds' | 'milliseconds') => void;
@@ -245,6 +241,20 @@ export interface PreferencesState {
    */
   bottomLayoutTemplate: string;
   setBottomLayoutTemplate: (value: string) => void;
+
+  /**
+   * Per-slot content overrides for slot templates (exp/bottom-slots-editor).
+   * Key: `<templateId>:<slotId>` → content config. The web app owns the
+   * `SlotContentConfig` shape; the store keeps it opaque JSON.
+   */
+  bottomLayoutSlots: Record<string, { kind: string; stats?: string[]; displays?: string[] }>;
+  setBottomLayoutSlot: (
+    templateId: string,
+    slotId: string,
+    content: { kind: string; stats?: string[]; displays?: string[] },
+  ) => void;
+  /** Clear all per-slot overrides (layout reset). */
+  resetBottomLayoutSlots: () => void;
 
   /** Show instruction/hint text (such as "Press space to start") below the timer. Default ON. */
   showHints: boolean;
@@ -431,13 +441,13 @@ const DEFAULT_VALUES = {
     startTimer: ' ',
   },
   spacebarHoldDelay: 300,
-  showBpaWpa: true,
   timePrecision: 'centiseconds' as const,
   inputMode: 'timer' as const,
   clickToStart: false,
   haptics: true,
   showBottomLayout: true,
-  bottomLayoutTemplate: 'session-stats',
+  bottomLayoutTemplate: 'slot-hero-left',
+  bottomLayoutSlots: {},
   showHints: true,
   timerBackgroundImage: null,
   timerBackgroundOpacity: 100,
@@ -569,13 +579,20 @@ export const createPreferencesStore = () => {
             shortcuts: { ...state.shortcuts, [key]: value },
           })),
         setSpacebarHoldDelay: (spacebarHoldDelay) => set({ spacebarHoldDelay }),
-        setShowBpaWpa: (showBpaWpa) => set({ showBpaWpa }),
         setTimePrecision: (timePrecision) => set({ timePrecision }),
         setInputMode: (inputMode) => set({ inputMode }),
         setClickToStart: (clickToStart) => set({ clickToStart }),
         setHaptics: (haptics) => set({ haptics }),
         setShowBottomLayout: (showBottomLayout) => set({ showBottomLayout }),
         setBottomLayoutTemplate: (bottomLayoutTemplate) => set({ bottomLayoutTemplate }),
+        setBottomLayoutSlot: (templateId, slotId, content) =>
+          set((state) => ({
+            bottomLayoutSlots: {
+              ...state.bottomLayoutSlots,
+              [`${templateId}:${slotId}`]: content,
+            },
+          })),
+        resetBottomLayoutSlots: () => set({ bottomLayoutSlots: {} }),
         setShowHints: (showHints) => set({ showHints }),
         setTimerBackgroundImage: (timerBackgroundImage) => set({ timerBackgroundImage }),
         setTimerBackgroundOpacity: (timerBackgroundOpacity) => set({ timerBackgroundOpacity }),
@@ -650,13 +667,13 @@ export const createPreferencesStore = () => {
           cubeTurnSpeed: state.cubeTurnSpeed,
           shortcuts: state.shortcuts,
           spacebarHoldDelay: state.spacebarHoldDelay,
-          showBpaWpa: state.showBpaWpa,
           timePrecision: state.timePrecision,
           inputMode: state.inputMode,
           clickToStart: state.clickToStart,
           haptics: state.haptics,
           showBottomLayout: state.showBottomLayout,
           bottomLayoutTemplate: state.bottomLayoutTemplate,
+          bottomLayoutSlots: state.bottomLayoutSlots,
           showHints: state.showHints,
           timerBackgroundImage: state.timerBackgroundImage,
           timerBackgroundOpacity: state.timerBackgroundOpacity,
@@ -695,10 +712,22 @@ export const createPreferencesStore = () => {
         // v5: `customThemes` (user-created full themes) added.
         // v6: `zeroStyle` default becomes 'slashed' — the setting never
         // took effect before v6, so no real 'dotted' preference exists.
-        version: 6,
+        // v7: `bottomLayoutSlots` (per-slot content overrides) added.
+        // v8: `resetBottomLayoutSlots` added (no shape change; re-run guard).
+        // v9: legacy bottom layout removed — `showBpaWpa` deleted, template
+        // ids outside `slot-*` reset to `slot-hero-left`.
+        version: 9,
         migrate: (persistedState, version) => {
           const raw = (persistedState ?? {}) as Record<string, unknown>;
           const migrated: Record<string, unknown> = { ...raw };
+          delete migrated.showBpaWpa;
+          if (
+            typeof raw.bottomLayoutSlots !== "object" ||
+            raw.bottomLayoutSlots === null ||
+            Array.isArray(raw.bottomLayoutSlots)
+          ) {
+            migrated.bottomLayoutSlots = {};
+          }
           if (!Array.isArray(raw.customThemes)) {
             migrated.customThemes = [];
           }
@@ -708,7 +737,17 @@ export const createPreferencesStore = () => {
             }
             delete migrated.showSessionStats;
             if (typeof migrated.bottomLayoutTemplate !== 'string') {
-              migrated.bottomLayoutTemplate = 'session-stats';
+              migrated.bottomLayoutTemplate = 'slot-hero-left';
+            }
+          }
+          if (version < 9) {
+            // Legacy column templates (`session-stats`, `split`, …) no longer
+            // exist — any non-slot template falls back to the default.
+            if (
+              typeof migrated.bottomLayoutTemplate !== 'string' ||
+              !(migrated.bottomLayoutTemplate as string).startsWith('slot-')
+            ) {
+              migrated.bottomLayoutTemplate = 'slot-hero-left';
             }
           }
           if (version < 3) {

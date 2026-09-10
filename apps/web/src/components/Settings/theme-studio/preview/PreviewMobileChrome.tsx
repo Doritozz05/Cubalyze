@@ -18,7 +18,13 @@ const TABS = [
  * DIV (not <header>): the global `html.liquid-glass header` rules are gated
  * on the REAL viewport width and would wrongly restyle the virtual frame.
  */
-export function PreviewMobileHeader({ background }: { background: string }) {
+export function PreviewMobileHeader({
+  background,
+  puzzleLabel = '3×3',
+}: {
+  background: string;
+  puzzleLabel?: string;
+}) {
   return (
     <div
       aria-hidden="true"
@@ -30,7 +36,7 @@ export function PreviewMobileHeader({ background }: { background: string }) {
         <Menu className="size-5" />
       </div>
       <div className="absolute left-1/2 top-[calc(50%+12px)] flex max-w-[46%] -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-        <span className="text-sm font-semibold leading-normal text-ink">3×3</span>
+        <span className="text-sm font-semibold leading-normal text-ink">{puzzleLabel}</span>
         <span className="max-w-36 truncate text-[0.62rem] font-medium text-ink-3">
           {DEMO_SESSION_NAME}
         </span>

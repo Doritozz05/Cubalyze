@@ -15,7 +15,7 @@
   function apply() {
     var root = document.documentElement;
     var isDarkClass = root.classList.contains('dark');
-    var canvas = root.style.getPropertyValue('--canvas').trim() || (isDarkClass ? DARK : LIGHT);
+    var _canvas = root.style.getPropertyValue('--canvas').trim() || (isDarkClass ? DARK : LIGHT);
     var ink = root.style.getPropertyValue('--ink').trim() || (isDarkClass ? '#e9ecef' : '#212529');
     var luminance = (function (hex) {
       var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex);

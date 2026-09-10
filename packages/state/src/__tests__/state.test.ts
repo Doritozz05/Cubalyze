@@ -161,12 +161,32 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().showBottomLayout).toBe(true);
   });
 
-  it('selects a bottom layout template (default session-stats)', () => {
-    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('session-stats');
-    preferencesStore.getState().setBottomLayoutTemplate('half-half');
-    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('half-half');
-    preferencesStore.getState().setBottomLayoutTemplate('session-stats');
-    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('session-stats');
+  it('selects a bottom layout template (default slot-hero-left)', () => {
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('slot-hero-left');
+    preferencesStore.getState().setBottomLayoutTemplate('slot-trio');
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('slot-trio');
+    preferencesStore.getState().setBottomLayoutTemplate('slot-hero-left');
+    expect(preferencesStore.getState().bottomLayoutTemplate).toBe('slot-hero-left');
+  });
+
+  it('stores per-slot content overrides (default empty)', () => {
+    expect(preferencesStore.getState().bottomLayoutSlots).toEqual({});
+    preferencesStore.getState().setBottomLayoutSlot('slot-hero-left', 'side', {
+      kind: 'stats',
+      stats: ['bpa', 'wpa'],
+    });
+    expect(
+      preferencesStore.getState().bottomLayoutSlots['slot-hero-left:side'],
+    ).toEqual({ kind: 'stats', stats: ['bpa', 'wpa'] });
+    preferencesStore.getState().setBottomLayoutSlot('slot-hero-left', 'side', {
+      kind: 'stats',
+      stats: ['ao5', 'best'],
+    });
+    expect(
+      preferencesStore.getState().bottomLayoutSlots['slot-hero-left:side'],
+    ).toEqual({ kind: 'stats', stats: ['ao5', 'best'] });
+    preferencesStore.getState().resetBottomLayoutSlots();
+    expect(preferencesStore.getState().bottomLayoutSlots).toEqual({});
   });
 
   it('toggles showHints (default ON)', () => {
@@ -187,19 +207,16 @@ describe('PreferencesStore', () => {
     expect(preferencesStore.getState().headerMode).toBe('autohide');
   });
 
-  it('handles spacebarHoldDelay, showBpaWpa, and timePrecision settings', () => {
+  it('handles spacebarHoldDelay and timePrecision settings', () => {
     const store = preferencesStore.getState();
     expect(store.spacebarHoldDelay).toBe(300);
-    expect(store.showBpaWpa).toBe(true);
     expect(store.timePrecision).toBe('centiseconds');
 
     store.setSpacebarHoldDelay(550);
-    store.setShowBpaWpa(false);
     store.setTimePrecision('milliseconds');
 
     const updated = preferencesStore.getState();
     expect(updated.spacebarHoldDelay).toBe(550);
-    expect(updated.showBpaWpa).toBe(false);
     expect(updated.timePrecision).toBe('milliseconds');
   });
 

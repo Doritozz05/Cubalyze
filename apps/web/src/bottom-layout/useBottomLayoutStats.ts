@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   averageOf,
+  computeBpaWpa,
   computeStats,
   effectiveTime,
   stdDeviation,
@@ -60,6 +61,21 @@ export function useBottomLayoutStats(
         ? tpsPoints.reduce((acc, p) => acc + p.tps, 0) / tpsPoints.length
         : null;
 
+    // BPA/WPA projection for the NEXT solve of the pending average, as plain
+    // stats (no toggles): prefers the Ao12 window when it is about to
+    // complete, otherwise the Ao5 of the most recent 4 solves.
+    let bpa: number | null = null;
+    let wpa: number | null = null;
+    if (statSolves.length >= 11 && statSolves.length % 12 === 11) {
+      const proj = computeBpaWpa(statSolves.slice(-11), 12);
+      bpa = proj?.bpa ?? null;
+      wpa = proj?.wpa ?? null;
+    } else if (statSolves.length >= 4) {
+      const proj = computeBpaWpa(statSolves.slice(-4), 5);
+      bpa = proj?.bpa ?? null;
+      wpa = proj?.wpa ?? null;
+    }
+
     return {
       ao5: statLabel(stats.ao5),
       ao12: statLabel(stats.ao12),
@@ -73,6 +89,8 @@ export function useBottomLayoutStats(
       count: String(stats.count),
       sessionTime: formatDuration(stats.sessionTime),
       tps: tps !== null ? tps.toFixed(2) : "—",
+      bpa: statLabel(bpa),
+      wpa: statLabel(wpa),
       bestAo5: statLabel(bestRollingAverage(statSolves, 5)),
       bestAo12: statLabel(bestRollingAverage(statSolves, 12)),
     };

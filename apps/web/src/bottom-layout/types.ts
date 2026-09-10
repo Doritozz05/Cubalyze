@@ -1,19 +1,18 @@
 /**
- * Bottom layout descriptor model.
+ * Bottom layout slot model.
  *
- * A "bottom layout" is the strip rendered underneath the timer. Templates are
- * declared as data (not imperative JSX) so the settings UI can list them and
- * the timer can render whichever one is selected. Mirrors the widget registry
- * pattern (`apps/web/src/widgets`).
+ * A template defines SHAPE only: placement (bottom strip | right rail |
+ * hidden), slot count and relative widths. CONTENT is free per slot and
+ * lives in `SlotContentConfig` (persisted per template+slot):
  *
- * A template is a horizontal arrangement of columns; each column is a vertical
- * stack of cells. This supports:
- *   - 1 column (e.g. the session-stats strip: 4 stat cells in a row),
- *   - 2 columns (half/half),
- *   - 3 columns (e.g. stats | scramble | averages).
+ * - `stats`: any combination of `BottomLayoutStatId` (averages, records,
+ *   session numbers and BPA/WPA projections are all plain stats).
+ * - `display`: visual blocks (`scramble-2d`, future charts).
+ *
+ * No per-slot allow-lists, no bespoke renderers, no floating pills.
  */
 
-/** Stats a stat cell can display. */
+/** Stats a stats slot can display. BPA/WPA are plain stats, no toggles. */
 export type BottomLayoutStatId =
   | "ao5"
   | "ao12"
@@ -27,31 +26,44 @@ export type BottomLayoutStatId =
   | "count"
   | "sessionTime"
   | "tps"
+  | "bpa"
+  | "wpa"
   | "bestAo5"
   | "bestAo12";
 
-/** Content a cell can hold. */
-export type BottomLayoutCell =
-  | { kind: "stat"; stat: BottomLayoutStatId }
-  | { kind: "scramble" }
-  | { kind: "scramble-2d" }
-  | { kind: "timer" };
+/** Visual blocks a display slot can show. */
+export type SlotDisplayId = "scramble-2d";
 
-/** A vertical stack of cells that occupies one horizontal slot. */
-export interface BottomLayoutColumn {
-  cells: BottomLayoutCell[];
+/** Where the template renders. */
+export type SlotPlacement = "bottom" | "right" | "hidden";
+
+/** Configurable content of one slot (persisted per template+slot). */
+export type SlotContentConfig =
+  | { kind: "stats"; stats: BottomLayoutStatId[] }
+  | { kind: "display"; displays: SlotDisplayId[] };
+
+/** One named slot inside a slot template. */
+export interface SlotDef {
+  /** Stable id within the template (e.g. "left", "center"). */
+  id: string;
+  /** Short label shown in the editor (e.g. "Izquierda"). */
+  label: string;
+  /** Default content when the user never customized the slot. */
+  defaultContent: SlotContentConfig;
 }
 
-/** Declarative definition of a bottom layout template. */
-export interface BottomLayoutDefinition {
-  /** Unique template id (kebab-case). */
+/** A slot-based layout template: shape only (1–3 slots). */
+export interface SlotLayoutDefinition {
+  /** Unique template id (`slot-*`). */
   id: string;
-  /** i18n key (settings namespace) for the human-readable name. */
+  /** i18n key (timer namespace) for the human-readable name. */
   nameKey: string;
-  /** i18n key (settings namespace) for the human-readable description. */
+  /** i18n key (timer namespace) for the human-readable description. */
   descriptionKey: string;
-  /** Horizontal column arrangement. */
-  columns: BottomLayoutColumn[];
-  /** Optional relative widths per column; defaults to equal widths. */
+  /** Where this template renders. */
+  placement: SlotPlacement;
+  /** 1–3 slots. Weights map 1:1 to slots for bottom placement. */
+  slots: SlotDef[];
+  /** Optional relative widths per slot (bottom only); defaults to equal. */
   weights?: number[];
 }

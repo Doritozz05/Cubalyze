@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -19,6 +19,7 @@ import {
   Plus,
   Loader2,
   ChevronDown,
+  LayoutTemplate,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ import { getPresetIcon } from '@/theme/themePresetIcons';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { ScaledTimerPreview } from './ScaledTimerPreview';
 import { ThemeColorSection } from './ThemeColorSection';
+import { BottomLayoutTab } from './BottomLayoutTab';
 import { CustomThemesSection } from './CustomThemesSection';
 import { ThemeShareSection } from './ThemeShareSection';
 import { PresetDots } from './PresetDots';
@@ -54,13 +56,22 @@ import { Slider } from '@/components/ui/slider';
 export interface ThemeStudioModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Tab selected when the modal opens (deep-link, e.g. from Timer settings). */
+  initialTab?: StudioTab;
 }
 
-type StudioTab = 'presets' | 'colors' | 'typography' | 'general' | 'background' | 'reset';
+type StudioTab = 'presets' | 'colors' | 'typography' | 'general' | 'background' | 'layout' | 'reset';
 
-export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) {
+const STUDIO_TAB_ORDER: StudioTab[] = ['presets', 'colors', 'typography', 'general', 'background', 'layout', 'reset'];
+
+export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }: ThemeStudioModalProps) {
   const { t } = useTranslation('settings');
-  const [activeTab, setActiveTab] = useState<StudioTab>('presets');
+  const [activeTab, setActiveTab] = useState<StudioTab>(initialTab);
+  // Deep-link support: every time the modal opens, jump to the requested tab
+  // (Timer settings opens it straight into 'layout').
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
   // Mobile (<lg): preview and controls compete for 92dvh — show one at a
   // time instead of stacking both into an unreadable squeeze.
   const [mobileView, setMobileView] = useState<'preview' | 'customize'>('preview');
@@ -72,7 +83,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
   const wheelCleanupRef = useRef<(() => void) | null>(null);
 
   const handleTabKeyDown = (e: React.KeyboardEvent) => {
-    const order: StudioTab[] = ['presets', 'colors', 'typography', 'general', 'background', 'reset'];
+    const order: StudioTab[] = STUDIO_TAB_ORDER;
     const idx = order.indexOf(activeTab);
     let next: number | null = null;
     if (e.key === 'ArrowRight') next = (idx + 1) % order.length;
@@ -276,6 +287,7 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
     { id: 'typography' as const, label: t('appearance.tabs.typography'), icon: Type },
     { id: 'general' as const, label: t('appearance.tabs.general'), icon: SlidersHorizontal },
     { id: 'background' as const, label: t('appearance.tabs.background'), icon: ImageIcon },
+    { id: 'layout' as const, label: t('appearance.tabs.layout'), icon: LayoutTemplate },
     { id: 'reset' as const, label: t('appearance.tabs.reset'), icon: RotateCcw },
   ];
 
@@ -1041,7 +1053,10 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                 </div>
               )}
 
-              {/* Tab 6: Reset Options */}
+              {/* Tab 6: Bottom Layout */}
+              {activeTab === 'layout' && <BottomLayoutTab />}
+
+              {/* Tab 7: Reset Options */}
               {activeTab === 'reset' && (
                 <div className="flex flex-col gap-4">
                   <div>
@@ -1109,6 +1124,9 @@ export function ThemeStudioModal({ open, onOpenChange }: ThemeStudioModalProps) 
                           prefs.setTimerBackgroundOverlay(0);
                           prefs.setTimerBackgroundAllViews(true);
                           prefs.setTimerBackgroundAlwaysAnimate(true);
+                          prefs.setBottomLayoutTemplate('slot-hero-left');
+                          prefs.resetBottomLayoutSlots();
+                          prefs.setShowBottomLayout(true);
                           void useBackgroundMediaStore.getState().clearMedia();
                         }}
                         className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"

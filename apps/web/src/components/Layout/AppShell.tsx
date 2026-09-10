@@ -297,7 +297,6 @@ export function AppShell(props: AppShellProps) {
       onUpdateSolve={onUpdateSolve}
       onDeleteSolve={onDeleteSolve}
       onManualSubmit={onManualSubmit}
-      onExpand={() => onNavigate("insights")}
       puzzleFilter={puzzleCategoryToType(puzzle)}
       isFocused={isFocused}
     />

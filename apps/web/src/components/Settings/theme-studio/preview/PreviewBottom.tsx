@@ -3,48 +3,43 @@
 import { useStore } from 'zustand';
 import { preferencesStore } from '@cubeforge/state';
 import { BottomLayout } from '@/bottom-layout/BottomLayout';
-import { ScrambleDisplay } from '@/components/Scramble/ScrambleDisplay';
 import { Scramble2DNet } from '@/components/Scramble/Scramble2DNet';
 import type { DeviceMode } from '../ScaledTimerPreview';
-import { evalScrambleToken, px } from './evalViewport';
-import { DEMO_SCRAMBLE, DEMO_SCRAMBLE_INDEX, DEMO_SOLVES } from './demoData';
+import {
+  DEMO_SCRAMBLE_222,
+  DEMO_SCRAMBLE_333,
+  DEMO_SOLVES_222,
+  DEMO_SOLVES_333,
+} from './demoData';
+
+/** Preview puzzle (mocked, like the rest of the demo data). */
+export type PreviewPuzzle = '333' | '222';
 
 interface PreviewBottomProps {
   deviceMode: DeviceMode;
+  /** Right-rail mode: vertical slot stack (desktop/tablet rail templates). */
+  vertical?: boolean;
+  puzzle?: PreviewPuzzle;
 }
 
 /**
- * The user's real bottom-layout template rendered with fixed demo solves,
- * so stats, averages and the BPA/WPA pill compute exactly like the live app.
+ * The user's real slot layout rendered with fixed demo solves for the
+ * selected puzzle, so stats and averages compute exactly like the live app.
  */
-export function PreviewBottom({ deviceMode }: PreviewBottomProps) {
+export function PreviewBottom({ deviceMode, vertical = false, puzzle = '333' }: PreviewBottomProps) {
   const templateId = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const isMobile = deviceMode === 'mobile';
-  const tokenPx =
-    isMobile
-      ? undefined
-      : px(
-          evalScrambleToken(
-            deviceMode === 'tablet' ? 768 : 1080,
-            deviceMode === 'tablet' ? 680 : 680,
-          ),
-        );
+  const demoScramble = puzzle === '222' ? DEMO_SCRAMBLE_222 : DEMO_SCRAMBLE_333;
+  const demoSolves = puzzle === '222' ? DEMO_SOLVES_222 : DEMO_SOLVES_333;
 
   return (
     <BottomLayout
       templateId={templateId}
-      solves={DEMO_SOLVES}
+      solves={demoSolves}
+      puzzleFilter={puzzle}
       compact={isMobile}
-      scramble={
-        <ScrambleDisplay
-          scramble={DEMO_SCRAMBLE}
-          indexLabel={DEMO_SCRAMBLE_INDEX}
-          isScrambled
-          compact={isMobile}
-          tokenSizePx={tokenPx}
-        />
-      }
-      scramble2d={<Scramble2DNet scramble={DEMO_SCRAMBLE} compact />}
+      vertical={vertical}
+      scramble2d={<Scramble2DNet scramble={demoScramble} compact />}
     />
   );
 }
