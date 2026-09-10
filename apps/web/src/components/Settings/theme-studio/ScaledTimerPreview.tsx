@@ -136,6 +136,35 @@ export function ScaledTimerPreview({
   // (like TimerStage) on tablet/desktop; mobile falls back to the bottom row.
   const isRailPreview =
     !isMobileFrame && getSlotTemplate(storeBottomLayoutTemplate)?.placement === 'right';
+  const isDynamicDockActive = isRailPreview && storeDynamicDock;
+
+  const previewDockWrapRef = useRef<HTMLDivElement>(null);
+  const [previewDockShift, setPreviewDockShift] = useState(0);
+
+  useEffect(() => {
+    if (!isDynamicDockActive) {
+      setPreviewDockShift(0);
+      return;
+    }
+    const compute = () => {
+      const dock = previewDockWrapRef.current;
+      const dockWidth = dock?.offsetWidth ?? 440;
+      // Header width excluding sidebar (56px)
+      const containerWidth = targetDim.width - 56;
+      const unshiftedLeftMargin = (containerWidth - dockWidth) / 2;
+      const minLeftMargin = 16;
+      const maxAllowedShift = Math.max(0, unshiftedLeftMargin - minLeftMargin);
+      const targetShift = 140;
+      setPreviewDockShift(Math.min(targetShift, maxAllowedShift));
+    };
+    compute();
+    const dock = previewDockWrapRef.current;
+    if (dock) {
+      const ro = new ResizeObserver(compute);
+      ro.observe(dock);
+      return () => ro.disconnect();
+    }
+  }, [isDynamicDockActive, targetDim.width]);
 
   const scaledWidth = Math.round(targetDim.width * scale);
   const scaledHeight = Math.round(targetDim.height * scale);
@@ -468,17 +497,20 @@ export function ScaledTimerPreview({
                   <PreviewRail background={chromeSidebar} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     {/* 2. Header strip spanning all the way from sidebar to right edge with bleed */}
-                    <div
-                      className={cn(
-                        'relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 transition-all duration-300',
-                        isRailPreview && storeDynamicDock ? 'pr-76' : 'pr-6',
-                      )}
-                    >
-                      <PreviewDock
-                        background={chromeSurface}
-                        puzzleLabel={previewPuzzle === '222' ? '2×2' : '3×3'}
-                        solveCount={demoSolves.length}
-                      />
+                    <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 pr-6">
+                      <div
+                        ref={previewDockWrapRef}
+                        style={{
+                          transform: isDynamicDockActive && previewDockShift > 0 ? `translateX(-${previewDockShift}px)` : undefined,
+                        }}
+                        className="transition-transform duration-300"
+                      >
+                        <PreviewDock
+                          background={chromeSurface}
+                          puzzleLabel={previewPuzzle === '222' ? '2×2' : '3×3'}
+                          solveCount={demoSolves.length}
+                        />
+                      </div>
                     </div>
                     {/* 3. Stage content area */}
                     <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 py-6">
