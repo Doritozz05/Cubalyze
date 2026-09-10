@@ -7,7 +7,7 @@ import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { SIDEBAR_MOTION } from "./sidebar.constants";
+import { SIDEBAR_MOTION, type ViewId } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
 import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
@@ -119,6 +119,10 @@ export interface HeaderProps {
   onOpenMore?: () => void;
   /** Currently selected puzzle category. */
   puzzle?: PuzzleCategory;
+  /** Active stage view — the dynamic dock is a timer-view-only layout
+   *  feature (the bottom layout only exists on the timer stage), so the
+   *  dock stays centered on every other view. */
+  activeView?: ViewId;
   /** Callback when puzzle selection changes. */
   onPuzzleChange?: (puzzle: PuzzleCategory) => void;
   /** Active session solves (newest-first) — feeds the live stats/chart dock pieces. */
@@ -147,6 +151,7 @@ export function Header({
   onOpenMore,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
+  activeView,
   solves,
   className,
 }: HeaderProps) {
@@ -172,7 +177,11 @@ export function Header({
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const dynamicDock = useStore(preferencesStore, (s) => s.dynamicDock ?? false);
   const isRail = showBottomLayout && getSlotTemplate(bottomLayoutTemplate)?.placement === "right";
-  const isDynamicDockActive = dynamicDock && isRail;
+  // The dynamic dock shift only exists on the TIMER view: the bottom layout
+  // (and its vertical rail templates) renders on the timer stage alone, so
+  // shifting the dock over a nonexistent scramble on Cube/Insights/… would
+  // just misplace it. Every other view keeps the dock centered.
+  const isDynamicDockActive = dynamicDock && isRail && (activeView ?? "timer") === "timer";
 
   const bandRef = useRef<HTMLDivElement>(null);
   const dockWrapRef = useRef<HTMLDivElement>(null);

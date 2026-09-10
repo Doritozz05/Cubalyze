@@ -361,6 +361,7 @@ export function MainLayout({
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               solves={solves}
+              activeView={activeView}
             />
           )}
         </AnimatePresence>
