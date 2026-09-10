@@ -874,7 +874,9 @@
     "slotGroupSession": "Session",
     "slotGroupProjection": "Projection",
     "browseMoreLayouts": "Browse more layouts",
-    "collapseLayouts": "Show fewer layouts"
+    "collapseLayouts": "Show fewer layouts",
+    "dynamicDock": "Dynamic dock",
+    "dynamicDockHint": "Aligns the dock directly above the scramble in vertical rail layouts; centered across the screen otherwise."
   },
   "stats": {
     "best": "Best",

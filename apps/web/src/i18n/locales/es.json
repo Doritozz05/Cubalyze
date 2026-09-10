@@ -874,7 +874,9 @@
     "slotGroupSession": "Sesión",
     "slotGroupProjection": "Proyección",
     "browseMoreLayouts": "Explorar más plantillas",
-    "collapseLayouts": "Mostrar menos plantillas"
+    "collapseLayouts": "Mostrar menos plantillas",
+    "dynamicDock": "Dock dinámico",
+    "dynamicDockHint": "Alinea el dock sobre el scramble en layouts verticales; centrado de fábrica en layouts horizontales."
   },
   "stats": {
     "best": "Mejor",

@@ -92,6 +92,7 @@ export function ScaledTimerPreview({
   const storeScrambleLayoutMode = useStore(preferencesStore, (s) => s.scrambleLayoutMode ?? 'default');
   const storeTimerPanel = useStore(preferencesStore, (s) => s.timerPanel ?? false);
   const storeBottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
+  const storeDynamicDock = useStore(preferencesStore, (s) => s.dynamicDock ?? false);
 
   const timerBackgroundImage = useStore(preferencesStore, (s) => s.timerBackgroundImage);
   const timerBackgroundOpacity = useStore(preferencesStore, (s) => s.timerBackgroundOpacity);
@@ -467,7 +468,12 @@ export function ScaledTimerPreview({
                   <PreviewRail background={chromeSidebar} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     {/* 2. Header strip spanning all the way from sidebar to right edge with bleed */}
-                    <div className="relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 pr-6">
+                    <div
+                      className={cn(
+                        'relative -mt-6 -mr-6 flex h-22 w-[calc(100%+24px)] shrink-0 items-center justify-center pt-6 transition-all duration-300',
+                        isRailPreview && storeDynamicDock ? 'pr-[304px]' : 'pr-6',
+                      )}
+                    >
                       <PreviewDock
                         background={chromeSurface}
                         puzzleLabel={previewPuzzle === '222' ? '2×2' : '3×3'}

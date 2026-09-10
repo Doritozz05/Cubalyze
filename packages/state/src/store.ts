@@ -235,6 +235,13 @@ export interface PreferencesState {
   setShowBottomLayout: (value: boolean) => void;
 
   /**
+   * Automatically align the dock directly above the scramble/timer column when a vertical rail layout is active.
+   * Default false.
+   */
+  dynamicDock: boolean;
+  setDynamicDock: (value: boolean) => void;
+
+  /**
    * Selected bottom layout template id (see `apps/web/src/bottom-layout`).
    * The store only holds the id — template resolution/validation lives in the
    * UI layer. Default 'session-stats'.
@@ -446,6 +453,7 @@ const DEFAULT_VALUES = {
   clickToStart: false,
   haptics: true,
   showBottomLayout: true,
+  dynamicDock: false,
   bottomLayoutTemplate: 'slot-hero-left',
   bottomLayoutSlots: {},
   showHints: true,
@@ -584,6 +592,7 @@ export const createPreferencesStore = () => {
         setClickToStart: (clickToStart) => set({ clickToStart }),
         setHaptics: (haptics) => set({ haptics }),
         setShowBottomLayout: (showBottomLayout) => set({ showBottomLayout }),
+        setDynamicDock: (dynamicDock) => set({ dynamicDock }),
         setBottomLayoutTemplate: (bottomLayoutTemplate) => set({ bottomLayoutTemplate }),
         setBottomLayoutSlot: (templateId, slotId, content) =>
           set((state) => ({
@@ -672,6 +681,7 @@ export const createPreferencesStore = () => {
           clickToStart: state.clickToStart,
           haptics: state.haptics,
           showBottomLayout: state.showBottomLayout,
+          dynamicDock: state.dynamicDock,
           bottomLayoutTemplate: state.bottomLayoutTemplate,
           bottomLayoutSlots: state.bottomLayoutSlots,
           showHints: state.showHints,

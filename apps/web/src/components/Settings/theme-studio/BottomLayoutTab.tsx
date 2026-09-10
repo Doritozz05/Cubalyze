@@ -256,6 +256,8 @@ export function BottomLayoutTab() {
 
   const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
   const setShowBottomLayout = useStore(preferencesStore, (s) => s.setShowBottomLayout);
+  const dynamicDock = useStore(preferencesStore, (s) => s.dynamicDock);
+  const setDynamicDock = useStore(preferencesStore, (s) => s.setDynamicDock);
   const templateId = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
   const setTemplate = useStore(preferencesStore, (s) => s.setBottomLayoutTemplate);
   const slotStore = useStore(preferencesStore, (s) => s.bottomLayoutSlots);
@@ -314,6 +316,22 @@ export function BottomLayoutTab() {
           </span>
         </div>
         <Switch checked={showBottomLayout} onCheckedChange={setShowBottomLayout} />
+      </div>
+
+      {/* Dynamic dock switch */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium text-ink">
+            {tTimer('dynamicDock', { defaultValue: 'Dock dinámico' })}
+          </span>
+          <span className="text-[0.72rem] text-ink-3">
+            {tTimer('dynamicDockHint', {
+              defaultValue:
+                'Alinea el dock sobre el scramble en layouts verticales; centrado de fábrica en layouts horizontales.',
+            })}
+          </span>
+        </div>
+        <Switch checked={dynamicDock} onCheckedChange={setDynamicDock} />
       </div>
 
       {showBottomLayout && (

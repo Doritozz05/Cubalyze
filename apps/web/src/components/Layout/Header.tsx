@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
+import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import { dockBarState, useDockRevealRequested } from "@/widgets/dock/dockZoneState";
 import {
@@ -119,6 +120,12 @@ export function Header({
   // reveal and a tap anywhere outside the header retracts it. Editing the
   // dock keeps it pinned in both cases.
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
+  const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
+  const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
+  const dynamicDock = useStore(preferencesStore, (s) => s.dynamicDock ?? false);
+  const isRail = showBottomLayout && getSlotTemplate(bottomLayoutTemplate)?.placement === "right";
+  const isDynamicDockActive = dynamicDock && isRail;
+
   const dockAutoHide = headerMode === "autohide" && !isTouch;
   const [dockRevealed, setDockRevealed] = useState(false);
   const retractTimerRef = useRef<number | null>(null);
@@ -427,7 +434,12 @@ export function Header({
           dockAutoHide && !dockVisible ? "pointer-events-auto h-7" : "h-full",
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center justify-center">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 items-center justify-center transition-all duration-300",
+            isDynamicDockActive && "lg:pr-[280px]",
+          )}
+        >
           <motion.div
             ref={dockWrapRef}
             initial={false}
@@ -457,7 +469,10 @@ export function Header({
             initial={false}
             animate={{ opacity: dockVisible ? 0 : 0.6 }}
             transition={DOCK_SLIDE_MOTION}
-            className="pointer-events-none absolute left-1/2 top-1.5 z-10 -translate-x-1/2"
+            className={cn(
+              "pointer-events-none absolute top-1.5 z-10 -translate-x-1/2 transition-all duration-300",
+              isDynamicDockActive ? "left-[calc(50%-140px)]" : "left-1/2",
+            )}
           >
             <div className="h-1 w-12 rounded-full bg-ink/25 shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]" />
           </motion.div>
