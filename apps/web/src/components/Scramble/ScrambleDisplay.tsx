@@ -22,7 +22,13 @@ export interface ScrambleDisplayProps {
   onRegenerate?: () => void;
   onCopy?: () => void;
   indexLabel?: string;
-  focusModeAction?: React.ReactNode;
+  /**
+   * Extra action rendered first in the actions row (e.g. manual-mode focus
+   * toggle). Accepts a function receiving `showLabels` so it can go
+   * icon-only in compact-right / compact-down / mobile exactly like
+   * Copy/New. Plain ReactNode still supported.
+   */
+  focusModeAction?: React.ReactNode | ((showLabels: boolean) => React.ReactNode);
   states?: ('pending' | 'correct' | 'incorrect')[];
   currentIndex?: number;
   errorMoves?: string[];
@@ -104,7 +110,7 @@ export function ScrambleDisplay({
   // Render actions. When showLabels is false, text labels are hidden everywhere (icon-only).
   const renderActions = (showLabels: boolean) => (
     <>
-      {focusModeAction}
+      {typeof focusModeAction === "function" ? focusModeAction(showLabels) : focusModeAction}
       <Button
         variant="ghost"
         size="sm"

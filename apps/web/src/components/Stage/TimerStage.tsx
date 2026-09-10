@@ -12,6 +12,7 @@ import { Scramble2DNet } from "@/components/Scramble/Scramble2DNet";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomLayout } from "@/bottom-layout/BottomLayout";
 import {
@@ -144,6 +145,32 @@ export function TimerStage(props: TimerStageProps) {
     startKeyLabel: shortcutKeyLabel(startTimerKey),
   };
 
+  // Manual focus toggle styled exactly like Copy/New (ghost, borderless,
+  // icon-only when labels are hidden in compact-right / compact-down / mobile).
+  const renderManualFocusAction = (showLabels: boolean) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onManualFocusToggle}
+          className={cn(
+            "h-7 gap-1.5 px-2 text-xs hover:text-ink",
+            manualFocus ? "text-ink" : "text-ink-2",
+          )}
+          aria-label={manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
+          aria-pressed={manualFocus}
+        >
+          <Eye className="size-3.5" />
+          {showLabels && <span className="max-lg:hidden">{t("focus")}</span>}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
+      </TooltipContent>
+    </Tooltip>
+  );
+
   // Manual focus keeps scramble visible (with Copy/New/Focus actions) —
   // only timer-mode focus hides it. Bottom layout still hides via isFocused below.
   const scrambleElement = scrambleDisplay && (!isFocused || isManualMode) ? (
@@ -163,28 +190,7 @@ export function TimerStage(props: TimerStageProps) {
       layoutMode={scrambleLayoutMode}
       indexLabel={`#${scrambleIndex + 1}`}
       focusModeAction={
-        isManualMode && focusMode ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={onManualFocusToggle}
-                className={cn(
-                  "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                  manualFocus
-                    ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                    : "border border-line bg-surface text-ink-2 hover:border-ink/20 hover:bg-surface-2 hover:text-ink",
-                )}
-              >
-                <Eye className="size-3.5" />
-                {t("focus")}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
-            </TooltipContent>
-          </Tooltip>
-        ) : undefined
+        isManualMode && focusMode ? renderManualFocusAction : undefined
       }
     />
   ) : null;
@@ -219,26 +225,7 @@ export function TimerStage(props: TimerStageProps) {
             transition={SIDEBAR_MOTION.panel}
             className="flex w-full justify-end mb-2"
           >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={onManualFocusToggle}
-                  className={cn(
-                    "inline-flex h-7 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-all duration-200 outline-none cursor-pointer",
-                    manualFocus
-                      ? "border border-ink/20 bg-surface-2 text-ink font-semibold shadow-xs"
-                      : "border border-line bg-surface text-ink-2 hover:border-ink/20 hover:bg-surface-2 hover:text-ink",
-                  )}
-                >
-                  <Eye className="size-3.5" />
-                  {t("focus")}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {manualFocus ? t("disableFocusMode") : t("enableFocusMode")}
-              </TooltipContent>
-            </Tooltip>
+            {renderManualFocusAction(true)}
           </motion.div>
         ) : null}
       </AnimatePresence>
