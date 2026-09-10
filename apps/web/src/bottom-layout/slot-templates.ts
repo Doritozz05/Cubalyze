@@ -18,15 +18,15 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [2, 1],
     slots: [
       {
-        id: "main",
-        labelKey: "slotLabelMain",
-        label: "Principal",
+        id: "left",
+        labelKey: "slotLabelLeft",
+        label: "Izquierda",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "best", "mean"] },
       },
       {
-        id: "side",
-        labelKey: "slotLabelSide",
-        label: "Lateral",
+        id: "right",
+        labelKey: "slotLabelRight",
+        label: "Derecha",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
     ],
@@ -87,8 +87,8 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     slots: [
       {
         id: "slot",
-        labelKey: "slotLabelSlot",
-        label: "Slot",
+        labelKey: "slotLabelCenter",
+        label: "Centro",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "best", "mean"] },
       },
     ],
@@ -101,15 +101,15 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [1, 2],
     slots: [
       {
-        id: "side",
-        labelKey: "slotLabelSide",
-        label: "Lateral",
+        id: "left",
+        labelKey: "slotLabelLeft",
+        label: "Izquierda",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
       {
-        id: "main",
-        labelKey: "slotLabelMain",
-        label: "Principal",
+        id: "right",
+        labelKey: "slotLabelRight",
+        label: "Derecha",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "ao50", "ao100"] },
       },
     ],
@@ -155,19 +155,19 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [1, 2, 1],
     slots: [
       {
-        id: "leftWing",
+        id: "left",
         labelKey: "slotLabelLeft",
         label: "Izquierda",
         defaultContent: { kind: "stats", stats: ["mo3", "mean"] },
       },
       {
-        id: "centerHero",
+        id: "center",
         labelKey: "slotLabelCenter",
         label: "Centro",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "ao50", "ao100"] },
       },
       {
-        id: "rightWing",
+        id: "right",
         labelKey: "slotLabelRight",
         label: "Derecha",
         defaultContent: { kind: "stats", stats: ["bpa", "wpa", "sessionTime"] },
@@ -182,21 +182,21 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [2, 1, 1],
     slots: [
       {
-        id: "hero",
-        labelKey: "slotLabelMain",
-        label: "Principal",
+        id: "left",
+        labelKey: "slotLabelLeft",
+        label: "Izquierda",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "best", "mean"] },
       },
       {
-        id: "session",
-        labelKey: "slotLabelSession",
-        label: "Sesión",
+        id: "center",
+        labelKey: "slotLabelCenter",
+        label: "Centro",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
       {
-        id: "proj",
-        labelKey: "slotLabelProjection",
-        label: "Proyección",
+        id: "right",
+        labelKey: "slotLabelRight",
+        label: "Derecha",
         defaultContent: { kind: "stats", stats: ["bpa", "wpa"] },
       },
     ],
@@ -209,15 +209,15 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [3, 1],
     slots: [
       {
-        id: "wide",
-        labelKey: "slotLabelMain",
-        label: "Panorámica",
+        id: "left",
+        labelKey: "slotLabelLeft",
+        label: "Izquierda",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "ao50", "ao100", "best", "mean"] },
       },
       {
-        id: "side",
-        labelKey: "slotLabelSide",
-        label: "Lateral",
+        id: "right",
+        labelKey: "slotLabelRight",
+        label: "Derecha",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
     ],
@@ -251,15 +251,15 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [2, 1],
     slots: [
       {
-        id: "main",
-        labelKey: "slotLabelMain",
-        label: "Principal",
+        id: "top",
+        labelKey: "slotLabelTop",
+        label: "Arriba",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "best", "mean"] },
       },
       {
-        id: "side",
-        labelKey: "slotLabelSide",
-        label: "Lateral",
+        id: "bottom",
+        labelKey: "slotLabelBottom",
+        label: "Abajo",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
     ],
@@ -299,27 +299,27 @@ export const SLOT_LAYOUT_TEMPLATES: SlotLayoutDefinition[] = [
     weights: [1, 1, 1, 1],
     slots: [
       {
-        id: "averages",
-        labelKey: "slotLabelAverages",
-        label: "Medias",
+        id: "col1",
+        labelKey: "slotLabelCol1",
+        label: "Columna 1",
         defaultContent: { kind: "stats", stats: ["ao5", "ao12", "ao50"] },
       },
       {
-        id: "records",
-        labelKey: "slotLabelRecords",
-        label: "Récords",
+        id: "col2",
+        labelKey: "slotLabelCol2",
+        label: "Columna 2",
         defaultContent: { kind: "stats", stats: ["best", "bestAo5", "bestAo12"] },
       },
       {
-        id: "session",
-        labelKey: "slotLabelSession",
-        label: "Sesión",
+        id: "col3",
+        labelKey: "slotLabelCol3",
+        label: "Columna 3",
         defaultContent: { kind: "stats", stats: ["count", "sessionTime", "tps"] },
       },
       {
-        id: "projection",
-        labelKey: "slotLabelProjection",
-        label: "Proyección",
+        id: "col4",
+        labelKey: "slotLabelCol4",
+        label: "Columna 4",
         defaultContent: { kind: "stats", stats: ["bpa", "wpa", "mean"] },
       },
     ],
@@ -373,6 +373,27 @@ export function migrateSlotConfig(
   return fallback;
 }
 
+const LEGACY_SLOT_ALIASES: Record<string, string> = {
+  "slot-hero-left:left": "slot-hero-left:main",
+  "slot-hero-left:right": "slot-hero-left:side",
+  "slot-hero-right:left": "slot-hero-right:side",
+  "slot-hero-right:right": "slot-hero-right:main",
+  "slot-wings:left": "slot-wings:leftWing",
+  "slot-wings:center": "slot-wings:centerHero",
+  "slot-wings:right": "slot-wings:rightWing",
+  "slot-hero-pair:left": "slot-hero-pair:hero",
+  "slot-hero-pair:center": "slot-hero-pair:session",
+  "slot-hero-pair:right": "slot-hero-pair:proj",
+  "slot-focus-duo:left": "slot-focus-duo:wide",
+  "slot-focus-duo:right": "slot-focus-duo:side",
+  "slot-rail-hero:top": "slot-rail-hero:main",
+  "slot-rail-hero:bottom": "slot-rail-hero:side",
+  "slot-rail-quad:col1": "slot-rail-quad:averages",
+  "slot-rail-quad:col2": "slot-rail-quad:records",
+  "slot-rail-quad:col3": "slot-rail-quad:session",
+  "slot-rail-quad:col4": "slot-rail-quad:projection",
+};
+
 /** Resolve a slot's effective content (persisted override or default). */
 export function resolveSlotContent(
   store: Record<string, unknown>,
@@ -380,5 +401,8 @@ export function resolveSlotContent(
   slotId: string,
   fallback: SlotContentConfig,
 ): SlotContentConfig {
-  return migrateSlotConfig(store[slotConfigKey(templateId, slotId)], fallback);
+  const primaryKey = slotConfigKey(templateId, slotId);
+  const legacyKey = LEGACY_SLOT_ALIASES[primaryKey];
+  const raw = store[primaryKey] ?? (legacyKey ? store[legacyKey] : undefined);
+  return migrateSlotConfig(raw, fallback);
 }
