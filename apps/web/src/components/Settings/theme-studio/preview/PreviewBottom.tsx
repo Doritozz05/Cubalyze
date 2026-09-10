@@ -49,6 +49,7 @@ export function PreviewBottom({
       vertical={vertical}
       className={cn(vertical && 'h-full', className)}
       scramble2d={<Scramble2DNet scramble={demoScramble} compact />}
+      currentScramble={demoScramble}
     />
   );
 }

@@ -33,11 +33,30 @@ function bestRollingAverage(solves: StatSolve[], n: number): number | null {
   return best;
 }
 
+/** Robust median calculation of finite effective times. */
+function medianOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** Interquartile range (IQR = Q3 - Q1) for consistency analysis. */
+function iqrOf(values: number[]): number | null {
+  if (values.length < 4) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const q1Idx = Math.floor(sorted.length * 0.25);
+  const q3Idx = Math.floor(sorted.length * 0.75);
+  return sorted[q3Idx] - sorted[q1Idx];
+}
+
 /**
  * Compute every stat a bottom layout cell can display, formatted for UI.
  *
  * All values are derived from the same filtered solve list in one pass via
- * `computeStats`; Ao50 uses the generic `averageOf`, the deviation uses
+ * `computeStats`; Ao50/Ao500/Ao1000 use `averageOf`, the deviation uses
  * `stdDeviation`, Mo3/Best-Ao5/Best-Ao12 roll over the session, and TPS is the
  * mean of the analysed solves' global TPS (reusing `deriveTpsSeries`).
  * Returns a lookup keyed by `BottomLayoutStatId`.
@@ -45,6 +64,7 @@ function bestRollingAverage(solves: StatSolve[], n: number): number | null {
 export function useBottomLayoutStats(
   solves: Solve[],
   puzzleFilter?: string,
+  subXThreshold: number = 20,
 ): Record<BottomLayoutStatId, string> {
   return useMemo(() => {
     const filtered = puzzleFilter
@@ -52,6 +72,23 @@ export function useBottomLayoutStats(
       : solves;
     const statSolves = filtered.map((s) => ({ time: s.time ?? 0, penalty: s.penalty }));
     const stats = computeStats(statSolves);
+
+    // Finite times (excluding DNFs)
+    const effectiveTimes = statSolves.map(effectiveTime);
+    const finiteTimes = effectiveTimes.filter((t) => Number.isFinite(t));
+
+    // Median & IQR
+    const median = medianOf(finiteTimes);
+    const iqr = iqrOf(finiteTimes);
+
+    // DNF Rate
+    const dnfCount = statSolves.filter((s) => s.penalty === "DNF").length;
+    const dnfRate = statSolves.length > 0 ? (dnfCount / statSolves.length) * 100 : 0;
+
+    // Sub-X count and percentage (subXThreshold in seconds, e.g. 20 -> 20000ms)
+    const thresholdMs = Math.max(1, subXThreshold) * 1000;
+    const subXSolves = finiteTimes.filter((t) => t < thresholdMs).length;
+    const subXPct = statSolves.length > 0 ? ((subXSolves / statSolves.length) * 100).toFixed(0) : "0";
 
     // TPS: average global TPS across analysed solves (smart/virtual). Manual
     // solves without move data are excluded by `deriveTpsSeries`.
@@ -81,11 +118,16 @@ export function useBottomLayoutStats(
       ao12: statLabel(stats.ao12),
       ao50: statLabel(averageOf(statSolves, 50)),
       ao100: statLabel(stats.ao100),
+      ao500: statLabel(averageOf(statSolves, 500)),
+      ao1000: statLabel(averageOf(statSolves, 1000)),
       mo3: statLabel(meanOfN(statSolves, 3)),
       best: statLabel(stats.best),
       worst: statLabel(stats.worst),
       mean: statLabel(stats.mean),
+      median: statLabel(median),
       deviation: statLabel(stdDeviation(statSolves, stats.mean)),
+      iqr: statLabel(iqr),
+      dnfRate: statSolves.length > 0 ? `${dnfRate.toFixed(1)}%` : "0%",
       count: String(stats.count),
       sessionTime: formatDuration(stats.sessionTime),
       tps: tps !== null ? tps.toFixed(2) : "—",
@@ -93,6 +135,8 @@ export function useBottomLayoutStats(
       wpa: statLabel(wpa),
       bestAo5: statLabel(bestRollingAverage(statSolves, 5)),
       bestAo12: statLabel(bestRollingAverage(statSolves, 12)),
+      subX: statSolves.length > 0 ? `${subXSolves} (${subXPct}%)` : "—",
     };
-  }, [solves, puzzleFilter]);
+  }, [solves, puzzleFilter, subXThreshold]);
 }
+

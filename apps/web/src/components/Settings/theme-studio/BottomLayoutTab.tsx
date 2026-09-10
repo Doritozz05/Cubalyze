@@ -7,6 +7,7 @@ import { preferencesStore } from '@cubeforge/state';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -25,21 +26,68 @@ import type {
   SlotContentConfig,
   SlotDisplayId,
   SlotLayoutDefinition,
+  SlotToolId,
 } from '@/bottom-layout/types';
 
 /** Stat groups shown in the picker (visual grouping only; model stays flat). */
 const STAT_GROUPS: { titleKey: string; stats: BottomLayoutStatId[] }[] = [
-  { titleKey: 'slotGroupAverages', stats: ['ao5', 'ao12', 'ao50', 'ao100', 'mo3'] },
+  { titleKey: 'slotGroupAverages', stats: ['ao5', 'ao12', 'ao50', 'ao100', 'ao500', 'ao1000', 'mo3'] },
   { titleKey: 'slotGroupRecords', stats: ['best', 'bestAo5', 'bestAo12', 'worst'] },
-  { titleKey: 'slotGroupSession', stats: ['mean', 'deviation', 'count', 'sessionTime', 'tps'] },
+  { titleKey: 'slotGroupSession', stats: ['mean', 'median', 'deviation', 'iqr', 'dnfRate', 'subX', 'count', 'sessionTime', 'tps'] },
   { titleKey: 'slotGroupProjection', stats: ['bpa', 'wpa'] },
 ];
 
-const DISPLAY_OPTIONS: SlotDisplayId[] = ['scramble-2d'];
-
-const DISPLAY_LABEL: Record<SlotDisplayId, string> = {
-  'scramble-2d': 'Scramble 2D',
+const STAT_TOOLTIP_KEY: Record<BottomLayoutStatId, string> = {
+  ao5: 'statTooltipAo5',
+  ao12: 'statTooltipAo12',
+  ao50: 'statTooltipAo50',
+  ao100: 'statTooltipAo100',
+  ao500: 'statTooltipAo500',
+  ao1000: 'statTooltipAo1000',
+  mo3: 'statTooltipMo3',
+  best: 'statTooltipBest',
+  bestAo5: 'statTooltipBestAo5',
+  bestAo12: 'statTooltipBestAo12',
+  worst: 'statTooltipWorst',
+  mean: 'statTooltipMean',
+  median: 'statTooltipMedian',
+  deviation: 'statTooltipDeviation',
+  iqr: 'statTooltipIqr',
+  dnfRate: 'statTooltipDnfRate',
+  subX: 'statTooltipSubX',
+  count: 'statTooltipCount',
+  sessionTime: 'statTooltipSessionTime',
+  tps: 'statTooltipTps',
+  bpa: 'statTooltipBpa',
+  wpa: 'statTooltipWpa',
 };
+
+const DISPLAY_OPTIONS: SlotDisplayId[] = [
+  'scramble-2d',
+  'sparkline',
+  'histogram',
+  'tps-curve',
+  'phase-distribution',
+  'activity-heatmap',
+  'image',
+];
+
+const DISPLAY_I18N_KEY: Record<SlotDisplayId, string> = {
+  'scramble-2d': 'slotDisplayScramble2d',
+  'sparkline': 'slotDisplaySparkline',
+  'histogram': 'slotDisplayHistogram',
+  'tps-curve': 'slotDisplayTpsCurve',
+  'phase-distribution': 'slotDisplayPhaseDistribution',
+  'activity-heatmap': 'slotDisplayHeatmap',
+  'image': 'slotDisplayImage',
+};
+
+const TOOL_OPTIONS: SlotToolId[] = ['cross-solver'];
+
+const TOOL_I18N_KEY: Record<SlotToolId, string> = {
+  'cross-solver': 'slotToolCrossSolver',
+};
+
 
 /** CSS-only thumbnail: blocks proportional to weights, vertical aside for rail. */
 function TemplateThumb({ template }: { template: SlotLayoutDefinition }) {
@@ -94,7 +142,11 @@ function StatChip({
   active: boolean;
   onToggle: () => void;
 }) {
-  return (
+  const { t: tTimer } = useTranslation('timer');
+  const tooltipKey = STAT_TOOLTIP_KEY[stat];
+  const tooltipText = tooltipKey ? tTimer(tooltipKey as never, { defaultValue: '' }) : '';
+
+  const chipButton = (
     <button
       type="button"
       onClick={onToggle}
@@ -109,6 +161,17 @@ function StatChip({
       {stat}
     </button>
   );
+
+  if (!tooltipText) return chipButton;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{chipButton}</TooltipTrigger>
+      <TooltipContent side="top" className="text-xs max-w-56 text-center">
+        {tooltipText}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 function SlotContentPicker({
@@ -122,31 +185,54 @@ function SlotContentPicker({
 }) {
   const { t: tTimer } = useTranslation('timer');
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (value.kind === 'display') {
+        onChange({
+          ...value,
+          imageConfig: {
+            url: dataUrl,
+            fit: value.imageConfig?.fit ?? 'cover',
+          },
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="rounded-xl border border-line bg-surface px-3.5 py-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs font-medium text-ink">{slotLabel}</p>
         <Select
           value={value.kind}
-          onValueChange={(v) =>
-            onChange(
-              v === 'display'
-                ? { kind: 'display', displays: ['scramble-2d'] }
-                : { kind: 'stats', stats: ['ao5', 'ao12', 'best'] },
-            )
-          }
+          onValueChange={(v) => {
+            if (v === 'display') {
+              onChange({ kind: 'display', displays: ['scramble-2d'] });
+            } else if (v === 'tools') {
+              onChange({ kind: 'tools', tool: 'cross-solver', crossFace: 'D' });
+            } else {
+              onChange({ kind: 'stats', stats: ['ao5', 'ao12', 'best'], subXThreshold: 20 });
+            }
+          }}
         >
-          <SelectTrigger className="h-8 w-40 text-xs">
+          <SelectTrigger className="h-8 w-44 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="stats">{tTimer('slotCategoryStats')}</SelectItem>
             <SelectItem value="display">{tTimer('slotCategoryDisplay')}</SelectItem>
+            <SelectItem value="tools">{tTimer('slotCategoryTools')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      {value.kind === 'stats' ? (
-        <div className="flex flex-col gap-2">
+
+      {value.kind === 'stats' && (
+        <div className="flex flex-col gap-2.5">
           {STAT_GROUPS.map((group) => (
             <div key={group.titleKey}>
               <p className="mb-1 text-[0.6rem] uppercase tracking-[0.16em] text-ink-3">
@@ -162,6 +248,7 @@ function SlotContentPicker({
                       active={active}
                       onToggle={() =>
                         onChange({
+                          ...value,
                           kind: 'stats',
                           stats: active
                             ? value.stats.filter((x) => x !== s)
@@ -174,35 +261,164 @@ function SlotContentPicker({
               </div>
             </div>
           ))}
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {DISPLAY_OPTIONS.map((d) => {
-            const active = value.displays.includes(d);
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() =>
+
+          {/* If subX is active, show target threshold input (2 digits max) */}
+          {value.stats.includes('subX') && (
+            <div className="mt-1 flex items-center gap-2 rounded-lg border border-line bg-surface-2/40 px-3 py-2">
+              <label className="text-xs text-ink font-medium shrink-0">
+                {tTimer('subXTarget', { defaultValue: 'Sub-X target (seconds)' })}:
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={value.subXThreshold ?? 20}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value.slice(0, 2), 10);
                   onChange({
-                    kind: 'display',
-                    displays: active
-                      ? value.displays.filter((x) => x !== d)
-                      : [...value.displays, d],
-                  })
-                }
-                aria-pressed={active}
-                className={cn(
-                  'rounded-md border px-2 py-1 text-[0.68rem] transition-colors cursor-pointer',
-                  active
-                    ? 'border-ink bg-ink text-surface'
-                    : 'border-line bg-surface-2/50 text-ink-2 hover:border-ink-2/50',
-                )}
-              >
-                {tTimer('slotDisplayScramble2d', { defaultValue: DISPLAY_LABEL[d] })}
-              </button>
-            );
-          })}
+                    ...value,
+                    subXThreshold: Number.isNaN(val) ? 20 : val,
+                  });
+                }}
+                className="w-16 rounded border border-line bg-surface px-2 py-1 text-center font-mono text-xs text-ink"
+              />
+              <span className="text-[0.65rem] text-ink-3">
+                {tTimer('subXHint', { defaultValue: 'Enter a two-digit number (e.g. 20 for Sub-20)' })}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {value.kind === 'display' && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {DISPLAY_OPTIONS.map((d) => {
+              const active = value.displays.includes(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...value,
+                      kind: 'display',
+                      displays: [d],
+                    })
+                  }
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-[0.68rem] transition-colors cursor-pointer',
+                    active
+                      ? 'border-ink bg-ink text-surface'
+                      : 'border-line bg-surface-2/50 text-ink-2 hover:border-ink-2/50',
+                  )}
+                >
+                  {tTimer(DISPLAY_I18N_KEY[d] as never, { defaultValue: d })}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* If Image is selected, render URL / Upload and Fit controls */}
+          {value.displays.includes('image') && (
+            <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface-2/40 p-2.5">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder={tTimer('imageUrlPlaceholder', { defaultValue: 'https://... or upload an image' })}
+                  value={value.imageConfig?.url ?? ''}
+                  onChange={(e) =>
+                    onChange({
+                      ...value,
+                      imageConfig: {
+                        ...value.imageConfig,
+                        url: e.target.value,
+                      },
+                    })
+                  }
+                  className="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+                />
+                <label className="rounded border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink hover:bg-surface-2 cursor-pointer flex items-center shrink-0">
+                  {tTimer('uploadImage', { defaultValue: 'Upload' })}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 text-xs text-ink-3">
+                <span>{tTimer('imageFit', { defaultValue: 'Fit' })}:</span>
+                {(['cover', 'contain', 'fill'] as const).map((fitMode) => {
+                  const fitKey =
+                    fitMode === 'cover'
+                      ? 'imageFitCover'
+                      : fitMode === 'contain'
+                        ? 'imageFitContain'
+                        : 'imageFitFill';
+                  return (
+                    <button
+                      key={fitMode}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...value,
+                          imageConfig: {
+                            url: value.imageConfig?.url ?? '',
+                            ...value.imageConfig,
+                            fit: fitMode,
+                          },
+                        })
+                      }
+                      className={cn(
+                        'rounded px-2 py-0.5 text-[0.68rem] transition-colors cursor-pointer',
+                        (value.imageConfig?.fit ?? 'cover') === fitMode
+                          ? 'bg-ink text-surface'
+                          : 'bg-surface border border-line text-ink',
+                      )}
+                    >
+                      {tTimer(fitKey as never, { defaultValue: fitMode })}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {value.kind === 'tools' && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {TOOL_OPTIONS.map((tool) => {
+              const active = value.tool === tool;
+              return (
+                <button
+                  key={tool}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...value,
+                      kind: 'tools',
+                      tool,
+                    })
+                  }
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-[0.68rem] transition-colors cursor-pointer',
+                    active
+                      ? 'border-ink bg-ink text-surface'
+                      : 'border-line bg-surface-2/50 text-ink-2 hover:border-ink-2/50',
+                  )}
+                >
+                  {tTimer(TOOL_I18N_KEY[tool] as never, { defaultValue: 'Cross Solver' })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -322,12 +538,12 @@ export function BottomLayoutTab() {
       <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-medium text-ink">
-            {tTimer('dynamicDock', { defaultValue: 'Dock dinámico' })}
+            {tTimer('dynamicDock', { defaultValue: 'Dynamic dock' })}
           </span>
           <span className="text-[0.72rem] text-ink-3">
             {tTimer('dynamicDockHint', {
               defaultValue:
-                'Alinea el dock sobre el scramble en layouts verticales; centrado de fábrica en layouts horizontales.',
+                'Aligns the dock directly above the scramble in vertical rail layouts; centered across the screen otherwise.',
             })}
           </span>
         </div>
@@ -358,8 +574,8 @@ export function BottomLayoutTab() {
               >
                 <span>
                   {showAllLayouts
-                    ? tTimer('collapseLayouts', { defaultValue: 'Mostrar menos plantillas' })
-                    : tTimer('browseMoreLayouts', { defaultValue: 'Explorar más plantillas' })}
+                    ? tTimer('collapseLayouts', { defaultValue: 'Show fewer layouts' })
+                    : tTimer('browseMoreLayouts', { defaultValue: 'Browse more layouts' })}
                 </span>
                 <div className="flex items-center gap-1.5 font-mono text-[0.68rem] text-ink-3">
                   <span>+{extraTemplates.length}</span>

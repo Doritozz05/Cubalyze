@@ -268,6 +268,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
               compact
               className="mt-2 lg:hidden"
             />
@@ -281,6 +282,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
               vertical
               className="h-full"
             />
@@ -325,6 +327,7 @@ export function TimerStage(props: TimerStageProps) {
               solves={solves}
               puzzleFilter={puzzleFilter}
               scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
             />
           )}
         </>

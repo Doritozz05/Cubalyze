@@ -18,29 +18,56 @@ export type BottomLayoutStatId =
   | "ao12"
   | "ao50"
   | "ao100"
+  | "ao500"
+  | "ao1000"
   | "mo3"
   | "best"
   | "worst"
   | "mean"
+  | "median"
   | "deviation"
+  | "iqr"
+  | "dnfRate"
   | "count"
   | "sessionTime"
   | "tps"
   | "bpa"
   | "wpa"
   | "bestAo5"
-  | "bestAo12";
+  | "bestAo12"
+  | "subX";
 
 /** Visual blocks a display slot can show. */
-export type SlotDisplayId = "scramble-2d";
+export type SlotDisplayId =
+  | "scramble-2d"
+  | "sparkline"
+  | "histogram"
+  | "tps-curve"
+  | "phase-distribution"
+  | "activity-heatmap"
+  | "image";
+
+/** Tools a tools slot can run. */
+export type SlotToolId = "cross-solver";
+
+/** Custom image configuration for image display. */
+export interface SlotImageConfig {
+  url: string;
+  fit?: "cover" | "contain" | "fill";
+  opacity?: number;
+}
+
+/** Cube faces available for cross solving. */
+export type CrossFace = "D" | "U" | "F" | "B" | "L" | "R";
 
 /** Where the template renders. */
 export type SlotPlacement = "bottom" | "right";
 
 /** Configurable content of one slot (persisted per template+slot). */
 export type SlotContentConfig =
-  | { kind: "stats"; stats: BottomLayoutStatId[] }
-  | { kind: "display"; displays: SlotDisplayId[] };
+  | { kind: "stats"; stats: BottomLayoutStatId[]; subXThreshold?: number }
+  | { kind: "display"; displays: SlotDisplayId[]; imageConfig?: SlotImageConfig }
+  | { kind: "tools"; tool: SlotToolId; crossFace?: CrossFace };
 
 /** One named slot inside a slot template. */
 export interface SlotDef {

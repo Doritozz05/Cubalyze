@@ -1,6 +1,9 @@
 import type {
   BottomLayoutStatId,
+  CrossFace,
   SlotContentConfig,
+  SlotDisplayId,
+  SlotImageConfig,
   SlotLayoutDefinition,
 } from "./types";
 
@@ -349,21 +352,58 @@ export function migrateSlotConfig(
   fallback: SlotContentConfig,
 ): SlotContentConfig {
   if (typeof raw !== "object" || raw === null) return fallback;
-  const r = raw as { kind?: unknown; stats?: unknown; displays?: unknown };
+  const r = raw as {
+    kind?: unknown;
+    stats?: unknown;
+    subXThreshold?: unknown;
+    displays?: unknown;
+    imageConfig?: unknown;
+    tool?: unknown;
+    crossFace?: unknown;
+  };
+
+  if (r.kind === "tools") {
+    const faceStr = typeof r.crossFace === "string" ? r.crossFace : "U";
+    const validFace: CrossFace =
+      faceStr === "D" ||
+      faceStr === "U" ||
+      faceStr === "F" ||
+      faceStr === "B" ||
+      faceStr === "L" ||
+      faceStr === "R"
+        ? faceStr
+        : "U";
+    return {
+      kind: "tools",
+      tool: "cross-solver",
+      crossFace: validFace,
+    };
+  }
+
   if (r.kind === "stats" && Array.isArray(r.stats)) {
     const valid: BottomLayoutStatId[] = (r.stats as unknown[]).filter(
       (s): s is BottomLayoutStatId => typeof s === "string",
     );
-    return { kind: "stats", stats: valid };
+    const subXThreshold =
+      typeof r.subXThreshold === "number" ? r.subXThreshold : 20;
+    return { kind: "stats", stats: valid, subXThreshold };
   }
+
   if (r.kind === "display" && Array.isArray(r.displays)) {
+    const validDisplays: SlotDisplayId[] = (r.displays as unknown[]).filter(
+      (d): d is SlotDisplayId => typeof d === "string",
+    );
+    const img =
+      typeof r.imageConfig === "object" && r.imageConfig !== null
+        ? (r.imageConfig as SlotImageConfig)
+        : undefined;
     return {
       kind: "display",
-      displays: (r.displays as unknown[]).includes("scramble-2d")
-        ? ["scramble-2d"]
-        : [],
+      displays: validDisplays,
+      imageConfig: img,
     };
   }
+
   // Prototype kinds.
   if (r.kind === "projection") return { kind: "stats", stats: ["bpa", "wpa"] };
   if (r.kind === "session")
