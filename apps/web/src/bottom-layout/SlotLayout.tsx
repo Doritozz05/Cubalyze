@@ -169,7 +169,7 @@ export function SlotLayout({
   // Compact mobile: one horizontal snap row, each slot a card.
   if (compact) {
     return (
-      <div className={cn("relative w-full", className)}>
+      <div data-context-zone="bottom-layout" className={cn("relative w-full", className)}>
         <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
           {template.slots.map((slot) => {
             const body = renderContent(slot.id);
@@ -208,7 +208,7 @@ export function SlotLayout({
         : template.slots.map(() => 1);
 
     return (
-      <div className={cn("flex size-full flex-col gap-3 min-h-0", className)}>
+      <div data-context-zone="bottom-layout" className={cn("flex size-full flex-col gap-3 min-h-0", className)}>
         {template.slots.map((slot, i) => {
           const body = renderContent(slot.id);
           if (!body) return null;
@@ -243,7 +243,7 @@ export function SlotLayout({
     .join(" ");
 
   return (
-    <div className={cn("relative w-full min-h-0", className)}>
+    <div data-context-zone="bottom-layout" className={cn("relative w-full min-h-0", className)}>
       <div
         className="grid w-full items-stretch rounded-xl border border-line bg-surface shadow-2xs min-h-0 overflow-hidden"
         style={{ gridTemplateColumns }}

@@ -405,6 +405,9 @@
       "resetAllVisual": "Restablecer todo al tema por defecto",
       "resetAllVisualDesc": "Restaura el tema claro clásico y borra colores, fuentes, vidrio, fondo y layout inferior. Tus fuentes subidas y temas guardados se conservan",
       "resetAll": "Restablecer todo",
+      "resetAllConfirmTitle": "¿Restablecer todos los ajustes visuales?",
+      "resetAllConfirmDesc": "Esto restaurará el tema clásico, fuentes predeterminadas, diseño inferior y borrará cualquier fondo personalizado. Tus fuentes subidas y temas guardados se conservarán.",
+      "resetAllSuccess": "Ajustes visuales restablecidos a valores por defecto",
       "deviceMobile": "Móvil",
       "deviceTablet": "Tablet",
       "deviceDesktop": "PC",
@@ -4218,7 +4221,12 @@
     "removeDnf": "Quitar DNF",
     "clearPenalty": "Limpiar penalización",
     "analysis": "Análisis…",
-    "replay": "Repetición…"
+    "replay": "Repetición…",
+    "customizeBottomLayout": "Personalizar layout inferior…",
+    "goToTimer": "Ir al cronómetro",
+    "activateTheme": "Activar tema",
+    "renameTheme": "Renombrar…",
+    "duplicateTheme": "Duplicar tema"
   },
   "auth": {
     "eyebrow": "CubeForge",

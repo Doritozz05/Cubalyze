@@ -22,6 +22,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -75,6 +76,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
   // Mobile (<lg): preview and controls compete for 92dvh — show one at a
   // time instead of stacking both into an unreadable squeeze.
   const [mobileView, setMobileView] = useState<'preview' | 'customize'>('preview');
+  const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
   // tabsRef: kept as MutableRefObject so existing code (updateScrollBounds,
   // chevron buttons, keyboard nav) can read .current without changes.
   // setTabsRef: ref callback — React calls this synchronously when the element
@@ -506,7 +508,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       className="flex items-center justify-between rounded-xl border border-line bg-surface-2/60 px-3.5 py-2 text-xs font-medium text-ink transition-all hover:bg-surface-2 hover:border-ink/20 cursor-pointer"
                     >
                       <span className="flex items-center gap-2 font-semibold">
-                        <span>{showAllPresets ? t('appearance.collapseThemes', 'Mostrar menos') : t('appearance.browseMoreThemes', 'Explorar más temas')}</span>
+                        <span>{showAllPresets ? t('appearance.collapseThemes', 'Show fewer') : t('appearance.browseMoreThemes', 'Browse more themes')}</span>
                         <span className="rounded-full bg-surface px-1.5 py-0.5 text-[0.65rem] text-ink-3 border border-line/60">
                           +{THEME_PRESETS.length - 4}
                         </span>
@@ -595,10 +597,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                   <div className="flex flex-col gap-2.5">
                     <div>
                       <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-                        {t('appearance.fontsSectionTitle', 'Fuentes')}
+                        {t('appearance.fontsSectionTitle', 'Fonts')}
                       </h5>
                       <p className="mt-0.5 text-xs text-ink-3">
-                        {t('appearance.fontsSectionDesc', 'Fuente de interfaz para texto y fuente de dígitos para tiempos y códigos.')}
+                        {t('appearance.fontsSectionDesc', 'Interface font for text and digit font for times and code.')}
                       </p>
                     </div>
 
@@ -716,7 +718,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                         {t('appearance.zeroStyle')}
                       </h5>
                       <p className="mt-0.5 text-xs text-ink-3">
-                        {t('appearance.zeroStyleDesc', 'Elige cómo se dibuja el cero en los dígitos tabulares.')}
+                        {t('appearance.zeroStyleDesc', 'Choose how zero renders in tabular digits.')}
                       </p>
                     </div>
 
@@ -815,10 +817,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                   <div className="flex flex-col gap-2.5 mt-1">
                     <div>
                       <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-                        {t('appearance.fontPreviewTitle', 'Vista previa')}
+                        {t('appearance.fontPreviewTitle', 'Preview')}
                       </h5>
                       <p className="mt-0.5 text-xs text-ink-3">
-                        {t('appearance.fontPreviewSubtitle', 'Así se ven las fuentes aplicadas en la app.')}
+                        {t('appearance.fontPreviewSubtitle', 'How the fonts look applied across the app.')}
                       </p>
                     </div>
 
@@ -874,7 +876,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       {t('appearance.generalTitle', 'General')}
                     </h4>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {t('appearance.generalSubtitle', 'Paneles de visualización del cronómetro y efectos visuales')}
+                      {t('appearance.generalSubtitle', 'Timer stage display panels and visual effects')}
                     </p>
                   </div>
 
@@ -882,10 +884,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                   <div className="flex flex-col gap-2.5">
                     <div>
                       <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-                        {t('appearance.panelsSectionTitle', 'Paneles del cronómetro')}
+                        {t('appearance.panelsSectionTitle', 'Timer stage panels')}
                       </h5>
                       <p className="mt-0.5 text-xs text-ink-3">
-                        {t('appearance.panelsSectionDesc', 'Convierte los elementos del cronómetro en tarjetas contenedor como las estadísticas inferiores.')}
+                        {t('appearance.panelsSectionDesc', 'Render timer stage elements inside container cards like the bottom stats.')}
                       </p>
                     </div>
 
@@ -894,10 +896,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-ink">
-                            {t('appearance.scramblePanel', 'Panel para scramble')}
+                            {t('appearance.scramblePanel', 'Scramble display as panel')}
                           </span>
                           <span className="text-[0.72rem] text-ink-3">
-                            {t('appearance.scramblePanelDesc', 'Muestra la notación de la mezcla dentro de un panel contenedor estilizado.')}
+                            {t('appearance.scramblePanelDesc', 'Show the scramble notation inside a styled container panel.')}
                           </span>
                         </div>
                         <Switch checked={scramblePanel} onCheckedChange={setScramblePanel} />
@@ -909,10 +911,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-ink">
-                            {t('appearance.timerPanel', 'Panel para cronómetro')}
+                            {t('appearance.timerPanel', 'Timer display as panel')}
                           </span>
                           <span className="text-[0.72rem] text-ink-3">
-                            {t('appearance.timerPanelDesc', 'Muestra los dígitos del temporizador dentro de un panel contenedor estilizado (similar a entrada manual).')}
+                            {t('appearance.timerPanelDesc', 'Show the main timer digits inside a styled container panel (similar to manual entry).')}
                           </span>
                         </div>
                         <Switch checked={timerPanel} onCheckedChange={setTimerPanel} />
@@ -923,10 +925,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                     <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-xs font-medium text-ink">
-                          {t('appearance.scrambleLayoutMode', 'Disposición del scramble')}
+                          {t('appearance.scrambleLayoutMode', 'Scramble layout')}
                         </span>
                         <span className="text-[0.72rem] text-ink-3">
-                          {t('appearance.scrambleLayoutModeDesc', 'Ajusta la densidad y posición de los botones en el temporizador y cubo virtual.')}
+                          {t('appearance.scrambleLayoutModeDesc', 'Adjust density and button placement in timer and virtual cube.')}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 self-start rounded-full border border-line bg-surface-2 p-0.5 mt-1">
@@ -943,9 +945,9 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                                 : 'text-ink-2 hover:text-ink',
                             )}
                           >
-                            {mode === 'default' && t('appearance.scrambleLayoutDefault', 'Por defecto')}
-                            {mode === 'compact-right' && t('appearance.scrambleLayoutCompactRight', 'Compacto derecha')}
-                            {mode === 'compact-down' && t('appearance.scrambleLayoutCompactDown', 'Compacto abajo')}
+                            {mode === 'default' && t('appearance.scrambleLayoutDefault', 'Default')}
+                            {mode === 'compact-right' && t('appearance.scrambleLayoutCompactRight', 'Compact right')}
+                            {mode === 'compact-down' && t('appearance.scrambleLayoutCompactDown', 'Compact down')}
                           </button>
                         ))}
                       </div>
@@ -956,10 +958,10 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                   <div className="flex flex-col gap-2.5 mt-1">
                     <div>
                       <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
-                        {t('appearance.liquidSectionTitle', 'Efecto Liquid Glass')}
+                        {t('appearance.liquidSectionTitle', 'Liquid Glass Effect')}
                       </h5>
                       <p className="mt-0.5 text-xs text-ink-3">
-                        {t('appearance.liquidSectionDesc', 'Translucidez y desenfoque vítreo en paneles y tarjetas compatibles.')}
+                        {t('appearance.liquidSectionDesc', 'Translucent glassmorphism with backdrop blur on supported UI panels.')}
                       </p>
                     </div>
 
@@ -1031,7 +1033,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                               <p className="text-[0.7rem] text-ink-3">
                                 {t(
                                   'appearance.liquidGlassCustomBlurHint',
-                                  'Desactivado usa la fórmula automática ligada a la opacidad.',
+                                  'Disabled uses the automatic formula bound to opacity.',
                                 )}
                               </p>
                             </>
@@ -1098,38 +1100,8 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          // Factory defaults: classic light theme, no overrides,
-                          // default fonts, glass off, no background media.
-                          // The user's own library (uploaded fonts, saved
-                          // custom themes) is preserved — only the active
-                          // selection is reverted.
-                          const prefs = preferencesStore.getState();
-                          setThemePreset('default');
-                          prefs.setTheme('light');
-                          resetCustomThemeColors();
-                          setLiquidGlass(false);
-                          setLiquidGlassOpacity(65);
-                          setLiquidGlassBlur(null);
-                          setFontSans('open-sans');
-                          setFontMono('cascadia-code');
-                          setZeroStyle('slashed');
-                          setScramblePanel(false);
-                          setScrambleLayoutMode('default');
-                          setTimerPanel(false);
-                          prefs.setTimerBackgroundImage(null);
-                          prefs.setTimerBackgroundOpacity(100);
-                          prefs.setTimerBackgroundBlur(0);
-                          prefs.setTimerBackgroundFit('cover');
-                          prefs.setTimerBackgroundOverlay(0);
-                          prefs.setTimerBackgroundAllViews(true);
-                          prefs.setTimerBackgroundAlwaysAnimate(true);
-                          prefs.setBottomLayoutTemplate('slot-hero-left');
-                          prefs.resetBottomLayoutSlots();
-                          prefs.setShowBottomLayout(true);
-                          void useBackgroundMediaStore.getState().clearMedia();
-                        }}
-                        className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90"
+                        onClick={() => setConfirmResetAllOpen(true)}
+                        className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90 cursor-pointer"
                       >
                         {t('appearance.resetAll')}
                       </button>
@@ -1141,6 +1113,51 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmResetAllOpen}
+        onOpenChange={setConfirmResetAllOpen}
+        title={t('appearance.resetAllConfirmTitle', 'Reset all visual preferences?')}
+        description={t(
+          'appearance.resetAllConfirmDesc',
+          'This will restore the classic theme, default fonts, bottom layout and clear any custom background. Your uploaded fonts and saved themes will be preserved.',
+        )}
+        confirmLabel={t('appearance.resetAll', 'Reset all')}
+        variant="destructive"
+        onConfirm={() => {
+          // Factory defaults: classic light theme, no overrides,
+          // default fonts, glass off, no background media.
+          // The user's own library (uploaded fonts, saved
+          // custom themes) is preserved — only the active
+          // selection is reverted.
+          const prefs = preferencesStore.getState();
+          setThemePreset('default');
+          prefs.setTheme('light');
+          resetCustomThemeColors();
+          setLiquidGlass(false);
+          setLiquidGlassOpacity(65);
+          setLiquidGlassBlur(null);
+          setFontSans('open-sans');
+          setFontMono('cascadia-code');
+          setZeroStyle('slashed');
+          setScramblePanel(false);
+          setScrambleLayoutMode('default');
+          setTimerPanel(false);
+          prefs.setTimerBackgroundImage(null);
+          prefs.setTimerBackgroundOpacity(100);
+          prefs.setTimerBackgroundBlur(0);
+          prefs.setTimerBackgroundFit('cover');
+          prefs.setTimerBackgroundOverlay(0);
+          prefs.setTimerBackgroundAllViews(true);
+          prefs.setTimerBackgroundAlwaysAnimate(true);
+          prefs.setBottomLayoutTemplate('slot-hero-left');
+          prefs.resetBottomLayoutSlots();
+          prefs.setShowBottomLayout(true);
+          void useBackgroundMediaStore.getState().clearMedia();
+          setConfirmResetAllOpen(false);
+          toast.success(t('appearance.resetAllSuccess', 'Visual preferences reset to default'));
+        }}
+      />
     </Dialog>
   );
 }

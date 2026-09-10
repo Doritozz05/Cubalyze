@@ -25,8 +25,9 @@ function CubePanelFallback() {
 }
 import { ThemeProvider } from "@/components/theme-provider";
 import { ContextMenu } from "@/components/ContextMenu/ContextMenu";
-import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
-import { RefreshCw, Copy, Plus, Puzzle, Settings, LayoutGrid, TriangleAlert } from "lucide-react";
+import { contextMenuStore } from "@/components/ContextMenu/contextMenuStore";
+import { resolveContextMenuItems } from "@/components/ContextMenu/contextMenuResolver";
+import { TriangleAlert } from "lucide-react";
 import { useStorageStatusStore } from "@/stores/storageStatus";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -110,6 +111,13 @@ export function AppShell(props: AppShellProps) {
   const [widgetExplorerOpen, setWidgetExplorerOpen] = useState(false);
   const [cubeConnectorOpen, setCubeConnectorOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
+  const [themeStudioInitialTab, setThemeStudioInitialTab] = useState<"presets" | "colors" | "typography" | "general" | "background" | "layout" | "reset">("presets");
+
+  const handleOpenThemeStudio = useCallback((tab: "presets" | "colors" | "typography" | "general" | "background" | "layout" | "reset" = "presets") => {
+    setThemeStudioInitialTab(tab);
+    setThemeStudioOpen(true);
+  }, []);
 
   // Close the 3D cube panel when leaving the timer stage — the split only
   // makes sense alongside the timer.
@@ -145,7 +153,7 @@ export function AppShell(props: AppShellProps) {
   // silently written into a volatile DB.
   const storageType = useStore(useStorageStatusStore, (s) => s.storageType);
 
-  // ── Generic context menu items (set once, refs keep them current) ──
+  // ── Context menu items handler refs (keep them fresh) ──
   const onRegenerateRef = useRef(onRegenerate);
   onRegenerateRef.current = onRegenerate;
   const onCopyRef = useRef(onCopy);
@@ -156,10 +164,15 @@ export function AppShell(props: AppShellProps) {
   widgetExplorerRef.current = setWidgetExplorerOpen;
   const settingsRef = useRef(setSettingsOpen);
   settingsRef.current = setSettingsOpen;
+  const openThemeStudioRef = useRef(handleOpenThemeStudio);
+  openThemeStudioRef.current = handleOpenThemeStudio;
+  const onNavigateRef = useRef(onNavigate);
+  onNavigateRef.current = onNavigate;
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
 
   // ── Global context menu: right-click anywhere opens the menu ────────
-  // Generic items are always shown. Zone-specific items (e.g. "Editar dock"
-  // when right-clicking on the dock) are merged based on data-context-zone.
+  // Contextual items are resolved dynamically based on activeView and zone.
   //
   // Touch long-press also fires `contextmenu` (while the finger is still
   // down), so track active touch pointers to tell it apart from a real
@@ -230,26 +243,28 @@ export function AppShell(props: AppShellProps) {
         if (z) { zone = z; break; }
         el = el.parentElement;
       }
-      const items: ContextMenuItem[] = [
-        { id: "new-scramble", label: "newScramble", icon: RefreshCw, onClick: () => onRegenerateRef.current() },
-        { id: "copy-scramble", label: "copyScramble", icon: Copy, onClick: () => onCopyRef.current() },
-        { id: "add-manual", label: "addManualSolve", icon: Plus, onClick: () => manualOpenRef.current(true) },
-        { id: "open-widgets", label: "openWidgets", icon: Puzzle, onClick: () => widgetExplorerRef.current(true), separatorBefore: true },
-        { id: "settings", label: "settings", icon: Settings, onClick: () => settingsRef.current(true) },
-      ];
-      // Zone-specific items
-      if (zone === "dock") {
-        items.splice(0, 0, {
-          id: "edit-dock",
-          label: "editDock",
-          icon: LayoutGrid,
-          onClick: () => {
-            import("@/widgets/dock/dockEditStore").then((m) => m.dockEditStore.startEditing());
+
+      const items = resolveContextMenuItems({
+        activeView: activeViewRef.current,
+        zone,
+        target,
+        handlers: {
+          onRegenerate: () => onRegenerateRef.current(),
+          onCopyScramble: () => onCopyRef.current(),
+          onOpenManual: () => manualOpenRef.current(true),
+          onOpenSettings: (section) => {
+            if (section) setSettingsInitialSection(section);
+            settingsRef.current(true);
           },
-          separatorBefore: false,
-        });
+          onOpenThemeStudio: (tab) => openThemeStudioRef.current(tab),
+          onOpenWidgets: () => widgetExplorerRef.current(true),
+          onNavigate: (view) => onNavigateRef.current(view as any),
+        },
+      });
+
+      if (items.length > 0) {
+        contextMenuStore.open(e.clientX, e.clientY, items);
       }
-      contextMenuStore.open(e.clientX, e.clientY, items);
     };
     document.addEventListener("contextmenu", handler);
     return () => {
@@ -376,6 +391,9 @@ export function AppShell(props: AppShellProps) {
               onWidgetExplorerOpenChange={setWidgetExplorerOpen}
               cubeConnectorOpen={cubeConnectorOpen}
               onCubeConnectorOpenChange={setCubeConnectorOpen}
+              themeStudioOpen={themeStudioOpen}
+              onThemeStudioOpenChange={setThemeStudioOpen}
+              themeStudioInitialTab={themeStudioInitialTab}
               profileSeed={profileSeed}
               profile={profile}
               onExportAllJSON={onExportAllJSON}

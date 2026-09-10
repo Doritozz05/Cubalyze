@@ -405,6 +405,9 @@
       "resetAllVisual": "Reset everything to default",
       "resetAllVisualDesc": "Restores the classic light theme and clears colors, fonts, glass, background and bottom layout. Your uploaded fonts and saved themes are kept",
       "resetAll": "Reset all",
+      "resetAllConfirmTitle": "Reset all visual preferences?",
+      "resetAllConfirmDesc": "This will restore the classic theme, default fonts, bottom layout and clear any custom background. Your uploaded fonts and saved themes will be preserved.",
+      "resetAllSuccess": "Visual preferences reset to default",
       "deviceMobile": "Mobile",
       "deviceTablet": "Tablet",
       "deviceDesktop": "PC",
@@ -4218,7 +4221,12 @@
     "removeDnf": "Remove DNF",
     "clearPenalty": "Clear penalty",
     "analysis": "Analysis…",
-    "replay": "Replay…"
+    "replay": "Replay…",
+    "customizeBottomLayout": "Customize bottom layout…",
+    "goToTimer": "Go to timer",
+    "activateTheme": "Activate theme",
+    "renameTheme": "Rename…",
+    "duplicateTheme": "Duplicate theme"
   },
   "auth": {
     "eyebrow": "CubeForge",

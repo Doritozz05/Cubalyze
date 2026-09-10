@@ -10,6 +10,7 @@ import { resolveThemeColors, getSystemBaseTheme } from '@/theme/themePresets';
 import { customThemeToPreset, findPreset } from '@/theme/customThemes';
 import { PresetDots } from './PresetDots';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { contextMenuStore, type ContextMenuItem } from '@/components/ContextMenu/contextMenuStore';
 
 /**
  * User-created full themes, rendered below the built-in presets.
@@ -117,7 +118,7 @@ export function CustomThemesSection() {
         <p className="rounded-xl border border-dashed border-line bg-surface-2/40 px-4 py-3 text-xs leading-relaxed text-ink-3">
           {t(
             'appearance.customThemesEmpty',
-            'Modifica cualquier color en la pestaña Colores y pulsa + para guardar tu tema.',
+            'Modify any color in the Colors tab and press + to save your theme.',
           )}
         </p>
       ) : (
@@ -130,8 +131,51 @@ export function CustomThemesSection() {
                 key={preset.id}
                 role="button"
                 tabIndex={0}
+                data-context-zone="custom-theme-card"
+                data-theme-id={preset.id}
                 onClick={() => {
                   if (!isEditing) handleSelect(preset.id, preset.isDark ? 'dark' : 'light');
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isEditing) return;
+                  const isDark = preset.isDark ? 'dark' : 'light';
+                  const items: ContextMenuItem[] = [
+                    {
+                      id: 'activate-theme',
+                      label: 'activateTheme',
+                      icon: Check,
+                      disabled: isSelected,
+                      onClick: () => handleSelect(preset.id, isDark),
+                    },
+                    {
+                      id: 'rename-theme',
+                      label: 'renameTheme',
+                      icon: Pencil,
+                      onClick: () => {
+                        setDraftName(preset.customName ?? '');
+                        setEditingId(preset.id);
+                      },
+                    },
+                  ];
+                  if (canSaveMore) {
+                    items.push({
+                      id: 'duplicate-theme',
+                      label: 'duplicateTheme',
+                      icon: Copy,
+                      onClick: () => handleDuplicate(preset.id, isDark),
+                    });
+                  }
+                  items.push({
+                    id: 'delete-theme',
+                    label: 'deleteSolve', // Uses delete label with red style
+                    icon: X,
+                    destructive: true,
+                    separatorBefore: true,
+                    onClick: () => setPendingDeleteId(preset.id),
+                  });
+                  contextMenuStore.open(e.clientX, e.clientY, items);
                 }}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && !isEditing) {
@@ -140,7 +184,7 @@ export function CustomThemesSection() {
                   }
                 }}
                 className={cn(
-                  'group relative flex cursor-pointer flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ink/50',
+                  'group relative flex cursor-pointer flex-col gap-2 rounded-xl border p-3.5 text-left transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ink/50 select-none',
                   isSelected
                     ? 'border-ink bg-surface-2 ring-2 ring-ink/20 shadow-sm'
                     : 'border-line bg-surface hover:border-ink/20 hover:bg-surface-2',
