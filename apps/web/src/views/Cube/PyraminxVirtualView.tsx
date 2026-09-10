@@ -11,13 +11,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { useCube3D } from "@/hooks/useCube3D";
 import { usePyraminxTurnControls } from "@/hooks/usePyraminxTurnControls";
-import { pyraminxKeyToToken, PYRAMINX_KEYMAP } from "@/lib/keybinds/pyraminxKeybinds";
+import { pyraminxKeyToToken } from "@/lib/keybinds/pyraminxKeybinds";
 import type { PuzzleCategory } from "@/types";
 import { generateScrambleFor } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
 import { preferencesStore } from "@cubeforge/state";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 import { usePyraminxVirtualSession } from "@/hooks/usePyraminxVirtualSession";
+import { CubeHelpOverlay } from "./CubeHelpOverlay";
 import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
 import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
 import type { Penalty } from "@/types";
@@ -373,7 +374,7 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
           the whole panel jumped. Reserving 3 rows on touch / 2 on desktop
           keeps the canvas (and the puzzle) pixel-stable; the content is
           top-aligned, so short scrambles leave clean space below. */}
-      <div className="flex h-32 shrink-0 items-start overflow-hidden border-b border-line/60 px-4 pt-3 sm:px-6 lg:h-24">
+      <div className="flex h-32 shrink-0 items-start overflow-hidden px-4 pt-3 sm:px-6 lg:h-24">
         <div
           data-glass-panel={scramblePanel ? "true" : undefined}
           className={cn(
@@ -424,32 +425,14 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
           }}
         />
 
-        {/* One-time gesture hint (same copy + timing as the cube simulator) */}
-        {hintVisible && isReady && !unavailable ? (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
-            <motion.p
-              data-glass-float
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.3 }}
-              className="select-none rounded-full border border-line bg-surface px-3.5 py-1.5 text-center text-[0.65rem] text-ink-3 shadow-md"
-            >
-              {t("gestureHint")}
-            </motion.p>
-          </div>
-        ) : null}
-
+        {/* Loading / fallback states */}
         {unavailable ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/90 px-4">
-            <span className="text-xs text-ink-3/70 text-center select-none">
-              {t("unavailable")}
-            </span>
+            <p className="select-none text-center text-xs text-ink-3/70">{t("unavailable")}</p>
           </div>
         ) : !isReady ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-canvas/90">
-            <span className="text-xs text-ink-3/50 animate-pulse select-none">
-              {t("initializing")}
-            </span>
+            <p className="animate-pulse select-none text-xs text-ink-3/50">{t("initializing")}</p>
           </div>
         ) : null}
 
@@ -470,11 +453,6 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
             >
               {formattedTime}
             </span>
-            {lastTime !== null && phase !== "stopped" && phase !== "running" && (
-              <span className="mt-0.5 text-[0.65rem] text-ink-3 tabular-nums">
-                {formatTime(lastTime, timePrecision)}
-              </span>
-            )}
           </div>
         </div>
 
@@ -532,43 +510,25 @@ export const PyraminxVirtualView = memo(function PyraminxVirtualView({
             <TooltipContent side="top">{t("helpShort")}</TooltipContent>
           </Tooltip>
         </div>
-      </div>
 
-      {/* Keymap hint — thin footer */}
-      <div className="border-t border-line/60 px-3 py-1.5 text-center">
-        <span className="text-[0.65rem] text-ink-3 select-none">{t("pyraminxKeysHint")}</span>
-      </div>
-
-      {/* Help dialog */}
-      {showHelp && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setShowHelp(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl border border-line bg-surface p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="mb-1 text-sm font-semibold text-ink">{t("help")}</h3>
-            <p className="mb-3 text-xs text-ink-3">{t("pyraminxKeysSubtitle")}</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs text-ink-2">
-              {Object.entries(PYRAMINX_KEYMAP).map(([code, action]) => (
-                <div key={code} className="flex items-center justify-between gap-2">
-                  <span className="rounded bg-line/60 px-1.5 py-0.5 text-[0.65rem] text-ink-3">
-                    {code.replace("Key", "").replace("Comma", ",")}
-                  </span>
-                  <span>{action.token}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button variant="ghost" size="sm" onClick={() => setShowHelp(false)}>
-                {t("keys.close")}
-              </Button>
-            </div>
+        {/* One-time gesture hint */}
+        {hintVisible && isReady && !unavailable ? (
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+            <motion.p
+              data-glass-float
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+              className="select-none rounded-full border border-line bg-surface px-3.5 py-1.5 text-center text-[0.65rem] text-ink-3 shadow-md"
+            >
+              {t("gestureHint")}
+            </motion.p>
           </div>
-        </div>
-      )}
+        ) : null}
+      </div>
+
+      {/* Controls overlay (help) — on-screen keyboard map, like virtual-cube.net */}
+      <CubeHelpOverlay showHelp={showHelp} pyraminx onClose={() => setShowHelp(false)} />
     </div>
   );
 });

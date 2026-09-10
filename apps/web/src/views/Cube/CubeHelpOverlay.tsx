@@ -12,6 +12,7 @@ import {
   isActionAllowedForOrder,
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
+import { pyraminxKeyToToken } from "@/lib/keybinds/pyraminxKeybinds";
 import { preferencesStore } from "@cubeforge/state";
 
 export type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
@@ -82,6 +83,23 @@ const HELP_KEYCAPS: { label: string; action: CubeKeyAction }[] = (() => {
   return caps;
 })();
 
+/**
+ * Pyraminx keycaps: the SAME QWERTY rows scanned through PYRAMINX_KEYMAP —
+ * only keys bound to a WCA token (8 layer + 8 tip turns) appear, in keyboard
+ * order. Arrows are whole-puzzle rotations handled by the view (not part of
+ * the keymap), rendered as its own cluster below.
+ */
+const PYRAMINX_HELP_KEYCAPS: { label: string; token: string }[] = (() => {
+  const caps: { label: string; token: string }[] = [];
+  for (const row of KEYBOARD_ROWS) {
+    for (const label of row) {
+      const token = pyraminxKeyToToken(labelToCode(label));
+      if (token) caps.push({ label, token });
+    }
+  }
+  return caps;
+})();
+
 /** A single keycap in the on-screen keyboard: key label on top, move below. */
 function KeyCap({ label, notation, dim }: { label: string; notation?: string; dim?: boolean }) {
   return (
@@ -101,14 +119,19 @@ function KeyCap({ label, notation, dim }: { label: string; notation?: string; di
 
 export interface CubeHelpOverlayProps {
   showHelp: boolean;
-  /** Cube order (2 or 3): the 2×2 help lists only moves that exist on a 2×2. */
-  order: number;
+  /** Cube order (2 or 3): the 2×2 help lists only moves that exist on a 2×2.
+   *  Ignored (and optional) in pyraminx mode. */
+  order?: number;
+  /** Pyraminx mode: the same overlay with the pyraminx keymap + gestures. */
+  pyraminx?: boolean;
   onClose: () => void;
 }
 
 /** The Cube tab's controls overlay — on-screen keyboard map, turn speed and
- *  gesture legend (like virtual-cube.net's "Show Keyboard Map"). */
-export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayProps) {
+ *  gesture legend (like virtual-cube.net's "Show Keyboard Map"). The same
+ *  overlay serves the Pyraminx view (`pyraminx`): identical dialog, the
+ *  pyraminx keymap + gestures instead of the cube's. */
+export function CubeHelpOverlay({ showHelp, order, pyraminx, onClose }: CubeHelpOverlayProps) {
   const { t } = useTranslation("cube");
   const cubeTurnSpeed = useStore(preferencesStore, (s) => s.cubeTurnSpeed);
   const setCubeTurnSpeed = useStore(preferencesStore, (s) => s.setCubeTurnSpeed);
@@ -142,7 +165,13 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
                   {t("keys.title")}
                 </h3>
                 <p className="mt-1 text-[0.68rem] leading-relaxed text-ink-3">
-                  {t(order === 2 ? "keys.subtitle2x2" : "keys.subtitle")}
+                  {t(
+                    pyraminx
+                      ? "keys.subtitlePyraminx"
+                      : order === 2
+                        ? "keys.subtitle2x2"
+                        : "keys.subtitle",
+                  )}
                 </p>
               </div>
               <Button
@@ -156,10 +185,37 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
               </Button>
             </div>
 
-            {/* On-screen keyboard — each keycap shows its move. The 2×2 help
-                lists ONLY the moves that exist on a 2×2 (face turns +
-                whole-cube rotations — no slices, no wide moves). */}
-            {order === 2 ? (
+            {/* On-screen keyboard — each keycap shows its move. Pyraminx
+                mode: the same QWERTY keycaps showing the pyraminx tokens
+                (layer turns + tip turns), arrow cluster for the whole-puzzle
+                rotation. The 2×2 help lists ONLY the moves that exist on a
+                2×2 (face turns + whole-cube rotations — no slices, no wide
+                moves). */}
+            {pyraminx ? (
+              <div className="mt-4 flex flex-col items-center gap-1.5">
+                {KEYBOARD_ROWS.map((row) => (
+                  <div key={row[0]} className="flex gap-1">
+                    {row.map((label) => {
+                      const cap = PYRAMINX_HELP_KEYCAPS.find((c) => c.label === label);
+                      return (
+                        <KeyCap
+                          key={label}
+                          label={label}
+                          notation={cap?.token}
+                          dim={!cap}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+                {/* Arrow cluster — whole-puzzle rotations (camera stays locked) */}
+                <div className="mt-1 flex gap-1">
+                  {ARROW_KEYS.map((k) => (
+                    <KeyCap key={k.code} label={k.label} />
+                  ))}
+                </div>
+              </div>
+            ) : order === 2 ? (
               <div className="mt-4 flex max-w-md flex-wrap items-center justify-center gap-1.5">
                 {HELP_KEYCAPS.filter(({ action }) =>
                   isActionAllowedForOrder(action, 2),
@@ -237,9 +293,9 @@ export function CubeHelpOverlay({ showHelp, order, onClose }: CubeHelpOverlayPro
                   {t("keys.gestures")}
                 </h4>
                 <ul className="space-y-1 text-[0.7rem] leading-relaxed text-ink-2">
-                  <li>• {t("keys.gestureSwipe")}</li>
+                  <li>• {t(pyraminx ? "keys.pyraminxGestureDrag" : "keys.gestureSwipe")}</li>
                   <li>• {t("keys.gestureOrbit")}</li>
-                  <li>• {t("keys.gestureTap")}</li>
+                  <li>• {t(pyraminx ? "keys.pyraminxGestureTap" : "keys.gestureTap")}</li>
                   <li>• {t("keys.gesturePinch")}</li>
                 </ul>
               </div>
