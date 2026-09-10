@@ -14,7 +14,7 @@ import {
   Shuffle,
   TrendingDown,
 } from 'lucide-react';
-import { DEMO_SESSION_NAME, DEMO_SOLVES } from './demoData';
+import { DEMO_SESSION_NAME } from './demoData';
 
 const WIDGET_ICONS = [
   ListOrdered,
@@ -33,7 +33,15 @@ const WIDGET_ICONS = [
  * Static clone of the default desktop dock (pill bar) for the preview.
  * Same bar/pill/session/puzzle geometry as `WidgetDock`, demo content.
  */
-export function PreviewDock({ background }: { background: string }) {
+export function PreviewDock({
+  background,
+  puzzleLabel = '3×3',
+  solveCount = 120,
+}: {
+  background: string;
+  puzzleLabel?: string;
+  solveCount?: number;
+}) {
   return (
     <div aria-hidden="true" className="flex justify-center">
       <div
@@ -57,10 +65,10 @@ export function PreviewDock({ background }: { background: string }) {
           <History className="size-3.5 shrink-0 text-ink-3" />
           <span className="max-w-28 truncate leading-none">{DEMO_SESSION_NAME}</span>
           <span className="leading-none text-ink-3">·</span>
-          <span className="nums leading-none text-ink-3">{DEMO_SOLVES.length}</span>
+          <span className="nums leading-none text-ink-3">{solveCount}</span>
         </div>
         <div className="flex h-8 items-center gap-2 rounded-full border-transparent bg-transparent py-0 pl-2.5 pr-2 text-xs font-medium leading-normal text-ink-2 shadow-none">
-          <span>3×3</span>
+          <span>{puzzleLabel}</span>
           <ChevronDown className="size-3 text-ink-3" />
         </div>
       </div>

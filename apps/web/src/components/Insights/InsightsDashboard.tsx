@@ -303,6 +303,22 @@ export function InsightsDashboard({
     });
   }, []);
 
+  const handleSetSelected = useCallback((id: string, selected: boolean) => {
+    setSelection((prev) => {
+      if (selected) {
+        if (prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      } else {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      }
+    });
+  }, []);
+
   // Leaving the mode when the last tick is removed keeps the UI from
   // hanging in an empty selection state — but only after something was
   // selected: the "Select" button enters with an empty selection on purpose.
@@ -510,6 +526,7 @@ export function InsightsDashboard({
           selectionMode={selectionMode}
           selection={selection}
           onToggleSelect={handleToggleSelect}
+          onSetSelected={handleSetSelected}
           onSelectAll={handleSelectAll}
           onExitSelection={handleExitSelection}
           onLongPress={handleLongPress}

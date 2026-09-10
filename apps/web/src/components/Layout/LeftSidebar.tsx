@@ -66,6 +66,9 @@ export interface LeftSidebarProps {
   onWidgetExplorerOpenChange?: (open: boolean) => void;
   cubeConnectorOpen?: boolean;
   onCubeConnectorOpenChange?: (open: boolean) => void;
+  themeStudioOpen?: boolean;
+  onThemeStudioOpenChange?: (open: boolean) => void;
+  themeStudioInitialTab?: "presets" | "colors" | "typography" | "general" | "background" | "layout" | "reset";
 }
 
 export function LeftSidebar({
@@ -87,6 +90,9 @@ export function LeftSidebar({
   onWidgetExplorerOpenChange,
   cubeConnectorOpen: externalCubeConnectorOpen,
   onCubeConnectorOpenChange,
+  themeStudioOpen: externalThemeStudioOpen,
+  onThemeStudioOpenChange,
+  themeStudioInitialTab = "presets",
 }: LeftSidebarProps) {
   // Touch regime (phones + small tablets <768px) renders the Sheet variant.
   // Desktop (>=768px) keeps the rail. The rail's touch interactions (tap-to-
@@ -100,7 +106,10 @@ export function LeftSidebar({
   const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
   const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
   const [internalCubeConnectorOpen, setInternalCubeConnectorOpen] = useState(false);
-  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
+  const [internalThemeStudioOpen, setInternalThemeStudioOpen] = useState(false);
+
+  const themeStudioOpen = externalThemeStudioOpen ?? internalThemeStudioOpen;
+  const setThemeStudioOpen = onThemeStudioOpenChange ?? setInternalThemeStudioOpen;
 
   const settingsOpen = externalSettingsOpen ?? internalSettingsOpen;
   const setSettingsOpen = onSettingsOpenChange ?? setInternalSettingsOpen;
@@ -475,6 +484,7 @@ export function LeftSidebar({
           <ThemeStudioModal
             open={themeStudioOpen}
             onOpenChange={setThemeStudioOpen}
+            initialTab={themeStudioInitialTab}
           />
         </Suspense>
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
@@ -544,6 +554,7 @@ export function LeftSidebar({
         <ThemeStudioModal
           open={themeStudioOpen}
           onOpenChange={setThemeStudioOpen}
+          initialTab={themeStudioInitialTab}
         />
       </Suspense>
     </>

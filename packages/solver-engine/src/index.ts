@@ -20,6 +20,12 @@ export {
   type CrossScrambleOptions,
   type CrossScrambleResult,
 } from './CrossScrambleGenerator';
+export {
+  CrossSolverService,
+  type CubeFace,
+  type CrossSolutionResult,
+  type CrossSolverOptions,
+} from './CrossSolverService';
 
 // Pyraminx random-state solver + scrambler (clean-room implementation of
 // the official WCA scramble — see Fase-D2-Pyraminx-Cleanroom.md)

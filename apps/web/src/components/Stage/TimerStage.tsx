@@ -15,11 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { BottomLayout } from "@/bottom-layout/BottomLayout";
-import {
-  DEFAULT_BOTTOM_LAYOUT_TEMPLATE,
-  getBottomLayoutTemplate,
-  templateHasCell,
-} from "@/bottom-layout/registry";
+import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { shortcutKeyLabel } from "@/utils/keyLabel";
 import { useSolveSession } from "@/hooks/useSolveSession";
@@ -48,7 +44,6 @@ export interface TimerStageProps {
   onUpdateSolve?: (id: string, updates: { penalty?: Penalty; note?: string | null }) => void;
   onDeleteSolve: (id: string) => void;
   onManualSubmit: (time: number, penalty: Penalty, note?: string | null) => void;
-  onExpand: () => void;
   puzzleFilter: string;
   isFocused: boolean;
 }
@@ -78,7 +73,6 @@ export function TimerStage(props: TimerStageProps) {
     onUpdateSolve,
     onDeleteSolve,
     onManualSubmit,
-    onExpand,
     puzzleFilter,
     isFocused,
   } = props;
@@ -115,17 +109,22 @@ export function TimerStage(props: TimerStageProps) {
   const startTimerKey = useStore(preferencesStore, (s) => s.shortcuts.startTimer);
   const isManualMode = inputMode === "manual";
 
-  // Resolve the selected template so the stage knows whether it should render
-  // the scramble at the top or hand it to the bottom layout.
-  const bottomTemplate =
-    getBottomLayoutTemplate(bottomLayoutTemplate) ?? DEFAULT_BOTTOM_LAYOUT_TEMPLATE;
-  const embedsScramble = templateHasCell(bottomTemplate, "scramble");
-  // A template with a `scramble` cell renders it inside the bottom layout
-  // (e.g. three-column). Manual mode keeps the scramble at the top because its
-  // focus toggle lives there.
-  const embedScramble = embedsScramble && scrambleDisplay && !isFocused && !isManualMode;
-  // A `scramble-2d` cell shows the 2D net but leaves the top scramble in place.
-  const embedsScramble2d = templateHasCell(bottomTemplate, "scramble-2d");
+  // Right-rail templates render as a desktop aside with a compact bottom
+  // fallback on mobile. The text scramble always stays on top; the 2D net
+  // is just another display block inside a slot.
+  const isRail =
+    getSlotTemplate(bottomLayoutTemplate)?.placement === "right";
+
+  const scramble2dElement = (
+    <button
+      type="button"
+      onClick={() => setScramblePreviewOpen(true)}
+      aria-label={t("openScramblePreview")}
+      className="grid cursor-pointer place-items-center rounded-md outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-1 focus-visible:ring-ring"
+    >
+      <Scramble2DNet scramble={currentScramble} compact />
+    </button>
+  );
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
   const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter);
@@ -195,91 +194,143 @@ export function TimerStage(props: TimerStageProps) {
     />
   ) : null;
 
+  const topScrambleBlock = (
+    <AnimatePresence mode="wait">
+      {scrambleElement ? (
+        // No exit animation: in focus mode the scramble must leave the
+        // layout instantly so the timer fills the stage immediately. An
+        // animated exit keeps its layout slot for ~250ms, which made the
+        // timer appear clipped at the top and then suddenly grow.
+        <motion.div
+          key="scramble-display-container"
+          initial={{ y: "-100%", opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={SIDEBAR_MOTION.panel}
+          data-glass-panel={scramblePanel ? "true" : undefined}
+          className={cn(
+            "w-full transition-all duration-200",
+            scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+          )}
+        >
+          {scrambleElement}
+        </motion.div>
+      ) : isManualMode && focusMode ? (
+        <motion.div
+          key="manual-focus-button"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={SIDEBAR_MOTION.panel}
+          className="flex w-full justify-end mb-2"
+        >
+          {renderManualFocusAction(true)}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+
   return (
     <>
-      <AnimatePresence mode="wait">
-        {scrambleElement && !embedScramble ? (
-          // No exit animation: in focus mode the scramble must leave the
-          // layout instantly so the timer fills the stage immediately. An
-          // animated exit keeps its layout slot for ~250ms, which made the
-          // timer appear clipped at the top and then suddenly grow.
-          <motion.div
-            key="scramble-display-container"
-            initial={{ y: "-100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={SIDEBAR_MOTION.panel}
-            data-glass-panel={scramblePanel ? "true" : undefined}
-            className={cn(
-              "w-full transition-all duration-200",
-              scramblePanel && "rounded-xl border border-line bg-surface p-3 sm:p-3.5 shadow-2xs",
+      {isRail && showBottomLayout && !isFocused ? (
+        // Right-rail placement: timer column (with aligned scramble on top)
+        // + vertical slot rail on desktop, compact bottom strip on mobile.
+        <div className="flex w-full min-h-0 flex-1 gap-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {topScrambleBlock}
+            {isManualMode ? (
+              <ManualTimeInput onSubmit={onManualSubmit} className="flex-1" />
+            ) : (
+              <TimerContainer
+                phase={timerPhase}
+                time={timerTime}
+                lastTime={timerLastTime}
+                pb={previousPB}
+                showPbDelta={showPbDelta}
+                pbMilestone={activePbMilestone}
+                onDismissPbBanner={onDismissPbBanner}
+                hintCtx={hintCtx}
+                onPress={timerPress}
+                onRelease={timerRelease}
+                onCancel={timerCancel}
+                stateRef={timerStateRef}
+                cancelRef={cancelRef}
+                clickToStart={clickToStart}
+                holdDelay={holdDelay}
+                lastSolve={solves[0] ?? null}
+                onUpdatePenalty={onUpdatePenalty}
+                onUpdateSolve={onUpdateSolve}
+                onDeleteSolve={onDeleteSolve}
+                className="flex-1"
+              />
             )}
+            <BottomLayout
+              templateId={bottomLayoutTemplate}
+              solves={solves}
+              puzzleFilter={puzzleFilter}
+              scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
+              compact
+              className="mt-2 lg:hidden"
+            />
+          </div>
+          <aside
+            aria-label={t("slotRailLabel")}
+            className="hidden w-64 shrink-0 overflow-y-auto lg:flex lg:flex-col"
           >
-            {scrambleElement}
-          </motion.div>
-        ) : isManualMode && focusMode ? (
-          <motion.div
-            key="manual-focus-button"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={SIDEBAR_MOTION.panel}
-            className="flex w-full justify-end mb-2"
-          >
-            {renderManualFocusAction(true)}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      {isManualMode ? (
-        <ManualTimeInput
-          onSubmit={onManualSubmit}
-          className="mt-1 flex-1"
-        />
+            <BottomLayout
+              templateId={bottomLayoutTemplate}
+              solves={solves}
+              puzzleFilter={puzzleFilter}
+              scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
+              vertical
+              className="h-full"
+            />
+          </aside>
+        </div>
       ) : (
-        <TimerContainer
-          phase={timerPhase}
-          time={timerTime}
-          lastTime={timerLastTime}
-          pb={previousPB}
-          showPbDelta={showPbDelta}
-          pbMilestone={activePbMilestone}
-          onDismissPbBanner={onDismissPbBanner}
-          hintCtx={hintCtx}
-          onPress={timerPress}
-          onRelease={timerRelease}
-          onCancel={timerCancel}
-          stateRef={timerStateRef}
-          cancelRef={cancelRef}
-          clickToStart={clickToStart}
-          holdDelay={holdDelay}
-          lastSolve={solves[0] ?? null}
-          onUpdatePenalty={onUpdatePenalty}
-          onUpdateSolve={onUpdateSolve}
-          onDeleteSolve={onDeleteSolve}
-          className="mt-1 flex-1"
-        />
-      )}
+        <>
+          {topScrambleBlock}
+          {isManualMode ? (
+            <ManualTimeInput
+              onSubmit={onManualSubmit}
+              className="mt-1 flex-1"
+            />
+          ) : (
+            <TimerContainer
+              phase={timerPhase}
+              time={timerTime}
+              lastTime={timerLastTime}
+              pb={previousPB}
+              showPbDelta={showPbDelta}
+              pbMilestone={activePbMilestone}
+              onDismissPbBanner={onDismissPbBanner}
+              hintCtx={hintCtx}
+              onPress={timerPress}
+              onRelease={timerRelease}
+              onCancel={timerCancel}
+              stateRef={timerStateRef}
+              cancelRef={cancelRef}
+              clickToStart={clickToStart}
+              holdDelay={holdDelay}
+              lastSolve={solves[0] ?? null}
+              onUpdatePenalty={onUpdatePenalty}
+              onUpdateSolve={onUpdateSolve}
+              onDeleteSolve={onDeleteSolve}
+              className="mt-1 flex-1"
+            />
+          )}
 
-      {showBottomLayout && !isFocused && (
-        <BottomLayout
-          templateId={bottomLayoutTemplate}
-          solves={solves}
-          onExpand={onExpand}
-          puzzleFilter={puzzleFilter}
-          scramble={embedScramble ? scrambleElement : undefined}
-          scramble2d={
-            embedsScramble2d ? (
-              <button
-                type="button"
-                onClick={() => setScramblePreviewOpen(true)}
-                aria-label={t("openScramblePreview")}
-                className="grid cursor-pointer place-items-center rounded-md outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <Scramble2DNet scramble={currentScramble} compact />
-              </button>
-            ) : undefined
-          }
-        />
+          {showBottomLayout && !isFocused && (
+            <BottomLayout
+              templateId={bottomLayoutTemplate}
+              solves={solves}
+              puzzleFilter={puzzleFilter}
+              scramble2d={scramble2dElement}
+              currentScramble={currentScramble}
+            />
+          )}
+        </>
       )}
 
       <Dialog open={scramblePreviewOpen} onOpenChange={setScramblePreviewOpen}>

@@ -1,6 +1,7 @@
 'use client';
 
-import { Clock, Cpu, Headphones, Bluetooth, Keyboard, LayoutTemplate } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Cpu, Headphones, Bluetooth, Keyboard, LayoutTemplate, ArrowUpRight } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import { preferencesStore } from '@cubeforge/state';
@@ -13,7 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BOTTOM_LAYOUT_TEMPLATES } from '@/bottom-layout/registry';
+import { Button } from '@/components/ui/button';
+import { ThemeStudioModal } from '@/components/Settings/theme-studio/ThemeStudioModal';
+import { getSlotTemplate } from '@/bottom-layout/slot-templates';
 
 /**
  * Timer settings section.
@@ -45,14 +48,16 @@ export function TimerSection() {
   const setInputMode = useStore(preferencesStore, (s) => s.setInputMode);
   const clickToStart = useStore(preferencesStore, (s) => s.clickToStart);
   const setClickToStart = useStore(preferencesStore, (s) => s.setClickToStart);
-  const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
-  const setShowBottomLayout = useStore(preferencesStore, (s) => s.setShowBottomLayout);
   const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
-  const setBottomLayoutTemplate = useStore(preferencesStore, (s) => s.setBottomLayoutTemplate);
-  const showBpaWpa = useStore(preferencesStore, (s) => s.showBpaWpa);
-  const setShowBpaWpa = useStore(preferencesStore, (s) => s.setShowBpaWpa);
   const showHints = useStore(preferencesStore, (s) => s.showHints);
   const setShowHints = useStore(preferencesStore, (s) => s.setShowHints);
+  const [layoutStudioOpen, setLayoutStudioOpen] = useState(false);
+  const { t: tTimer } = useTranslation('timer');
+
+  const currentSlot = getSlotTemplate(bottomLayoutTemplate);
+  const currentName = currentSlot
+    ? tTimer(currentSlot.nameKey as never, { defaultValue: currentSlot.id })
+    : bottomLayoutTemplate;
 
   return (
     <div className="flex flex-col gap-5">
@@ -215,44 +220,31 @@ export function TimerSection() {
         onCheckedChange={setShowPbDelta}
       />
 
-      <SettingToggle
-        title={t('timer.showBottomLayout')}
-        description={t('timer.showBottomLayoutHint')}
-        checked={showBottomLayout}
-        onCheckedChange={setShowBottomLayout}
+      {/* Bottom layout lives in Theme Studio (live preview). This row is
+          only a deep link — toggles moved to the studio Layout tab. */}
+      <SettingRow
+        title={
+          <>
+            <LayoutTemplate className="size-3.5 text-ink-2" />
+            {t('timer.bottomLayoutTemplate')}
+          </>
+        }
+        description={`${t('timer.bottomLayoutTemplateHint')} — ${currentName}`}
+        control={
+          <Button
+            variant="outline"
+            className="w-44 gap-1.5 max-lg:w-full"
+            onClick={() => setLayoutStudioOpen(true)}
+          >
+            <span>{tTimer('slotCustomize', { defaultValue: 'Personalizar' })}</span>
+            <ArrowUpRight className="size-3.5" />
+          </Button>
+        }
       />
-
-      {showBottomLayout && (
-        <SettingRow
-          title={
-            <>
-              <LayoutTemplate className="size-3.5 text-ink-2" />
-              {t('timer.bottomLayoutTemplate')}
-            </>
-          }
-          description={t('timer.bottomLayoutTemplateHint')}
-          control={
-            <Select value={bottomLayoutTemplate} onValueChange={setBottomLayoutTemplate}>
-              <SelectTrigger className="w-44 max-lg:w-full">
-                <SelectValue placeholder={t('timer.selectBottomLayoutTemplate')} />
-              </SelectTrigger>
-              <SelectContent>
-                {BOTTOM_LAYOUT_TEMPLATES.map((tpl) => (
-                  <SelectItem key={tpl.id} value={tpl.id}>
-                    {t(tpl.nameKey as never)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          }
-        />
-      )}
-
-      <SettingToggle
-        title={t('timer.bpaWpa')}
-        description={t('timer.bpaWpaHint')}
-        checked={showBpaWpa}
-        onCheckedChange={setShowBpaWpa}
+      <ThemeStudioModal
+        open={layoutStudioOpen}
+        onOpenChange={setLayoutStudioOpen}
+        initialTab="layout"
       />
 
       <SettingToggle

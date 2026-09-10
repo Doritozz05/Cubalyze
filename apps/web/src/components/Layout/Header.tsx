@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION } from "./sidebar.constants";
 import { WidgetDock } from "@/widgets/dock";
+import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { useIsDockEditing } from "@/widgets/dock/dockEditStore";
 import { dockBarState, useDockRevealRequested } from "@/widgets/dock/dockZoneState";
 import {
@@ -40,6 +41,54 @@ const DOCK_SLIDE_MOTION = { duration: 0.6, ease: [0.22, 1, 0.36, 1] } as const;
 
 /** How long the dock stays visible after the pointer leaves, before it retracts. */
 const DOCK_RETRACT_DELAY_MS = 6000;
+
+/**
+ * Calculates the dynamic dock horizontal shift so it centers over the scramble/timer column,
+ * but clamps so it never collides with the left sidebar (respecting minLeftMargin).
+ */
+function useDynamicDockShift(
+  active: boolean,
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  dockRef: React.RefObject<HTMLDivElement | null>,
+) {
+  const [shift, setShift] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setShift(0);
+      return;
+    }
+
+    const compute = () => {
+      const container = containerRef.current;
+      const dock = dockRef.current;
+      if (!container || !dock) return;
+
+      const containerWidth = container.offsetWidth;
+      const dockWidth = dock.offsetWidth;
+      if (containerWidth <= 0 || dockWidth <= 0) return;
+
+      const unshiftedLeftMargin = (containerWidth - dockWidth) / 2;
+      const minLeftMargin = 16;
+      const maxAllowedShift = Math.max(0, unshiftedLeftMargin - minLeftMargin);
+      const targetShift = 140;
+      setShift(Math.min(targetShift, maxAllowedShift));
+    };
+
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (containerRef.current) ro.observe(containerRef.current);
+    if (dockRef.current) ro.observe(dockRef.current);
+
+    window.addEventListener("resize", compute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", compute);
+    };
+  }, [active, containerRef, dockRef]);
+
+  return active ? shift : 0;
+}
 
 // ── Glass-dock sub-components (desktop) ───────────────────────────────────
 
@@ -119,6 +168,18 @@ export function Header({
   // reveal and a tap anywhere outside the header retracts it. Editing the
   // dock keeps it pinned in both cases.
   const headerMode = useStore(preferencesStore, (s) => s.headerMode);
+  const bottomLayoutTemplate = useStore(preferencesStore, (s) => s.bottomLayoutTemplate);
+  const showBottomLayout = useStore(preferencesStore, (s) => s.showBottomLayout);
+  const dynamicDock = useStore(preferencesStore, (s) => s.dynamicDock ?? false);
+  const isRail = showBottomLayout && getSlotTemplate(bottomLayoutTemplate)?.placement === "right";
+  const isDynamicDockActive = dynamicDock && isRail;
+
+  const bandRef = useRef<HTMLDivElement>(null);
+  const dockWrapRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  const dynamicShift = useDynamicDockShift(isDynamicDockActive, bandRef, dockWrapRef);
+
   const dockAutoHide = headerMode === "autohide" && !isTouch;
   const [dockRevealed, setDockRevealed] = useState(false);
   const retractTimerRef = useRef<number | null>(null);
@@ -223,9 +284,6 @@ export function Header({
   // attach native pointerenter/pointerleave to the reveal band and the dock
   // wrapper instead — identical behavior for real pointers). Coarse pointers
   // (iPad) have no hover: skip these and rely on the tap listener below.
-  const bandRef = useRef<HTMLDivElement>(null);
-  const dockWrapRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!dockAutoHide || isCoarsePointer) return;
     const band = bandRef.current;
@@ -434,13 +492,14 @@ export function Header({
             animate={{
               y: dockVisible ? 0 : -48,
               opacity: dockVisible ? 1 : 0,
+              x: isDynamicDockActive ? -dynamicShift : 0,
             }}
             // While a widget drag is revealing the dock, snap it into place
             // instantly (no 0.6s slide): the drag-to-dock zone rect is
             // measured from the bar's live position, so a slide would leave
             // the zone stale mid-animation and the widget wouldn't engage.
             transition={
-              dockAutoHide && !dragRevealRequested ? DOCK_SLIDE_MOTION : { duration: 0 }
+              dockAutoHide && !dragRevealRequested ? DOCK_SLIDE_MOTION : { duration: 0.3 }
             }
             style={dockVisible ? undefined : { pointerEvents: "none" }}
             className="min-w-0"
@@ -455,7 +514,10 @@ export function Header({
           <motion.div
             aria-hidden
             initial={false}
-            animate={{ opacity: dockVisible ? 0 : 0.6 }}
+            animate={{
+              opacity: dockVisible ? 0 : 0.6,
+              x: isDynamicDockActive ? -dynamicShift : 0,
+            }}
             transition={DOCK_SLIDE_MOTION}
             className="pointer-events-none absolute left-1/2 top-1.5 z-10 -translate-x-1/2"
           >

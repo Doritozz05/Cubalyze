@@ -110,7 +110,7 @@ verificables:
    `MobileTabBar.tsx`, `AppShell.tsx` (aria-labels, tooltips, títulos).
 3. **Settings** — las secciones de `components/Settings/sections/*` (muchos
    labels + descripciones).
-4. **Timer** — `TimerStage.tsx`, `TimerDisplay.tsx`, `SessionStats.tsx` y
+4. **Timer** — `TimerStage.tsx`, `TimerDisplay.tsx`, `SlotLayout.tsx` y
    toasts del flujo de solves.
 5. **Vistas grandes** — Insights/Análisis, Training, Skill Tree, Profile,
    Reconstrucciones, Onboarding (la mayoría de los strings viven aquí).

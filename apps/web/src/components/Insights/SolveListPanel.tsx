@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 
 import { useTranslation } from "react-i18next";
@@ -102,6 +102,7 @@ export interface SolveListPanelProps {
   /** Ids currently ticked in selection mode. */
   selection: ReadonlySet<string>;
   onToggleSelect: (id: string) => void;
+  onSetSelected?: (id: string, selected: boolean) => void;
   onSelectAll: () => void;
   onExitSelection: () => void;
   /** Long-press on a row (touch) — enters selection mode with that solve. */
@@ -138,6 +139,7 @@ export const SolveListPanel = memo(function SolveListPanel({
   selectionMode,
   selection,
   onToggleSelect,
+  onSetSelected,
   onSelectAll,
   onExitSelection,
   onLongPress,
@@ -200,7 +202,7 @@ export const SolveListPanel = memo(function SolveListPanel({
   const showNoSolvesState = totalCount === 0;
   const showNoMatchesState = totalCount > 0 && solves.length === 0;
 
-  // ── Touch long-press (selection mode) ─────────────────────────────────
+  // ── Touch long-press & Drag-to-Select (selection mode) ───────────────
   // Shared across virtualized rows: only one press can be in flight, and a
   // single ref also lets us swallow the click that follows the long-press
   // (otherwise the tap-up would immediately untick the solve).
@@ -213,10 +215,35 @@ export const SolveListPanel = memo(function SolveListPanel({
     }
   };
 
+  // Drag-to-select: when in selectionMode, holding left-mouse and dragging
+  // across solve rows selects/unselects items without native text selection.
+  const isDraggingRef = useRef(false);
+  const dragTargetCheckedRef = useRef<boolean>(true);
+  const onSetSelectedRef = useRef(onSetSelected);
+  onSetSelectedRef.current = onSetSelected;
+  const onToggleSelectRef = useRef(onToggleSelect);
+  onToggleSelectRef.current = onToggleSelect;
+
+  // Window pointerup listener to end drag-select anywhere in the window
+  useEffect(() => {
+    const handleGlobalPointerUp = (e: PointerEvent) => {
+      if (e.button === 0 && isDraggingRef.current) {
+        isDraggingRef.current = false;
+      }
+    };
+    window.addEventListener("pointerup", handleGlobalPointerUp);
+    window.addEventListener("pointercancel", handleGlobalPointerUp);
+    return () => {
+      window.removeEventListener("pointerup", handleGlobalPointerUp);
+      window.removeEventListener("pointercancel", handleGlobalPointerUp);
+    };
+  }, []);
+
   return (
     <div
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-line bg-surface",
+        selectionMode && "select-none",
         className,
       )}
     >
@@ -437,10 +464,26 @@ export const SolveListPanel = memo(function SolveListPanel({
                       suppressClickRef.current = false;
                       return;
                     }
-                    if (selectionMode) onToggleSelect(s.id);
-                    else onSelect(isSelected ? null : s.id);
+                    if (selectionMode) {
+                      // Handled by onPointerDown / drag-to-select for mouse
+                      return;
+                    }
+                    onSelect(isSelected ? null : s.id);
                   }}
                   onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    if (selectionMode && e.pointerType === "mouse") {
+                      e.preventDefault();
+                      isDraggingRef.current = true;
+                      const nextChecked = !isChecked;
+                      dragTargetCheckedRef.current = nextChecked;
+                      if (onSetSelectedRef.current) {
+                        onSetSelectedRef.current(s.id, nextChecked);
+                      } else {
+                        onToggleSelectRef.current(s.id);
+                      }
+                      return;
+                    }
                     // Long-press (touch only) enters selection mode. Mouse
                     // users keep click-to-open; fine pointers never arm.
                     if (e.pointerType !== "touch") return;
@@ -451,9 +494,26 @@ export const SolveListPanel = memo(function SolveListPanel({
                       onLongPress(s.id);
                     }, 450);
                   }}
-                  onPointerUp={clearPress}
+                  onPointerEnter={(e) => {
+                    if (selectionMode && isDraggingRef.current && (e.buttons === 1 || e.pointerType === "mouse")) {
+                      if (onSetSelectedRef.current) {
+                        onSetSelectedRef.current(s.id, dragTargetCheckedRef.current);
+                      } else if (isChecked !== dragTargetCheckedRef.current) {
+                        onToggleSelectRef.current(s.id);
+                      }
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    if (e.button === 0 && isDraggingRef.current) {
+                      isDraggingRef.current = false;
+                    }
+                    clearPress();
+                  }}
                   onPointerLeave={clearPress}
-                  onPointerCancel={clearPress}
+                  onPointerCancel={() => {
+                    isDraggingRef.current = false;
+                    clearPress();
+                  }}
                   onFocus={() => virtualizer.scrollToIndex(vi.index)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {

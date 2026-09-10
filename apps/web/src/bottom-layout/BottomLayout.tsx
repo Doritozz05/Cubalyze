@@ -1,74 +1,73 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { SessionStats } from "@/components/Stats/SessionStats";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import type { Solve } from "@/types";
-import { GenericBottomLayout } from "./GenericBottomLayout";
+import { SlotLayout } from "./SlotLayout";
 import {
-  DEFAULT_BOTTOM_LAYOUT_TEMPLATE,
-  getBottomLayoutTemplate,
-} from "./registry";
+  DEFAULT_SLOT_TEMPLATE,
+  getSlotTemplate,
+  resolveSlotContent,
+} from "./slot-templates";
+import type { SlotContentConfig } from "./types";
 
 export interface BottomLayoutProps {
   /** Selected template id (preference `bottomLayoutTemplate`). */
   templateId: string;
   solves: Solve[];
   className?: string;
-  /** When provided, the layout becomes a shortcut to the full Stats view. */
-  onExpand?: () => void;
   /** Filter solves to a specific puzzle type (e.g. '333', '222'). */
   puzzleFilter?: string;
-  /** Injected scramble element rendered by templates with a `scramble` cell. */
-  scramble?: ReactNode;
-  /** Injected 2D scramble net rendered by templates with a `scramble-2d` cell. */
+  /** Injected 2D scramble net rendered by slots with a `scramble-2d` display. */
   scramble2d?: ReactNode;
-  /**
-   * Force phone density in `SessionStats` regardless of the real viewport.
-   * Used by the theme-studio preview's mobile frame.
-   */
+  /** Raw scramble string used by solvers (e.g. cross solver). */
+  currentScramble?: string;
+  /** Force phone density regardless of the real viewport (theme-studio mobile frame). */
   compact?: boolean;
+  /** Force vertical (right rail) rendering. */
+  vertical?: boolean;
 }
 
 /**
- * Renders the selected bottom layout template underneath the timer.
- *
- * `session-stats` keeps its bespoke renderer (minimize, BPA/WPA pill, expand
- * shortcut). Every other template is rendered data-driven by
- * `GenericBottomLayout` from its column/cell descriptor.
+ * Renders the selected slot layout underneath (or beside) the timer.
+ * Unknown ids fall back to the default template; persisted slot configs
+ * are migrated on read, so old preferences never crash the render.
  */
 export function BottomLayout({
   templateId,
   solves,
   className,
-  onExpand,
   puzzleFilter,
-  scramble,
   scramble2d,
+  currentScramble,
   compact = false,
+  vertical = false,
 }: BottomLayoutProps) {
-  const template =
-    getBottomLayoutTemplate(templateId) ?? DEFAULT_BOTTOM_LAYOUT_TEMPLATE;
+  const configuredSlots = useStore(preferencesStore, (s) => s.bottomLayoutSlots);
+  const template = getSlotTemplate(templateId) ?? DEFAULT_SLOT_TEMPLATE;
 
-  if (template.id === "session-stats") {
-    return (
-      <SessionStats
-        solves={solves}
-        className={className}
-        onExpand={onExpand}
-        puzzleFilter={puzzleFilter}
-        compact={compact}
-      />
+  const slotContent: Record<string, SlotContentConfig> = {};
+  for (const slot of template.slots) {
+    slotContent[slot.id] = resolveSlotContent(
+      configuredSlots as Record<string, unknown>,
+      template.id,
+      slot.id,
+      slot.defaultContent,
     );
   }
 
   return (
-    <GenericBottomLayout
+    <SlotLayout
       template={template}
       solves={solves}
       puzzleFilter={puzzleFilter}
-      scramble={scramble}
-      scramble2d={scramble2d}
       className={className}
+      slotContent={slotContent}
+      scramble2d={scramble2d}
+      currentScramble={currentScramble}
+      compact={compact}
+      vertical={vertical}
     />
   );
 }
