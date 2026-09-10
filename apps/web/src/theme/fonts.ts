@@ -88,14 +88,14 @@ export function slashedZeroFeature(id: string | undefined): string {
 
 /**
  * Whether the given digit-font id is known to ship a slashed-zero glyph.
- * Cascadia, JetBrains Mono (`zero`), IBM Plex Mono (`ss03`), Inter and
- * Space Grotesk (`zero`) all do. Open Sans has no slashed-zero feature, so
- * the toggle would be a no-op for it. Unknown ids (system stack, user
- * uploads) default to true — the feature is safely ignored when absent,
- * and hiding the control could remove a working option.
+ * Cascadia, JetBrains Mono (`zero`), IBM Plex Mono (`ss03`) and
+ * Space Grotesk (`zero`) all do. Open Sans and Inter have no slashed-zero
+ * feature, so the toggle would be a no-op for them. Unknown ids (system
+ * stack, user uploads) default to true — the feature is safely ignored
+ * when absent, and hiding the control could remove a working option.
  */
 export function supportsSlashedZero(id: string | undefined): boolean {
-  return id !== 'open-sans';
+  return id !== 'open-sans' && id !== 'inter';
 }
 
 /**
