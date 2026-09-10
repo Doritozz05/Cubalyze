@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Mesh } from 'three';
+import { DoubleSide, Mesh, MeshBasicMaterial } from 'three';
 import {
   DEFAULT_PYRAMINX_STYLE,
   PyraminxMeshFactory,
@@ -108,5 +108,112 @@ describe('PyraminxMeshFactory', () => {
       }
     }
     expect(totalStickers).toBe(36); // 12 tip + 12 corner + 12 edge = 36
+  });
+
+  /**
+   * Live skin re-sync: pieces are built ONCE, so updateStyle({ skinType })
+   * must swap the already-built core materials (stickered dark plastic ↔
+   * stickerless colored faces) — not just toggle sticker visibility.
+   * Without this, switching skins live leaves a black pyramid.
+   */
+  it('updateStyle({ skinType }) re-syncs built pieces: stickerless colors the cores live', () => {
+    const factory = new PyraminxMeshFactory(); // starts stickered
+    const groups = [...PYRAMINX_VERTICES_ORDER.map((v) => factory.createTipPiece(v))];
+    const coreOf = (g: { children: readonly { userData?: Record<string, unknown> }[] }) =>
+      g.children.find((c) => c.userData?.pyraminxCore === true) as Mesh;
+
+    // Stickered at build time: every material slot is the dark core.
+    const dark = (coreOf(groups[0]).material as unknown[])[0];
+    expect(dark).toBeInstanceOf(Object);
+
+    factory.updateStyle({ skinType: 'stickerless' });
+    for (const g of groups) {
+      const materials = coreOf(g).material as unknown[];
+      for (let i = 0; i < 4; i++) expect(materials[i]).not.toBe(dark);
+    }
+
+    factory.updateStyle({ skinType: 'stickered' });
+    for (const g of groups) {
+      const materials = coreOf(g).material as unknown[];
+      for (let i = 0; i < 5; i++) expect(materials[i]).toBe(dark);
+    }
+  });
+
+  it('coreOpacity < 1 makes the body material transparent (translucent family)', () => {
+    const factory = new PyraminxMeshFactory({ coreOpacity: 0.3 });
+    const group = factory.createEdgePiece(0);
+    const core = group.children.find((c) => (c as Mesh).userData?.pyraminxCore === true) as Mesh;
+    const materials = core.material as unknown as { transparent: boolean; opacity: number }[];
+    for (const mat of materials) {
+      expect(mat.transparent).toBe(true);
+      expect(mat.opacity).toBeCloseTo(0.3);
+    }
+
+    // Live update flips transparency back off at full opacity.
+    factory.updateStyle({ coreOpacity: 1 });
+    const materialsAfter = core.material as unknown as { transparent: boolean; opacity: number }[];
+    for (const mat of materialsAfter) {
+      expect(mat.transparent).toBe(false);
+      expect(mat.opacity).toBe(1);
+    }
+  });
+
+  /** The cube's coreless mechanism: body hidden, only colored panels remain. */
+  it('coreless: core meshes hidden, sticker panels stay visible (cube parity)', () => {
+    const factory = new PyraminxMeshFactory();
+    const group = factory.createEdgePiece(0);
+    factory.updateStyle({ skinType: 'coreless' });
+    const core = group.children.find((c) => (c as Mesh).userData?.pyraminxCore === true) as Mesh;
+    expect(core.visible).toBe(false);
+    const stickers = group.children.filter(
+      (c) => (c as Mesh).userData?.pyraminxSticker === true,
+    ) as Mesh[];
+    expect(stickers.length).toBeGreaterThan(0);
+    for (const s of stickers) expect(s.visible).toBe(true);
+  });
+
+  /** The cube's translucent mechanism: DoubleSide depthWrite:false panels. */
+  it('translucent: stickers swap to the depthWrite-false pool (cube parity)', () => {
+    const factory = new PyraminxMeshFactory();
+    const group = factory.createEdgePiece(0);
+    factory.updateStyle({ skinType: 'translucent' });
+    const stickers = group.children.filter(
+      (c) => (c as Mesh).userData?.pyraminxSticker === true,
+    ) as Mesh[];
+    expect(stickers.length).toBeGreaterThan(0);
+    for (const s of stickers) {
+      const mat = s.material as MeshBasicMaterial;
+      expect(mat.side).toBe(DoubleSide);
+      expect(mat.depthWrite).toBe(false);
+      expect(mat.transparent).toBe(true);
+    }
+  });
+
+  /** The cube's floating-projection mechanism, adapted to triangular faces. */
+  it('floatingStickers: projection twins beyond the face, hidden by default', () => {
+    const factory = new PyraminxMeshFactory({ floatingStickers: true });
+    const group = factory.createEdgePiece(0);
+    const floating = group.children.filter(
+      (c) => (c as Mesh).userData?.isFloatingSticker === true,
+    ) as Mesh[];
+    const surface = group.children.filter(
+      (c) => (c as Mesh).userData?.pyraminxSticker === true,
+    ) as Mesh[];
+    expect(floating.length).toBe(surface.length);
+    for (const f of floating) expect(f.visible).toBe(true);
+  });
+
+  /** The cube's stickerless mechanism: piece shrink opens the seams. */
+  it('pieceSize: stickerless shrinks the core mesh; other skins stay at 1', () => {
+    const factory = new PyraminxMeshFactory({ skinType: 'stickerless', pieceSize: 0.9 });
+    const group = factory.createEdgePiece(0);
+    const core = group.children.find((c) => (c as Mesh).userData?.pyraminxCore === true) as Mesh;
+    expect(core.scale.x).toBeCloseTo(0.9); // built in stickerless
+
+    factory.updateStyle({ skinType: 'stickered' });
+    expect(core.scale.x).toBe(1);
+
+    factory.updateStyle({ skinType: 'stickerless' });
+    expect(core.scale.x).toBeCloseTo(0.9);
   });
 });

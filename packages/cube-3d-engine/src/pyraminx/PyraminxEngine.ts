@@ -336,8 +336,19 @@ export class PyraminxEngine {
     return this.model?.getState() ?? { edgePerm: 0, edgeOrient: 0, cornerOrient: 0, tips: 0 };
   }
 
-  // ── Skin / style ────────────────────────────────────────────────────────
+  // ── Skin / style ────────────────────────────────────────────────────
 
+  /**
+   * Apply a CUBE skin (the shared `getSkinStyle` output) to the Pyraminx.
+   *
+   * The pyraminx factory speaks the EXACT same skin vocabulary as the cube's
+   * CubeMeshFactory (stickered / stickerless / coreless / translucent, plus
+   * coreColor, coreOpacity, seamColor, pieceSize and floatingStickers), so
+   * every field passes through 1:1 — only the sticker COLORS are remapped
+   * face-by-face through {@link CUBE_FACE_TO_PYRAMINX} to preserve the WCA
+   * pyraminx scheme (U=yellow, L=green, R=blue, B=red). Same skins, same
+   * mechanisms, same look — adapted to the tetrahedral geometry.
+   */
   public updateStyle(style: Partial<CubeStyleOptions>): void {
     if (!this.factory || !this.model) return;
     if (style.stickerColors) {
@@ -350,18 +361,14 @@ export class PyraminxEngine {
         this.factory.updateStyle({ stickerColors: mapped as Record<PyraminxVertex, string> });
       }
     }
-    if (style.coreColor) this.factory.updateStyle({ coreColor: style.coreColor });
-    if (style.skinType) {
-      const stickered = style.skinType === 'stickered';
-      this.factory.updateStyle({ skinType: stickered ? 'stickered' : 'stickerless' });
-      for (const piece of this.model.pieces) {
-        for (const child of piece.mesh.children) {
-          if ((child as { userData?: { pyraminxSticker?: boolean } }).userData?.pyraminxSticker === true) {
-            child.visible = stickered;
-          }
-        }
-      }
-    }
+    const passthrough: Partial<PyraminxStyleOptions> = {};
+    if (style.skinType !== undefined) passthrough.skinType = style.skinType;
+    if (style.coreColor !== undefined) passthrough.coreColor = style.coreColor;
+    if (style.coreOpacity !== undefined) passthrough.coreOpacity = style.coreOpacity;
+    if (style.seamColor !== undefined) passthrough.seamColor = style.seamColor;
+    if (style.cubieSize !== undefined) passthrough.pieceSize = style.cubieSize;
+    if (style.floatingStickers !== undefined) passthrough.floatingStickers = style.floatingStickers;
+    this.factory.updateStyle(passthrough);
     this.requestRender();
   }
 
@@ -405,6 +412,10 @@ export class PyraminxEngine {
       worldNormal.transformDirection(h.object.matrixWorld);
       // Front-facing: normal points toward the camera (against the ray direction)
       if (worldNormal.dot(rayDir) >= -0.01) continue;
+
+      // Floating projection twins face INWARD and float above the surface —
+      // never a valid drag target (same rule as Cube3DEngine picking).
+      if (h.object.userData?.isFloatingSticker === true) continue;
 
       const isSticker = Boolean(h.object.userData?.pyraminxSticker);
       if (isSticker) {

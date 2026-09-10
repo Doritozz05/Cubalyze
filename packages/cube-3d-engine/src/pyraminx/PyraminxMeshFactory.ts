@@ -24,10 +24,39 @@ import {
 } from './PyraminxGeometry';
 
 export interface PyraminxStyleOptions {
-  /** stickered = dark plastic core + colored sticker panels; stickerless = colored plastic. */
-  skinType?: 'stickered' | 'stickerless';
-  /** Dark plastic color (stickered core + stickerless seams). */
+  /**
+   * Visual strategy — the SAME four skins as CubeMeshFactory:
+   *  - `stickered`:   dark plastic body + colored sticker panels.
+   *  - `stickerless`: colored plastic IS the surface — exposed piece faces get
+   *                   the face color, internal faces the seam color, and pieces
+   *                   shrink slightly so gaps show between them. No stickers.
+   *  - `coreless`:    body hidden; only the colored sticker panels remain.
+   *  - `translucent`: transparent body (coreOpacity) + DoubleSide stickers
+   *                   without depth-write so back stickers show through.
+   */
+  skinType?: 'stickered' | 'stickerless' | 'coreless' | 'translucent';
+  /** Core body color (stickered body; irrelevant when hidden). */
   coreColor: string;
+  /** Core opacity — < 1 enables transparency (translucent skin). Default 1. */
+  coreOpacity?: number;
+  /**
+   * Color of internal / non-exposed faces in stickerless mode — the dark ABS
+   * seam between colored pieces (same concept as the cube). Default #2a2a2a.
+   */
+  seamColor?: string;
+  /**
+   * Scale factor for pieces in stickerless mode (default 0.965). A value < 1
+   * opens subtle physical gaps between the tetrahedral pieces — the pyraminx
+   * adaptation of the cube's `cubieSize` (piece size differs, so the fraction
+   * is tuned for tetrahedral pieces, not copied verbatim).
+   */
+  pieceSize?: number;
+  /**
+   * Floating projection stickers: renders offset panels beyond each face
+   * facing INWARD so backface culling makes them visible only from the
+   * opposite side of the puzzle (same technique as the cube).
+   */
+  floatingStickers?: boolean;
   /** Sticker/plastic color per face (WCA scheme by default). */
   stickerColors: Record<PyraminxVertex, string>;
   /** How much each sticker triangle is inset from its piece face (0..1). */
@@ -39,6 +68,9 @@ export interface PyraminxStyleOptions {
 export const DEFAULT_PYRAMINX_STYLE: PyraminxStyleOptions = {
   skinType: 'stickered',
   coreColor: '#1a1a1a',
+  coreOpacity: 1.0,
+  seamColor: '#2a2a2a',
+  pieceSize: 0.965,
   stickerColors: { ...DEFAULT_PYRAMINX_STICKER_COLORS },
   stickerInset: 0.1,
   stickerRadius: 0.14,
@@ -68,11 +100,18 @@ interface PieceFace {
  *
  *   Group (position = slot centroid)
  *   ├── core mesh   — the piece's polyhedron (tetrahedron / octahedron) with
- *   │                 per-triangle material groups: exposed faces get the
- *   │                 face color (stickerless) or the dark core (stickered),
- *   │                 internal faces get the seam / core color
+ *   │                 per-triangle material groups. The material strategy
+ *   │                 depends on `skinType` EXACTLY like CubeMeshFactory:
+ *   │                 stickered/translucent/coreless → single core material
+ *   │                 stickerless → [U, L, R, B colored, seam] array
  *   └── stickers    — inset triangle panels on the exposed faces
- *                     (stickered skin only; hidden in stickerless)
+ *                     (stickered/coreless/translucent; hidden in stickerless)
+ *
+ * Skin material pools mirror the cube's:
+ *   • stickerMaterials           — normal panels (stickered + coreless)
+ *   • stickerlessFaceMaterials   — colored plastic for stickerless bodies
+ *   • translucentStickerMaterials— DoubleSide + depthWrite:false panels
+ *   • floatingStickerMaterials   — projection panels beyond each face
  *
  * The piece geometry is built in LOCAL coordinates centered on the slot
  * centroid, so rotating the Group around the puzzle origin (the driver's
@@ -81,51 +120,94 @@ interface PieceFace {
 export class PyraminxMeshFactory {
   private style: PyraminxStyleOptions;
 
+  // ── Shared material pools (same architecture as CubeMeshFactory) ──────
+  /** Stickered/translucent/coreless body — visible or hidden, maybe transparent. */
   private coreMaterial: MeshStandardMaterial;
+  /** Stickerless internal faces — the dark ABS seam. */
   private seamMaterial: MeshStandardMaterial;
-  /** Stickered sticker panels (flat, unlit, polygonOffset against z-fighting). */
+  /** Normal sticker panels — stickered + coreless. */
   private stickerMaterials: Record<PyraminxVertex, MeshBasicMaterial>;
-  /** Stickerless exposed faces (flat colored plastic). */
+  /** Stickerless exposed faces — flat colored plastic. */
   private stickerlessFaceMaterials: Record<PyraminxVertex, MeshBasicMaterial>;
+  /** Translucent sticker panels — DoubleSide + depthWrite:false (see-through). */
+  private translucentStickerMaterials: Record<PyraminxVertex, MeshBasicMaterial>;
+  /** Floating projection stickers — FrontSide + opacity (facing inward). */
+  private floatingStickerMaterials: Record<PyraminxVertex, MeshBasicMaterial>;
+
+  // ── Tracked meshes for live skin re-sync (same as the cube factory) ───
+  private coreMeshes: Mesh[] = [];
+  private stickerMeshes: { mesh: Mesh; face: PyraminxVertex }[] = [];
+  private floatingStickerMeshes: { mesh: Mesh; face: PyraminxVertex }[] = [];
 
   constructor(style: Partial<PyraminxStyleOptions> = {}) {
     this.style = { ...DEFAULT_PYRAMINX_STYLE, ...style };
 
+    const coreOpacity = this.style.coreOpacity ?? 1;
+    const coreTransparent = coreOpacity < 1;
     this.coreMaterial = new MeshStandardMaterial({
       color: new Color(this.style.coreColor),
       roughness: 1.0,
       metalness: 0.0,
+      transparent: coreTransparent,
+      opacity: coreOpacity,
+      depthWrite: !coreTransparent,
     });
+
     this.seamMaterial = new MeshStandardMaterial({
-      color: new Color(this.style.coreColor),
+      color: new Color(this.style.seamColor ?? '#2a2a2a'),
       roughness: 1.0,
       metalness: 0.0,
     });
 
     this.stickerMaterials = {} as Record<PyraminxVertex, MeshBasicMaterial>;
     this.stickerlessFaceMaterials = {} as Record<PyraminxVertex, MeshBasicMaterial>;
+    this.translucentStickerMaterials = {} as Record<PyraminxVertex, MeshBasicMaterial>;
+    this.floatingStickerMaterials = {} as Record<PyraminxVertex, MeshBasicMaterial>;
     for (const face of PYRAMINX_VERTICES_ORDER) {
+      const color = new Color(this.style.stickerColors[face]);
+      // Normal sticker panels (stickered + coreless) — NEGATIVE polygonOffset
+      // resolves z-fighting with the core: stickers sit a hair above the core
+      // face and must always win the depth test (same as CubeMeshFactory).
       this.stickerMaterials[face] = new MeshBasicMaterial({
-        color: new Color(this.style.stickerColors[face]),
+        color: color.clone(),
         side: DoubleSide,
-        // NEGATIVE polygonOffset resolves z-fighting with the core: the
-        // stickers sit a hair above the core face and must always win the
-        // depth test (same technique as CubeMeshFactory).
         polygonOffset: true,
         polygonOffsetFactor: -1,
         polygonOffsetUnits: -1,
       });
+      // Stickerless exposed faces — unlit flat colored plastic.
       this.stickerlessFaceMaterials[face] = new MeshBasicMaterial({
-        color: new Color(this.style.stickerColors[face]),
+        color: color.clone(),
         side: DoubleSide,
+      });
+      // Translucent sticker panels — DoubleSide + no depth write so
+      // back-face stickers are visible through the transparent body.
+      this.translucentStickerMaterials[face] = new MeshBasicMaterial({
+        color: color.clone(),
+        side: DoubleSide,
+        depthWrite: false,
+        transparent: true,
+      });
+      // Floating projection stickers — FrontSide + opacity (facing inward
+      // to project hidden faces, exactly like the cube).
+      this.floatingStickerMaterials[face] = new MeshBasicMaterial({
+        color: color.clone(),
+        transparent: true,
+        opacity: 0.92,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
       });
     }
   }
 
-  /** Material array for a piece core: [U, L, R, B, seam]. */
+  /** The piece material array for the CURRENT skin: [U, L, R, B, seam]. */
   private coreMaterials(): Material[] {
-    const isStickerless = this.style.skinType === 'stickerless';
-    if (isStickerless) {
+    const skinType = this.style.skinType ?? 'stickered';
+
+    // stickerless: per-face colored plastic (exposed faces get the face
+    // color, internal faces the seam). Groups map 1:1 onto these slots.
+    if (skinType === 'stickerless') {
       return [
         this.stickerlessFaceMaterials.U,
         this.stickerlessFaceMaterials.L,
@@ -134,6 +216,9 @@ export class PyraminxMeshFactory {
         this.seamMaterial,
       ];
     }
+
+    // stickered / coreless / translucent all use the single core material
+    // (coreless hides the mesh; translucent makes it transparent).
     return [
       this.coreMaterial,
       this.coreMaterial,
@@ -141,6 +226,30 @@ export class PyraminxMeshFactory {
       this.coreMaterial,
       this.coreMaterial,
     ];
+  }
+
+  /**
+   * Returns the sticker material pool for the current skin type:
+   * `translucent` → DoubleSide + depthWrite:false panels; everything else →
+   * the normal opaque pool (identical to CubeMeshFactory).
+   */
+  private getActiveStickerMaterials(): Record<PyraminxVertex, MeshBasicMaterial> {
+    return (this.style.skinType ?? 'stickered') === 'translucent'
+      ? this.translucentStickerMaterials
+      : this.stickerMaterials;
+  }
+
+  /** Current-stickness helpers (mirror the cube's visibility rules). */
+  private stickersVisible(): boolean {
+    return (this.style.skinType ?? 'stickered') !== 'stickerless';
+  }
+  private coreVisible(): boolean {
+    return (this.style.skinType ?? 'stickered') !== 'coreless';
+  }
+  private pieceScale(): number {
+    return (this.style.skinType ?? 'stickered') === 'stickerless'
+      ? (this.style.pieceSize ?? 0.965)
+      : 1.0;
   }
 
   // ── Geometry construction ───────────────────────────────────────────────
@@ -195,6 +304,7 @@ export class PyraminxMeshFactory {
 
     const mesh = new Mesh(geometry, this.coreMaterials());
     mesh.userData = { pyraminxCore: true };
+    this.coreMeshes.push(mesh);
     return { mesh, localVertices: local, exposed };
   }
 
@@ -211,10 +321,18 @@ export class PyraminxMeshFactory {
     return [a, b, c];
   }
 
-  /** Create a sticker mesh with rounded corners for one exposed triangle (stickered skin). */
+  /**
+   * Create a sticker mesh with rounded corners for one exposed triangle.
+   * `floating: true` builds the projection variant: the panel is offset
+   * BEYOND the face along its outward normal and faces INWARD (winding and
+   * normals flipped), so backface culling shows it only from the opposite
+   * side of the puzzle — the cube's floating-sticker technique adapted to
+   * the pyraminx's triangular faces.
+   */
   private createSticker(
     tri: { a: Vector3; b: Vector3; c: Vector3; face: PyraminxVertex },
     material: MeshBasicMaterial,
+    floating = false,
   ): Mesh {
     const [rawA, rawB, rawC] = this.windOutward([tri.a, tri.b, tri.c]);
     const g = rawA.clone().add(rawB).add(rawC).multiplyScalar(1 / 3);
@@ -224,12 +342,13 @@ export class PyraminxMeshFactory {
     }
     const inset = this.style.stickerInset;
     const insetPt = (p: Vector3) => g.clone().add(p.clone().sub(g).multiplyScalar(1 - inset));
-    const a = insetPt(rawA).add(n.clone().multiplyScalar(0.003));
-    const b = insetPt(rawB).add(n.clone().multiplyScalar(0.003));
-    const c = insetPt(rawC).add(n.clone().multiplyScalar(0.003));
+    const surfaceLift = 0.003;
+    const a = insetPt(rawA).add(n.clone().multiplyScalar(surfaceLift));
+    const b = insetPt(rawB).add(n.clone().multiplyScalar(surfaceLift));
+    const c = insetPt(rawC).add(n.clone().multiplyScalar(surfaceLift));
 
     const radiusFraction = this.style.stickerRadius ?? 0.14;
-    const corners = [a.clone(), b.clone(), c.clone()];
+    let corners = [a.clone(), b.clone(), c.clone()];
 
     // Ensure corners wind CCW around normal n
     const edge1 = b.clone().sub(a);
@@ -273,7 +392,20 @@ export class PyraminxMeshFactory {
       }
     }
 
-    // Build triangle fan from centroid g to boundary points
+    // Floating projection: push the whole panel (center + boundary) beyond
+    // the face and flip it to face the puzzle (visible only from the
+    // opposite side — backface culling, same as the cube).
+    let fanNormal = n.clone();
+    let fanCenter = g;
+    if (floating) {
+      const dist = 1.15;
+      fanCenter = g.clone().add(n.clone().multiplyScalar(dist));
+      for (const p of boundaryPts) p.add(n.clone().multiplyScalar(dist));
+      fanNormal = n.clone().negate();
+    }
+
+    // Build triangle fan from centroid g to boundary points. The floating
+    // fan reverses the winding so its front faces -n (inward).
     const positions: number[] = [];
     const normals: number[] = [];
     const numPts = boundaryPts.length;
@@ -282,20 +414,33 @@ export class PyraminxMeshFactory {
       const pCurrent = boundaryPts[i];
       const pNext = boundaryPts[(i + 1) % numPts];
 
-      positions.push(g.x, g.y, g.z);
-      positions.push(pCurrent.x, pCurrent.y, pCurrent.z);
-      positions.push(pNext.x, pNext.y, pNext.z);
+      if (floating) {
+        positions.push(fanCenter.x, fanCenter.y, fanCenter.z);
+        positions.push(pNext.x, pNext.y, pNext.z);
+        positions.push(pCurrent.x, pCurrent.y, pCurrent.z);
+      } else {
+        positions.push(fanCenter.x, fanCenter.y, fanCenter.z);
+        positions.push(pCurrent.x, pCurrent.y, pCurrent.z);
+        positions.push(pNext.x, pNext.y, pNext.z);
+      }
 
-      normals.push(n.x, n.y, n.z);
-      normals.push(n.x, n.y, n.z);
-      normals.push(n.x, n.y, n.z);
+      normals.push(fanNormal.x, fanNormal.y, fanNormal.z);
+      normals.push(fanNormal.x, fanNormal.y, fanNormal.z);
+      normals.push(fanNormal.x, fanNormal.y, fanNormal.z);
     }
 
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
     const sticker = new Mesh(geometry, material);
-    sticker.userData = { pyraminxSticker: true, face: tri.face };
+    // userData keys mirror the cube: `isFloatingSticker` marks the projection
+    // twins (excluded from the normal-sticker re-sync AND from picking),
+    // `pyraminxSticker` marks real surface panels only.
+    sticker.userData = floating
+      ? { isFloatingSticker: true, face: tri.face }
+      : { pyraminxSticker: true, face: tri.face };
+    if (floating) this.floatingStickerMeshes.push({ mesh: sticker, face: tri.face });
+    else this.stickerMeshes.push({ mesh: sticker, face: tri.face });
     return sticker;
   }
 
@@ -417,42 +562,132 @@ export class PyraminxMeshFactory {
     group.position.copy(slotPosition);
     group.add(mesh);
 
-    // Sticker panels (stickered skin only; hidden in stickerless where the
-    // core faces are already colored).
-    const isStickerless = this.style.skinType === 'stickerless';
+    // ── Initial per-skin appearance (mirror CubeMeshFactory.createCubieGroup):
+    // stickerless shrinks the CORE MESH to open gaps; coreless hides the
+    // body; stickers come from the ACTIVE pool with skin-appropriate visibility.
+    mesh.scale.setScalar(this.pieceScale());
+    mesh.visible = this.coreVisible();
+
+    const stickerVisible = this.stickersVisible();
+    const activeMaterials = this.getActiveStickerMaterials();
+    const floatingVisible = this.style.floatingStickers === true;
+
     const stickerList = customStickers ?? exposed;
     for (const tri of stickerList) {
-      const sticker = this.createSticker(tri, this.stickerMaterials[tri.face]);
-      sticker.visible = !isStickerless;
+      const sticker = this.createSticker(tri, activeMaterials[tri.face]);
+      sticker.visible = stickerVisible;
       group.add(sticker);
+
+      // Floating projection twin — offset beyond the face, facing inward.
+      const floating = this.createSticker(tri, this.floatingStickerMaterials[tri.face], true);
+      floating.visible = floatingVisible;
+      group.add(floating);
     }
     return group;
   }
 
   /**
-   * Live-update the visual style WITHOUT rebuilding pieces: sticker/plastic
-   * colors and the core color apply to the shared materials instantly
-   * (every piece references them). `skinType` toggles sticker visibility
-   * (stickered shows panels, stickerless shows colored plastic).
-   *
-   * `stickerInset` is a geometry property — changing it requires rebuilding
-   * the pieces and is intentionally NOT handled here.
+   * Update a single face color at runtime. Propagates to ALL sticker material
+   * pools so the color stays consistent regardless of the active skin (same
+   * as CubeMeshFactory.setFaceColor).
    */
-  public updateStyle(newStyle: Partial<PyraminxStyleOptions>): void {
-    if (newStyle.stickerColors !== undefined) {
-      this.style.stickerColors = { ...this.style.stickerColors, ...newStyle.stickerColors };
-      for (const face of PYRAMINX_VERTICES_ORDER) {
-        this.stickerMaterials[face].color.set(this.style.stickerColors[face]);
-        this.stickerlessFaceMaterials[face].color.set(this.style.stickerColors[face]);
+  public setFaceColor(face: PyraminxVertex, color: string): void {
+    const mats = [
+      this.stickerMaterials[face],
+      this.stickerlessFaceMaterials[face],
+      this.translucentStickerMaterials[face],
+      this.floatingStickerMaterials[face],
+    ];
+    for (const mat of mats) {
+      if (mat) {
+        mat.color.set(color);
+        mat.needsUpdate = true;
       }
     }
-    if (newStyle.coreColor !== undefined && newStyle.coreColor !== this.style.coreColor) {
-      this.style.coreColor = newStyle.coreColor;
-      this.coreMaterial.color.set(newStyle.coreColor);
-      this.seamMaterial.color.set(newStyle.coreColor);
-    }
+  }
+
+  /**
+   * Live-update the visual style WITHOUT rebuilding pieces — the same
+   * responsibilities as CubeMeshFactory.updateStyle:
+   *
+   * - `skinType` changes → sticker visibility + sticker material pool swap
+   *   + core material array + core visibility + stickerless piece scale
+   * - `floatingStickers` → toggle visibility of floating projection panels
+   * - `coreColor` / `coreOpacity` → core material updates
+   * - `seamColor` → seam material color (stickerless internal faces)
+   * - `stickerColors` → updates all sticker material pools
+   *
+   * `stickerInset` / `stickerRadius` are geometry properties — changing them
+   * requires rebuilding every sticker and is intentionally NOT handled here.
+   */
+  public updateStyle(newStyle: Partial<PyraminxStyleOptions>): void {
+    // ── Structural flags ────────────────────────────────────────────────
+    let skinTypeChanged = false;
     if (newStyle.skinType !== undefined && newStyle.skinType !== this.style.skinType) {
       this.style.skinType = newStyle.skinType;
+      skinTypeChanged = true;
+    }
+
+    // ── Floating projection stickers toggle ─────────────────────────────
+    if (
+      newStyle.floatingStickers !== undefined &&
+      newStyle.floatingStickers !== this.style.floatingStickers
+    ) {
+      this.style.floatingStickers = newStyle.floatingStickers;
+      for (const { mesh } of this.floatingStickerMeshes) {
+        mesh.visible = this.style.floatingStickers;
+      }
+    }
+
+    // ── Core color ──────────────────────────────────────────────────────
+    if (newStyle.coreColor !== undefined) {
+      this.style.coreColor = newStyle.coreColor;
+      this.coreMaterial.color.set(newStyle.coreColor);
+      this.coreMaterial.needsUpdate = true;
+    }
+
+    // ── Core opacity (translucent) ──────────────────────────────────────
+    if (newStyle.coreOpacity !== undefined) {
+      this.style.coreOpacity = newStyle.coreOpacity;
+      this.coreMaterial.opacity = newStyle.coreOpacity;
+      this.coreMaterial.transparent = newStyle.coreOpacity < 1.0;
+      this.coreMaterial.depthWrite = !(newStyle.coreOpacity < 1.0);
+      this.coreMaterial.needsUpdate = true;
+    }
+
+    // ── Seam color (stickerless internal faces) ─────────────────────────
+    if (newStyle.seamColor !== undefined) {
+      this.style.seamColor = newStyle.seamColor;
+      this.seamMaterial.color.set(newStyle.seamColor);
+      this.seamMaterial.needsUpdate = true;
+    }
+
+    // ── Sticker colors (propagate to all material pools) ────────────────
+    if (newStyle.stickerColors) {
+      for (const [face, color] of Object.entries(newStyle.stickerColors)) {
+        this.setFaceColor(face as PyraminxVertex, color);
+      }
+      this.style.stickerColors = { ...this.style.stickerColors, ...newStyle.stickerColors };
+    }
+
+    // ── Skin type / piece size change → re-sync core + sticker appearance ─
+    if (skinTypeChanged) {
+      const stickerVisible = this.stickersVisible();
+      const coreVisible = this.coreVisible();
+      const scale = this.pieceScale();
+      const activePool = this.getActiveStickerMaterials();
+
+      for (const { mesh, face } of this.stickerMeshes) {
+        mesh.visible = stickerVisible;
+        mesh.material = activePool[face];
+      }
+      for (const mesh of this.coreMeshes) {
+        mesh.material = this.coreMaterials();
+        mesh.visible = coreVisible;
+        mesh.scale.setScalar(scale);
+      }
+      // (piece meshes are children of their piece Group; scaling the mesh
+      // keeps the Group at the slot centroid for rotation/snap math)
     }
   }
 
@@ -461,11 +696,16 @@ export class PyraminxMeshFactory {
   }
 
   public dispose(): void {
+    this.coreMeshes = [];
+    this.stickerMeshes = [];
+    this.floatingStickerMeshes = [];
     this.coreMaterial.dispose();
     this.seamMaterial.dispose();
     for (const face of PYRAMINX_VERTICES_ORDER) {
       this.stickerMaterials[face].dispose();
       this.stickerlessFaceMaterials[face].dispose();
+      this.translucentStickerMaterials[face].dispose();
+      this.floatingStickerMaterials[face].dispose();
     }
   }
 }

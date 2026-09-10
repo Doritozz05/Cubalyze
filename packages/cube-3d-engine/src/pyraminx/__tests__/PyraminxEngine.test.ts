@@ -14,11 +14,19 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyPyraminxSequence, solvedPyraminx } from '@cubeforge/solver-engine/pyraminx';
-import { Vector3 } from 'three';
+import {
+  Mesh,
+  Vector3,
+  type BufferAttribute,
+  type Material,
+  type MeshStandardMaterial,
+} from 'three';
 import {
   PyraminxReplayEngine,
   createPyraminxReplayDriver,
 } from '../PyraminxReplayEngine';
+import { PyraminxMeshFactory } from '../PyraminxMeshFactory';
+import { getSkinStyle } from '../../styles/cubeSkins';
 
 const mockSetPixelRatio = vi.fn();
 const mockSetSize = vi.fn();
@@ -122,6 +130,143 @@ describe('PyraminxEngine.updateStyle (panel skin seam)', () => {
 
     engine.updateStyle({ skinType: 'stickered' });
     expect(stickerChildren().every((c) => c.visible)).toBe(true);
+  });
+
+  /**
+   * Regression tests for the "black pyramid" bug: the piece cores snapshot
+   * their material array at build time, so a live skinType change MUST swap
+   * them — otherwise stickerless/coreless/translucent keep the dark stickered
+   * plastic under hidden stickers and the whole puzzle renders black.
+   */
+  describe('cube skins render with the SAME semantics as the cube', () => {
+    /** The piece's core Mesh + its per-face material array ([U, L, R, B, seam]). */
+    function coreOf(piece: { mesh: { children: unknown[] } }): {
+      core: Mesh;
+      materials: Material[];
+    } {
+      const core = piece.mesh.children.find(
+        (c) => (c as Mesh).userData?.pyraminxCore === true,
+      ) as Mesh;
+      const materials = core.material as Material | Material[];
+      expect(Array.isArray(materials)).toBe(true); // [U, L, R, B, seam] groups
+      return { core, materials: materials as Material[] };
+    }
+
+    function surfaceStickers(piece: { mesh: { children: unknown[] } }): Mesh[] {
+      return piece.mesh.children.filter(
+        (c) =>
+          (c as { userData?: { pyraminxSticker?: boolean } }).userData?.pyraminxSticker === true,
+      ) as Mesh[];
+    }
+
+    it('stickerless: colored face materials + shrunk cores + hidden stickers (cube parity)', () => {
+      engine.updateStyle({ skinType: 'stickerless' });
+      const faceMaterial = engine.factory['stickerlessFaceMaterials'].U as Material;
+      const darkCore = engine.factory['coreMaterial'] as Material;
+      for (const piece of engine.model.pieces) {
+        const { core, materials } = coreOf(piece);
+        // Exposed face slots (0..3) carry the colored plastic, never the dark
+        // core; the piece shrinks to open gaps (the cube's cubieSize trick).
+        for (let i = 0; i < 4; i++) expect(materials[i]).not.toBe(darkCore);
+        expect(materials[0]).toBe(faceMaterial);
+        expect(core.scale.x).toBeLessThan(1);
+        expect(core.visible).toBe(true);
+      }
+      for (const s of surfaceStickers(engine.model.pieces[0])) expect(s.visible).toBe(false);
+    });
+
+    it('coreless: body hidden, colored sticker panels remain (cube parity)', () => {
+      engine.updateStyle({ skinType: 'coreless' });
+      for (const piece of engine.model.pieces) {
+        const { core } = coreOf(piece);
+        expect(core.visible).toBe(false);
+        expect(core.scale.x).toBe(1);
+      }
+      const stickers = surfaceStickers(engine.model.pieces[0]);
+      expect(stickers.length).toBeGreaterThan(0);
+      for (const s of stickers) expect(s.visible).toBe(true);
+    });
+
+    it('translucent: transparent depthWrite-off core + DoubleSide depthWrite-false stickers (cube parity)', () => {
+      // The app seam passes the FULL getSkinStyle output (useCube3D / replays):
+      // coreOpacity 0 is part of the translucent skin definition.
+      engine.updateStyle(getSkinStyle('translucent'));
+      const coreMaterial = engine.factory['coreMaterial'] as MeshStandardMaterial;
+      expect(coreMaterial.transparent).toBe(true);
+      expect(coreMaterial.opacity).toBe(0); // cube translucent skin: coreOpacity 0
+      expect(coreMaterial.depthWrite).toBe(false);
+
+      // Stickers swap to the translucent pool (DoubleSide, depthWrite:false)
+      // while the see-through body stays VISIBLE underneath (cube parity).
+      const pool = engine.factory['translucentStickerMaterials'];
+      for (const s of surfaceStickers(engine.model.pieces[0])) {
+        expect(s.material).toBe(pool[s.userData.face as keyof typeof pool]);
+        expect(s.visible).toBe(true);
+      }
+      expect(coreOf(engine.model.pieces[0]).core.visible).toBe(true);
+    });
+
+    it('stickered: restores dark plastic + normal panels after a colored skin', () => {
+      engine.updateStyle({ skinType: 'translucent' });
+      engine.updateStyle({ skinType: 'stickered' });
+      const darkCore = engine.factory['coreMaterial'] as Material;
+      const normalPool = engine.factory['stickerMaterials'];
+      for (const piece of engine.model.pieces) {
+        const { core, materials } = coreOf(piece);
+        for (let i = 0; i < 5; i++) expect(materials[i]).toBe(darkCore);
+        expect(core.visible).toBe(true);
+        expect(core.scale.x).toBe(1);
+      }
+      for (const s of surfaceStickers(engine.model.pieces[0])) {
+        expect(s.material).toBe(normalPool[s.userData.face as keyof typeof normalPool]);
+        expect(s.visible).toBe(true);
+      }
+    });
+
+    it('floatingStickers: one projection twin per surface sticker, pushed outward, facing inward', () => {
+      engine.updateStyle({ skinType: 'stickered', floatingStickers: true });
+      const piece = engine.model.pieces[0];
+      const surface = surfaceStickers(piece);
+      const floating = piece.mesh.children.filter(
+        (c) =>
+          (c as { userData?: { isFloatingSticker?: boolean } }).userData?.isFloatingSticker ===
+          true,
+      ) as Mesh[];
+      expect(floating.length).toBe(surface.length);
+      for (const f of floating) expect(f.visible).toBe(true);
+
+      // The floating twin's centroid sits FARTHER from the piece center than
+      // its surface counterpart (pushed beyond the face), and its normals
+      // face INWARD (front faces the puzzle — backface culling does the rest).
+      const centroidRadius = (mesh: Mesh) => {
+        const pos = mesh.geometry.attributes.position as BufferAttribute;
+        let sx = 0, sy = 0, sz = 0;
+        const count = pos.count;
+        for (let i = 0; i < count; i++) {
+          sx += pos.getX(i); sy += pos.getY(i); sz += pos.getZ(i);
+        }
+        return Math.hypot(sx / count, sy / count, sz / count);
+      };
+      const normalsFaceInward = (mesh: Mesh) => {
+        const pos = mesh.geometry.attributes.position as BufferAttribute;
+        const nor = mesh.geometry.attributes.normal as BufferAttribute;
+        const cx = (pos.getX(0) + pos.getX(1) + pos.getX(2)) / 3;
+        const cy = (pos.getY(0) + pos.getY(1) + pos.getY(2)) / 3;
+        const cz = (pos.getZ(0) + pos.getZ(1) + pos.getZ(2)) / 3;
+        return cx * nor.getX(0) + cy * nor.getY(0) + cz * nor.getZ(0) < 0;
+      };
+      for (const f of floating) {
+        const counterpart = surface.find(
+          (s) => s.userData.face === f.userData.face,
+        ) as Mesh;
+        expect(centroidRadius(f)).toBeGreaterThan(centroidRadius(counterpart));
+        expect(normalsFaceInward(f)).toBe(true);
+      }
+
+      // Toggling the preference off hides every twin again.
+      engine.updateStyle({ floatingStickers: false });
+      for (const f of floating) expect(f.visible).toBe(false);
+    });
   });
 });
 
