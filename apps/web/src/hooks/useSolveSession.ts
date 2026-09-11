@@ -31,6 +31,8 @@ import {
 import {
   perfTick,
   perfMove,
+  perfFacelets,
+  perfMark,
   resetPerfDiag,
   dumpPerfDiag,
 } from "@/utils/perfDiag";
@@ -428,6 +430,8 @@ export function useSolveSession(
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
+        // perfDiag: align longtasks to solve phases.
+        perfMark("running");
         // Subtle tactile pulse when the solve starts (touch regime only).
         hapticStart();
         // Replay ALL pending first solve moves that arrived during the
@@ -445,6 +449,9 @@ export function useSolveSession(
           pendingMovesBufferRef.current = [];
         }
       }
+      // perfDiag: align longtasks to solve phases.
+      if (engineState === EngineState.INSPECTION) perfMark("inspection");
+      if (engineState === EngineState.READY_FOR_MOVE) perfMark("armed");
       setPhase(mapTimerState(engineState));
     });
     const sub2 = engine.tick$.subscribe((t) => {
@@ -455,6 +462,7 @@ export function useSolveSession(
       // Short double-tap when the solve is finalized (touch regime only).
       hapticStop();
       // perfDiag: print the lag-investigation summary for this solve.
+      perfMark("stopped");
       dumpPerfDiag("solve-stop");
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
@@ -787,6 +795,7 @@ export function useSolveSession(
     if (adapter.facelets$) {
       faceletSub = adapter.facelets$.subscribe(
         (f: string) => {
+          perfFacelets();
           // Seed the move-based CubeState tracker from the first
           // FACELETS event (absolute state at connect). Subsequent MOVE
           // events keep it in sync.

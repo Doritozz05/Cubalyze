@@ -10,7 +10,7 @@ import type {
   SlotContentConfig,
   SlotLayoutDefinition,
 } from "./types";
-import { perfRender } from "@/utils/perfDiag";
+import { usePerfRenderTiming } from "@/utils/perfDiag";
 
 import { SlotSparkline } from "./displays/SlotSparkline";
 import { SlotHistogram } from "./displays/SlotHistogram";
@@ -97,7 +97,7 @@ export function SlotLayout({
   vertical = false,
 }: SlotLayoutProps) {
   // perfDiag (opt-in): counts slot re-renders while the timer runs.
-  perfRender("SlotLayout");
+  usePerfRenderTiming("SlotLayout");
   const { t } = useTranslation("timer");
   
   // Find subX threshold if configured on any slot

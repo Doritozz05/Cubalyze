@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 /**
  * perfDiag — opt-in main-thread performance diagnostics for the 3D-lag
  * investigation ("timer + cube at once stutters, idle is smooth").
@@ -50,6 +52,20 @@ export function __setPerfDebugForTests(value: boolean | null): void {
 
 interface RenderStat {
   count: number;
+  /** Accumulated render→commit ms (measured render-start to passive effect). */
+  totalMs: number;
+  maxMs: number;
+}
+
+interface LongTask {
+  /** Seconds since window start. */
+  t: number;
+  duration: number;
+}
+
+interface Mark {
+  t: number;
+  label: string;
 }
 
 interface FpsWindow {
@@ -63,8 +79,10 @@ const stats = {
   moves: 0,
   gyroEvents: 0,
   orientationWrites: 0,
+  faceletsEvents: 0,
   renders: new Map<string, RenderStat>(),
-  longtasks: [] as number[],
+  longtasks: [] as LongTask[],
+  marks: [] as Mark[],
   // Main-thread rAF sampler state
   fpsStarted: false,
   fpsFrames: 0,
@@ -92,8 +110,11 @@ function startLongtaskObserver(): void {
     if (typeof PerformanceObserver === "undefined") return;
     const obs = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        stats.longtasks.push(entry.duration);
-        if (stats.longtasks.length > 200) stats.longtasks.shift();
+        stats.longtasks.push({
+          t: (performance.now() - stats.startTime) / 1000,
+          duration: entry.duration,
+        });
+        if (stats.longtasks.length > 300) stats.longtasks.shift();
       }
     });
     obs.observe({ entryTypes: ["longtask"] });
@@ -147,7 +168,32 @@ export function perfRender(label: string): void {
   ensureStarted();
   const s = stats.renders.get(label);
   if (s) s.count++;
-  else stats.renders.set(label, { count: 1 });
+  else stats.renders.set(label, { count: 1, totalMs: 0, maxMs: 0 });
+}
+
+/**
+ * Render count + render→commit duration for a labeled component. Drop-in
+ * replacement for perfRender: call unconditionally at the top of the
+ * component body. Duration is measured from render start to the passive
+ * effect (covers render + commit for that component's subtree position).
+ */
+export function usePerfRenderTiming(label: string): void {
+  const t0 = useRef(0);
+  const on = isPerfDebugEnabled();
+  if (on) t0.current = performance.now();
+  useEffect(() => {
+    if (!on) return;
+    const dt = performance.now() - t0.current;
+    ensureStarted();
+    const s = stats.renders.get(label);
+    if (s) {
+      s.count++;
+      s.totalMs += dt;
+      if (dt > s.maxMs) s.maxMs = dt;
+    } else {
+      stats.renders.set(label, { count: 1, totalMs: dt, maxMs: dt });
+    }
+  });
 }
 
 /** BLE move event received. */
@@ -171,6 +217,24 @@ export function perfOrientationWrite(): void {
   stats.orientationWrites++;
 }
 
+/** Facelets snapshot received (BLE or virtual). */
+export function perfFacelets(): void {
+  if (!isPerfDebugEnabled()) return;
+  ensureStarted();
+  stats.faceletsEvents++;
+}
+
+/** Timestamped phase marker (inspection/running/stopped, preload steps…). */
+export function perfMark(label: string): void {
+  if (!isPerfDebugEnabled()) return;
+  ensureStarted();
+  stats.marks.push({
+    t: (performance.now() - stats.startTime) / 1000,
+    label,
+  });
+  if (stats.marks.length > 100) stats.marks.shift();
+}
+
 /** Reset all counters (e.g. when the engine returns to IDLE). */
 export function resetPerfDiag(): void {
   stats.startTime = 0;
@@ -178,8 +242,10 @@ export function resetPerfDiag(): void {
   stats.moves = 0;
   stats.gyroEvents = 0;
   stats.orientationWrites = 0;
+  stats.faceletsEvents = 0;
   stats.renders.clear();
   stats.longtasks = [];
+  stats.marks = [];
   stats.fpsFrames = 0;
   stats.jankFrames = 0;
   stats.worstGap = 0;
@@ -206,8 +272,10 @@ export function dumpPerfDiag(reason: string): void {
     stats.windows.length > 0
       ? Math.min(...stats.windows.map((w) => w.frames))
       : null;
-  const sortedLong = [...stats.longtasks].sort((a, b) => b - a);
-  const topLong = sortedLong.slice(0, 5).map((d) => Math.round(d));
+  const sortedLong = [...stats.longtasks].sort((a, b) => b.duration - a.duration);
+  const topLong = sortedLong
+    .slice(0, 10)
+    .map((e) => `${Math.round(e.duration)}ms@${e.t.toFixed(1)}s`);
 
   // eslint-disable-next-line no-console
   console.log(
@@ -216,13 +284,22 @@ export function dumpPerfDiag(reason: string): void {
       `main-thread ${avgFps.toFixed(1)}fps avg` +
       (worstWindowFps !== null ? `, worst-1s ${worstWindowFps}fps` : "") +
       `, jank-frames(>34ms) ${stats.jankFrames}, worst-gap ${Math.round(stats.worstGap)}ms | ` +
-      `longtasks ${stats.longtasks.length}${topLong.length > 0 ? ` top-ms [${topLong.join(",")}]` : ""} | ` +
-      `moves ${stats.moves} gyro ${stats.gyroEvents} orientation-writes ${stats.orientationWrites}`,
+      `longtasks ${stats.longtasks.length}${topLong.length > 0 ? ` top [${topLong.join(" ")}]` : ""} | ` +
+      `moves ${stats.moves} facelets ${stats.faceletsEvents} gyro ${stats.gyroEvents} orientation-writes ${stats.orientationWrites}`,
   );
+  if (stats.marks.length > 0) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[perfDiag]   marks: ${stats.marks.map((m) => `${m.label}@${m.t.toFixed(1)}s`).join(" ")}`,
+    );
+  }
   for (const [label, s] of [...stats.renders.entries()].sort((a, b) => b[1].count - a[1].count)) {
     // eslint-disable-next-line no-console
     console.log(
-      `[perfDiag]   render ${label}: ${s.count} (${(s.count / secs).toFixed(1)}/s)`,
+      `[perfDiag]   render ${label}: ${s.count} (${(s.count / secs).toFixed(1)}/s` +
+        (s.totalMs > 0
+          ? `, avg ${(s.totalMs / s.count).toFixed(1)}ms max ${s.maxMs.toFixed(1)}ms)`
+          : `)`),
     );
   }
 }
