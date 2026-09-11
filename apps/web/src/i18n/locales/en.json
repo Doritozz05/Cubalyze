@@ -35,6 +35,7 @@
     "reconstructions": "Reconstructions — {{count}} reconstructions",
     "reconstructions_one": "Reconstructions — {{count}} reconstruction",
     "reconstruction": "Reconstruction {{id}} — {{solver}}",
+    "collection": "Locker",
     "cube": "Virtual cube",
     "notFound": "Page not found"
   },
@@ -50,6 +51,7 @@
     "skills": "Skills",
     "stats": "Stats",
     "reconstructions": "Reconstructions",
+    "locker": "Locker",
     "widgets": "Widgets",
     "more": "More",
     "moreOptions": "More options",
@@ -1107,6 +1109,7 @@
       "profileSubtitle": "Your identity & progress",
       "skillsSubtitle": "Interactive skill tree graph",
       "reconstructionsSubtitle": "Solve database & replays",
+      "collectionSubtitle": "Your cubes and gear",
       "virtualSubtitle": "3D cube simulator",
       "smartCubeSubtitle": "Connect bluetooth cube",
       "themeSubtitle": "Customize themes and colors",
@@ -3900,6 +3903,44 @@
       "slotSequence": "Slot flow",
       "efficiency": "Efficiency"
     }
+  },
+  "collection": {
+    "eyebrow": "Gear",
+    "title": "Locker",
+    "subtitle": "Everything you solve with, in one place — cubes, timers, mats and lube.",
+    "summary": "{{total}} items · {{cubes}} cubes",
+    "sampleNotice": "Sample collection",
+    "loading": "Loading your gear…",
+    "empty": "Nothing here yet",
+    "emptyHint": "Your cubes and gear will appear here once the collection is connected.",
+    "modes": {
+      "rail": "Rail",
+      "shelf": "Shelf"
+    },
+    "kinds": {
+      "cube": "Cube",
+      "timer": "Timer",
+      "mat": "Mat",
+      "lube": "Lube",
+      "other": "Gear"
+    },
+    "spec": {
+      "title": "Specifications",
+      "kind": "Type",
+      "brand": "Brand",
+      "model": "Model",
+      "size": "Size",
+      "acquired": "Acquired",
+      "price": "Price"
+    },
+    "links": "Links",
+    "photos": "Photos",
+    "noPhotos": "No photos yet",
+    "primary": "Main",
+    "assign": "Assign to session",
+    "assignSoon": "Coming soon — your gear will follow you into a solve.",
+    "prev": "Previous item",
+    "next": "Next item"
   },
   "widgets": {
     "category": {

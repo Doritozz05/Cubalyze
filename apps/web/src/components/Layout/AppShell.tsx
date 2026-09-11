@@ -346,7 +346,8 @@ export function AppShell(props: AppShellProps) {
               activeView === "reconstructions" ||
               activeView === "insights" ||
               activeView === "training" ||
-              activeView === "profile"
+              activeView === "profile" ||
+              activeView === "collection"
             )) ||
             headerMode === "hidden"
           }

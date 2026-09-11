@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid } from "lucide-react";
+import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -96,6 +96,13 @@ export function MobileMoreSheet({
       title: tNav("reconstructions"),
       subtitle: t("more.reconstructionsSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),
+    },
+    {
+      key: "collection",
+      icon: Package,
+      title: tNav("locker"),
+      subtitle: t("more.collectionSubtitle"),
+      onClick: () => handleAction(() => onNavigate?.("collection")),
     },
     {
       key: "virtual-cube",

@@ -35,6 +35,7 @@
     "reconstructions": "Reconstrucciones — {{count}} reconstrucciones",
     "reconstructions_one": "Reconstrucciones — {{count}} reconstrucción",
     "reconstruction": "Reconstrucción {{id}} — {{solver}}",
+    "collection": "Armario",
     "cube": "Cubo virtual",
     "notFound": "Página no encontrada"
   },
@@ -50,6 +51,7 @@
     "skills": "Habilidades",
     "stats": "Estadísticas",
     "reconstructions": "Reconstrucciones",
+    "locker": "Armario",
     "widgets": "Widgets",
     "more": "Más",
     "moreOptions": "Más opciones",
@@ -1107,6 +1109,7 @@
       "profileSubtitle": "Tu identidad y progreso",
       "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
       "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
+      "collectionSubtitle": "Tus cubos y tu equipo",
       "virtualSubtitle": "Simulador de cubo 3D",
       "smartCubeSubtitle": "Conecta un cubo bluetooth",
       "themeSubtitle": "Personaliza temas y colores",
@@ -3900,6 +3903,44 @@
       "slotSequence": "Secuencia de slots",
       "efficiency": "Eficiencia"
     }
+  },
+  "collection": {
+    "eyebrow": "Equipo",
+    "title": "Armario",
+    "subtitle": "Todo con lo que resuelves, en un sitio — cubos, cronómetros, alfombrillas y lubricante.",
+    "summary": "{{total}} objetos · {{cubes}} cubos",
+    "sampleNotice": "Colección de ejemplo",
+    "loading": "Cargando tu equipo…",
+    "empty": "Aquí todavía no hay nada",
+    "emptyHint": "Tus cubos y tu equipo aparecerán aquí cuando conectes la colección.",
+    "modes": {
+      "rail": "Carrusel",
+      "shelf": "Estantería"
+    },
+    "kinds": {
+      "cube": "Cubo",
+      "timer": "Cronómetro",
+      "mat": "Alfombrilla",
+      "lube": "Lubricante",
+      "other": "Equipo"
+    },
+    "spec": {
+      "title": "Especificaciones",
+      "kind": "Tipo",
+      "brand": "Marca",
+      "model": "Modelo",
+      "size": "Tamaño",
+      "acquired": "Adquirido",
+      "price": "Precio"
+    },
+    "links": "Enlaces",
+    "photos": "Fotos",
+    "noPhotos": "Aún no hay fotos",
+    "primary": "Principal",
+    "assign": "Asignar a la sesión",
+    "assignSoon": "Próximamente — tu equipo te acompañará en cada resolución.",
+    "prev": "Objeto anterior",
+    "next": "Objeto siguiente"
   },
   "widgets": {
     "category": {

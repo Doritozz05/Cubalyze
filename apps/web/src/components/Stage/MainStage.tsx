@@ -47,6 +47,9 @@ const ReconstructionsView = lazy(() =>
 const CubeSimulatorView = lazy(() =>
   import("@/views/Cube/CubeSimulatorView").then((m) => ({ default: withReady(m.CubeSimulatorView) })),
 );
+const CollectionView = lazy(() =>
+  import("@/views/Collection/CollectionView").then((m) => ({ default: withReady(m.CollectionView) })),
+);
 
 /**
  * Tiny fallback shown while a lazy view chunk downloads (in-app navigation).
@@ -196,6 +199,14 @@ export function MainStage(props: MainStageProps) {
     return (
       <Suspense fallback={<ViewFallback />}>
         <ReconstructionsView />
+      </Suspense>
+    );
+  }
+
+  if (activeView === "collection") {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <CollectionView />
       </Suspense>
     );
   }

@@ -79,6 +79,7 @@ const VIEW_PATH: Record<ViewId, string> = {
   "skill-tree": "/skill-tree",
   profile: "/profile",
   reconstructions: "/reconstructions",
+  collection: "/collection",
   cube: "/cube",
 };
 
@@ -363,6 +364,8 @@ export default function App() {
         return t("profile");
       case "reconstructions":
         return null; // owned by ReconstructionsView (has the record data)
+      case "collection":
+        return t("collection");
       case "cube":
         return t("cube");
     }
