@@ -71,15 +71,23 @@ export interface PyraminxPick {
 
 /**
  * Maps the CUBE skin's face colors onto the Pyraminx's 4 faces, preserving
- * the WCA pyraminx scheme: U=yellow, L=green, R=blue, B=red. The cube's D/F/B/R
- * faces carry exactly those colors in the default cube skin, so the panel's
- * skin updates (getSkinStyle) apply consistently to both puzzles.
+ * the WCA 4d2 pyraminx scheme: yellow on the BOTTOM, GREEN on the FRONT, red
+ * on the left and blue on the right (U=yellow, B=green, L=red, R=blue). The
+ * cube's D/F/R/B faces carry exactly those colors in the default cube skin
+ * (D=yellow, F=green, R=red, B=blue), so the panel's skin updates
+ * (getSkinStyle) apply consistently to both puzzles.
+ *
+ * The FRONT face is the key constraint: a face is named after the OPPOSITE
+ * vertex, and in the canonical pose the B vertex sits at the BACK, so face B
+ * faces the camera. Assigning face B the cube's F (green) makes the canonical
+ * pose the WCA 4d2 scramble hold — which is what the virtual view and the
+ * reconstruction replay both seed from.
  */
 const CUBE_FACE_TO_PYRAMINX: Record<PyraminxVertex, keyof CubeStyleOptions['stickerColors']> = {
-  U: 'D', // yellow
-  L: 'F', // green
-  R: 'B', // blue
-  B: 'R', // red
+  U: 'D', // yellow — bottom
+  B: 'F', // green  — front
+  L: 'R', // red    — left
+  R: 'B', // blue   — right
 };
 
 /**
@@ -346,8 +354,9 @@ export class PyraminxEngine {
    * coreColor, coreOpacity, seamColor, pieceSize and floatingStickers), so
    * every field passes through 1:1 — only the sticker COLORS are remapped
    * face-by-face through {@link CUBE_FACE_TO_PYRAMINX} to preserve the WCA
-   * pyraminx scheme (U=yellow, L=green, R=blue, B=red). Same skins, same
-   * mechanisms, same look — adapted to the tetrahedral geometry.
+   * 4d2 pyraminx scheme (U=yellow bottom, B=green front, L=red left,
+   * R=blue right). Same skins, same mechanisms, same look — adapted to the
+   * tetrahedral geometry.
    */
   public updateStyle(style: Partial<CubeStyleOptions>): void {
     if (!this.factory || !this.model) return;

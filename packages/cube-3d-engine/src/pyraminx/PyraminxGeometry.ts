@@ -241,12 +241,36 @@ export function pyraminxTipSlotPosition(vertex: PyraminxVertex): Vector3 {
     .multiplyScalar(1 / vertices.length);
 }
 
-/** WCA sticker colors per face (configurable via the factory style). */
+/**
+ * WCA sticker colors per face (configurable via the factory style).
+ *
+ * A face is named after the vertex OPPOSITE it, so in the canonical upright
+ * pose `U` is the BASE/BOTTOM face (opposite the apex) and `B` is the FRONT
+ * face (opposite the back vertex).
+ *
+ * Reference hold — WCA Regulation 4d2: the scramble is applied with the
+ * **yellow face on the bottom** and the **green face on the front**, which
+ * puts **red on the left and blue on the right**:
+ *
+ *     U = yellow  (bottom face, opposite the apex)
+ *     B = green   (FRONT face — faces the camera in the canonical pose)
+ *     L = red     (left face)
+ *     R = blue    (right face)
+ *
+ * The canonical upright pose therefore IS the WCA scramble hold, so the
+ * virtual view and the reconstruction replay both seed the scramble with
+ * GREEN in front, exactly as Regulation 4d2 requires.
+ *
+ * The arrangement has a HANDEDNESS: with red toward you and yellow down, the
+ * green face must land on the RIGHT and blue on the LEFT. Swapping green and
+ * red (the old `L: green / B: red`) mirrors the whole puzzle, so every
+ * color-referenced scramble/algorithm/tutorial appears reversed.
+ */
 export const DEFAULT_PYRAMINX_STICKER_COLORS: Record<PyraminxVertex, string> = {
-  U: '#ffe62a', // yellow
-  L: '#1abe57', // green
-  R: '#3d7ce0', // blue
-  B: '#eb4242', // red
+  U: '#ffe62a', // yellow — bottom
+  L: '#eb4242', // red    — left
+  R: '#3d7ce0', // blue   — right
+  B: '#1abe57', // green  — front
 };
 
 // ── Whole-Puzzle Poses & A₄ Grip Conjugation Tables ─────────────────────────

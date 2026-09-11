@@ -21,7 +21,7 @@ function qmul(q: { x: number; y: number; z: number; w: number }, v: V3): V3 {
 
 /**
  * WYSIWYG invariant of the pyraminx virtual view — regression guard for the
- * "I turn the middle-right red layer and it says L'" bug.
+ * "I turn the middle-right green layer and it says L'" bug.
  *
  * The canonical isometric view places the L vertex at the bottom-RIGHT of
  * the screen and the R vertex at the LEFT (the view is mirrored vs the WCA
@@ -76,8 +76,8 @@ describe("pyraminx drag → display WYSIWYG (no mirror)", () => {
 
   it("the user's case: dragging the middle-right red layer shows R (not R')", () => {
     // Canonical view (grip 0): the corner at the bottom-right of the screen
-    // is the canonical L vertex (its stickers meet at the red B face — the
-    // "middle-right red layer"). Dragging it right must DISPLAY the plain R
+    // is the canonical L vertex (its stickers meet at the green B face — the
+    // "middle-right green layer"). Dragging it right must DISPLAY the plain R
     // (the layer follows the finger under the clockwise turn — the WCA
     // direction — and the letter matches the screen position).
     const canonAtRight = vertexAt(0, "R");

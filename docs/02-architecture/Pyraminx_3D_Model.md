@@ -98,7 +98,8 @@ Cada cara es un triángulo subdividido en una **rejilla triangular de lado 3** (
 | `(1,1)`, `(2,1)`, `(2,3)` | 3 **corners** (1 por vértice de la cara; `(1,1)` es el "centro" de la cara) |
 
 - El "centro" de la cara (`(1,1)`) pertenece al corner del vértice opuesto a la cara... *(verificación: los 3 corners de la cara F son los de los 3 vértices de F; cada uno aporta 1 sticker a F; el vértice opuesto a F no toca F, así que sus stickers están en las otras 3 caras).*
-- **Colores (esquema WCA estándar, constante configurable)**: `U=yellow`, `L=green`, `R=blue`, `B=red`. En resuelto, cada cara es monocolor: sus 9 stickers del color de la cara.
+- **Colores (esquema WCA 4d2, constante configurable)**: `U=yellow` (abajo), `B=green` (frente), `L=red` (izquierda), `R=blue` (derecha). La pose canónica ES la pose de scramble WCA (amarillo abajo, verde al frente), así que el virtual y las reconstrucciones arrancan con el verde de frente. En resuelto, cada cara es monocolor: sus 9 stickers del color de la cara.
+  - **Nota de quiralidad**: con rojo al frente y amarillo abajo, el verde queda a la DERECHA y el azul a la IZQUIERDA. El esquema anterior (`L=green`, `B=red`) era la imagen espejo y hacía que todo scramble/algoritmo referenciado por color se viera invertido en el modelo virtual.
 
 ---
 

@@ -3,9 +3,9 @@
  *
  * Covers the surface the web panel (useCube3D / Cube3DPanel) drives on the
  * Pyraminx engine:
- *   • updateStyle maps CUBE skin colors onto the Pyraminx's 4 faces (WCA
- *     scheme preserved: U=yellow, L=green, R=blue, B=red) and toggles
- *     sticker panels for stickered/stickerless skins
+ *   • updateStyle maps CUBE skin colors onto the Pyraminx's 4 faces (WCA 4d2
+ *     scheme preserved: U=yellow bottom, B=green front, L=red left, R=blue
+ *     right) and toggles sticker panels for stickered/stickerless skins
  *   • onMoveEvent fires one display token per COMMITTED turn (U, U', l, …)
  *     for the recent-moves strip
  *
@@ -61,6 +61,13 @@ import {
   PYRAMINX_CANONICAL_QUAT,
   TETRAHEDRAL_TILT_ANGLE,
 } from '../PyraminxEngine';
+import {
+  DEFAULT_PYRAMINX_STICKER_COLORS,
+  PYRAMINX_FACE_CENTERS,
+  PYRAMINX_FACE_NORMALS,
+  PYRAMINX_VERTICES_ORDER,
+  computePyraminxIsometricBasis,
+} from '../PyraminxGeometry';
 
 function makeCanvas(): HTMLCanvasElement {
   return {
@@ -89,23 +96,23 @@ describe('PyraminxEngine.updateStyle (panel skin seam)', () => {
     engine.dispose();
   });
 
-  it('maps cube face colors onto the Pyraminx faces preserving the WCA scheme', () => {
+  it('maps cube face colors onto the Pyraminx faces preserving the WCA 4d2 scheme', () => {
     // Cube default skin colors: D=yellow, F=green, B=blue, R=red.
     engine.updateStyle({
       stickerColors: {
         U: '#111111',
-        D: '#222222', // → pyraminx U (yellow)
-        F: '#333333', // → pyraminx L (green)
-        B: '#444444', // → pyraminx R (blue)
-        R: '#555555', // → pyraminx B (red)
+        D: '#222222', // → pyraminx U (yellow — bottom)
+        F: '#333333', // → pyraminx B (green  — front)
+        B: '#444444', // → pyraminx R (blue   — right)
+        R: '#555555', // → pyraminx L (red    — left)
         L: '#666666',
       },
     });
     const colors = engine.factory.getStyle().stickerColors;
     expect(colors.U).toBe('#222222');
-    expect(colors.L).toBe('#333333');
+    expect(colors.B).toBe('#333333');
     expect(colors.R).toBe('#444444');
-    expect(colors.B).toBe('#555555');
+    expect(colors.L).toBe('#555555');
   });
 
   it('updates coreColor and skinType without touching unrelated faces', () => {
@@ -596,6 +603,56 @@ describe('PyraminxReplayEngine over the real driver (reconstruction scramble)', 
     await engine.resetPuzzleOrientation(false);
     expect(engine.getGripIndex()).toBe(0);
     expect(engine.conjugateKeyToken('U')).toBe('U');
+  });
+});
+
+/**
+ * Regression guard for the mirrored pyraminx color scheme.
+ *
+ * The original palette was `L=green, B=red, R=blue` — the MIRROR image of the
+ * physical puzzle. With red toward the viewer and yellow down it showed blue
+ * on the RIGHT and green on the LEFT, while the real puzzle (and WCA 4d2) puts
+ * BLUE on the left and GREEN on the right. No rotation can turn one into the
+ * other, so the model had to be recolored.
+ *
+ * The test derives the arrangement from the ACTUAL canonical pose and camera
+ * basis (not hard-coded face letters): BOTTOM is the face pointing straight
+ * down, FRONT is the face most toward the camera, and the two remaining side
+ * faces are split by screen-right. It then asserts the colors the user sees:
+ * green front, red left, blue right, yellow bottom — i.e. the canonical view
+ * IS the WCA 4d2 scramble hold. The old `L=green, B=red` palette would fail
+ * this (front red / left green / right blue), so the mirror can never return.
+ */
+describe('Pyraminx canonical view color scheme (WCA 4d2 — no mirror)', () => {
+  const { forward, right } = computePyraminxIsometricBasis();
+  const camDir = forward.clone().negate(); // puzzle → camera
+
+  const faces = PYRAMINX_VERTICES_ORDER.map((face) => {
+    const normal = PYRAMINX_FACE_NORMALS[face].clone().applyQuaternion(PYRAMINX_CANONICAL_QUAT);
+    const center = PYRAMINX_FACE_CENTERS[face].clone().applyQuaternion(PYRAMINX_CANONICAL_QUAT);
+    return { face, normal, center, facing: normal.dot(camDir), screenRight: center.dot(right) };
+  });
+
+  const bottom = faces.reduce((a, b) => (a.normal.y < b.normal.y ? a : b));
+  const front = faces.reduce((a, b) => (a.facing > b.facing ? a : b));
+  const sideFaces = faces
+    .filter((f) => f.face !== bottom.face && f.face !== front.face)
+    .sort((a, b) => a.screenRight - b.screenRight);
+
+  it('shows green FRONT, red LEFT, blue RIGHT, yellow BOTTOM (physical/WCA 4d2 hold)', () => {
+    // Sanity: the labels track real geometry — the front face is turned to the
+    // camera and the bottom face points straight down; the side faces are
+    // ordered left→right by their on-screen horizontal position.
+    expect(front.facing).toBeGreaterThan(0.5);
+    expect(bottom.normal.y).toBeLessThan(-0.9);
+    expect(sideFaces.map((f) => f.screenRight)).toEqual(
+      [...sideFaces.map((f) => f.screenRight)].sort((a, b) => a - b),
+    );
+
+    expect(DEFAULT_PYRAMINX_STICKER_COLORS[bottom.face]).toBe('#ffe62a'); // yellow — bottom
+    expect(DEFAULT_PYRAMINX_STICKER_COLORS[front.face]).toBe('#1abe57'); // green  — front
+    expect(DEFAULT_PYRAMINX_STICKER_COLORS[sideFaces[0].face]).toBe('#eb4242'); // red  — left
+    expect(DEFAULT_PYRAMINX_STICKER_COLORS[sideFaces[1].face]).toBe('#3d7ce0'); // blue — right
   });
 });
 
