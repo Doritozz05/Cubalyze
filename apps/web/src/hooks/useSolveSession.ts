@@ -28,14 +28,6 @@ import {
   logBleAudit,
   type BleAuditEntry,
 } from "@/hooks/solveSessionDebug";
-import {
-  perfTick,
-  perfMove,
-  perfFacelets,
-  perfMark,
-  resetPerfDiag,
-  dumpPerfDiag,
-} from "@/utils/perfDiag";
 import type {
   CubeFace,
   CubeMoveDirection,
@@ -414,8 +406,6 @@ export function useSolveSession(
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
-        // Fresh diagnostic window for the next solve.
-        resetPerfDiag();
         // Reset BLE dedup tracker for the next solve
         lastCubeTimestampRef.current = null;
         lastMoveFaceRef.current = null;
@@ -465,8 +455,6 @@ export function useSolveSession(
       // running. realCubeStateRef tracks all moves from connect, so this
       // clone is the scrambled state the solver is about to solve.
       if (engineState === EngineState.RUNNING) {
-        // perfDiag: align longtasks to solve phases.
-        perfMark("running");
         // Subtle tactile pulse when the solve starts (touch regime only).
         hapticStart();
         // Replay ALL pending first solve moves that arrived during the
@@ -484,23 +472,15 @@ export function useSolveSession(
           pendingMovesBufferRef.current = [];
         }
       }
-      // perfDiag: align longtasks to solve phases.
-      if (engineState === EngineState.INSPECTION) perfMark("inspection");
-      if (engineState === EngineState.READY_FOR_MOVE) perfMark("armed");
       setPhase(mapTimerState(engineState));
     });
-    const sub2 = engine.tick$.subscribe(() => {
-      // perfDiag only: the live value is consumed at the leaf via
-      // useEngineTime (LiveTimerContainer), so this stays out of React state
-      // and App no longer re-renders per frame.
-      perfTick();
-    });
+    // NOTE: no tick$ subscription here on purpose. The live tick value is
+    // consumed at the leaf via useEngineTime (LiveTimerContainer) — piping
+    // it through hook state re-rendered App ~12-60×/s and starved the 3D
+    // thread (see LiveTimerContainer docs).
     const sub3 = engine.stop$.subscribe((ev) => {
       // Short double-tap when the solve is finalized (touch regime only).
       hapticStop();
-      // perfDiag: print the lag-investigation summary for this solve.
-      perfMark("stopped");
-      dumpPerfDiag("solve-stop");
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
       // Corners-only mode ("3×3 as 2×2"): persist the filtered 2×2 frame —
@@ -558,7 +538,6 @@ export function useSolveSession(
 
     return () => {
       sub1.unsubscribe();
-      sub2.unsubscribe();
       sub3.unsubscribe();
       sub4.unsubscribe();
       engine.reset();
@@ -727,7 +706,6 @@ export function useSolveSession(
       lastCubeTimestampRef.current = move.cubeTimestamp ?? null;
       lastMoveFaceRef.current = move.face;
       lastMoveDirRef.current = move.direction;
-      perfMove();
 
       const current = engine.getState();
 
@@ -832,7 +810,6 @@ export function useSolveSession(
     if (adapter.facelets$) {
       faceletSub = adapter.facelets$.subscribe(
         (f: string) => {
-          perfFacelets();
           // Seed the move-based CubeState tracker from the first
           // FACELETS event (absolute state at connect). Subsequent MOVE
           // events keep it in sync.

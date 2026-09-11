@@ -12,7 +12,6 @@ import {
   resolveSlotContent,
 } from "./slot-templates";
 import type { SlotContentConfig } from "./types";
-import { usePerfRenderTiming } from "@/utils/perfDiag";
 
 export interface BottomLayoutProps {
   /** Selected template id (preference `bottomLayoutTemplate`). */
@@ -52,8 +51,6 @@ export const BottomLayout = memo(function BottomLayout({
   compact = false,
   vertical = false,
 }: BottomLayoutProps) {
-  // perfDiag (opt-in): counts bottom-layout re-renders while the timer runs.
-  usePerfRenderTiming("BottomLayout");
   const configuredSlots = useStore(preferencesStore, (s) => s.bottomLayoutSlots);
   const template = getSlotTemplate(templateId) ?? DEFAULT_SLOT_TEMPLATE;
 

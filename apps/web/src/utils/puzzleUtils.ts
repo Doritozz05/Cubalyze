@@ -22,7 +22,6 @@
 import type { PuzzleCategory } from "@/types";
 import { EVENT_REGISTRY, generateScramble, getEvent, type PuzzleType } from "@cubeforge/events";
 import { Min2PhaseSolver, TwoByTwoScrambler, TwoByTwoSolver } from "@cubeforge/solver-engine";
-import { perfMark } from "@/utils/perfDiag";
 
 // ── Mappings ─────────────────────────────────────────────────────────────
 
@@ -184,20 +183,16 @@ export function preloadSolvers(): void {
 
   // Warm up the 3×3 Min2Phase WASM tables (~150-350 ms)
   scheduleIdle(() => {
-    perfMark("preload-min2phase-start");
     getMin2PhaseSolver().init();
-    perfMark("preload-min2phase-end");
   });
 
   // Warm up the 2×2 combined BFS table (~800 ms) in a separate idle slot.
   // We need to init the solver before wrapping it in the scrambler.
   scheduleIdle(() => {
     if (twoByTwoScrambler) return; // already created lazily
-    perfMark("preload-2x2-start");
     const solver = new TwoByTwoSolver();
     solver.init();
     twoByTwoScrambler = new TwoByTwoScrambler(solver);
-    perfMark("preload-2x2-end");
   });
 }
 

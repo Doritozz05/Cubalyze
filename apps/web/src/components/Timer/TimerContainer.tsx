@@ -17,7 +17,6 @@ import { preferencesStore } from "@cubeforge/state";
 import type { Observable } from "rxjs";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { useEngineTime } from "@/hooks/useEngineTime";
-import { usePerfRenderTiming } from "@/utils/perfDiag";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimerContainerProps {
@@ -70,8 +69,13 @@ export interface TimerContainerProps {
  * Interaction surface for the timer. Presentational — all state comes
  * from `useSolveSession`. Wires pointer/touch events and keyboard
  * fallback via the parent-provided press/release.
+ *
+ * Memoized: the parent (LiveTimerContainer/TimerStage) re-renders on every
+ * session identity change (e.g. per collected move), but this subtree only
+ * needs to update when its own props change — notably `time`, which moves
+ * per frame via LiveTimerContainer.
  */
-export function TimerContainer({
+export const TimerContainer = memo(function TimerContainer({
   phase,
   time,
   lastTime,
@@ -95,8 +99,6 @@ export function TimerContainer({
   onDeleteSolve,
   className,
 }: TimerContainerProps) {
-  // perfDiag (opt-in): counts timer re-renders while the timer runs.
-  usePerfRenderTiming("TimerContainer");
   const { t } = useTranslation("timer");
   const isTouch = useIsTouch();
   const isCoarsePointer = useIsCoarsePointer();
@@ -482,7 +484,7 @@ export function TimerContainer({
       )}
     </div>
   );
-}
+});
 
 /**
  * Tick-isolated timer: subscribes to the engine tick stream in this leaf so
