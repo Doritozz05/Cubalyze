@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
@@ -11,7 +11,7 @@ import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { Scramble2DNet } from "@/components/Scramble/Scramble2DNet";
 import { Scramble3DNet } from "@/components/Scramble/Scramble3DNet";
 import { ManualTimeInput } from "@/components/Timer/ManualTimeInput";
-import { TimerContainer } from "@/components/Timer/TimerContainer";
+import { LiveTimerContainer, TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -57,8 +57,13 @@ export interface TimerStageProps {
  * per-move validation states, the timer face (or manual time input), and the
  * bottom layout strip. Display preferences are read from the store; the
  * previous-PB baseline for the delta is derived from the current solves.
+ *
+ * Memoized: the timer face consumes ticks in its own leaf
+ * (LiveTimerContainer), so per-frame updates never reach this component —
+ * it re-renders only when its props actually change (phase, scramble,
+ * solves, …), keeping the three.js thread free during solves.
  */
-export function TimerStage(props: TimerStageProps) {
+export const TimerStage = memo(function TimerStage(props: TimerStageProps) {
   const {
     session$,
     currentScramble,
@@ -93,6 +98,7 @@ export function TimerStage(props: TimerStageProps) {
   const {
     phase: timerPhase,
     time: timerTime,
+    tick$: timerTick$,
     lastTime: timerLastTime,
     press: timerPress,
     release: timerRelease,
@@ -123,40 +129,68 @@ export function TimerStage(props: TimerStageProps) {
   const isRail =
     getSlotTemplate(bottomLayoutTemplate)?.placement === "right";
 
-  const scramble2dElement = (
-    <button
-      type="button"
-      onClick={() => setScramblePreviewOpen(true)}
-      aria-label={t("openScramblePreview")}
-      className="grid cursor-pointer place-items-center rounded-md outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-1 focus-visible:ring-ring"
-    >
-      <Scramble2DNet scramble={currentScramble} compact />
-    </button>
+  // Stable element identities: BottomLayout is memoized, so these must keep
+  // referential identity across renders (fresh JSX each render would defeat
+  // the memo). The preview opener is a stable setState function.
+  const scramble2dElement = useMemo(
+    () => (
+      <button
+        type="button"
+        onClick={() => setScramblePreviewOpen(true)}
+        aria-label={t("openScramblePreview")}
+        className="grid cursor-pointer place-items-center rounded-md outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <Scramble2DNet scramble={currentScramble} compact />
+      </button>
+    ),
+    [currentScramble, t],
   );
 
   // 3D scramble display: the actual puzzle (pyraminx / 2×2 / 3×3) with the
   // scramble applied, camera-draggable — just another slot display block.
-  const scramble3dElement = (
-    <Scramble3DNet scramble={currentScramble} puzzle={puzzle} />
+  const scramble3dElement = useMemo(
+    () => (
+      <Scramble3DNet scramble={currentScramble} puzzle={puzzle} />
+    ),
+    [currentScramble, puzzle],
   );
 
   // Previous PB (excluding the most recent solve) for accurate PB delta.
-  const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter);
-  const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
-  const previousPB =
-    previousSolves.length > 0 ? Math.min(...previousSolves.map((s) => effectiveTime(s))) : null;
+  // Memoized since it runs on every stage render (now rare, but cheap anyway).
+  const previousPB = useMemo(() => {
+    const puzzleSolves = solves.filter((s) => (s.puzzleType ?? "333") === puzzleFilter);
+    const previousSolves = puzzleSolves.slice(1).filter((s) => normalizePenalty(s.penalty) !== "DNF");
+    return previousSolves.length > 0
+      ? Math.min(...previousSolves.map((s) => effectiveTime(s)))
+      : null;
+  }, [solves, puzzleFilter]);
 
-  const hintCtx: HintCtx = {
-    smartCube: smartCubeConnected,
-    scrambleVerif: scrambleDisplay && scrambleVerification,
-    inspection,
-    isScrambled: validation.isScrambled,
-    isLastSolveDnf: timerLastTime !== null && solves[0]?.penalty === "DNF",
-    lastSolvePenalty: timerLastTime !== null ? solves[0]?.penalty : "none",
-    // Show the user's configured start key in the hints (not a hardcoded
-    // "space"), e.g. "pulsa N para iniciar la inspección".
-    startKeyLabel: shortcutKeyLabel(startTimerKey),
-  };
+  // Stable identity for the memoized timer leaf: a fresh object literal each
+  // render would re-render LiveTimerContainer's parent chain pointlessly.
+  // (LiveTimerContainer itself re-renders per tick by design — cheap leaf.)
+  const hintCtx: HintCtx = useMemo(
+    () => ({
+      smartCube: smartCubeConnected,
+      scrambleVerif: scrambleDisplay && scrambleVerification,
+      inspection,
+      isScrambled: validation.isScrambled,
+      isLastSolveDnf: timerLastTime !== null && solves[0]?.penalty === "DNF",
+      lastSolvePenalty: timerLastTime !== null ? solves[0]?.penalty : "none",
+      // Show the user's configured start key in the hints (not a hardcoded
+      // "space"), e.g. "pulsa N para iniciar la inspección".
+      startKeyLabel: shortcutKeyLabel(startTimerKey),
+    }),
+    [
+      smartCubeConnected,
+      scrambleDisplay,
+      scrambleVerification,
+      inspection,
+      validation.isScrambled,
+      timerLastTime,
+      solves,
+      startTimerKey,
+    ],
+  );
 
   // Manual focus toggle styled exactly like Copy/New (ghost, borderless,
   // icon-only when labels are hidden in compact-right / compact-down / mobile).
@@ -254,7 +288,8 @@ export function TimerStage(props: TimerStageProps) {
             {isManualMode ? (
               <ManualTimeInput onSubmit={onManualSubmit} className="flex-1" />
             ) : (
-              <TimerContainer
+              <LiveTimerContainer
+                tick$={timerTick$}
                 phase={timerPhase}
                 time={timerTime}
                 lastTime={timerLastTime}
@@ -313,7 +348,8 @@ export function TimerStage(props: TimerStageProps) {
               className="mt-1 flex-1"
             />
           ) : (
-            <TimerContainer
+            <LiveTimerContainer
+              tick$={timerTick$}
               phase={timerPhase}
               time={timerTime}
               lastTime={timerLastTime}
@@ -361,4 +397,4 @@ export function TimerStage(props: TimerStageProps) {
       </Dialog>
     </>
   );
-}
+});

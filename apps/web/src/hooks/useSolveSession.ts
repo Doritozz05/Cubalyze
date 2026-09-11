@@ -97,8 +97,20 @@ export interface UseSolveSessionOptions {
 
 export interface UseSolveSessionResult {
   phase: TimerState;
+  /**
+   * Last SETTLED time (stop/reset value). NOT live during running: the live
+   * tick stream would re-render the hook owner (App) ~60×/s and starve the
+   * 3D thread. Live consumers subscribe at the leaf via `useEngineTime`
+   * with `tick$` instead (see LiveTimerContainer).
+   */
   time: number;
   lastTime: number | null;
+  /**
+   * Live tick stream (one value per engine frame while inspecting/running).
+   * Stable reference per engine instance — consume with `useEngineTime` in a
+   * small leaf component so only the timer face re-renders per frame.
+   */
+  tick$: import("rxjs").Observable<number>;
   press: () => void;
   release: () => void;
   reset: () => void;
@@ -142,6 +154,29 @@ function stateTokensFromMoves(moves: CubeMoveEvent[]): string[] {
     }
   }
   return tokens;
+}
+
+/**
+ * Corners-solved check with graceful degradation: the web app resolves
+ * `@cubeforge/math-core` to its built `dist`, so a stale dist (built before
+ * `isCornersSolved` existed) would throw here and break the whole move
+ * subscription. If the method is missing, fall back to full-cube solved
+ * (legacy behavior) and warn once.
+ */
+let staleDistWarned = false;
+
+function trackerCornersSolved(state: CubeState): boolean {
+  if (typeof state.isCornersSolved === "function") {
+    return state.isCornersSolved();
+  }
+  if (!staleDistWarned) {
+    staleDistWarned = true;
+    console.warn(
+      "[useSolveSession] math-core dist lacks isCornersSolved — rebuild " +
+        "@cubeforge/math-core. Corners-only mode degraded to full-cube stop.",
+    );
+  }
+  return state.isSolved();
 }
 
 /**
@@ -454,9 +489,11 @@ export function useSolveSession(
       if (engineState === EngineState.READY_FOR_MOVE) perfMark("armed");
       setPhase(mapTimerState(engineState));
     });
-    const sub2 = engine.tick$.subscribe((t) => {
+    const sub2 = engine.tick$.subscribe(() => {
+      // perfDiag only: the live value is consumed at the leaf via
+      // useEngineTime (LiveTimerContainer), so this stays out of React state
+      // and App no longer re-renders per frame.
       perfTick();
-      setTime(t);
     });
     const sub3 = engine.stop$.subscribe((ev) => {
       // Short double-tap when the solve is finalized (touch regime only).
@@ -753,7 +790,7 @@ export function useSolveSession(
         // 3×3 edges stay scrambled (facelets never report solved).
         if (
           cornersOnlyRef.current &&
-          realCubeStateRef.current.isCornersSolved()
+          trackerCornersSolved(realCubeStateRef.current)
         ) {
           engine.handleSmartCubeStop();
         }
@@ -783,7 +820,7 @@ export function useSolveSession(
         // move already restored the corners.
         if (
           cornersOnlyRef.current &&
-          realCubeStateRef.current.isCornersSolved()
+          trackerCornersSolved(realCubeStateRef.current)
         ) {
           engine.handleSmartCubeStop();
         }
@@ -822,7 +859,7 @@ export function useSolveSession(
             engine.getState() === EngineState.RUNNING
           ) {
             try {
-              if (FaceletStringConverter.fromFaceletString(f).isCornersSolved()) {
+              if (trackerCornersSolved(FaceletStringConverter.fromFaceletString(f))) {
                 engine.handleSmartCubeStop();
               }
             } catch {
@@ -979,24 +1016,51 @@ export function useSolveSession(
     disabledRef: options.keyboardDisabledRef,
   });
 
-  return {
-    phase,
-    time,
-    lastTime,
-    press,
-    release,
-    reset,
-    cancel,
-    validation,
-    smartCubeConnected,
-    inspection: inspectionPref,
-    scrambleVerification: scrambleVerificationPref,
-    method: methodPref,
-    collectedMoves,
-    lastSolveMoves,
-    lastSolveOrientations,
-    lastSolveOrientationTimeline,
-  };
+  // Stable result identity: consumers (App, TimerStage memo) must not see a
+  // new object on unrelated renders. Every field that can change is listed —
+  // notably `time` no longer moves per frame (leaf-consumed via tick$).
+  const result = useMemo<UseSolveSessionResult>(
+    () => ({
+      phase,
+      time,
+      lastTime,
+      tick$: engine.tick$,
+      press,
+      release,
+      reset,
+      cancel,
+      validation,
+      smartCubeConnected,
+      inspection: inspectionPref,
+      scrambleVerification: scrambleVerificationPref,
+      method: methodPref,
+      collectedMoves,
+      lastSolveMoves,
+      lastSolveOrientations,
+      lastSolveOrientationTimeline,
+    }),
+    [
+      phase,
+      time,
+      lastTime,
+      engine,
+      press,
+      release,
+      reset,
+      cancel,
+      validation,
+      smartCubeConnected,
+      inspectionPref,
+      scrambleVerificationPref,
+      methodPref,
+      collectedMoves,
+      lastSolveMoves,
+      lastSolveOrientations,
+      lastSolveOrientationTimeline,
+    ],
+  );
+
+  return result;
 }
 
 /** Re-export for consumers that need the analysis pipeline. */

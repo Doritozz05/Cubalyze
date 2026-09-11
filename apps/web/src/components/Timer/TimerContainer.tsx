@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,9 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
+import type { Observable } from "rxjs";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
+import { useEngineTime } from "@/hooks/useEngineTime";
 import { usePerfRenderTiming } from "@/utils/perfDiag";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -481,3 +483,27 @@ export function TimerContainer({
     </div>
   );
 }
+
+/**
+ * Tick-isolated timer: subscribes to the engine tick stream in this leaf so
+ * ONLY the timer face re-renders per frame. The parent (TimerStage/App)
+ * receives stable props and stays out of the per-frame path — this is the
+ * structural fix for the 3D-lag investigation (per-frame App re-renders
+ * starved the three.js rAF loop).
+ *
+ * `time` is the settled snapshot (stop/reset value) used before the first
+ * tick; every tick after that comes from `tick$`.
+ */
+export interface LiveTimerContainerProps extends Omit<TimerContainerProps, "time"> {
+  tick$: Observable<number> | undefined;
+  time: number;
+}
+
+export const LiveTimerContainer = memo(function LiveTimerContainer({
+  tick$,
+  time: initialTime,
+  ...rest
+}: LiveTimerContainerProps) {
+  const liveTime = useEngineTime(tick$, initialTime);
+  return <TimerContainer {...rest} time={liveTime} />;
+});
