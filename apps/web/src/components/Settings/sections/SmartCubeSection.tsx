@@ -6,7 +6,8 @@ import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
-import { orientationStore } from "@cubeforge/state";
+import { orientationStore, preferencesStore } from "@cubeforge/state";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
@@ -48,6 +49,8 @@ export function SmartCubeSection() {
     orientationStore,
     (s) => s.capabilities.gyroSupported,
   );
+  const use3x3As2x2 = useStore(preferencesStore, (s) => s.use3x3As2x2);
+  const setUse3x3As2x2 = useStore(preferencesStore, (s) => s.setUse3x3As2x2);
 
   const prevStatusRef = useRef<ConnStatus | null>(null);
 
@@ -175,6 +178,25 @@ export function SmartCubeSection() {
               {isTransitioning ? t("smartCube.connecting") : t("smartCube.connect")}
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* 3×3 as 2×2 (corners-only) */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 rounded-xl border border-line bg-surface p-5">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-[0.85rem] font-medium text-ink">
+            {t("smartCube.use3x3As2x2")}
+          </h4>
+          <p className="mt-1.5 text-[0.78rem] leading-relaxed text-ink-3">
+            {t("smartCube.use3x3As2x2Hint")}
+          </p>
+        </div>
+        <div className="flex h-5 shrink-0 items-center">
+          <Switch
+            checked={use3x3As2x2}
+            onCheckedChange={setUse3x3As2x2}
+            aria-label={t("smartCube.use3x3As2x2")}
+          />
         </div>
       </div>
 

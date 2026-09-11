@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
@@ -35,8 +36,11 @@ export interface BottomLayoutProps {
  * Renders the selected slot layout underneath (or beside) the timer.
  * Unknown ids fall back to the default template; persisted slot configs
  * are migrated on read, so old preferences never crash the render.
+ *
+ * Memoized: re-renders only when its props change, and `slotContent` keeps
+ * a stable identity so SlotLayout's memo holds too.
  */
-export function BottomLayout({
+export const BottomLayout = memo(function BottomLayout({
   templateId,
   solves,
   className,
@@ -50,15 +54,18 @@ export function BottomLayout({
   const configuredSlots = useStore(preferencesStore, (s) => s.bottomLayoutSlots);
   const template = getSlotTemplate(templateId) ?? DEFAULT_SLOT_TEMPLATE;
 
-  const slotContent: Record<string, SlotContentConfig> = {};
-  for (const slot of template.slots) {
-    slotContent[slot.id] = resolveSlotContent(
-      configuredSlots as Record<string, unknown>,
-      template.id,
-      slot.id,
-      slot.defaultContent,
-    );
-  }
+  const slotContent: Record<string, SlotContentConfig> = useMemo(() => {
+    const resolved: Record<string, SlotContentConfig> = {};
+    for (const slot of template.slots) {
+      resolved[slot.id] = resolveSlotContent(
+        configuredSlots as Record<string, unknown>,
+        template.id,
+        slot.id,
+        slot.defaultContent,
+      );
+    }
+    return resolved;
+  }, [template, configuredSlots]);
 
   return (
     <SlotLayout
@@ -74,4 +81,4 @@ export function BottomLayout({
       vertical={vertical}
     />
   );
-}
+});

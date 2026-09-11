@@ -182,6 +182,20 @@ function resetRef(s: ValidatorState): void {
   s.pendingHalfTokenIndex = -1;
 }
 
+/**
+ * Returns true when 54-char facelets describe a cube whose corners are all
+ * home and oriented (edges ignored). Used by corners-only mode ("3×3 as
+ * 2×2"). Returns false on any parse error (e.g. 24-char 2×2 facelets, which
+ * the SOLVED_FACELETS_2X2 regex covers instead).
+ */
+export function faceletsCornersSolved(f: string): boolean {
+  try {
+    return FaceletStringConverter.fromFaceletString(f).isCornersSolved();
+  } catch {
+    return false;
+  }
+}
+
 const EMPTY_VALIDATION: ScrambleValidationResult = {
   moves: [],
   states: [],
@@ -208,11 +222,17 @@ const EMPTY_VALIDATION: ScrambleValidationResult = {
  *                  when `enabled` is false (so solves keep a record) but is
  *                  not consumed by this hook.
  * @param enabled   Defaults to `true`. When `false`, no work is performed.
+ * @param adapter   The move/facelet stream (defaults to the physical cube).
+ * @param cornersOnly When `true` ("3×3 as 2×2" mode), solved-detection looks
+ *                  at corners only — a cube with corners home but edges
+ *                  scrambled counts as solved. Defaults to `false` (legacy
+ *                  full-cube behavior, byte-for-byte identical when off).
  */
 export function useScrambleValidator(
   scramble: string,
   enabled: boolean = true,
   adapter: ScrambleValidationAdapter = globalCubeAdapter,
+  cornersOnly: boolean = false,
 ): ScrambleValidationResult {
   const stateRef = useRef<ValidatorState>(freshValidatorState());
 
@@ -339,7 +359,15 @@ export function useScrambleValidator(
       // OR-ing them adds 2×2 without changing 3×3 behavior. The 2×2 scramble
       // is face-turn-only (U/R/F), so the 3×3 CubeState math used by
       // computeExpected/processToken stays self-consistent for both orders.
-      const isSolved = SOLVED_FACELETS.test(f) || SOLVED_FACELETS_2X2.test(f);
+      //
+      // Corners-only mode ("3×3 as 2×2") additionally accepts a 54-char cube
+      // whose corners are home even though edges stay scrambled — otherwise a
+      // corners-solved cube would be misread as "not solved" and the display
+      // would stick on "solve the cube" with scramble moves ignored.
+      const isSolved =
+        SOLVED_FACELETS.test(f) ||
+        SOLVED_FACELETS_2X2.test(f) ||
+        (cornersOnly && faceletsCornersSolved(f));
 
       if (!s.initialCheckDone) {
         s.initialCheckDone = true;
@@ -594,7 +622,13 @@ export function useScrambleValidator(
       // from polluting the error stack or triggering a spurious
       // needsReset escalation. (Legitimate undos never reach this guard
       // — the inverse-detection above returns first.)
-      if (s.isError && s.currentState.isSolved()) {
+      //
+      // Corners-only mode ("3×3 as 2×2") compares corners only, mirroring
+      // the corners-based solved-detection in handleFacelets.
+      const mathSolved = cornersOnly
+        ? s.currentState.isCornersSolved()
+        : s.currentState.isSolved();
+      if (s.isError && mathSolved) {
         scheduleFacelets(s, adapter);
         return;
       }
@@ -688,7 +722,7 @@ export function useScrambleValidator(
       faceletCleanup?.();
       clearTimeout(stateRef.current.requestFaceletsTimeout);
     };
-  }, [updateUI, enabled, adapter]);
+  }, [updateUI, enabled, adapter, cornersOnly]);
 
   return uiState;
 }

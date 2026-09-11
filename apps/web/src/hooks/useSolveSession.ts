@@ -77,12 +77,32 @@ export interface UseSolveSessionOptions {
    * the user preference.
    */
   rules?: WcaRulesProfile;
+  /**
+   * Corners-only mode ("3×3 Smart Cube as 2×2"): stop detection looks at
+   * corners only (edges ignored), collected moves are filtered to outer
+   * faces on save, and no orientation timeline is recorded. The caller
+   * enables it only when the 2×2 puzzle is active and the user opted in
+   * via Settings → Smart Cube. Defaults to false (legacy 3×3 behavior).
+   */
+  cornersOnly?: boolean;
 }
 
 export interface UseSolveSessionResult {
   phase: TimerState;
+  /**
+   * Last SETTLED time (stop/reset value). NOT live during running: the live
+   * tick stream would re-render the hook owner (App) ~60×/s and starve the
+   * 3D thread. Live consumers subscribe at the leaf via `useEngineTime`
+   * with `tick$` instead (see LiveTimerContainer).
+   */
   time: number;
   lastTime: number | null;
+  /**
+   * Live tick stream (one value per engine frame while inspecting/running).
+   * Stable reference per engine instance — consume with `useEngineTime` in a
+   * small leaf component so only the timer face re-renders per frame.
+   */
+  tick$: import("rxjs").Observable<number>;
   press: () => void;
   release: () => void;
   reset: () => void;
@@ -126,6 +146,56 @@ function stateTokensFromMoves(moves: CubeMoveEvent[]): string[] {
     }
   }
   return tokens;
+}
+
+/**
+ * Corners-solved check with graceful degradation: the web app resolves
+ * `@cubeforge/math-core` to its built `dist`, so a stale dist (built before
+ * `isCornersSolved` existed) would throw here and break the whole move
+ * subscription. If the method is missing, fall back to full-cube solved
+ * (legacy behavior) and warn once.
+ */
+let staleDistWarned = false;
+
+function trackerCornersSolved(state: CubeState): boolean {
+  if (typeof state.isCornersSolved === "function") {
+    return state.isCornersSolved();
+  }
+  if (!staleDistWarned) {
+    staleDistWarned = true;
+    console.warn(
+      "[useSolveSession] math-core dist lacks isCornersSolved — rebuild " +
+        "@cubeforge/math-core. Corners-only mode degraded to full-cube stop.",
+    );
+  }
+  return state.isSolved();
+}
+
+/**
+ * Project recorded moves to the corners-only (2×2) frame for the "3×3 as
+ * 2×2" mode: pure slice turns (M/E/S) move no corner and are dropped; wide
+ * events collapse to their outer-face half (replay renders on a 2×2 cube,
+ * which has no middle layer); displayNotation is dropped so the replay shows
+ * the plain face token. Outer-face turns pass through unchanged.
+ */
+export function filterCornersOnlyMoves(moves: CubeMoveEvent[]): CubeMoveEvent[] {
+  const out: CubeMoveEvent[] = [];
+  for (const m of moves) {
+    if (m.face === "M" || m.face === "E" || m.face === "S") continue;
+    if (m.wide === true) {
+      // Collapse the wide to its outer-face half: a 2×2 cube has no middle
+      // layer, so the replay shows the plain face token.
+      out.push({
+        face: m.face,
+        direction: m.direction,
+        cubeTimestamp: m.cubeTimestamp,
+        hostTimestamp: m.hostTimestamp,
+      });
+      continue;
+    }
+    out.push(m);
+  }
+  return out;
 }
 
 /**
@@ -238,7 +308,14 @@ export function useSolveSession(
     [inspectionPref, options.rules, spacebarHoldDelayPref],
   );
 
-  const validation = useScrambleValidator(scramble, scrambleVerificationPref);
+  const validation = useScrambleValidator(
+    scramble,
+    scrambleVerificationPref,
+    globalCubeAdapter,
+    // "3×3 as 2×2" mode: the validator counts a corners-solved cube as
+    // solved (edges ignored), mirroring the corners-based timer stop below.
+    options.cornersOnly === true,
+  );
 
   const [phase, setPhase] = useState<TimerState>("idle");
   const [time, setTime] = useState(0);
@@ -315,6 +392,14 @@ export function useSolveSession(
     onSolveRef.current = options.onSolve;
   });
 
+  // Corners-only mode ("3×3 as 2×2") — read via ref so the move subscriber
+  // (subscribed once per engine) always sees the latest value without
+  // re-subscribing. The caller enables it only for puzzle 2×2 + opt-in.
+  const cornersOnlyRef = useRef(options.cornersOnly === true);
+  useEffect(() => {
+    cornersOnlyRef.current = options.cornersOnly === true;
+  });
+
   useEffect(() => {
     const sub1 = engine.state$.subscribe((engineState) => {
       if (engineState === EngineState.IDLE) {
@@ -389,14 +474,25 @@ export function useSolveSession(
       }
       setPhase(mapTimerState(engineState));
     });
-    const sub2 = engine.tick$.subscribe((t) => setTime(t));
+    // NOTE: no tick$ subscription here on purpose. The live tick value is
+    // consumed at the leaf via useEngineTime (LiveTimerContainer) — piping
+    // it through hook state re-rendered App ~12-60×/s and starved the 3D
+    // thread (see LiveTimerContainer docs).
     const sub3 = engine.stop$.subscribe((ev) => {
       // Short double-tap when the solve is finalized (touch regime only).
       hapticStop();
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
-      lastSolveMovesRef.current = [...collectedMovesRef.current];
-      lastSolveOrientationsRef.current = [...collectedOrientationsRef.current];
+      // Corners-only mode ("3×3 as 2×2"): persist the filtered 2×2 frame —
+      // slices dropped, wides collapsed to their outer face — and record no
+      // rotations (replay renders on a 2×2 cube).
+      const cornersOnly = cornersOnlyRef.current;
+      lastSolveMovesRef.current = cornersOnly
+        ? filterCornersOnlyMoves(collectedMovesRef.current)
+        : [...collectedMovesRef.current];
+      lastSolveOrientationsRef.current = cornersOnly
+        ? []
+        : [...collectedOrientationsRef.current];
       setLastSolveMoves(lastSolveMovesRef.current);
       setLastSolveOrientations(lastSolveOrientationsRef.current);
       // Compress orientations to ultra-compact keyframe timeline for storage
@@ -442,7 +538,6 @@ export function useSolveSession(
 
     return () => {
       sub1.unsubscribe();
-      sub2.unsubscribe();
       sub3.unsubscribe();
       sub4.unsubscribe();
       engine.reset();
@@ -662,8 +757,21 @@ export function useSolveSession(
           isScrambledRef: isScrambledRef.current, bleIndex: bleAuditCounterRef.current++,
         });
         collectedMovesRef.current.push(move);
-        collectedOrientationsRef.current.push(currentOrientationRef.current);
+        // Corners-only mode ("3×3 as 2×2") records no rotations — the replay
+        // renders on a 2×2 cube.
+        collectedOrientationsRef.current.push(
+          cornersOnlyRef.current ? undefined : currentOrientationRef.current,
+        );
         setCollectedMoves([...collectedMovesRef.current]);
+        // Corners-only stop: the tracker already applied this move above, so
+        // a solved-corners state means the 2×2 solve is done even though the
+        // 3×3 edges stay scrambled (facelets never report solved).
+        if (
+          cornersOnlyRef.current &&
+          trackerCornersSolved(realCubeStateRef.current)
+        ) {
+          engine.handleSmartCubeStop();
+        }
       }
 
       // First solve move (auto-arm path) or a move during inspection:
@@ -682,8 +790,18 @@ export function useSolveSession(
         engine.handleSmartCubeStart();
         // Capture the move that triggered the start — it is part of the solve
         collectedMovesRef.current.push(move);
-        collectedOrientationsRef.current.push(currentOrientationRef.current);
+        collectedOrientationsRef.current.push(
+          cornersOnlyRef.current ? undefined : currentOrientationRef.current,
+        );
         setCollectedMoves([...collectedMovesRef.current]);
+        // One-move 2×2 solve edge case in corners-only mode: the very first
+        // move already restored the corners.
+        if (
+          cornersOnlyRef.current &&
+          trackerCornersSolved(realCubeStateRef.current)
+        ) {
+          engine.handleSmartCubeStop();
+        }
         return;
       }
     });
@@ -708,6 +826,22 @@ export function useSolveSession(
           const isSolved = SOLVED_FACELETS.test(f);
           if (isSolved && engine.getState() === EngineState.RUNNING) {
             engine.handleSmartCubeStop();
+          }
+          // Corners-only fallback ("3×3 as 2×2"): if a BLE move was missed,
+          // the absolute facelet snapshot is the safety net — stop when the
+          // corners parse as solved.
+          if (
+            !isSolved &&
+            cornersOnlyRef.current &&
+            engine.getState() === EngineState.RUNNING
+          ) {
+            try {
+              if (trackerCornersSolved(FaceletStringConverter.fromFaceletString(f))) {
+                engine.handleSmartCubeStop();
+              }
+            } catch {
+              // Invalid facelets — ignore, the move tracker stays authoritative.
+            }
           }
         },
       );
@@ -828,7 +962,30 @@ export function useSolveSession(
       return;
     }
     engine.reset();
-  }, [engine]);
+    // Revive the start gate: cancelling (Esc) during inspection / RFM left
+    // the engine IDLE with the scramble still verified, but the auto-arm
+    // effect only fires on the isScrambled false→true edge — so without this
+    // the scramble display went dead (moves dropped as leaks) until a brand
+    // new scramble. Re-run the same arming decision as the auto-arm effect.
+    if (isScrambledRef.current && engine.getState() === EngineState.IDLE) {
+      if (
+        shouldAutoArm({
+          smartCube: smartCubeConnected,
+          scrambleVerif: scrambleVerificationPref,
+          inspection: inspectionPref,
+          stateIsIdle: true,
+        })
+      ) {
+        engine.arm();
+      } else if (
+        smartCubeConnected &&
+        scrambleVerificationPref &&
+        inspectionPref
+      ) {
+        engine.startInspection();
+      }
+    }
+  }, [engine, smartCubeConnected, scrambleVerificationPref, inspectionPref]);
 
   useTimerKeyboard({
     onPress: press,
@@ -836,24 +993,51 @@ export function useSolveSession(
     disabledRef: options.keyboardDisabledRef,
   });
 
-  return {
-    phase,
-    time,
-    lastTime,
-    press,
-    release,
-    reset,
-    cancel,
-    validation,
-    smartCubeConnected,
-    inspection: inspectionPref,
-    scrambleVerification: scrambleVerificationPref,
-    method: methodPref,
-    collectedMoves,
-    lastSolveMoves,
-    lastSolveOrientations,
-    lastSolveOrientationTimeline,
-  };
+  // Stable result identity: consumers (App, TimerStage memo) must not see a
+  // new object on unrelated renders. Every field that can change is listed —
+  // notably `time` no longer moves per frame (leaf-consumed via tick$).
+  const result = useMemo<UseSolveSessionResult>(
+    () => ({
+      phase,
+      time,
+      lastTime,
+      tick$: engine.tick$,
+      press,
+      release,
+      reset,
+      cancel,
+      validation,
+      smartCubeConnected,
+      inspection: inspectionPref,
+      scrambleVerification: scrambleVerificationPref,
+      method: methodPref,
+      collectedMoves,
+      lastSolveMoves,
+      lastSolveOrientations,
+      lastSolveOrientationTimeline,
+    }),
+    [
+      phase,
+      time,
+      lastTime,
+      engine,
+      press,
+      release,
+      reset,
+      cancel,
+      validation,
+      smartCubeConnected,
+      inspectionPref,
+      scrambleVerificationPref,
+      methodPref,
+      collectedMoves,
+      lastSolveMoves,
+      lastSolveOrientations,
+      lastSolveOrientationTimeline,
+    ],
+  );
+
+  return result;
 }
 
 /** Re-export for consumers that need the analysis pipeline. */

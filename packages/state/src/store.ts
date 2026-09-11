@@ -145,6 +145,14 @@ export interface PreferencesState {
   scrambleVerification: boolean;
   setScrambleVerification: (value: boolean) => void;
 
+  /**
+   * Use a 3×3 Smart Cube as a 2×2 (corners-only): stop detection and timer
+   * look at corners only, moves are filtered on save. Effective only when the
+   * active puzzle is 2×2 and a Smart Cube is connected. Default false (legacy).
+   */
+  use3x3As2x2: boolean;
+  setUse3x3As2x2: (value: boolean) => void;
+
   /** Solving method for phase detection and metrics. */
   method: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus';
   setMethod: (value: 'CFOP' | 'Roux' | 'ZZ' | 'Petrus') => void;
@@ -423,6 +431,7 @@ const DEFAULT_VALUES = {
   inspection: true,
   scrambleDisplay: true,
   scrambleVerification: true,
+  use3x3As2x2: true,
   method: 'CFOP' as const,
   replayFloatingStickers: true,
   focusMode: true,
@@ -568,6 +577,7 @@ export const createPreferencesStore = () => {
         setInspection: (inspection) => set({ inspection }),
         setScrambleDisplay: (scrambleDisplay) => set({ scrambleDisplay }),
         setScrambleVerification: (scrambleVerification) => set({ scrambleVerification }),
+        setUse3x3As2x2: (use3x3As2x2) => set({ use3x3As2x2 }),
         setMethod: (method) => set({ method }),
         setReplayFloatingStickers: (replayFloatingStickers) => set({ replayFloatingStickers }),
         setFocusMode: (focusMode) => set({ focusMode }),
@@ -664,6 +674,7 @@ export const createPreferencesStore = () => {
           inspection: state.inspection,
           scrambleDisplay: state.scrambleDisplay,
           scrambleVerification: state.scrambleVerification,
+          use3x3As2x2: state.use3x3As2x2,
           method: state.method,
           focusMode: state.focusMode,
           audioCues: state.audioCues,

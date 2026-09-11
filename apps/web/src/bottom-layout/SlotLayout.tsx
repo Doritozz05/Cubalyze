@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import type { Solve } from "@/types";
@@ -82,8 +83,11 @@ export interface SlotLayoutProps {
 /**
  * Renderer for slot templates. Every piece of content lives INSIDE a named
  * slot: stats (any combination, BPA/WPA included), display blocks, or tools.
+ *
+ * Memoized: slot content is static during a solve (solves/scramble don't
+ * change mid-run), so per-frame timer updates must never reach this subtree.
  */
-export function SlotLayout({
+export const SlotLayout = memo(function SlotLayout({
   template,
   solves,
   puzzleFilter,
@@ -274,4 +278,4 @@ export function SlotLayout({
       </div>
     </div>
   );
-}
+});

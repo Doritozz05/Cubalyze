@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2, MessageSquare, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,9 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
+import type { Observable } from "rxjs";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
+import { useEngineTime } from "@/hooks/useEngineTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimerContainerProps {
@@ -67,8 +69,13 @@ export interface TimerContainerProps {
  * Interaction surface for the timer. Presentational — all state comes
  * from `useSolveSession`. Wires pointer/touch events and keyboard
  * fallback via the parent-provided press/release.
+ *
+ * Memoized: the parent (LiveTimerContainer/TimerStage) re-renders on every
+ * session identity change (e.g. per collected move), but this subtree only
+ * needs to update when its own props change — notably `time`, which moves
+ * per frame via LiveTimerContainer.
  */
-export function TimerContainer({
+export const TimerContainer = memo(function TimerContainer({
   phase,
   time,
   lastTime,
@@ -477,4 +484,28 @@ export function TimerContainer({
       )}
     </div>
   );
+});
+
+/**
+ * Tick-isolated timer: subscribes to the engine tick stream in this leaf so
+ * ONLY the timer face re-renders per frame. The parent (TimerStage/App)
+ * receives stable props and stays out of the per-frame path — this is the
+ * structural fix for the 3D-lag investigation (per-frame App re-renders
+ * starved the three.js rAF loop).
+ *
+ * `time` is the settled snapshot (stop/reset value) used before the first
+ * tick; every tick after that comes from `tick$`.
+ */
+export interface LiveTimerContainerProps extends Omit<TimerContainerProps, "time"> {
+  tick$: Observable<number> | undefined;
+  time: number;
 }
+
+export const LiveTimerContainer = memo(function LiveTimerContainer({
+  tick$,
+  time: initialTime,
+  ...rest
+}: LiveTimerContainerProps) {
+  const liveTime = useEngineTime(tick$, initialTime);
+  return <TimerContainer {...rest} time={liveTime} />;
+});

@@ -648,6 +648,8 @@
       "disconnect": "Disconnect",
       "connect": "Connect",
       "connecting": "Connecting...",
+      "use3x3As2x2": "Use 3×3 Smart Cube as 2×2",
+      "use3x3As2x2Hint": "With the 2×2 puzzle selected, solve 2×2 scrambles using only the corners of your 3×3 cube. Timer stop looks at corners only; moves are filtered on save and rotations are not recorded.",
       "status": {
         "connecting": "Connecting",
         "connected": "Connected",

@@ -247,12 +247,17 @@ export default function App() {
   });
 
   // ── Centralised solve-session orchestration ────────────────────────────
+  // "3×3 as 2×2" mode: only when the 2×2 puzzle is active and the user opted
+  // in via Settings → Smart Cube. The scramble is untouched (2×2 scrambles
+  // already generate for puzzle 2×2); 3×3 behaves exactly as before.
+  const use3x3As2x2 = useStore(preferencesStore, (s) => s.use3x3As2x2);
   const session$ = useSolveSession(currentScramble, {
     onSolve: handleComplete,
     keyboardDisabledRef,
     // Phase A5: the timer consumes the active event's WCA rules profile
     // (inspection window, penalties) — not a single global 3×3 set.
     rules: getEventForCategory(puzzle)?.rules,
+    cornersOnly: puzzle === "2x2" && use3x3As2x2,
   });
 
   // Stable member functions (memoized inside useSolveSession) — destructured
