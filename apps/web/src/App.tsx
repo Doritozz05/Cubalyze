@@ -398,8 +398,10 @@ export default function App() {
     handleAnalyzeSolve(solve);
   }, [handleAnalyzeSolve]);
 
+  // The orientation-adapted display policy — including "a 2×2 never follows the
+  // cube" — lives in useOrientation; the timer only supplies the active puzzle.
   const { remapScramble } = useOrientation();
-  const displayScramble = remapScramble(currentScramble);
+  const displayScramble = remapScramble(currentScramble, puzzle);
 
   // Penalty update from the timer row: persist + reset the timer engine.
   const handleUpdatePenalty = useCallback(
