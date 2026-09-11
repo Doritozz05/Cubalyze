@@ -116,7 +116,13 @@ function startFpsSampler(): void {
     stats.fpsLastTs = now;
     if (gap > 34) stats.jankFrames++;
     if (gap > stats.worstGap) stats.worstGap = gap;
-    const w = stats.currentWindow!;
+    // resetPerfDiag() can null the window mid-flight (IDLE transition) —
+    // recreate instead of crashing the sampler.
+    let w = stats.currentWindow;
+    if (!w) {
+      w = { start: now, frames: 0 };
+      stats.currentWindow = w;
+    }
     w.frames++;
     if (now - w.start >= 1000) {
       stats.windows.push(w);
