@@ -18,6 +18,7 @@ import {
 } from "@cubeforge/hardware-hal";
 import {
   useScrambleValidator,
+  cubeStateCornersSolved,
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
 import { shouldAutoArm } from "@/hooks/shouldAutoArm";
@@ -30,7 +31,6 @@ import {
 } from "@/hooks/solveSessionDebug";
 import type {
   CubeFace,
-  CubeMoveDirection,
   CubeMoveEvent,
   CubeOrientation,
   OrientationTimeline,
@@ -149,26 +149,18 @@ function stateTokensFromMoves(moves: CubeMoveEvent[]): string[] {
 }
 
 /**
- * Corners-solved check with graceful degradation: the web app resolves
- * `@cubeforge/math-core` to its built `dist`, so a stale dist (built before
- * `isCornersSolved` existed) would throw here and break the whole move
- * subscription. If the method is missing, fall back to full-cube solved
- * (legacy behavior) and warn once.
+ * Corners-solved check for the move-tracker path in "3×3 as 2×2" mode.
+ *
+ * Delegates to the SAME rotation-invariant predicate the facelet path uses
+ * (every face's four corner stickers monochrome), so the two stop mechanisms
+ * can never disagree. Using `state.isCornersSolved()` here instead would
+ * demand the corners align with the 3×3 centers — a 2×2 has no fixed centers,
+ * so a 2×2 finished in a rotated frame (whole-cube rotation of solved) would
+ * never stop the timer, non-deterministically depending on the user's last
+ * AUF.
  */
-let staleDistWarned = false;
-
 function trackerCornersSolved(state: CubeState): boolean {
-  if (typeof state.isCornersSolved === "function") {
-    return state.isCornersSolved();
-  }
-  if (!staleDistWarned) {
-    staleDistWarned = true;
-    console.warn(
-      "[useSolveSession] math-core dist lacks isCornersSolved — rebuild " +
-        "@cubeforge/math-core. Corners-only mode degraded to full-cube stop.",
-    );
-  }
-  return state.isSolved();
+  return cubeStateCornersSolved(state);
 }
 
 /**
@@ -353,10 +345,9 @@ export function useSolveSession(
   // Tracks the real cube state from ALL MOVE events (scramble + solve),
   // regardless of timer state. More reliable than facelets because MOVE
   // events are immediate and universal across all cube generations.
-  // Initialised from the first FACELETS event (absolute state at connect),
-  // then kept in sync move-by-move.
+  // Kept in sync move-by-move AND re-seeded from every absolute FACELETS
+  // snapshot (self-healing — see the facelets handler below).
   const realCubeStateRef = useRef(new CubeState());
-  const realCubeStateSeededRef = useRef(false);
 
   // ── Orientation timeline compression (for persistent storage) ────────────
   const lastSolveOrientationTimelineRef = useRef<OrientationTimeline | undefined>(undefined);
@@ -420,36 +411,23 @@ export function useSolveSession(
       // justScrambled effect. Without this, the pending replay on RUNNING
       // transition would push them back as solve moves.
       //
-      // IMPORTANT: also undo ALL buffered moves from realCubeStateRef so the
-      // tracker state matches the real cube. Each buffered move was applied
-      // to the tracker in the IDLE branch but is NOT a solve move — it's a
-      // scramble-leak from the race window where isScrambledRef hadn't
-      // propagated yet.  Undo in reverse order to correctly peel off each
-      // layer.
+      // CRITICAL: do NOT undo these buffered moves from realCubeStateRef.
+      // The `IDLE && isScrambledRef` guard above already DROPS every true
+      // scramble-leak (a move arriving after the validator confirmed the
+      // scramble), so a move can only reach the buffer when isScrambled is
+      // still false — i.e. a move the user PHYSICALLY performed during the
+      // scramble (or the first solve move in the arm race window). Either
+      // way it is already part of the real cube state the tracker mirrors,
+      // so rewinding it desynchronises the tracker by the whole scramble.
+      // (Reported: first solve after connecting never stopped the timer —
+      // the engine starts IDLE, so the entire scramble was buffered and then
+      // undone, leaving the tracker in the pre-scramble frame.)
       if (
         engineState === EngineState.INSPECTION ||
         engineState === EngineState.READY_FOR_MOVE ||
         engineState === EngineState.TOUCHING
       ) {
-        const buf = pendingMovesBufferRef.current;
-        if (buf.length > 0) {
-          // ALWAYS clear the buffer on arm.  The buffer contains moves
-          // that arrived in IDLE — these are either scramble-leaks
-          // (last scramble moves arriving after isScrambled was set but
-          // before the effect propagated) or pre-scramble noise.
-          // Legitimate solve moves arrive AFTER the engine arms (in RFM
-          // or RUNNING), never before.  Undo from realCubeStateRef and
-          // discard.
-          for (let bi = buf.length - 1; bi >= 0; bi--) {
-            const buffered = buf[bi];
-            const invDir: CubeMoveDirection =
-              buffered.direction === 1 ? -1 : buffered.direction === -1 ? 1 : 2;
-            realCubeStateRef.current.applySequence(
-              MoveTransformer.moveToNotation(buffered.face, invDir),
-            );
-          }
-          pendingMovesBufferRef.current = [];
-        }
+        pendingMovesBufferRef.current = [];
       }
       // capture the real cube state at the moment the timer starts
       // running. realCubeStateRef tracks all moves from connect, so this
@@ -810,18 +788,17 @@ export function useSolveSession(
     if (adapter.facelets$) {
       faceletSub = adapter.facelets$.subscribe(
         (f: string) => {
-          // Seed the move-based CubeState tracker from the first
-          // FACELETS event (absolute state at connect). Subsequent MOVE
-          // events keep it in sync.
-          if (!realCubeStateSeededRef.current) {
-            try {
-              const realState = FaceletStringConverter.fromFaceletString(f);
-              realCubeStateRef.current = realState;
-              realCubeStateSeededRef.current = true;
-            } catch {
-              // Facelets string may be invalid — ignore and keep tracking
-              // from moves only (starting from solved assumption).
-            }
+          // Self-healing tracker seed: every FACELETS event is an ABSOLUTE
+          // snapshot of the physical cube, so re-seed the move-based tracker
+          // from it (not just the first one). The GAN cube pushes periodic
+          // facelets, so any desync from a missed/duplicated/undone BLE move,
+          // or from reconnecting a different cube, heals automatically.
+          // Between snapshots the MOVE events keep the tracker in sync.
+          try {
+            realCubeStateRef.current = FaceletStringConverter.fromFaceletString(f);
+          } catch {
+            // Facelets string may be invalid — ignore and keep tracking
+            // from moves only (starting from the previous snapshot).
           }
           const isSolved = SOLVED_FACELETS.test(f);
           if (isSolved && engine.getState() === EngineState.RUNNING) {

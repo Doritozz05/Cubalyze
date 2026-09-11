@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Observable } from 'rxjs';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
 import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS, SOLVED_FACELETS_2X2 } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS, SOLVED_FACELETS_2X2, cornerFacelet } from '@cubeforge/math-core';
 import { orientationStore } from '@cubeforge/state';
 
 /**
@@ -183,17 +183,58 @@ function resetRef(s: ValidatorState): void {
 }
 
 /**
- * Returns true when 54-char facelets describe a cube whose corners are all
- * home and oriented (edges ignored). Used by corners-only mode ("3×3 as
- * 2×2"). Returns false on any parse error (e.g. 24-char 2×2 facelets, which
- * the SOLVED_FACELETS_2X2 regex covers instead).
+ * The 4 corner-sticker indices of each face (U, R, F, D, L, B), derived from
+ * the shared `cornerFacelet` table so they can never drift from the math-core
+ * corner model. Face blocks are 9 stickers (`Math.floor(i / 9)`).
+ */
+const CORNER_FACELET_INDICES_BY_FACE: readonly number[][] = (() => {
+  const byFace: number[][] = Array.from({ length: 6 }, () => []);
+  for (const triple of cornerFacelet) {
+    for (const idx of triple) byFace[Math.floor(idx / 9)].push(idx);
+  }
+  return byFace;
+})();
+
+/**
+ * Returns true when a 54-char facelet string describes a cube whose corners
+ * form a SOLVED 2×2 (edges and — crucially — the absolute frame defined by the
+ * 3×3 centers are both ignored).
+ *
+ * Used by corners-only mode ("3×3 as 2×2"). A 2×2 has no fixed centers, so a
+ * 2×2 is solved whenever every face's four corner stickers are monochrome,
+ * REGARDLESS of how the corner assembly is oriented relative to the 3×3
+ * centers. The previous implementation parsed the corners with
+ * `fromFaceletString(...).isCornersSolved()`, which requires `cp === identity`
+ * and `co === 0` — i.e. it demanded the corners line up with the 3×3 centers.
+ * A 2×2 solved in a rotated frame (e.g. a whole-cube rotation of solved) was
+ * therefore misreported as unsolved ("Solve this cube to apply this
+ * scramble", missed timer stop).
+ *
+ * Checking the six faces directly is correct AND more robust than reparsing:
+ * it needs no valid edge state (a transient BLE snapshot with impossible edges
+ * would make `fromFaceletString` throw and hide a genuinely solved 2×2).
+ *
+ * Returns false for any non-54-char input — e.g. the 24-char 2×2 facelets
+ * covered by SOLVED_FACELETS_2X2 instead.
  */
 export function faceletsCornersSolved(f: string): boolean {
-  try {
-    return FaceletStringConverter.fromFaceletString(f).isCornersSolved();
-  } catch {
-    return false;
+  if (f.length !== 54) return false;
+  for (const indices of CORNER_FACELET_INDICES_BY_FACE) {
+    const first = f[indices[0]];
+    for (let k = 1; k < indices.length; k++) {
+      if (f[indices[k]] !== first) return false;
+    }
   }
+  return true;
+}
+
+/**
+ * Rotation-invariant corners-solved check for an in-memory CubeState — the
+ * exact same criterion as {@link faceletsCornersSolved}, so the move-tracker
+ * and facelet pipelines can never disagree.
+ */
+export function cubeStateCornersSolved(state: CubeState): boolean {
+  return faceletsCornersSolved(FaceletStringConverter.toFaceletString(state));
 }
 
 const EMPTY_VALIDATION: ScrambleValidationResult = {
@@ -626,7 +667,7 @@ export function useScrambleValidator(
       // Corners-only mode ("3×3 as 2×2") compares corners only, mirroring
       // the corners-based solved-detection in handleFacelets.
       const mathSolved = cornersOnly
-        ? s.currentState.isCornersSolved()
+        ? cubeStateCornersSolved(s.currentState)
         : s.currentState.isSolved();
       if (s.isError && mathSolved) {
         scheduleFacelets(s, adapter);
