@@ -305,6 +305,20 @@ export class CubeState implements CubeStateInternal {
   }
 
   /**
+   * True when all 8 corners are home and oriented, ignoring edges entirely.
+   * Used by the "3×3 as 2×2" smart-cube mode: the user solves 2×2 scrambles
+   * with a 3×3 cube, so the timer must stop when corners are done even though
+   * edges stay scrambled.
+   */
+  public isCornersSolved(): boolean {
+    for (let i = 0; i < 8; i++) {
+      if (this.cp[i] !== i) return false;
+      if (this.co[i] !== 0) return false;
+    }
+    return true;
+  }
+
+  /**
    * True when the cube is solved up to a whole-cube rotation — i.e. every
    * face is monochromatic (each face shows a single color), which is
    * equivalent to "a rotation of the solved cube".

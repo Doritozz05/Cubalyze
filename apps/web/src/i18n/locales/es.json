@@ -648,6 +648,8 @@
       "disconnect": "Desconectar",
       "connect": "Conectar",
       "connecting": "Conectando...",
+      "use3x3As2x2": "Usar Smart Cube 3×3 como 2×2",
+      "use3x3As2x2Hint": "Con el puzzle 2×2 seleccionado, resuelve scrambles de 2×2 usando solo las esquinas de tu cubo 3×3. El cronómetro solo mira las esquinas; los movimientos se filtran al guardar y no se registran rotaciones.",
       "status": {
         "connecting": "Conectando",
         "connected": "Conectado",
