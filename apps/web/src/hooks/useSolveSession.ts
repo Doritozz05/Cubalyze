@@ -28,6 +28,12 @@ import {
   logBleAudit,
   type BleAuditEntry,
 } from "@/hooks/solveSessionDebug";
+import {
+  perfTick,
+  perfMove,
+  resetPerfDiag,
+  dumpPerfDiag,
+} from "@/utils/perfDiag";
 import type {
   CubeFace,
   CubeMoveDirection,
@@ -371,6 +377,8 @@ export function useSolveSession(
         collectedMovesRef.current = [];
         collectedOrientationsRef.current = [];
         setCollectedMoves([]);
+        // Fresh diagnostic window for the next solve.
+        resetPerfDiag();
         // Reset BLE dedup tracker for the next solve
         lastCubeTimestampRef.current = null;
         lastMoveFaceRef.current = null;
@@ -439,10 +447,15 @@ export function useSolveSession(
       }
       setPhase(mapTimerState(engineState));
     });
-    const sub2 = engine.tick$.subscribe((t) => setTime(t));
+    const sub2 = engine.tick$.subscribe((t) => {
+      perfTick();
+      setTime(t);
+    });
     const sub3 = engine.stop$.subscribe((ev) => {
       // Short double-tap when the solve is finalized (touch regime only).
       hapticStop();
+      // perfDiag: print the lag-investigation summary for this solve.
+      dumpPerfDiag("solve-stop");
       setLastTime(ev.timeMs);
       setTime(ev.timeMs);
       // Corners-only mode ("3×3 as 2×2"): persist the filtered 2×2 frame —
@@ -669,6 +682,7 @@ export function useSolveSession(
       lastCubeTimestampRef.current = move.cubeTimestamp ?? null;
       lastMoveFaceRef.current = move.face;
       lastMoveDirRef.current = move.direction;
+      perfMove();
 
       const current = engine.getState();
 

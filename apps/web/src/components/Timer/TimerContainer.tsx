@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
+import { perfRender } from "@/utils/perfDiag";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TimerContainerProps {
@@ -92,6 +93,8 @@ export function TimerContainer({
   onDeleteSolve,
   className,
 }: TimerContainerProps) {
+  // perfDiag (opt-in): counts timer re-renders while the timer runs.
+  perfRender("TimerContainer");
   const { t } = useTranslation("timer");
   const isTouch = useIsTouch();
   const isCoarsePointer = useIsCoarsePointer();

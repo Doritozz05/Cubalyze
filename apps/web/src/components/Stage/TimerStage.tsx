@@ -20,6 +20,7 @@ import { getSlotTemplate } from "@/bottom-layout/slot-templates";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { shortcutKeyLabel } from "@/utils/keyLabel";
 import { useSolveSession } from "@/hooks/useSolveSession";
+import { perfRender } from "@/utils/perfDiag";
 import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
@@ -80,6 +81,9 @@ export function TimerStage(props: TimerStageProps) {
     puzzle,
     isFocused,
   } = props;
+
+  // perfDiag (opt-in): counts stage re-renders while the timer runs.
+  perfRender("TimerStage");
 
   const { t } = useTranslation("timer");
 

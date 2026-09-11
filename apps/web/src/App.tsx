@@ -12,6 +12,7 @@ import { startSyncService } from "@/services/sync";
 import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
+import { perfRender } from "@/utils/perfDiag";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { useReminderScheduler } from "@/hooks/useReminderScheduler";
@@ -98,6 +99,8 @@ function viewFromPath(pathname: string): ViewId | null {
 }
 
 export default function App() {
+  // perfDiag (opt-in): counts root re-renders while the timer runs.
+  perfRender("App");
   // Anonymous local identity (docs/plan_profile F0): `userId` is the stable
   // seed for the CubeMark identicon shown in the header chip and Profile view.
   // After an account link the identicon seed is parked separately, so the

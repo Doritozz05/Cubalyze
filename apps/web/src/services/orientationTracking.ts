@@ -31,6 +31,7 @@
 
 import { OrientationTracker } from "@cubeforge/cube-3d-engine";
 import { orientationStore } from "@cubeforge/state";
+import { perfGyro, perfOrientationWrite } from "@/utils/perfDiag";
 import type { GyroEvent } from "@cubeforge/types";
 import type { Observable, Subscription } from "rxjs";
 
@@ -176,6 +177,7 @@ export function startOrientationTracking(adapter: OrientationTrackingSource): vo
   tracker = new OrientationTracker({ gyroSupported: false });
 
   tracker.orientation$.subscribe((o) => {
+    perfOrientationWrite();
     orientationStore.getState().setOrientation(o);
   });
 
@@ -204,6 +206,7 @@ export function startOrientationTracking(adapter: OrientationTrackingSource): vo
   gyroSub =
     adapter.gyro$?.subscribe((q: GyroEvent) => {
       if (!tracker) return;
+      perfGyro();
       const mapped = mapQuat(q);
       lastMappedQuat = mapped;
 
