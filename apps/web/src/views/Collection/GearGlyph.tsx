@@ -3,12 +3,10 @@
 /**
  * GearGlyph.tsx — procedural product render for a collection item.
  *
- * EXPERIMENTAL (branch `exp/cube-collection`).
- *
- * There is no photo pipeline yet, so every item is drawn: an isometric cube
- * built from its own sticker palette. That is deliberate — the palette is data
- * the model already carries, so the render is meaningful (this is *your* cube,
- * in *its* colours) rather than a placeholder icon.
+ * There is no photo pipeline, so every item is drawn: an isometric cube built
+ * from its own sticker palette. That is deliberate — the palette is data the
+ * model already carries, so the render is meaningful (this is *your* cube, in
+ * *its* colours) rather than a placeholder icon.
  *
  * Geometry (side 1, height h, 30° isometric):
  *
@@ -20,16 +18,19 @@
  * Every face is the unit square mapped by one matrix, so a face's 3×3 stickers
  * are plain rects in local [0,1]² coordinates that inherit the projection.
  *
- * Non-cube gear renders as a flat "plate" using the same three-face language
- * (height ≈ 0.22, solid faces) so the rail stays visually even.
+ * Gear (non-cube categories) renders as a flat "plate" using the same
+ * three-face language (height ≈ 0.22, solid faces) so the grid stays even.
  */
 
 import { useId, useMemo } from "react";
-import { FACE, stickerStateFor, type GearItem } from "./collectionModel";
+import { stickerStateFor, type GearItem } from "./collectionModel";
 
 /** cos(30°) — the isometric horizontal unit. */
 const COS30 = 0.8660254;
 const SIN30 = 0.5;
+
+/** Face indices into the palette, in U D F B R L order. */
+const FACE = { U: 0, D: 1, F: 2, B: 3, R: 4, L: 5 } as const;
 
 /** Degrade a #rrggbb colour by `factor` (0 = black, 1 = unchanged). */
 function shade(hex: string, factor: number): string {
@@ -69,15 +70,7 @@ function Face({
   return (
     <g transform={transform}>
       {/* Plastic body behind the stickers. */}
-      <rect
-        x="0"
-        y="0"
-        width="1"
-        height="1"
-        rx={FRAME_RADIUS}
-        fill="#101418"
-        opacity="0.92"
-      />
+      <rect x="0" y="0" width="1" height="1" rx={FRAME_RADIUS} fill="#101418" opacity="0.92" />
       {plate ? (
         <rect
           x={GAP}
@@ -111,20 +104,18 @@ function Face({
 
 export interface GearGlyphProps {
   item: GearItem;
+  /** Cube-kind categories get the full 3×3 render; gear gets the flat plate. */
+  isCube: boolean;
   /** Rendered width in px; height follows the isometric aspect. */
   size?: number;
   className?: string;
 }
 
-export function GearGlyph({ item, size = 200, className }: GearGlyphProps) {
+export function GearGlyph({ item, isCube, size = 200, className }: GearGlyphProps) {
   const uid = useId();
-  const isCube = item.kind === "cube";
   const height = isCube ? 1 : 0.22;
 
-  const stickers = useMemo(
-    () => (isCube ? stickerStateFor(item) : null),
-    [isCube, item],
-  );
+  const stickers = useMemo(() => (isCube ? stickerStateFor(item) : null), [isCube, item]);
 
   // Faces in U D F B R L order, reduced to the three the render shows.
   const topStickers = stickers ? stickers[VISIBLE.top] : null;

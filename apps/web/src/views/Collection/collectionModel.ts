@@ -1,50 +1,90 @@
 /**
  * collectionModel.ts — the data model behind the Locker (gear collection).
  *
- * EXPERIMENTAL (branch `exp/cube-collection`).
+ * The Locker is organised as a **two-level taxonomy**:
  *
- * Design goals, in order:
+ *   Categoría (outer)          Tipo (inner)            Item
+ *   ────────────────           ────────────            ────
+ *   Cubos (kind: cube)         3×3, 2×2, Pyraminx…     GAN 12, Valk 2…
+ *   Lubes (kind: gear)         (no defaults)           Weight 5…
+ *   Gear  (kind: gear)         (no defaults)           Timer, mat…
  *
- *   1. **Gear, not just cubes.** The item carries a `kind`, so the same view
- *      can hold cubes, timers, mats, lube… The cube is simply the kind that
- *      gets a full 3D-colour glyph today.
- *   2. **A persistence seam that costs nothing.** `CollectionSource` is the one
- *      place the view reads items from. Today the only implementation is the
- *      read-only sample catalog below; a future SQLite-backed source (the repo
- *      already runs SQLite-WASM in a worker, with one repository per domain)
- *      implements the same interface and the view does not change. That is why
- *      nothing here touches the database: the seam is the deliverable.
- *   3. **Deterministic presentation.** A given item id always renders the same
- *      cube pattern (`stickerStateFor`), so the grid is stable across renders
- *      and reloads without storing anything.
+ * Categories and types are both user-created and fully editable. The default
+ * "Cubos" category seeds its types from the app's **global puzzle categories**
+ * (`@/utils/puzzleUtils`), minus the exclusions the user keeps (OH out of the
+ * box). That bridge lives in `collectionStore.ts`, never here: this module is
+ * pure data + pure functions, with no React and no I/O, so it is fully
+ * unit-testable.
  *
- * No React, no I/O — pure data + pure functions, so it is unit-testable.
+ * "Main" (the cube your solves default to) is only meaningful for cube-kind
+ * categories; {@link togglePrimary} enforces one main per cube category.
  */
 
 import type { ParseKeys } from 'i18next';
+import type { PuzzleCategory } from '@/types';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Taxonomy ────────────────────────────────────────────────────────────────
 
-/** What the item is. Only `cube` has a 3D glyph today; the rest degrade to a
- *  neutral card so the model can grow into full gear without a migration. */
-export type GearKind = 'cube' | 'timer' | 'mat' | 'lube' | 'other';
+/**
+ * What a category holds. `cube` categories render the isometric cube glyph and
+ * may carry a "main" item; `gear` categories render a flat plate glyph.
+ */
+export type CategoryKind = 'cube' | 'gear';
 
-/** Sticker palette per face, in U D F B R L order (the math-core face order). */
-export type GearPalette = readonly [string, string, string, string, string, string];
-
-/** Kind → translation key. A single explicit map (rather than a template
- *  literal at each call site) so i18next keeps type-checking the keys. */
-export const KIND_I18N_KEY: Record<GearKind, ParseKeys<'collection'>> = {
+/** Category kind → translation key (explicit map keeps i18next typed). */
+export const KIND_I18N_KEY: Record<CategoryKind, ParseKeys<'collection'>> = {
   cube: 'kinds.cube',
-  timer: 'kinds.timer',
-  mat: 'kinds.mat',
-  lube: 'kinds.lube',
-  other: 'kinds.other',
+  gear: 'kinds.gear',
 };
 
-/** Face index into {@link GearPalette} — named so call sites read like the
- *  cube does instead of using bare 0–5. */
-export const FACE = { U: 0, D: 1, F: 2, B: 3, R: 4, L: 5 } as const;
+export interface CollectionCategory {
+  id: string;
+  name: string;
+  kind: CategoryKind;
+  /** Lucide icon id (see `CATEGORY_ICONS` in the view layer). */
+  icon: string;
+  /** Optional accent colour for the category chip. */
+  accent?: string;
+  createdAt: number;
+}
+
+export interface CollectionType {
+  id: string;
+  categoryId: string;
+  name: string;
+  /**
+   * The app puzzle category this type mirrors (e.g. `"3x3"`) when it came from
+   * the global selector, or `null` for a free-form type. Used to keep the
+   * "mirror app categories" sync idempotent.
+   */
+  puzzleCategory: PuzzleCategory | null;
+  createdAt: number;
+}
+
+// ─── Items ───────────────────────────────────────────────────────────────────
+
+/** Sticker palette per face, in U D F B R L order (math-core face order). */
+export type GearPalette = readonly [string, string, string, string, string, string];
+
+/** Where an item stands in its lifecycle. */
+export type ItemStatus = 'owned' | 'wishlist' | 'sold' | 'lent';
+
+export const STATUS_I18N_KEY: Record<ItemStatus, ParseKeys<'collection'>> = {
+  owned: 'status.owned',
+  wishlist: 'status.wishlist',
+  sold: 'status.sold',
+  lent: 'status.lent',
+};
+
+/** Optional physical condition. */
+export type ItemCondition = 'mint' | 'good' | 'used' | 'broken';
+
+export const CONDITION_I18N_KEY: Record<ItemCondition, ParseKeys<'collection'>> = {
+  mint: 'condition.mint',
+  good: 'condition.good',
+  used: 'condition.used',
+  broken: 'condition.broken',
+};
 
 export interface GearLink {
   label: string;
@@ -58,212 +98,655 @@ export interface GearPrice {
 
 export interface GearItem {
   id: string;
-  kind: GearKind;
+  categoryId: string;
+  /** `null` ⇒ the item sits directly under its category, outside any type. */
+  typeId: string | null;
   name: string;
   brand?: string;
   model?: string;
-  /** Puzzle size or form factor, e.g. "3×3", "2×2", "Pyraminx". */
-  size?: string;
+  /** Finish / colourway, e.g. "Stickerless", "Black". */
+  finish?: string;
   /** Sticker colours in U D F B R L order. */
   palette: GearPalette;
   /** ISO date (YYYY-MM-DD). */
   acquiredAt?: string;
   price?: GearPrice;
   notes?: string;
-  links?: readonly GearLink[];
-  /** Image URLs (remote or data). Empty ⇒ the view shows the glyph instead. */
-  photos?: readonly string[];
-  tags?: readonly string[];
-  /** The cube your solves default to. Assignment to a session is a later phase. */
-  primary?: boolean;
+  links: readonly GearLink[];
+  /** Image URLs or small data URLs (localStorage-friendly). */
+  photos: readonly string[];
+  tags: readonly string[];
+  status: ItemStatus;
+  /** The main item of its cube category. Ignored for gear categories. */
+  primary: boolean;
+  favorite: boolean;
+  /** 0–5, rounds to whole stars. */
+  rating?: number;
+  quantity: number;
+  condition?: ItemCondition;
+  serial?: string;
+  createdAt: number;
+  updatedAt: number;
 }
+
+// ─── Whole-state ─────────────────────────────────────────────────────────────
+
+export interface CollectionState {
+  version: number;
+  categories: CollectionCategory[];
+  types: CollectionType[];
+  items: GearItem[];
+  /** Global puzzle categories the user keeps OUT of the cube types. */
+  excludedCategories: PuzzleCategory[];
+}
+
+/** Bump when the persisted shape changes; `normalizeState` migrates older data. */
+export const COLLECTION_VERSION = 1;
+
+/** Global categories left out of the cube types on first run. */
+export const DEFAULT_EXCLUDED_CATEGORIES: readonly PuzzleCategory[] = ['3x3 OH'];
 
 /**
- * The single read seam for the collection. The view never imports the sample
- * catalog directly, so swapping in a persisted source later is a one-line
- * change at the composition root (see `loadCollection`).
+ * One global puzzle category offered by the app selector, resolved by the
+ * store into the shape the model needs. Mirrors `PuzzleSelectorItem`.
  */
-export interface CollectionSource {
-  /** Every item the user owns. Order is not significant — the view sorts. */
-  list(): Promise<readonly GearItem[]>;
+export interface GlobalCategoryOption {
+  category: PuzzleCategory;
+  /** Human label (the store resolves "3x3" → "3×3"). */
+  name: string;
+  /** True when a real scramble provider exists (playable today). */
+  playable: boolean;
+  /** True when the event is planned but not yet available. */
+  planned: boolean;
 }
 
-/** Read-only source backed by the bundled sample catalog. */
-export function sampleCollectionSource(items: readonly GearItem[]): CollectionSource {
-  return { list: async () => items };
-}
+// ─── Palette constants ───────────────────────────────────────────────────────
 
-// ─── Sample catalog ──────────────────────────────────────────────────────────
-//
-// PLACEHOLDER CONTENT. These are illustrative entries so the view has something
-// to render; they are NOT claims about the user's gear. The UI labels them as
-// sample data and the source seam above is what will replace them.
+export const DEFAULT_PALETTE: GearPalette = [
+  '#f8f8f8',
+  '#ffd500',
+  '#00a651',
+  '#0051ba',
+  '#c41e3a',
+  '#ff5800',
+];
 
-export const SAMPLE_GEAR: readonly GearItem[] = [
+/** Ready-made sticker schemes so a new item looks right in two clicks. */
+export const PALETTE_PRESETS: readonly {
+  id: string;
+  labelKey: ParseKeys<'collection'>;
+  palette: GearPalette;
+}[] = [
+  { id: 'standard', labelKey: 'palettes.standard', palette: DEFAULT_PALETTE },
   {
-    id: 'gan-12-ui-freeplay',
-    kind: 'cube',
-    name: 'GAN 12 UI FreePlay',
-    brand: 'GAN',
-    model: '12 UI FreePlay',
-    size: '3×3',
-    palette: ['#F8F8F8', '#FFD500', '#00A651', '#0051BA', '#C41E3A', '#FF5800'],
-    acquiredAt: '2026-01-18',
-    price: { amount: 89.9, currency: 'EUR' },
-    primary: true,
-    tags: ['smart', 'flagship'],
-    notes: 'The cube every solve is timed with. Magnets on the strongest '
-      + 'setting; tensioned slightly loose for M-slice work.',
-    links: [{ label: 'Manual', url: 'https://gancube.com' }],
+    id: 'stickerless',
+    labelKey: 'palettes.stickerless',
+    palette: ['#f2f2f2', '#ffe14d', '#00b45a', '#1f6feb', '#e5484d', '#ff7a18'],
   },
   {
-    id: 'gan-356-m-pro',
-    kind: 'cube',
-    name: 'GAN 356 M Pro',
-    brand: 'GAN',
-    model: '356 M Pro',
-    size: '3×3',
-    palette: ['#FFFFFF', '#FFD500', '#009B48', '#0045AD', '#B90000', '#FF5900'],
-    acquiredAt: '2025-08-02',
-    price: { amount: 42, currency: 'EUR' },
-    tags: ['magnetic', 'daily'],
-    notes: 'Backup main. Stickerless, light magnets.',
+    id: 'pastel',
+    labelKey: 'palettes.pastel',
+    palette: ['#f5f5f5', '#ffe9a8', '#b8e6c9', '#bcd7f5', '#f5b8b8', '#ffd2a8'],
   },
   {
-    id: 'rs3m-2020',
-    kind: 'cube',
-    name: 'MoYu RS3 M 2020',
-    brand: 'MoYu',
-    model: 'RS3 M 2020',
-    size: '3×3',
-    palette: ['#FAFAFA', '#FFD500', '#00A651', '#0051BA', '#C41E3A', '#FF5800'],
-    acquiredAt: '2025-03-11',
-    price: { amount: 12.5, currency: 'EUR' },
-    tags: ['budget', 'beater'],
-    notes: 'The one that lives in the bag.',
-  },
-  {
-    id: 'valk-2-m',
-    kind: 'cube',
-    name: 'Valk 2 M',
-    brand: 'QiYi',
-    model: 'Valk 2 M',
-    size: '2×2',
-    palette: ['#F5F5F5', '#FFD500', '#00A651', '#0051BA', '#C41E3A', '#FF5800'],
-    acquiredAt: '2025-05-20',
-    price: { amount: 18, currency: 'EUR' },
-    tags: ['2x2', 'magnetic'],
-    notes: 'Used for the 2×2 sessions and Ortega drills.',
-  },
-  {
-    id: 'mgc-4',
-    kind: 'cube',
-    name: 'MGC 4×4',
-    brand: 'YJ',
-    model: 'MGC 4',
-    size: '4×4',
-    palette: ['#FFFFFF', '#FFE14D', '#00A651', '#0B5FBF', '#D62828', '#F77F00'],
-    acquiredAt: '2025-11-07',
-    tags: ['big cube'],
-  },
-  {
-    id: 'mgc-5',
-    kind: 'cube',
-    name: 'MGC 5×5',
-    brand: 'YJ',
-    model: 'MGC 5',
-    size: '5×5',
-    palette: ['#FFFFFF', '#FFE14D', '#009B48', '#0051BA', '#B90000', '#FF5900'],
-    acquiredAt: '2025-12-24',
-    tags: ['big cube'],
-  },
-  {
-    id: 'qiyi-pyraminx',
-    kind: 'cube',
-    name: 'QiYi Pyraminx',
-    brand: 'QiYi',
-    model: 'QY Pyraminx',
-    size: 'Pyraminx',
-    palette: ['#FFD500', '#FFFFFF', '#00A651', '#0051BA', '#C41E3A', '#FF5800'],
-    acquiredAt: '2025-06-15',
-    tags: ['non-cube'],
-  },
-  {
-    id: 'gan-smart-timer',
-    kind: 'timer',
-    name: 'GAN Smart Timer',
-    brand: 'GAN',
-    model: 'Bluetooth Timer',
-    palette: ['#2B2F33', '#1B1F23', '#3A4046', '#262B30', '#444B52', '#1F2429'],
-    acquiredAt: '2025-09-30',
-    price: { amount: 39, currency: 'EUR' },
-    notes: 'Pairs with the app over Bluetooth for stackmat-style starts.',
-  },
-  {
-    id: 'thecube-mat',
-    kind: 'mat',
-    name: 'TheCubicle Competition Mat',
-    brand: 'TheCubicle',
-    palette: ['#1F2937', '#111827', '#374151', '#0F172A', '#4B5563', '#1E293B'],
-    acquiredAt: '2025-04-09',
-    tags: ['setup'],
-  },
-  {
-    id: 'lube-maruloxo',
-    kind: 'lube',
-    name: 'Weight 5 Lube',
-    brand: 'Lubicle',
-    model: 'Weight 5',
-    palette: ['#F1F5F9', '#CBD5E1', '#94A3B8', '#E2E8F0', '#64748B', '#CBD5E1'],
-    acquiredAt: '2025-10-12',
-    notes: 'Used sparingly on the core.',
-  },
-  {
-    id: 'toolkit-screwdriver',
-    kind: 'other',
-    name: 'Precision Screwdriver Set',
-    brand: 'Generic',
-    palette: ['#D1D5DB', '#9CA3AF', '#6B7280', '#E5E7EB', '#4B5563', '#9CA3AF'],
-    acquiredAt: '2025-02-01',
-    tags: ['tools'],
+    id: 'carbon',
+    labelKey: 'palettes.carbon',
+    palette: ['#2b2f33', '#1b1f23', '#3a4046', '#262b30', '#444b52', '#1f2429'],
   },
 ];
 
-// ─── Derived helpers ─────────────────────────────────────────────────────────
+// ─── Identity helpers ────────────────────────────────────────────────────────
 
-/** Display order for kinds — cubes first (they are the point), then the rest. */
-const KIND_ORDER: readonly GearKind[] = ['cube', 'timer', 'mat', 'lube', 'other'];
+/** Stable, collision-resistant id with a readable prefix. */
+export function newId(prefix: string): string {
+  const random =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  return `${prefix}_${random}`;
+}
 
-export function kindRank(kind: GearKind): number {
-  const i = KIND_ORDER.indexOf(kind);
-  return i === -1 ? KIND_ORDER.length : i;
+/** Trim, drop empties and de-duplicate case-insensitively, keeping first case. */
+export function normalizeTags(tags: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of tags) {
+    const tag = raw.trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(tag);
+  }
+  return result;
+}
+
+// ─── Seeding ─────────────────────────────────────────────────────────────────
+
+/** Ids of the three built-in categories, so the UI can single out "Cubos". */
+export const SEED_CATEGORY_IDS = {
+  cubes: 'cat_cubes',
+  lubes: 'cat_lubes',
+  gear: 'cat_gear',
+} as const;
+
+/**
+ * Build the first-run collection: three categories, and the cube types taken
+ * from the app's global puzzle categories minus the exclusions. No items —
+ * the Locker starts honestly empty and the user adds what they own.
+ */
+export function seedCollectionState(
+  globalOptions: readonly GlobalCategoryOption[],
+  excluded: readonly PuzzleCategory[] = DEFAULT_EXCLUDED_CATEGORIES,
+  now = Date.now(),
+): CollectionState {
+  const excludedSet = new Set(excluded);
+  const cubeTypes: CollectionType[] = globalOptions
+    .filter((option) => option.playable && !excludedSet.has(option.category))
+    .map((option) => ({
+      id: newId('type'),
+      categoryId: SEED_CATEGORY_IDS.cubes,
+      name: option.name,
+      puzzleCategory: option.category,
+      createdAt: now,
+    }));
+
+  const categories: CollectionCategory[] = [
+    { id: SEED_CATEGORY_IDS.cubes, name: 'Cubos', kind: 'cube', icon: 'Box', createdAt: now },
+    { id: SEED_CATEGORY_IDS.lubes, name: 'Lubes', kind: 'gear', icon: 'Droplet', createdAt: now },
+    { id: SEED_CATEGORY_IDS.gear, name: 'Gear', kind: 'gear', icon: 'Package', createdAt: now },
+  ];
+
+  return {
+    version: COLLECTION_VERSION,
+    categories,
+    types: cubeTypes,
+    items: [],
+    excludedCategories: [...excluded],
+  };
+}
+
+// ─── State helpers ───────────────────────────────────────────────────────────
+
+export function categoryOf(
+  state: CollectionState,
+  categoryId: string | null | undefined,
+): CollectionCategory | undefined {
+  if (!categoryId) return undefined;
+  return state.categories.find((category) => category.id === categoryId);
+}
+
+export function typeOf(
+  state: CollectionState,
+  typeId: string | null | undefined,
+): CollectionType | undefined {
+  if (!typeId) return undefined;
+  return state.types.find((type) => type.id === typeId);
+}
+
+export function isCubeCategory(state: CollectionState, categoryId: string | null): boolean {
+  return categoryOf(state, categoryId)?.kind === 'cube';
+}
+
+/** Types of a category, in creation order. */
+export function typesOfCategory(state: CollectionState, categoryId: string): CollectionType[] {
+  return state.types.filter((type) => type.categoryId === categoryId);
+}
+
+// ─── Category operations ─────────────────────────────────────────────────────
+
+export interface CategoryInput {
+  name: string;
+  kind: CategoryKind;
+  icon: string;
+  accent?: string;
+}
+
+/** Create or update a category (an `id` in the input selects update mode). */
+export function upsertCategory(
+  state: CollectionState,
+  input: CategoryInput & { id?: string; now?: number },
+): CollectionState {
+  const name = input.name.trim();
+  if (!name) return state;
+  const now = input.now ?? Date.now();
+  const id = input.id ?? newId('cat');
+
+  const existing = state.categories.find((c) => c.id === id);
+  if (existing) {
+    return {
+      ...state,
+      categories: state.categories.map((category) =>
+        category.id === existing.id
+          ? {
+              ...category,
+              name,
+              kind: input.kind,
+              icon: input.icon,
+              accent: input.accent,
+            }
+          : category,
+      ),
+    };
+  }
+
+  const category: CollectionCategory = {
+    id,
+    name,
+    kind: input.kind,
+    icon: input.icon,
+    accent: input.accent,
+    createdAt: now,
+  };
+  return { ...state, categories: [...state.categories, category] };
+}
+
+/** Delete a category along with its types and its items. */
+export function removeCategory(state: CollectionState, categoryId: string): CollectionState {
+  return {
+    ...state,
+    categories: state.categories.filter((category) => category.id !== categoryId),
+    types: state.types.filter((type) => type.categoryId !== categoryId),
+    items: state.items.filter((item) => item.categoryId !== categoryId),
+  };
+}
+
+// ─── Type operations ─────────────────────────────────────────────────────────
+
+export interface TypeInput {
+  categoryId: string;
+  name: string;
+  puzzleCategory?: PuzzleCategory | null;
+}
+
+/** Create or update a type (an `id` in the input selects update mode). */
+export function upsertType(
+  state: CollectionState,
+  input: TypeInput & { id?: string; now?: number },
+): CollectionState {
+  const name = input.name.trim();
+  if (!name) return state;
+  const now = input.now ?? Date.now();
+  const id = input.id ?? newId('type');
+
+  const existing = state.types.find((t) => t.id === id);
+  if (existing) {
+    return {
+      ...state,
+      types: state.types.map((type) =>
+        type.id === existing.id
+          ? {
+              ...type,
+              name,
+              categoryId: input.categoryId,
+              puzzleCategory: input.puzzleCategory ?? null,
+            }
+          : type,
+      ),
+    };
+  }
+
+  const type: CollectionType = {
+    id,
+    categoryId: input.categoryId,
+    name,
+    puzzleCategory: input.puzzleCategory ?? null,
+    createdAt: now,
+  };
+  return { ...state, types: [...state.types, type] };
+}
+
+/** Delete a type; its items move up to the category (typeId ⇒ null). */
+export function removeType(state: CollectionState, typeId: string): CollectionState {
+  return {
+    ...state,
+    types: state.types.filter((type) => type.id !== typeId),
+    items: state.items.map((item) => (item.typeId === typeId ? { ...item, typeId: null } : item)),
+  };
+}
+
+/** How many items live under a type (or directly under a category). */
+export function countItemsInType(state: CollectionState, typeId: string): number {
+  return state.items.filter((item) => item.typeId === typeId).length;
+}
+
+export function countItemsInCategory(state: CollectionState, categoryId: string): number {
+  return state.items.filter((item) => item.categoryId === categoryId).length;
+}
+
+// ─── Item operations ─────────────────────────────────────────────────────────
+
+export interface ItemInput {
+  categoryId: string;
+  typeId?: string | null;
+  name: string;
+  brand?: string;
+  model?: string;
+  finish?: string;
+  palette?: GearPalette;
+  acquiredAt?: string;
+  price?: GearPrice;
+  notes?: string;
+  links?: readonly GearLink[];
+  photos?: readonly string[];
+  tags?: readonly string[];
+  status?: ItemStatus;
+  favorite?: boolean;
+  rating?: number;
+  quantity?: number;
+  condition?: ItemCondition;
+  serial?: string;
+}
+
+/** Create or update an item (an `id` in the input selects update mode). */
+export function upsertItem(
+  state: CollectionState,
+  input: ItemInput & { id?: string; now?: number },
+): CollectionState {
+  const name = input.name.trim();
+  if (!name) return state;
+  const now = input.now ?? Date.now();
+  const id = input.id ?? newId('item');
+
+  const existing = state.items.find((i) => i.id === id);
+  if (existing) {
+    const updated: GearItem = {
+      ...existing,
+      categoryId: input.categoryId,
+      typeId: input.typeId ?? null,
+      name,
+      brand: input.brand?.trim() || undefined,
+      model: input.model?.trim() || undefined,
+      finish: input.finish?.trim() || undefined,
+      palette: input.palette ?? existing.palette,
+      acquiredAt: input.acquiredAt || undefined,
+      price: input.price,
+      notes: input.notes?.trim() || undefined,
+      links: input.links ?? existing.links,
+      photos: input.photos ?? existing.photos,
+      tags: normalizeTags(input.tags ?? existing.tags),
+      status: input.status ?? existing.status,
+      favorite: input.favorite ?? existing.favorite,
+      rating: clampRating(input.rating ?? existing.rating),
+      quantity: Math.max(1, Math.round(input.quantity ?? existing.quantity)),
+      condition: input.condition,
+      serial: input.serial?.trim() || undefined,
+      updatedAt: now,
+    };
+    return { ...state, items: state.items.map((item) => (item.id === existing.id ? updated : item)) };
+  }
+
+  const item: GearItem = {
+    id,
+    categoryId: input.categoryId,
+    typeId: input.typeId ?? null,
+    name,
+    brand: input.brand?.trim() || undefined,
+    model: input.model?.trim() || undefined,
+    finish: input.finish?.trim() || undefined,
+    palette: input.palette ?? DEFAULT_PALETTE,
+    acquiredAt: input.acquiredAt || undefined,
+    price: input.price,
+    notes: input.notes?.trim() || undefined,
+    links: input.links ?? [],
+    photos: input.photos ?? [],
+    tags: normalizeTags(input.tags ?? []),
+    status: input.status ?? 'owned',
+    primary: false,
+    favorite: input.favorite ?? false,
+    rating: clampRating(input.rating),
+    quantity: Math.max(1, Math.round(input.quantity ?? 1)),
+    condition: input.condition,
+    serial: input.serial?.trim() || undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+  return { ...state, items: [...state.items, item] };
+}
+
+export function removeItem(state: CollectionState, itemId: string): CollectionState {
+  return { ...state, items: state.items.filter((item) => item.id !== itemId) };
+}
+
+export function updateItem(
+  state: CollectionState,
+  itemId: string,
+  patch: Partial<GearItem>,
+): CollectionState {
+  return {
+    ...state,
+    items: state.items.map((item) =>
+      item.id === itemId ? { ...item, ...patch, updatedAt: patch.updatedAt ?? Date.now() } : item,
+    ),
+  };
+}
+
+export function clampRating(rating: number | undefined): number | undefined {
+  if (rating === undefined || Number.isNaN(rating)) return undefined;
+  return Math.min(5, Math.max(0, Math.round(rating)));
 }
 
 /**
- * Stable, human-meaningful ordering: cubes first, then the main cube, then by
- * name. Kept deterministic (never depends on insertion order) so the rail does
- * not reshuffle between renders.
+ * Toggle the "main" flag. Only cube categories can carry a main, and only one
+ * item per cube category may hold it.
  */
-export function sortGear(items: readonly GearItem[]): GearItem[] {
-  return [...items].sort((a, b) => {
-    const byKind = kindRank(a.kind) - kindRank(b.kind);
-    if (byKind !== 0) return byKind;
-    if (a.kind === 'cube' && b.kind === 'cube' && a.primary !== b.primary) {
-      return a.primary ? -1 : 1;
+export function togglePrimary(state: CollectionState, itemId: string): CollectionState {
+  const item = state.items.find((i) => i.id === itemId);
+  if (!item || !isCubeCategory(state, item.categoryId)) return state;
+
+  const next = !item.primary;
+  return {
+    ...state,
+    items: state.items.map((candidate) => {
+      if (candidate.id === item.id) return { ...candidate, primary: next, updatedAt: Date.now() };
+      if (next && candidate.categoryId === item.categoryId && candidate.primary) {
+        return { ...candidate, primary: false, updatedAt: Date.now() };
+      }
+      return candidate;
+    }),
+  };
+}
+
+export function toggleFavorite(state: CollectionState, itemId: string): CollectionState {
+  const item = state.items.find((i) => i.id === itemId);
+  if (!item) return state;
+  return updateItem(state, itemId, { favorite: !item.favorite });
+}
+
+/** Bulk-move items to another category/type (used by delete/category edits). */
+export function moveItems(
+  state: CollectionState,
+  itemIds: readonly string[],
+  categoryId: string,
+  typeId: string | null,
+): CollectionState {
+  const ids = new Set(itemIds);
+  return {
+    ...state,
+    items: state.items.map((item) =>
+      ids.has(item.id) ? { ...item, categoryId, typeId, primary: false, updatedAt: Date.now() } : item,
+    ),
+  };
+}
+
+// ─── Exclusions + global sync ────────────────────────────────────────────────
+
+/**
+ * Mirror the app's global puzzle categories into a cube category:
+ *   • every playable, non-excluded category gets a type (missing ones added);
+ *   • excluded categories lose their type **only when it holds no items**, so
+ *     an exclusion can never delete a curated item.
+ * Free-form types the user created are never touched.
+ */
+export function syncCubeCategory(
+  state: CollectionState,
+  categoryId: string,
+  globalOptions: readonly GlobalCategoryOption[],
+  excluded: readonly PuzzleCategory[],
+  now = Date.now(),
+): CollectionState {
+  const category = categoryOf(state, categoryId);
+  if (!category || category.kind !== 'cube') return state;
+
+  const excludedSet = new Set(excluded);
+  const wanted = globalOptions.filter(
+    (option) => option.playable && !excludedSet.has(option.category),
+  );
+
+  let types = state.types;
+
+  // 1. Add missing mirrored types.
+  for (const option of wanted) {
+    const exists = types.some(
+      (type) => type.categoryId === categoryId && type.puzzleCategory === option.category,
+    );
+    if (!exists) {
+      types = [
+        ...types,
+        {
+          id: newId('type'),
+          categoryId,
+          name: option.name,
+          puzzleCategory: option.category,
+          createdAt: now,
+        },
+      ];
     }
-    return a.name.localeCompare(b.name);
+  }
+
+  // 2. Drop excluded mirrored types that are empty.
+  const itemTypeIds = new Set(state.items.map((item) => item.typeId));
+  types = types.filter((type) => {
+    if (type.categoryId !== categoryId || !type.puzzleCategory) return true;
+    if (!excludedSet.has(type.puzzleCategory)) return true;
+    return itemTypeIds.has(type.id);
+  });
+
+  if (types === state.types) return state;
+  return { ...state, types, excludedCategories: [...excluded] };
+}
+
+/** Set the global-category exclusion list (kept on the state for the UI). */
+export function setExcludedCategories(
+  state: CollectionState,
+  excluded: readonly PuzzleCategory[],
+): CollectionState {
+  return { ...state, excludedCategories: [...new Set(excluded)] };
+}
+
+// ─── Queries ─────────────────────────────────────────────────────────────────
+
+export type ItemSort = 'name' | 'recent' | 'oldest' | 'price' | 'brand' | 'rating';
+
+/** Which taxonomy node the grid is showing: `null`/`null` means "everything". */
+export interface CollectionSelection {
+  categoryId: string | null;
+  typeId: string | null;
+}
+
+export interface ItemFilter {
+  categoryId?: string | null;
+  typeId?: string | null;
+  status?: ItemStatus | 'all';
+  tags?: readonly string[];
+  query?: string;
+  favoritesOnly?: boolean;
+}
+
+function matchesQuery(item: GearItem, haystack: string): boolean {
+  if (!haystack) return true;
+  const terms = haystack.toLowerCase().split(/\s+/).filter(Boolean);
+  const fields = [
+    item.name,
+    item.brand ?? '',
+    item.model ?? '',
+    item.finish ?? '',
+    item.notes ?? '',
+    item.tags.join(' '),
+  ]
+    .join(' ')
+    .toLowerCase();
+  return terms.every((term) => fields.includes(term));
+}
+
+/** Filter the collection for the current view selection. */
+export function queryItems(state: CollectionState, filter: ItemFilter = {}): GearItem[] {
+  const tagSet = new Set((filter.tags ?? []).map((tag) => tag.toLowerCase()));
+  return state.items.filter((item) => {
+    if (filter.categoryId && item.categoryId !== filter.categoryId) return false;
+    if (filter.typeId && item.typeId !== filter.typeId) return false;
+    if (filter.status && filter.status !== 'all' && item.status !== filter.status) return false;
+    if (filter.favoritesOnly && !item.favorite) return false;
+    if (tagSet.size > 0) {
+      const itemTags = item.tags.map((tag) => tag.toLowerCase());
+      if (!itemTags.some((tag) => tagSet.has(tag))) return false;
+    }
+    if (!matchesQuery(item, filter.query ?? '')) return false;
+    return true;
   });
 }
 
-/** The item marked as primary, if any. */
-export function primaryItem(items: readonly GearItem[]): GearItem | undefined {
-  return items.find((i) => i.primary);
+/**
+ * Deterministic ordering. "Wishlist" items always sink below owned gear so the
+ * grid reads as what you have first.
+ */
+export function sortItems(items: readonly GearItem[], sort: ItemSort = 'name'): GearItem[] {
+  const statusRank: Record<ItemStatus, number> = { owned: 0, lent: 1, sold: 2, wishlist: 3 };
+  return [...items].sort((a, b) => {
+    const byStatus = statusRank[a.status] - statusRank[b.status];
+    if (byStatus !== 0) return byStatus;
+    if (a.primary !== b.primary) return a.primary ? -1 : 1;
+    switch (sort) {
+      case 'recent':
+        return b.createdAt - a.createdAt;
+      case 'oldest':
+        return a.createdAt - b.createdAt;
+      case 'price':
+        return (b.price?.amount ?? -1) - (a.price?.amount ?? -1);
+      case 'rating':
+        return (b.rating ?? -1) - (a.rating ?? -1);
+      case 'brand':
+        return (a.brand ?? '').localeCompare(b.brand ?? '') || a.name.localeCompare(b.name);
+      case 'name':
+      default:
+        return a.name.localeCompare(b.name);
+    }
+  });
 }
 
-/** How many items of each kind — powers the small counts in the header. */
-export function countByKind(items: readonly GearItem[]): Record<GearKind, number> {
-  const counts: Record<GearKind, number> = { cube: 0, timer: 0, mat: 0, lube: 0, other: 0 };
-  for (const item of items) counts[item.kind] += 1;
+/** Every tag in use with its item count, sorted by frequency then name. */
+export function tagFacets(state: CollectionState): { tag: string; count: number }[] {
+  const counts = new Map<string, { tag: string; count: number }>();
+  for (const item of state.items) {
+    for (const tag of item.tags) {
+      const key = tag.toLowerCase();
+      const entry = counts.get(key);
+      if (entry) entry.count += 1;
+      else counts.set(key, { tag, count: 1 });
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+export interface CategoryNode {
+  category: CollectionCategory;
+  types: CollectionType[];
+  count: number;
+}
+
+/** The sidebar tree: categories with their types and item counts. */
+export function buildCategoryTree(state: CollectionState): CategoryNode[] {
+  return state.categories.map((category) => ({
+    category,
+    types: typesOfCategory(state, category.id),
+    count: countItemsInCategory(state, category.id),
+  }));
+}
+
+/** How many items match the active status/query — the header summary line. */
+export function countByStatus(state: CollectionState): Record<ItemStatus, number> {
+  const counts: Record<ItemStatus, number> = { owned: 0, wishlist: 0, sold: 0, lent: 0 };
+  for (const item of state.items) counts[item.status] += 1;
   return counts;
 }
 
@@ -306,8 +789,8 @@ const CENTRE = 4;
  *
  * Every face starts monochrome, then a seeded number of stickers are swapped
  * between **different** faces — leaving the six centres alone so the cube still
- * reads as "this cube, in its own colour scheme, in the middle of a solve".
- * Purely cosmetic: this is a picture, not a legal cube state.
+ * reads as "this cube, in its own colour scheme, mid-solve". Purely cosmetic:
+ * this is a picture, not a legal cube state.
  */
 export function stickerStateFor(item: GearItem, swaps = 5): StickerState {
   const rng = mulberry32(hashString(item.id));
@@ -335,7 +818,7 @@ export function stickerStateFor(item: GearItem, swaps = 5): StickerState {
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
-/** Localised-agnostic date formatting; the caller supplies the locale tag. */
+/** Locale-aware date formatting; the caller supplies the locale tag. */
 export function formatAcquired(iso: string | undefined, locale = 'en'): string | null {
   if (!iso) return null;
   const date = new Date(`${iso}T00:00:00Z`);
@@ -360,12 +843,50 @@ export function formatPrice(price: GearPrice | undefined, locale = 'en'): string
   }
 }
 
-// ─── Composition root ────────────────────────────────────────────────────────
+// ─── Persistence hygiene ─────────────────────────────────────────────────────
 
-/**
- * The only place the view obtains a source. Swapping the sample catalog for a
- * persisted collection is a change **here**, not in the UI.
- */
-export function loadCollection(): Promise<readonly GearItem[]> {
-  return sampleCollectionSource(SAMPLE_GEAR).list();
+/** Read a persisted blob, rejecting anything that is not a collection. */
+export function normalizeState(raw: unknown): CollectionState | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Partial<CollectionState> & { state?: unknown; data?: unknown };
+  // Tolerate an outer envelope: zustand persist writes `{ state }`, the store's
+  // own `partialize` writes `{ data }`, and both must round-trip.
+  const data = (candidate.state ?? candidate.data ?? candidate) as Partial<CollectionState>;
+  if (!Array.isArray(data.categories) || !Array.isArray(data.items) || !Array.isArray(data.types)) {
+    return null;
+  }
+  const now = Date.now();
+  return {
+    version: COLLECTION_VERSION,
+    categories: data.categories.map((category) => ({
+      id: category.id || newId('cat'),
+      name: category.name || 'Categoría',
+      kind: category.kind === 'cube' ? 'cube' : 'gear',
+      icon: category.icon || 'Package',
+      accent: category.accent,
+      createdAt: category.createdAt ?? now,
+    })),
+    types: data.types.map((type) => ({
+      id: type.id || newId('type'),
+      categoryId: type.categoryId,
+      name: type.name || 'Tipo',
+      puzzleCategory: type.puzzleCategory ?? null,
+      createdAt: type.createdAt ?? now,
+    })),
+    items: data.items.map((item) => ({
+      ...item,
+      id: item.id || newId('item'),
+      palette: Array.isArray(item.palette) && item.palette.length === 6 ? item.palette : DEFAULT_PALETTE,
+      links: Array.isArray(item.links) ? item.links : [],
+      photos: Array.isArray(item.photos) ? item.photos : [],
+      tags: normalizeTags(Array.isArray(item.tags) ? item.tags : []),
+      status: item.status ?? 'owned',
+      primary: !!item.primary,
+      favorite: !!item.favorite,
+      quantity: item.quantity ?? 1,
+      createdAt: item.createdAt ?? now,
+      updatedAt: item.updatedAt ?? now,
+    })),
+    excludedCategories: Array.isArray(data.excludedCategories) ? data.excludedCategories : [],
+  };
 }
