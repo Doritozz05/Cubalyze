@@ -172,7 +172,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return null;
       }
     }
-  }, [activeSection, solves, sessionName, onImportSolves, onExportAllJSON]);
+  }, [activeSection, solves, sessionName, onImportSolves, onExportAllJSON, sections]);
 
   const innerContent = (
     <div className="flex h-full min-h-0">
