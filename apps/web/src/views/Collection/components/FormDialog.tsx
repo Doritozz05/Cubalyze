@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isColorPickerOpen } from "@/components/Settings/components/ColorPicker";
 import { cn } from "@/lib/utils";
 
 export function FormDialog({
@@ -38,6 +39,11 @@ export function FormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        // The reused ColorPicker is a nested dialog: Escape must close the
+        // picker first, never the form underneath it.
+        onEscapeKeyDown={(event) => {
+          if (isColorPickerOpen()) event.preventDefault();
+        }}
         className={cn(
           "flex max-h-[90vh] flex-col gap-0 overflow-hidden border-line bg-surface p-0 text-ink sm:max-w-lg",
           className,

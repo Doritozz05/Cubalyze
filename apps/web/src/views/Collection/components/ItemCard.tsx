@@ -50,6 +50,7 @@ export function ItemCard({
       tabIndex={0}
       aria-pressed={selected}
       aria-label={item.name}
+      data-glass-panel
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -67,9 +68,13 @@ export function ItemCard({
       {/* Top-right actions — only on hover / focus / when active. */}
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
         {isCube ? (
+          // The main button is always visible on cube cards (never hover-only):
+          // it is the one piece of state the rest of the app will consume, so
+          // it has to be discoverable at a glance.
           <IconToggle
             active={item.primary}
-            label={t("primary")}
+            alwaysVisible
+            label={item.primary ? t("unsetPrimary") : t("setPrimary")}
             onClick={(event) => {
               event.stopPropagation();
               onTogglePrimary();
@@ -95,7 +100,7 @@ export function ItemCard({
       <div className="min-w-0">
         <div className="truncate text-[0.8rem] font-medium text-ink">{item.name}</div>
         <div className="mt-0.5 flex items-center gap-1.5 text-[0.66rem] text-ink-3">
-          <span className="truncate">{typeName ?? t("taxonomy.uncategorised")}</span>
+          <span className="truncate">{typeName ?? t("nav.uncategorised")}</span>
           {meta ? <span className="truncate">· {meta}</span> : null}
         </div>
       </div>
@@ -139,11 +144,13 @@ export function ItemCard({
 
 function IconToggle({
   active,
+  alwaysVisible,
   label,
   icon,
   onClick,
 }: {
   active: boolean;
+  alwaysVisible?: boolean;
   label: string;
   icon: React.ReactNode;
   onClick: (event: React.MouseEvent) => void;
@@ -152,13 +159,16 @@ function IconToggle({
     <button
       type="button"
       aria-label={label}
+      title={label}
       aria-pressed={active}
       onClick={onClick}
       className={cn(
         "flex size-6 items-center justify-center rounded-full border transition-colors",
         active
           ? "border-line-2 bg-surface text-ink"
-          : "border-transparent bg-surface/80 text-ink-3 opacity-0 hover:text-ink focus:opacity-100 group-hover:opacity-100",
+          : alwaysVisible
+            ? "border-line/70 bg-surface/80 text-ink-3 hover:bg-surface hover:text-ink"
+            : "border-transparent bg-surface/80 text-ink-3 opacity-0 hover:text-ink focus:opacity-100 group-hover:opacity-100",
       )}
     >
       {icon}

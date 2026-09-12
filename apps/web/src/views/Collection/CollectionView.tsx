@@ -3,17 +3,19 @@
 /**
  * CollectionView.tsx — the Locker.
  *
- * A catalogue, not a showroom: pick a category (and optionally a type) on the
- * left, scan a flat grid in the middle, read the spec sheet on the right.
- * Everything is created and edited in place (categories, types, items) and
- * persisted to localStorage through `collectionStore`.
+ * Two levels, both horizontal and roomy: a **category tab bar** on top, a
+ * **type chip row** for the selected category below it, and the item grid under
+ * that. The old nested sidebar tree and its per-node ⋯ menus are gone — adding
+ * and editing categories/types lives in dedicated manager dialogs, which is
+ * what fixes the "cramped" feel of creating types.
  *
  * Deliberate choices:
  *   • No carousel / 3D camera. Selection is contrast; the wall scrolls.
  *   • Background-aware: the view paints no canvas fill, so the theme's custom
- *     background image (Settings → Appearance) shows through, like every other
- *     view. Panels use `bg-surface`, which liquid glass already owns.
- *   • Cube categories expose a "main" flag; gear categories never do.
+ *     background image shows through, like every other view. Panels use
+ *     `bg-surface`, which liquid glass already owns.
+ *   • Cube categories expose a "main" flag (always-visible star on the card);
+ *     gear categories never do.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,7 +30,7 @@ import {
   Plus,
   RotateCcw,
   Search,
-  SlidersHorizontal,
+  Star,
   Tag,
   Upload,
   X,
@@ -50,7 +52,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { categoryIcon } from "./collectionIcons";
 import { useCollectionStore } from "./collectionStore";
 import {
   countByStatus,
@@ -65,8 +66,11 @@ import {
   type ItemSort,
   type ItemStatus,
 } from "./collectionModel";
-import { TaxonomyPanel } from "./components/TaxonomyPanel";
-import { CategoryDialog, ExclusionsDialog, TypeDialog } from "./components/TaxonomyDialogs";
+import { CategoryTabs } from "./components/CategoryTabs";
+import { TypeChips } from "./components/TypeChips";
+import { CategoryDialog, type CategoryDraft } from "./components/CategoryDialog";
+import { CategoriesManagerDialog } from "./components/CategoriesManagerDialog";
+import { TypesManagerDialog } from "./components/TypesManagerDialog";
 import { ItemEditorDialog } from "./components/ItemEditorDialog";
 import { ItemGrid } from "./components/ItemGrid";
 import { ItemDetailPanel } from "./components/ItemDetailPanel";
@@ -127,7 +131,6 @@ export function CollectionView() {
   const replaceState = useCollectionStore((s) => s.replaceState);
   const reset = useCollectionStore((s) => s.reset);
 
-  const isDesktopRail = useMediaQuery("(min-width: 1024px)");
   const isWide = useMediaQuery("(min-width: 1280px)");
 
   // ── View state ──────────────────────────────────────────────────────────
@@ -141,7 +144,6 @@ export function CollectionView() {
   const [sort, setSort] = useState<ItemSort>("name");
   const [tags, setTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [taxonomyOpen, setTaxonomyOpen] = useState(false);
 
   // ── Dialogs ─────────────────────────────────────────────────────────────
   const [itemEditor, setItemEditor] = useState<{ open: boolean; item: GearItem | null }>({
@@ -152,12 +154,8 @@ export function CollectionView() {
     open: boolean;
     category: CollectionCategory | null;
   }>({ open: false, category: null });
-  const [typeDialog, setTypeDialog] = useState<{
-    open: boolean;
-    categoryId: string;
-    type: CollectionType | null;
-  }>({ open: false, categoryId: "", type: null });
-  const [exclusionsOpen, setExclusionsOpen] = useState(false);
+  const [categoriesManagerOpen, setCategoriesManagerOpen] = useState(false);
+  const [typesManagerOpen, setTypesManagerOpen] = useState(false);
   const [confirm, setConfirm] = useState<
     | { kind: "category"; category: CollectionCategory }
     | { kind: "type"; type: CollectionType }
@@ -170,6 +168,11 @@ export function CollectionView() {
   // ── Derived data ────────────────────────────────────────────────────────
   const tagOptions = useMemo(() => tagFacets(data), [data]);
   const statusCounts = useMemo(() => countByStatus(data), [data]);
+
+  const selectedCategory = useMemo(
+    () => data.categories.find((category) => category.id === selection.categoryId) ?? null,
+    [data.categories, selection.categoryId],
+  );
 
   const filtered = useMemo(
     () =>
@@ -192,14 +195,11 @@ export function CollectionView() {
     [data.items, selectedItemId],
   );
 
-  const selectionLabel = useMemo(() => {
-    if (!selection.categoryId) return t("taxonomy.everything");
-    const category = data.categories.find((c) => c.id === selection.categoryId);
-    if (!category) return t("taxonomy.everything");
-    if (!selection.typeId) return category.name;
-    const type = data.types.find((tp) => tp.id === selection.typeId);
-    return type ? `${category.name} / ${type.name}` : category.name;
-  }, [selection, data, t]);
+  /** The main item of the cube category currently in view (if any). */
+  const primaryInView = useMemo(() => {
+    if (selectedCategory?.kind !== "cube") return null;
+    return data.items.find((item) => item.categoryId === selectedCategory.id && item.primary) ?? null;
+  }, [data.items, selectedCategory]);
 
   // Drop a selection that points at a deleted node.
   useEffect(() => {
@@ -216,46 +216,49 @@ export function CollectionView() {
     }
   }, [data.items, selectedItemId]);
 
-  const isCubeSelection = useMemo(() => {
-    const category = data.categories.find((c) => c.id === selection.categoryId);
-    return category?.kind === "cube";
-  }, [data.categories, selection.categoryId]);
-
   // ── Actions ─────────────────────────────────────────────────────────────
   const handleSaveItem = useCallback(
     (input: Parameters<typeof addItem>[0]) => {
       if (itemEditor.item) {
         updateItem(itemEditor.item.id, input);
       } else {
-        const id = addItem(input);
-        setSelectedItemId(id);
+        setSelectedItemId(addItem(input));
       }
     },
     [itemEditor.item, addItem, updateItem],
   );
 
   const handleSaveCategory = useCallback(
-    (draft: { name: string; kind: CollectionCategory["kind"]; icon: string; accent?: string }) => {
+    (draft: CategoryDraft) => {
       if (categoryDialog.category) {
         updateCategory(categoryDialog.category.id, draft);
       } else {
-        const id = addCategory(draft);
-        setSelection({ categoryId: id, typeId: null });
+        setSelection({ categoryId: addCategory(draft), typeId: null });
       }
     },
     [categoryDialog.category, addCategory, updateCategory],
   );
 
-  const handleSaveType = useCallback(
-    (draft: { name: string; puzzleCategory: CollectionType["puzzleCategory"] }) => {
-      if (typeDialog.type) {
-        updateType(typeDialog.type.id, { ...draft, categoryId: typeDialog.categoryId });
-      } else {
-        const id = addType({ ...draft, categoryId: typeDialog.categoryId });
-        setSelection({ categoryId: typeDialog.categoryId, typeId: id });
-      }
+  const handleAddType = useCallback(
+    (name: string, puzzleCategory: Parameters<typeof addType>[0]["puzzleCategory"]) => {
+      if (!selection.categoryId) return;
+      setSelection({
+        categoryId: selection.categoryId,
+        typeId: addType({ categoryId: selection.categoryId, name, puzzleCategory }),
+      });
     },
-    [typeDialog, addType, updateType],
+    [selection.categoryId, addType],
+  );
+
+  const handleUpdateType = useCallback(
+    (type: CollectionType, patch: { name?: string; puzzleCategory?: Parameters<typeof addType>[0]["puzzleCategory"] }) => {
+      updateType(type.id, {
+        categoryId: type.categoryId,
+        name: patch.name ?? type.name,
+        puzzleCategory: "puzzleCategory" in patch ? patch.puzzleCategory : type.puzzleCategory,
+      });
+    },
+    [updateType],
   );
 
   const handleToggleExclusion = useCallback(
@@ -333,7 +336,7 @@ export function CollectionView() {
           confirmLabel: t("confirm.reset"),
         };
     }
-  }, [confirm, t]);
+  }, [confirm, t, i18n]);
 
   const handleConfirm = useCallback(() => {
     if (!confirm) return;
@@ -341,6 +344,7 @@ export function CollectionView() {
       removeCategory(confirm.category.id);
       setSelection({ categoryId: null, typeId: null });
     } else if (confirm.kind === "type") {
+      // Non-destructive: its items move up to the category.
       removeType(confirm.type.id);
     } else if (confirm.kind === "item") {
       removeItem(confirm.item.id);
@@ -361,26 +365,9 @@ export function CollectionView() {
     setFavoritesOnly(false);
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────
-  const taxonomy = (
-    <TaxonomyPanel
-      state={data}
-      selection={selection}
-      onSelect={(next) => {
-        setSelection(next);
-        setTaxonomyOpen(false);
-      }}
-      onAddCategory={() => setCategoryDialog({ open: true, category: null })}
-      onEditCategory={(category) => setCategoryDialog({ open: true, category })}
-      onDeleteCategory={(category) => setConfirm({ kind: "category", category })}
-      onAddType={(categoryId) => setTypeDialog({ open: true, categoryId, type: null })}
-      onEditType={(type) => setTypeDialog({ open: true, categoryId: type.categoryId, type })}
-      onDeleteType={(type) => setConfirm({ kind: "type", type })}
-      onManageExclusions={() => setExclusionsOpen(true)}
-      onSyncCategory={syncCategory}
-    />
-  );
+  const isCubeSelection = selectedCategory?.kind === "cube";
 
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -463,40 +450,58 @@ export function CollectionView() {
 
       {/* ── Body ───────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1 gap-4 px-4 pb-4">
-        {isDesktopRail ? (
-          <aside className="flex w-60 shrink-0 flex-col rounded-lg border border-line bg-surface/80 p-3 backdrop-blur-sm">
-            {taxonomy}
-          </aside>
-        ) : null}
-
         <section className="flex min-h-0 flex-1 flex-col gap-3">
-          {/* Toolbar */}
+          {/* Navigation: categories on top, types for the current one below. */}
+          <div
+            data-glass-panel
+            className="flex flex-col gap-2.5 rounded-lg border border-line bg-surface/80 px-3 py-3 backdrop-blur-sm"
+          >
+            <CategoryTabs
+              state={data}
+              selection={selection}
+              onSelect={setSelection}
+              onAdd={() => setCategoryDialog({ open: true, category: null })}
+              onManage={() => setCategoriesManagerOpen(true)}
+            />
+            {selectedCategory ? (
+              <div className="border-t border-line pt-2.5">
+                <TypeChips
+                  state={data}
+                  category={selectedCategory}
+                  selection={selection}
+                  onSelect={setSelection}
+                  onManage={() => setTypesManagerOpen(true)}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          {/* Toolbar: what is in view, the filters, the sort. */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
-              {!isDesktopRail ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setTaxonomyOpen(true)}
+              <span className="truncate text-[0.82rem] font-medium text-ink">
+                {selection.typeId
+                  ? data.types.find((tp) => tp.id === selection.typeId)?.name
+                  : (selectedCategory?.name ?? t("nav.everything"))}
+              </span>
+              <span className="shrink-0 tabular-nums text-[0.7rem] text-ink-3">
+                {t("results", { count: filtered.length })}
+              </span>
+              {primaryInView ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedItemId(primaryInView.id)}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[0.68rem] text-ink-2 transition-colors hover:text-ink"
                 >
-                  <SlidersHorizontal className="size-3.5" />
-                  {t("taxonomy.title")}
-                </Button>
+                  <Star className="size-3 fill-current" />
+                  <span className="hidden max-w-[10rem] truncate sm:inline">{primaryInView.name}</span>
+                  <span className="sm:hidden">{t("primary")}</span>
+                </button>
+              ) : isCubeSelection ? (
+                <span className="hidden shrink-0 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[0.68rem] text-ink-3 sm:inline">
+                  {t("noPrimary")}
+                </span>
               ) : null}
-              {(() => {
-                const category = data.categories.find((c) => c.id === selection.categoryId);
-                const Icon = category ? categoryIcon(category.icon) : Package;
-                return (
-                  <span className="flex min-w-0 items-center gap-2 text-[0.8rem] font-medium text-ink">
-                    <Icon className="size-3.5 shrink-0 text-ink-3" />
-                    <span className="truncate">{selectionLabel}</span>
-                    <span className="shrink-0 tabular-nums text-[0.7rem] text-ink-3">
-                      {filtered.length}
-                    </span>
-                  </span>
-                );
-              })()}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -584,9 +589,8 @@ export function CollectionView() {
 
           {/* Grid */}
           <div
-            className={cn(
-              "min-h-0 flex-1 overflow-y-auto rounded-lg border border-line bg-surface/60 p-3 backdrop-blur-sm",
-            )}
+            data-glass-panel
+            className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-line bg-surface/60 p-3 backdrop-blur-sm"
           >
             {!hydrated ? (
               <div className="flex h-full items-center justify-center text-[0.78rem] text-ink-3">
@@ -616,7 +620,10 @@ export function CollectionView() {
         </section>
 
         {isWide ? (
-          <aside className="flex w-[336px] shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface/80 backdrop-blur-sm">
+          <aside
+            data-glass-panel
+            className="flex w-[336px] shrink-0 flex-col overflow-hidden rounded-lg border border-line bg-surface/80 backdrop-blur-sm"
+          >
             {selectedItem ? (
               <ItemDetailPanel
                 item={selectedItem}
@@ -640,20 +647,7 @@ export function CollectionView() {
         ) : null}
       </div>
 
-      {/* ── Mobile overlays ────────────────────────────────────────────── */}
-      {!isDesktopRail && taxonomyOpen ? (
-        <div className="absolute inset-0 z-40 flex">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setTaxonomyOpen(false)}
-            aria-hidden
-          />
-          <div className="relative h-full w-72 max-w-[85%] overflow-y-auto border-r border-line bg-surface p-4">
-            {taxonomy}
-          </div>
-        </div>
-      ) : null}
-
+      {/* Narrow screens: the detail opens as a side overlay. */}
       {!isWide && selectedItem ? (
         <div className="absolute inset-0 z-40 flex justify-end">
           <div
@@ -661,12 +655,10 @@ export function CollectionView() {
             onClick={() => setSelectedItemId(null)}
             aria-hidden
           />
-          <div className="relative h-full w-[336px] max-w-[90%] border-l border-line bg-surface">
+          <div data-glass-panel className="relative h-full w-[336px] max-w-[90%] border-l border-line bg-surface">
             <ItemDetailPanel
               item={selectedItem}
-              isCube={
-                data.categories.find((c) => c.id === selectedItem.categoryId)?.kind === "cube"
-              }
+              isCube={data.categories.find((c) => c.id === selectedItem.categoryId)?.kind === "cube"}
               typeName={data.types.find((tp) => tp.id === selectedItem.typeId)?.name}
               categoryName={data.categories.find((c) => c.id === selectedItem.categoryId)?.name}
               locale={i18n.language}
@@ -699,21 +691,36 @@ export function CollectionView() {
         onSave={handleSaveCategory}
       />
 
-      <TypeDialog
-        open={typeDialog.open}
-        onOpenChange={(open) => setTypeDialog((current) => ({ ...current, open }))}
-        categoryKind={
-          data.categories.find((c) => c.id === typeDialog.categoryId)?.kind ?? "gear"
-        }
-        type={typeDialog.type}
-        onSave={handleSaveType}
+      <CategoriesManagerDialog
+        open={categoriesManagerOpen}
+        onOpenChange={setCategoriesManagerOpen}
+        state={data}
+        onAdd={() => {
+          setCategoriesManagerOpen(false);
+          setCategoryDialog({ open: true, category: null });
+        }}
+        onEdit={(category) => {
+          setCategoriesManagerOpen(false);
+          setCategoryDialog({ open: true, category });
+        }}
+        onDelete={(category) => {
+          setCategoriesManagerOpen(false);
+          setConfirm({ kind: "category", category });
+        }}
       />
 
-      <ExclusionsDialog
-        open={exclusionsOpen}
-        onOpenChange={setExclusionsOpen}
-        excluded={data.excludedCategories}
-        onToggle={handleToggleExclusion}
+      <TypesManagerDialog
+        open={typesManagerOpen}
+        onOpenChange={setTypesManagerOpen}
+        state={data}
+        category={selectedCategory}
+        onAdd={handleAddType}
+        onUpdate={handleUpdateType}
+        onDelete={(type) => setConfirm({ kind: "type", type })}
+        onToggleExclusion={handleToggleExclusion}
+        onSync={() => {
+          if (selection.categoryId) syncCategory(selection.categoryId);
+        }}
       />
 
       <ConfirmDialog

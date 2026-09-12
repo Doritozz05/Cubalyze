@@ -6,7 +6,6 @@
     "delete": "Delete",
     "save": "Save",
     "close": "Close",
-    "done": "Done",
     "back": "Back",
     "continue": "Continue",
     "skip": "Skip",
@@ -3908,12 +3907,14 @@
   "collection": {
     "eyebrow": "Gear",
     "title": "Locker",
-    "subtitle": "Everything you solve with — cubes, lubes and gear, organised your way.",
     "summary": "{{total}} items · {{cubes}} owned · {{wishlist}} on the wishlist",
     "loading": "Loading your gear…",
     "addItem": "Add item",
     "searchPlaceholder": "Search gear…",
     "detailPlaceholder": "Select an item to read its spec sheet.",
+    "results_one": "{{count}} item",
+    "results_other": "{{count}} items",
+    "noPrimary": "No main cube yet",
     "planned": "Planned",
     "empty": "Nothing here yet",
     "emptyHint": "Add the first item to this category and it will show up here.",
@@ -3950,19 +3951,17 @@
       "pastel": "Pastel",
       "carbon": "Carbon"
     },
-    "taxonomy": {
-      "title": "Categories",
+    "nav": {
       "everything": "Everything",
-      "newCategory": "New",
-      "newType": "Add type",
+      "allTypes": "All types",
+      "noTypes": "No types yet",
+      "uncategorised": "Uncategorised",
+      "uncategorisedCount": "{{count}} without type",
+      "newCategory": "New category",
       "editCategory": "Edit category",
       "deleteCategory": "Delete category",
-      "editType": "Edit type",
-      "deleteType": "Delete type",
-      "syncCubes": "Mirror app categories",
-      "exclusions": "Exclusions…",
-      "uncategorised": "Uncategorised",
-      "hint": "Categories hold types. Cube types mirror the timer's puzzle list; everything else is free-form."
+      "manageCategories": "Manage categories",
+      "manageTypes": "Manage types"
     },
     "filters": {
       "favorites": "Favorites only",
@@ -3990,15 +3989,6 @@
       "acquired": "Acquired",
       "price": "Price"
     },
-    "accents": {
-      "none": "None",
-      "neutral": "Neutral",
-      "green": "Green",
-      "amber": "Amber",
-      "orange": "Orange",
-      "red": "Red",
-      "crimson": "Crimson"
-    },
     "dialog": {
       "create": "Create",
       "save": "Save",
@@ -4012,26 +4002,28 @@
         "kindCubeHint": "Renders 3D cubes and can carry a main item.",
         "kindGearHint": "Renders flat gear with no main item.",
         "icon": "Icon",
-        "accent": "Accent"
-      },
-      "type": {
-        "createTitle": "New type",
-        "editTitle": "Edit type",
-        "description": "A type sits inside a category — 3×3, 2×2, a lube brand…",
-        "name": "Name",
-        "namePlaceholder": "e.g. 3×3",
-        "link": "Linked app category",
-        "linkHint": "Optional. Linking keeps this type in sync with the timer's puzzle list.",
-        "linkNone": "None (free type)",
-        "noDefaults": "This category has no default types — add whatever you need."
-      },
-      "exclusions": {
-        "title": "Cube categories",
-        "description": "Choose which of the app's puzzle categories become types in your cube categories.",
-        "included": "Mirrored as a type",
-        "excluded": "Excluded — no type is created",
-        "footnote": "Toggling an exclusion adds or removes the matching empty type. Types that already hold items are never deleted."
+        "accent": "Accent",
+        "accentHint": "Tints this category's tab and icon. Leave it neutral to follow the theme."
       }
+    },
+    "manage": {
+      "categoriesTitle": "Categories",
+      "categoriesDescription": "Categories are the outer level. Each one holds its own types and items.",
+      "noCategories": "No categories yet. Create one to start filling your locker.",
+      "holds": "{{items}} items · {{types}} types",
+      "typesTitle": "Types in {{category}}",
+      "typesDescription": "Types are the inner level: 3×3, 2×2, a lube brand — whatever fits.",
+      "addType": "Add a type",
+      "typeNamePlaceholder": "Type name, e.g. 3×3",
+      "linkNone": "No linked category",
+      "linkHint": "Linking a type to an app category keeps it in sync with the timer's puzzle list.",
+      "add": "Add",
+      "existingTypes": "Types",
+      "noTypes": "No types yet in this category.",
+      "deleteType": "Delete type",
+      "appCategories": "App categories",
+      "sync": "Sync",
+      "appCategoriesHint": "Turn a puzzle category off to keep it out of the types here. Types that already hold items are never removed."
     },
     "editor": {
       "createTitle": "New item",
@@ -4054,6 +4046,14 @@
       "serial": "Serial",
       "favorite": "Favorite",
       "palette": "Sticker palette",
+      "faces": {
+        "u": "Up",
+        "d": "Down",
+        "f": "Front",
+        "b": "Back",
+        "r": "Right",
+        "l": "Left"
+      },
       "purchase": "Purchase",
       "acquired": "Acquired",
       "price": "Price",

@@ -6,7 +6,6 @@
     "delete": "Eliminar",
     "save": "Guardar",
     "close": "Cerrar",
-    "done": "Listo",
     "back": "Atrás",
     "continue": "Continuar",
     "skip": "Omitir",
@@ -3908,12 +3907,14 @@
   "collection": {
     "eyebrow": "Equipo",
     "title": "Armario",
-    "subtitle": "Todo con lo que resuelves — cubos, lubricantes y equipo, organizado a tu manera.",
     "summary": "{{total}} objetos · {{cubes}} en propiedad · {{wishlist}} deseados",
     "loading": "Cargando tu equipo…",
     "addItem": "Añadir objeto",
     "searchPlaceholder": "Buscar en el armario…",
     "detailPlaceholder": "Selecciona un objeto para ver su ficha.",
+    "results_one": "{{count}} objeto",
+    "results_other": "{{count}} objetos",
+    "noPrimary": "Aún sin cubo principal",
     "planned": "Previsto",
     "empty": "Aquí todavía no hay nada",
     "emptyHint": "Añade el primer objeto a esta categoría y aparecerá aquí.",
@@ -3950,19 +3951,17 @@
       "pastel": "Pastel",
       "carbon": "Carbono"
     },
-    "taxonomy": {
-      "title": "Categorías",
+    "nav": {
       "everything": "Todo",
-      "newCategory": "Nueva",
-      "newType": "Añadir tipo",
+      "allTypes": "Todos los tipos",
+      "noTypes": "Aún no hay tipos",
+      "uncategorised": "Sin clasificar",
+      "uncategorisedCount": "{{count}} sin tipo",
+      "newCategory": "Nueva categoría",
       "editCategory": "Editar categoría",
       "deleteCategory": "Eliminar categoría",
-      "editType": "Editar tipo",
-      "deleteType": "Eliminar tipo",
-      "syncCubes": "Sincronizar con la app",
-      "exclusions": "Exclusiones…",
-      "uncategorised": "Sin clasificar",
-      "hint": "Las categorías contienen tipos. Los tipos de cubo reflejan la lista de puzzles del cronómetro; el resto son libres."
+      "manageCategories": "Gestionar categorías",
+      "manageTypes": "Gestionar tipos"
     },
     "filters": {
       "favorites": "Solo favoritos",
@@ -3990,15 +3989,6 @@
       "acquired": "Adquirido",
       "price": "Precio"
     },
-    "accents": {
-      "none": "Ninguno",
-      "neutral": "Neutro",
-      "green": "Verde",
-      "amber": "Ámbar",
-      "orange": "Naranja",
-      "red": "Rojo",
-      "crimson": "Carmesí"
-    },
     "dialog": {
       "create": "Crear",
       "save": "Guardar",
@@ -4012,26 +4002,28 @@
         "kindCubeHint": "Muestra cubos 3D y puede tener un objeto principal.",
         "kindGearHint": "Muestra equipo plano, sin objeto principal.",
         "icon": "Icono",
-        "accent": "Acento"
-      },
-      "type": {
-        "createTitle": "Nuevo tipo",
-        "editTitle": "Editar tipo",
-        "description": "Un tipo vive dentro de una categoría — 3×3, 2×2, una marca de lubricante…",
-        "name": "Nombre",
-        "namePlaceholder": "p. ej. 3×3",
-        "link": "Categoría de la app",
-        "linkHint": "Opcional. Enlazarlo mantiene este tipo sincronizado con la lista de puzzles del cronómetro.",
-        "linkNone": "Ninguna (tipo libre)",
-        "noDefaults": "Esta categoría no tiene tipos por defecto — añade los que necesites."
-      },
-      "exclusions": {
-        "title": "Categorías de cubo",
-        "description": "Elige qué categorías de puzzle de la app se convierten en tipos dentro de tus categorías de cubo.",
-        "included": "Reflejada como tipo",
-        "excluded": "Excluida — no se crea tipo",
-        "footnote": "Activar o desactivar una exclusión añade o quita el tipo vacío correspondiente. Los tipos que ya contienen objetos nunca se eliminan."
+        "accent": "Acento",
+        "accentHint": "Tiñe la pestaña y el icono de esta categoría. Déjalo neutro para seguir el tema."
       }
+    },
+    "manage": {
+      "categoriesTitle": "Categorías",
+      "categoriesDescription": "Las categorías son el primer nivel. Cada una tiene sus propios tipos y objetos.",
+      "noCategories": "Aún no hay categorías. Crea una para empezar a llenar tu armario.",
+      "holds": "{{items}} objetos · {{types}} tipos",
+      "typesTitle": "Tipos en {{category}}",
+      "typesDescription": "Los tipos son el segundo nivel: 3×3, 2×2, una marca de lubricante — lo que encaje.",
+      "addType": "Añadir un tipo",
+      "typeNamePlaceholder": "Nombre del tipo, p. ej. 3×3",
+      "linkNone": "Sin categoría enlazada",
+      "linkHint": "Enlazar un tipo con una categoría de la app lo mantiene sincronizado con la lista de puzzles del cronómetro.",
+      "add": "Añadir",
+      "existingTypes": "Tipos",
+      "noTypes": "Aún no hay tipos en esta categoría.",
+      "deleteType": "Eliminar tipo",
+      "appCategories": "Categorías de la app",
+      "sync": "Sincronizar",
+      "appCategoriesHint": "Desactiva una categoría de puzzle para dejarla fuera de los tipos de aquí. Los tipos que ya contienen objetos nunca se eliminan."
     },
     "editor": {
       "createTitle": "Nuevo objeto",
@@ -4054,6 +4046,14 @@
       "serial": "Número de serie",
       "favorite": "Favorito",
       "palette": "Paleta de pegatinas",
+      "faces": {
+        "u": "Arriba",
+        "d": "Abajo",
+        "f": "Frente",
+        "b": "Detrás",
+        "r": "Derecha",
+        "l": "Izquierda"
+      },
       "purchase": "Compra",
       "acquired": "Adquirido",
       "price": "Precio",

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -20,6 +20,11 @@ export default defineConfig({
   },
   test: {
     passWithNoTests: true,
+    // `.freebuff/` is gitignored scratch space that can hold full repo copies
+    // from parallel agent worktrees. Globbing into them duplicates every test
+    // (and surfaces their unrelated failures), so keep discovery on the real
+    // source tree only.
+    exclude: [...configDefaults.exclude, '.freebuff/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

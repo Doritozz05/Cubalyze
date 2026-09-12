@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { ParseKeys } from "i18next";
 import { toast } from "sonner";
 import { Heart, ImagePlus, Plus, Star, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ColorPicker } from "@/components/Settings/components/ColorPicker";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { FormDialog } from "./FormDialog";
@@ -54,6 +56,16 @@ const CONDITIONS: readonly ItemCondition[] = ["mint", "good", "used", "broken"];
 
 /** U D F B R L — the math-core face order. */
 const PALETTE_FACES = ["U", "D", "F", "B", "R", "L"] as const;
+
+/** Face letter → human label, so each picker says which sticker it edits. */
+const FACE_LABEL_KEY: Record<(typeof PALETTE_FACES)[number], ParseKeys<"collection">> = {
+  U: "editor.faces.u",
+  D: "editor.faces.d",
+  F: "editor.faces.f",
+  B: "editor.faces.b",
+  R: "editor.faces.r",
+  L: "editor.faces.l",
+};
 
 interface FormState {
   name: string;
@@ -396,21 +408,21 @@ export function ItemEditorDialog({
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-3">
+        {/* The app's own ColorPicker — same one Theme Studio and the cube
+            sticker editor use, so favourites/presets/hex/native all come free. */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           {PALETTE_FACES.map((face, index) => (
-            <label key={face} className="flex flex-col items-center gap-1 text-[0.62rem] text-ink-3">
-              {face}
-              <input
-                type="color"
-                value={form.palette[index]}
-                onChange={(event) => {
-                  const next = [...form.palette] as unknown as string[];
-                  next[index] = event.target.value;
-                  patch({ palette: next as unknown as GearPalette });
-                }}
-                className="size-7 cursor-pointer rounded-md border border-line bg-transparent"
-              />
-            </label>
+            <ColorPicker
+              key={face}
+              label={`${face} · ${t(FACE_LABEL_KEY[face])}`}
+              value={form.palette[index]}
+              defaultColor={DEFAULT_PALETTE[index]}
+              onChange={(color) => {
+                const next = [...form.palette] as unknown as string[];
+                next[index] = color;
+                patch({ palette: next as unknown as GearPalette });
+              }}
+            />
           ))}
         </div>
       </Section>
