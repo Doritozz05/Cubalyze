@@ -18,9 +18,20 @@ import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_
 // ── Re-export repositories (pure logic, unchanged) ────────────────────
 // NOTE: keep in sync with packages/database/src/repositories/index.js —
 // the desktop aliases @cubeforge/database to this file, so any repository
-// added upstream must be listed here too.
-export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, USER_ID_KEY, ONBOARDING_KEY, DEVICE_ID_KEY, IDENTICON_SEED_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
-export type { Solve, Session, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow } from '../../../packages/database/src/repositories/index.js';
+// added upstream must be listed here too. `apps/../desktop` is NOT a
+// TypeScript project reference (tsconfig does not alias the package), so
+// `tsc` resolves the real module and never notices a name missing here —
+// only `vite build` fails, at bundle time, with MISSING_EXPORT. The guard
+// test packages/database/src/__tests__/desktop-override.test.ts walks the
+// package's public surface and fails when this list falls behind.
+export { SolvesRepository, SessionsRepository, AlgorithmsRepository, TrainingRepository, CalendarRepository, SkillProgressRepository, AppMetaRepository, ProfilesRepository, GearRepository, USER_ID_KEY, ONBOARDING_KEY, DEVICE_ID_KEY, IDENTICON_SEED_KEY, generateUuid } from '../../../packages/database/src/repositories/index.js';
+export type { Solve, Session, TrainingAttempt, AlgorithmProgress, ExerciseProgress, TrainingTask, TaskRepeat, TaskColor, Profile, ProfileRow, AppMetaRow, GearCategory, GearCategoryKind, GearType, GearItem, GearItemStatus, GearItemCondition, GearPrice, GearLink, GearPhotoRef, GearCollectionSnapshot, GearTable, GearPhotoSyncState, GearPhotoSyncStatus } from '../../../packages/database/src/repositories/index.js';
+
+// ── Re-export smart-cube identity helpers ─────────────────────────────
+// Pure string logic (no wasm, no OPFS), so the desktop uses the very same
+// canonicalisation as web: a cube linked on one must still match on the other.
+export { normalizeSmartId, formatSmartId, reverseSmartIdBytes, smartIdsMatch } from '../../../packages/database/src/smart-cube-id.js';
+export type { NormalizedSmartId } from '../../../packages/database/src/smart-cube-id.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
