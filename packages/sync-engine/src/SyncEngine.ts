@@ -31,6 +31,7 @@ import {
 } from "@cubeforge/database";
 import type { Profile } from "@cubeforge/models";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { claimHandle, type HandleClaimResult } from "./handle";
 import { pullChanges } from "./pull";
 import { pushChanges } from "./push";
 import { rebuildAggregates } from "./rebuild";
@@ -403,6 +404,23 @@ export class SyncEngine {
       this.setStatus("error");
       throw err;
     }
+  }
+
+  /**
+   * Fase 8 — claim this account's public handle (`@name`).
+   *
+   * Thin wrapper on purpose: the identity work lives in `handle.ts` (one RPC
+   * plus adopting the server's stamp locally) and the UI owns the copy. The
+   * engine is only here because it already holds the context, so no view has
+   * to reach into the database or build its own Supabase client.
+   *
+   * No sync is scheduled: `handle_claim` already wrote the cloud row, so the
+   * other devices get it on their next pull; this device's local row is
+   * written by the claim itself.
+   */
+  async claimHandle(raw: string): Promise<HandleClaimResult> {
+    if (!this.uid) throw new Error("claimHandle requires a signed-in account");
+    return claimHandle(this.ctx, this.uid, raw);
   }
 
   /** One full sync cycle. Serialized: concurrent callers share the promise. */

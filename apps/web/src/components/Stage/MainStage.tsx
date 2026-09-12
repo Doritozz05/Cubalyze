@@ -41,6 +41,9 @@ const UltraSkillTreeView = lazy(() =>
 const ProfileView = lazy(() =>
   import("@/views/Profile/ProfileView").then((m) => ({ default: withReady(m.ProfileView) })),
 );
+const FriendsView = lazy(() =>
+  import("@/views/Friends/FriendsView").then((m) => ({ default: withReady(m.FriendsView) })),
+);
 const ReconstructionsView = lazy(() =>
   import("@/views/Reconstructions/ReconstructionsView").then((m) => ({ default: withReady(m.ReconstructionsView) })),
 );
@@ -191,6 +194,14 @@ export function MainStage(props: MainStageProps) {
     return (
       <Suspense fallback={<ViewFallback />}>
         <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+      </Suspense>
+    );
+  }
+
+  if (activeView === "friends") {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <FriendsView onOpenSettings={onOpenSettings} />
       </Suspense>
     );
   }

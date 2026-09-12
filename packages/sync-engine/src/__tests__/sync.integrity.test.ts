@@ -33,6 +33,7 @@ import {
 } from "@cubeforge/database";
 import { SyncEngine } from "../SyncEngine";
 import { maxOf, pushChanges } from "../push";
+import { claimHandle } from "../handle";
 import { pullChanges } from "../pull";
 import type { DBExecutor, SyncContext } from "../types";
 
@@ -137,6 +138,16 @@ class FakeCloud {
   gear_items = new Map<string, Record<string, unknown>>();
   sync_tombstones = new Map<string, Record<string, unknown>>();
 
+  /**
+   * F8.0 — handle → user_id, i.e. the cloud's partial unique index
+   * (`uq_profiles_handle`). Global to the cloud, not per device: that is the
+   * whole point of an identity.
+   */
+  handles = new Map<string, string>();
+
+  /** Monotonic server clock — the seal `handle_claim` stamps rows with. */
+  private serverClock = Date.now();
+
   /** Number of sync_apply RPC calls made (batching assertions). */
   rpcCalls = 0;
 
@@ -171,7 +182,8 @@ class FakeCloud {
     // Composite keys (user_id, id) mirror the M2 cloud PKs.
     this.applyLww("solves", p.solves ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("sessions", p.sessions ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
-    this.applyLww("profiles", p.profiles ?? [], (r) => String(r.user_id), "updated_at", UID);
+    // Profiles go through the handle guard, not plain LWW (F8.0).
+    this.applyProfile(p.profiles ?? []);
     this.applyLww("training_attempts", p.training_attempts ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("training_sessions", p.training_sessions ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("training_tasks", p.training_tasks ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
@@ -290,6 +302,62 @@ class FakeCloud {
     }
   }
 
+  /**
+   * Mirror of the cloud's `sync_apply` profiles block, INCLUDING the
+   * `profiles_protect_handle` trigger: rule A (never blank a stored handle)
+   * and rule B (never steal one). Without this the fake would happily accept
+   * the empty handle of a fresh device and the tests below would prove
+   * nothing about the real path.
+   */
+  private applyProfile(rows: Record<string, unknown>[]): void {
+    for (const r of rows) {
+      if (String(r.user_id) !== UID) continue; // server-side per-row check
+      const key = String(r.user_id);
+      const cur = this.profiles.get(key);
+      const incoming: Record<string, unknown> = { ...r, user_id: UID };
+      const stored = String(cur?.handle ?? "");
+      const next = String(incoming.handle ?? "");
+      if (next === "" && stored !== "") {
+        incoming.handle = stored; // rule A
+      } else if (next !== "") {
+        const owner = this.handles.get(next.toLowerCase());
+        if (owner !== undefined && owner !== key) incoming.handle = stored; // rule B
+        else this.handles.set(next.toLowerCase(), key);
+      }
+      if (!cur || Number(incoming.updated_at) >= Number(cur.updated_at)) {
+        this.profiles.set(key, incoming);
+      }
+    }
+  }
+
+  /**
+   * Mirror of `handle_claim`: normalize, uniqueness, and a server seal that is
+   * strictly greater than the row's previous stamp (so the claiming device's
+   * own pull sees it as new).
+   */
+  claimHandle(raw: unknown, uid: string) {
+    const clean = fakeNormalizeHandle(raw);
+    if (clean === null) return { data: { ok: false, reason: "invalid" }, error: null };
+
+    const mine = this.profiles.get(uid);
+    if (mine && String(mine.handle ?? "").toLowerCase() === clean) {
+      return { data: { ok: true, handle: clean, unchanged: true }, error: null };
+    }
+    const owner = this.handles.get(clean);
+    if (owner !== undefined && owner !== uid) {
+      return {
+        data: { ok: false, reason: "taken", suggestion: `${clean}_0001` },
+        error: null,
+      };
+    }
+
+    this.serverClock += 1;
+    const stamp = Math.max(Number(mine?.updated_at ?? 0) + 1, this.serverClock);
+    this.profiles.set(uid, { ...(mine ?? { user_id: uid }), handle: clean, updated_at: stamp });
+    this.handles.set(clean, uid);
+    return { data: { ok: true, handle: clean, updated_at: stamp }, error: null };
+  }
+
   /** PostgREST-shaped client. */
   client() {
     return {
@@ -320,10 +388,33 @@ class FakeCloud {
           },
         }),
       }),
-      rpc: (name: string, args: { payload: Record<string, Record<string, unknown>[]> }) =>
-        this.rpc(name, args),
+      // `handle_claim` derives the caller from the JWT (`auth.uid()`), not from
+      // an argument. Every device in these tests is the same account, so the
+      // constant UID stands in for that JWT.
+      rpc: (name: string, args: Record<string, unknown>) => {
+        if (name === "handle_claim") return this.claimHandle(args.p_handle, UID);
+        return this.rpc(name, args as { payload: Record<string, Record<string, unknown>[]> });
+      },
     };
   }
+}
+
+/**
+ * Mirror of `normalize_handle`: trim, lower, optional `@`, 3–20 chars of
+ * `[a-z0-9_]`, and a short reserved list. Deliberately a re-implementation and
+ * not an import — this package must not depend on server SQL, and a divergent
+ * fake is caught by the live suites in `supabase/.freebuff/` (which run the
+ * real functions against the real Postgres).
+ */
+const FAKE_RESERVED = ["admin", "support", "cubeforge", "system", "root", "me"];
+
+function fakeNormalizeHandle(raw: unknown): string | null {
+  if (raw == null) return null;
+  let c = String(raw).trim().toLowerCase();
+  if (c.startsWith("@")) c = c.slice(1);
+  if (!/^[a-z0-9_]{3,20}$/.test(c)) return null;
+  if (FAKE_RESERVED.includes(c)) return null;
+  return c;
 }
 
 async function countRows(executor: DBExecutor, table: string): Promise<number> {
@@ -1823,5 +1914,234 @@ describe("S) sync_apply: null-safety y acotado de sellos (auditoría 2026-09-12)
 
     // …and the index the sessions guard needs must be created here.
     expect(sql).toContain("idx_solves_user_session");
+  });
+});
+
+/**
+ * The cloud row a claimed handle leaves behind (mirrors `handle_claim`: it
+ * writes the row itself, not just the handle). `owner` defaults to the account
+ * these devices are linked to; pass another id to model a handle that belongs
+ * to somebody else.
+ */
+function claimOnCloud(
+  cloud: FakeCloud,
+  handle: string,
+  stamp: number,
+  owner: string = UID,
+): void {
+  cloud.handles.set(handle, owner);
+  cloud.profiles.set(owner, {
+    user_id: owner,
+    display_name: "Ana",
+    handle,
+    bio: "",
+    avatar_kind: "identicon",
+    avatar_data: null,
+    main_puzzle: "333",
+    declared_methods: "[]",
+    country: "",
+    created_at: stamp,
+    updated_at: stamp,
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// T) F8.0 — identidad pública: el handle pertenece a la CUENTA, no al
+// dispositivo. Un handle solo existe si alguien lo reclamó en el servidor
+// (`handle_claim`), y el servidor es el que decide quién lo tiene: el trigger
+// `profiles_protect_handle` nunca lo vacía (regla A) ni lo roba (regla B).
+//
+// Esto importa porque un segundo dispositivo NO llega con el handle: llega con
+// un perfil local por defecto sellado con su propio `Date.now()`, que suele ser
+// MÁS NUEVO que el sello de la reclamación del primero. Con LWW estricto ese
+// dispositivo jamás adoptaría el handle de la cuenta y la UI mostraría "sin
+// handle" para una cuenta que sí lo tiene.
+// ────────────────────────────────────────────────────────────────────────────
+describe("T) el handle lo decide el servidor, no el dispositivo", () => {
+  it("reclamar un handle adopta el sello del servidor (y no gasta un push)", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    await a.ctx.profiles.getOrCreate(UID);
+
+    const res = await claimHandle(a.ctx, UID, "@Ana");
+    expect(res).toEqual({ ok: true, handle: "ana" });
+
+    const local = await a.ctx.profiles.findById(UID);
+    const onCloud = cloud.profiles.get(UID);
+    expect(local?.handle).toBe("ana");
+    // El sello local es EXACTAMENTE el del servidor: ni antes (el pull no lo
+    // traería) ni después (el push lo reenviaría para siempre).
+    expect(Number(local?.updatedAt)).toBe(Number(onCloud?.updated_at));
+    expect(Number(local?.updatedAt)).toBeGreaterThan(0);
+
+    // Reclamar el mismo handle otra vez es idempotente y no mueve el sello
+    // (el servidor devuelve `unchanged`, sin `updated_at`).
+    const again = await claimHandle(a.ctx, UID, "ana");
+    expect(again).toEqual({ ok: true, handle: "ana" });
+    expect(Number((await a.ctx.profiles.findById(UID))?.updatedAt)).toBe(
+      Number(local?.updatedAt),
+    );
+  });
+
+  it("un handle tomado no toca el dispositivo que lo pidió", async () => {
+    const cloud = new FakeCloud();
+    // 'ana' es de OTRA cuenta: el índice único es del servidor, no del usuario.
+    const otherAccount = "ffffffff-1111-2222-3333-444444444444";
+    claimOnCloud(cloud, "ana", Date.now() + 1000, otherAccount);
+    const b = makeDevice(cloud);
+    await b.ctx.profiles.getOrCreate(UID);
+
+    // El perfil local ya existe (lo crea `getOrCreate` sellado con `Date.now()`
+    // — justo el sello que hace que un segundo dispositivo sea "más nuevo" que
+    // la nube). Lo que importa: un rechazo NO lo mueve.
+    const before = Number((await b.ctx.profiles.findById(UID))?.updatedAt);
+    const res = await claimHandle(b.ctx, UID, "ANA");
+    expect(res).toEqual({ ok: false, reason: "taken", suggestion: "ana_0001" });
+    // El rechazo no escribe nada: ni handle, ni sello que dispare un push.
+    const local = await b.ctx.profiles.findById(UID);
+    expect(local?.handle).toBe("");
+    expect(Number(local?.updatedAt)).toBe(before);
+    expect(String(cloud.profiles.get(otherAccount)?.handle)).toBe("ana");
+  });
+
+  it("un formato inválido no llega al servidor y la red caída no miente", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    await a.ctx.profiles.getOrCreate(UID);
+
+    expect(await claimHandle(a.ctx, UID, "ab")).toEqual({ ok: false, reason: "invalid" });
+    expect(await claimHandle(a.ctx, UID, "admin")).toEqual({ ok: false, reason: "invalid" });
+
+    // Sin red: `offline`, y el perfil local intacto (nunca un handle a medias).
+    const offline = makeDevice(cloud);
+    offline.ctx.supabase = {
+      rpc: async () => {
+        throw new Error("Failed to fetch");
+      },
+    } as never;
+    expect(await claimHandle(offline.ctx, UID, "ana")).toEqual({
+      ok: false,
+      reason: "offline",
+    });
+
+    // Una sesión caducada es OTRA cosa: decir "pareces estar sin conexión"
+    // manda al usuario a mirar el wifi cuando el problema es el login.
+    const expired = makeDevice(cloud);
+    expired.ctx.supabase = {
+      rpc: async () => ({ data: null, error: { status: 401, message: "jwt expired" } }),
+    } as never;
+    expect(await claimHandle(expired.ctx, UID, "ana")).toEqual({
+      ok: false,
+      reason: "unauthorized",
+    });
+    // …y un error de servidor que no sabemos interpretar sigue siendo `offline`.
+    const broken = makeDevice(cloud);
+    broken.ctx.supabase = {
+      rpc: async () => ({ data: null, error: { status: 500, message: "boom" } }),
+    } as never;
+    expect(await claimHandle(broken.ctx, UID, "ana")).toEqual({
+      ok: false,
+      reason: "offline",
+    });
+  });
+
+  it("el contrato de `handle_claim` que el cliente espera sigue en la migración", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(
+      new URL(
+        "../../../../supabase/migrations/20260912000016_handle_identity.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    // Los DOS motivos de rechazo que `HandleClaimFailure` sabe interpretar. Un
+    // tercero ('rate_limited', 'conflict', …) se degradaría a `invalid` en el
+    // cliente y el usuario vería "elige otro" para algo que no es formato.
+    expect(sql).toContain("'reason', 'invalid'");
+    expect(sql).toContain("'reason', 'taken'");
+    expect(sql).not.toMatch(/'reason', '(?!invalid|taken')/);
+
+    // El sello que el cliente adopta tiene que ser estrictamente mayor que el
+    // anterior, o el pull del propio dispositivo no lo vería como nuevo.
+    expect(sql).toContain("greatest(public.profiles.updated_at + 1, now_ms)");
+    // …y la rama idempotente NO lo devuelve (el cliente conserva el suyo).
+    expect(sql).toContain("'unchanged', true");
+
+    // Reglas A (nunca vaciar) y B (nunca robar), más el INSERT de una fila
+    // nueva con el handle ya tomado (que se queda vacío, sin lanzar).
+    expect(sql.match(/new\.handle := old\.handle;/g)).toHaveLength(2);
+    expect(sql).toContain("new.handle := '';");
+    // Un BEFORE que reescribe NEW nunca lanza: no hay `unique_violation` que
+    // pueda tumbar un lote de `sync_apply`.
+    expect(sql).not.toContain("raise exception 'handle taken'");
+  });
+
+  it("un dispositivo con el perfil local más nuevo adopta el handle de la cuenta", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    const claimedAt = Date.now() + 1000;
+    claimOnCloud(cloud, "ana", claimedAt);
+    // A reclama (su fila local se sella con el sello del servidor).
+    void a;
+
+    // B es un dispositivo recién vinculado: perfil local por defecto, sin
+    // handle, y con un sello MÁS NUEVO que el de la reclamación.
+    const newerThanCloud = claimedAt + 5000;
+    await b.ctx.profiles.upsert({
+      userId: UID,
+      displayName: "Bea",
+      handle: "",
+      bio: "",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "",
+      createdAt: newerThanCloud,
+      updatedAt: newerThanCloud,
+    });
+
+    await pullChanges(b.ctx, UID);
+
+    const onB = await b.ctx.profiles.findById(UID);
+    expect(onB?.handle).toBe("ana");
+    // …y adoptarlo no ha costado nada local: sus campos y su sello siguen
+    // siendo los suyos (el handle no arrastra el resto de la fila).
+    expect(onB?.displayName).toBe("Bea");
+    expect(Number(onB?.updatedAt)).toBe(newerThanCloud);
+  });
+
+  it("el push posterior de ese dispositivo no borra el handle de la nube (regla A)", async () => {
+    const cloud = new FakeCloud();
+    const b = makeDevice(cloud);
+
+    const claimedAt = Date.now() + 1000;
+    claimOnCloud(cloud, "ana", claimedAt);
+
+    // El caso exacto de instalar la app en un segundo dispositivo: perfil por
+    // defecto (handle vacío) con un sello nuevo, y el motor EMPUJA ANTES de
+    // tirar. Sin la regla A, ese vacío publicaría el handle a la nube.
+    const stamp = claimedAt + 5000;
+    await b.ctx.profiles.upsert({
+      userId: UID,
+      displayName: "",
+      handle: "",
+      bio: "",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "",
+      createdAt: stamp,
+      updatedAt: stamp,
+    });
+    await pushChanges(b.ctx, UID);
+    expect(String(cloud.profiles.get(UID)?.handle)).toBe("ana");
+
+    // Y el pull siguiente se lo trae de vuelta: la UI de B no queda "sin
+    // handle" para una cuenta que sí lo tiene.
+    await pullChanges(b.ctx, UID);
+    expect((await b.ctx.profiles.findById(UID))?.handle).toBe("ana");
   });
 });

@@ -57,7 +57,186 @@
     "widgets": "Widgets",
     "more": "Más",
     "moreOptions": "Más opciones",
-    "primary": "Principal"
+    "primary": "Principal",
+    "friends": "Amigos"
+  },
+  "friends": {
+    "title": "Amigos",
+    "tabsAria": "Secciones de amigos",
+    "tabs": {
+      "friends": "Amigos ({{count}})",
+      "requests": "Solicitudes",
+      "requestsWithCount": "Solicitudes ({{count}})",
+      "blocked": "Bloqueados ({{count}})"
+    },
+    "loading": "Cargando tus amigos…",
+    "signedOut": {
+      "title": "Los amigos viven en tu cuenta",
+      "description": "Inicia sesión para añadir amigos, ver su progreso y visitar su escaparate. Hasta entonces todo sigue en local.",
+      "continueWithGoogle": "Continuar con Google",
+      "authError": "No se pudo iniciar sesión. Cierra la ventana y vuelve a intentarlo.",
+      "notConfigured": "El inicio de sesión no está disponible en esta versión."
+    },
+    "empty": {
+      "title": "Todavía no tienes amigos",
+      "description": "Añade a alguien por su handle exacto. Las solicitudes solo las veis vosotros dos y nada es público."
+    },
+    "handle": {
+      "title": "Tu handle",
+      "description": "Tus amigos te encuentran por este nombre. Es único, es público y es la única forma de que te añadan: nadie puede buscarte.",
+      "placeholder": "tunombre",
+      "claim": "Reservar",
+      "trySuggestion": "Probar @{{handle}}",
+      "rules": "De 3 a 20 caracteres: letras, números y guion bajo.",
+      "error": {
+        "taken": "Ese handle ya está pillado. Prueba con otro.",
+        "invalid": "Ese handle no se puede usar: revisa el formato.",
+        "offline": "No pudimos comprobarlo: pareces estar sin conexión. No se ha cambiado nada.",
+        "unauthorized": "Inicia sesión para reservar tu handle."
+      }
+    },
+    "add": {
+      "title": "Añadir un amigo",
+      "description": "Escribe el handle exacto de la persona que quieres añadir.",
+      "needsHandle": "Necesitas un handle antes de poder añadir a nadie.",
+      "claimFirst": "Reserva tu handle arriba y esto se desbloqueará.",
+      "placeholder": "sunombre",
+      "label": "Handle de la persona a añadir",
+      "submit": "Enviar solicitud",
+      "sent": "Solicitud enviada. La verás en Solicitudes hasta que responda.",
+      "accepted": "Ya te había solicitado: ahora sois amigos."
+    },
+    "card": {
+      "unnamed": "Sin nombre",
+      "noHandle": "sin handle",
+      "sharesLocker": "Armario",
+      "sharesStats": "Estadísticas",
+      "sharesIdentity": "Solo perfil",
+      "actions": "Acciones para {{name}}",
+      "remove": "Eliminar amigo",
+      "block": "Bloquear"
+    },
+    "requests": {
+      "incoming": "Recibidas",
+      "outgoing": "Enviadas",
+      "noIncoming": "No tienes solicitudes pendientes.",
+      "noOutgoing": "No has enviado ninguna solicitud.",
+      "accept": "Aceptar",
+      "decline": "Rechazar",
+      "cancel": "Cancelar",
+      "pending": "Esperando"
+    },
+    "scopes": {
+      "stats": "Estadísticas",
+      "locker": "Armario"
+    },
+    "detail": {
+      "back": "Volver a amigos",
+      "loading": "Abriendo perfil…",
+      "tabsAria": "Secciones del perfil del amigo",
+      "statsTab": "Progreso",
+      "showcaseTab": "Escaparate",
+      "memberSince": "Miembro desde {{date}}",
+      "mainPuzzle": "Rompecabezas principal: {{puzzle}}",
+      "methods": "Métodos: {{list}}"
+    },
+    "stats": {
+      "summary": "Resumen",
+      "allTime": "Histórico",
+      "solves": "Solves",
+      "best": "Mejor",
+      "mean": "Media",
+      "totalTime": "Tiempo total",
+      "count": "Válidas",
+      "streak": "Racha de {{count}} días",
+      "lastActive": "Última solve: {{date}}",
+      "byPuzzle": "Por rompecabezas",
+      "aggregates": "Agregados",
+      "puzzle": "Rompecabezas",
+      "activity": "Actividad",
+      "lastYear": "Últimas 52 semanas",
+      "privacyNote": "Son totales calculados en el servidor. Tus solves —scrambles, notas, movimientos— nunca salen de tu cuenta.",
+      "emptyTitle": "Todavía sin solves",
+      "emptyDescription": "No hay nada que mostrar de sus sesiones.",
+      "notSharedTitle": "Progreso no compartido",
+      "unavailableTitle": "Progreso no disponible"
+    },
+    "showcase": {
+      "openItem": "Abrir {{name}}",
+      "quantity": "×{{count}}",
+      "categories": "Categorías",
+      "allCategories": "Todo",
+      "itemCount": "{{count}} objetos",
+      "refresh": "Actualizar escaparate",
+      "loadMore": "Cargar más",
+      "emptyTitle": "Armario vacío",
+      "emptyDescription": "Aquí todavía no hay nada que ver.",
+      "emptyCategory": "No hay objetos en esta categoría.",
+      "notSharedTitle": "Armario no compartido",
+      "unavailableTitle": "Armario no disponible",
+      "photo": "Foto {{index}}",
+      "acquired": "Adquirido",
+      "quantityLabel": "Cantidad",
+      "tags": "Etiquetas",
+      "readOnlyNote": "Vista de solo lectura. Los números de serie, precios, notas y enlaces nunca se comparten.",
+      "status": {
+        "wishlist": "Deseado",
+        "sold": "Vendido",
+        "lent": "Prestado"
+      }
+    },
+    "blocked": {
+      "empty": "No has bloqueado a nadie.",
+      "unblock": "Desbloquear"
+    },
+    "confirm": {
+      "removeTitle": "¿Eliminar a {{name}}?",
+      "removeBody": "Dejará de ver tu Armario y tus estadísticas. No se le avisa, y puedes enviarle una solicitud nueva más adelante.",
+      "remove": "Eliminar",
+      "blockTitle": "¿Bloquear a {{name}}?",
+      "blockBody": "Perdéis la amistad y cualquier solicitud pendiente entre vosotros, y no podrá volver a añadirte. Desbloquear no restaura la amistad.",
+      "block": "Bloquear",
+      "unblockTitle": "¿Desbloquear a {{name}}?",
+      "unblockBody": "Podrá volver a enviarte una solicitud. No sois amigos hasta que uno pida y el otro acepte.",
+      "cancel": "Cancelar"
+    },
+    "privacy": {
+      "shareProfile": "Compartir mi perfil",
+      "shareProfileHint": "Nombre, handle, avatar, país y métodos declarados. Es lo que te identifica ante un amigo.",
+      "shareStats": "Compartir mi progreso",
+      "shareStatsHint": "Estadísticas agregadas por rompecabezas y un mapa de actividad diaria del último año. El mapa revela cuándo practicas.",
+      "shareLocker": "Compartir mi Armario",
+      "shareLockerHint": "Tus cubos y accesorios, en solo lectura. Los números de serie, precios, notas y enlaces nunca se incluyen.",
+      "allowRequests": "Permitir solicitudes de amistad",
+      "allowRequestsHint": "Si lo apagas, nadie puede enviarte solicitudes. Quien ya es tu amigo no se ve afectado.",
+      "saving": "Guardando…",
+      "unavailable": "Ajustes de compartición no disponibles",
+      "retry": "Reintentar"
+    },
+    "sharing": {
+      "shortcut": "¿Qué comparto?"
+    },
+    "toast": {
+      "removed": "Amigo eliminado.",
+      "blocked": "Usuario bloqueado.",
+      "unblocked": "Usuario desbloqueado."
+    },
+    "failure": {
+      "offline": "Sin conexión. Comprueba tu red e inténtalo de nuevo.",
+      "unauthorized": "Inicia sesión para usar Amigos.",
+      "not_friends": "No eres amigo de esta persona.",
+      "not_shared": "No comparte esto.",
+      "invalid": "Ese valor no es válido.",
+      "taken": "Ese handle ya está cogido.",
+      "not_found": "No hay ninguna cuenta con ese handle.",
+      "self": "Eres tú.",
+      "closed": "Esta persona no acepta solicitudes.",
+      "already_friends": "Ya sois amigos.",
+      "pending": "Ya hay una solicitud pendiente.",
+      "not_pending": "No hay ninguna solicitud pendiente que responder.",
+      "rate_limited": "Demasiadas solicitudes hoy. Inténtalo más tarde.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
   },
   "cube": {
     "timerAria": "Tiempo de la resolución",
@@ -110,6 +289,10 @@
       "profile": {
         "label": "Perfil",
         "description": "Tu identidad, avatar y métodos declarados."
+      },
+      "privacy": {
+        "label": "Privacidad y amigos",
+        "description": "Tu handle y exactamente qué pueden ver tus amigos."
       },
       "general": {
         "label": "General",
@@ -1137,6 +1320,7 @@
       "skillsSubtitle": "Gráfico interactivo del árbol de habilidades",
       "reconstructionsSubtitle": "Base de datos de solves y reproducciones",
       "collectionSubtitle": "Tus cubos y tu equipo",
+      "friendsSubtitle": "Añade amigos y mira su Armario",
       "virtualSubtitle": "Simulador de cubo 3D",
       "smartCubeSubtitle": "Conecta un cubo bluetooth",
       "themeSubtitle": "Personaliza temas y colores",

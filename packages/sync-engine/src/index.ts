@@ -19,6 +19,8 @@ export {
 } from "./client";
 export type { SupabaseEnv } from "./client";
 export { getWatermark, setWatermark, pullWatermarkKey, pushWatermarkKey } from "./watermarks";
+export { claimHandle } from "./handle";
+export type { HandleClaimFailure, HandleClaimResult } from "./handle";
 export { replayProgress } from "@cubeforge/training";
 export type {
   ClaimMode,

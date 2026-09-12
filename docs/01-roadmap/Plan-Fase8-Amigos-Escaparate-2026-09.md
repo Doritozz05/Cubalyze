@@ -1,7 +1,11 @@
 # Plan — Fase 8: amigos, perfil de amigo y escaparate
 
-> Estado: **plan de diseño, sin implementar** (2026-09-12). Rama `feat/fase8-friends`,
-> creada desde `main` justo después del squash-merge de la Fase 6 (`b5749aef`).
+> Estado: **F8.0–F8.3 implementadas y validadas contra la nube** (2026-09-12),
+> **sin aplicar**: migraciones 16–18 y el cliente de identidad. **Falta toda la
+> UI** (§9, F8.4–F8.8). Rama `feat/fase8-friends`, creada desde `main` justo
+> después del squash-merge de la Fase 6 (`b5749aef`).
+>
+> Ejecución, hallazgos y residuales: **§14**.
 >
 > Continúa [Plan-Fase6-Sync-Locker-2026-09.md](./Plan-Fase6-Sync-Locker-2026-09.md)
 > §6 (compatibilidad ya preparada) y
@@ -216,15 +220,20 @@ documentado para `gear_items.smart_id`.
    (a-z, 0-9, `_`, 3-20), comprueba y devuelve `{ok:true}` o
    `{ok:false, reason:'taken'|'invalid'|'reserved', suggestion:'...'}`.
    Se apoya en el índice único para ser atómica; no hay "check-then-set".
-2. **`sync_apply` tolera el conflicto en vez de morir.** En el bloque de
-   `profiles`, cuando el `handle` entrante difiere del almacenado, la escritura
-   va dentro de un subbloque `begin … exception when unique_violation then … end`
-   (un savepoint: el lote sobrevive) y se cuenta en un contador
-   **`handle_conflicts`** nuevo, separado de `skipped`, que se devuelve en el
-   JSON de respuesta junto a `applied`/`skipped`.
-3. **El cliente reacciona**: al ver `handle_conflicts > 0`, limpia el handle
-   local, pide uno nuevo y avisa. Un conflicto **nunca** es un error fatal de
-   sync; es una tarea de UI.
+2. ~~**`sync_apply` tolera el conflicto en vez de morir** con un savepoint y un
+   contador `handle_conflicts` nuevo en la respuesta.~~
+   **Cambiado (F8.0, ver §14.2).** La protección es un **trigger `BEFORE INSERT
+   OR UPDATE`** (`profiles_protect_handle`) que reescribe `NEW.handle`: nunca
+   vacía un handle almacenado (regla A) y nunca roba el de otra cuenta (regla B).
+   Un trigger `BEFORE` que reescribe `NEW` **no puede lanzar**, así que ningún
+   conflicto de identidad puede tumbar un lote de `sync_apply` — y protege a
+   *todos* los escritores (el RPC, PostgREST y `service_role`), no solo al que
+   pasa por el savepoint. `sync_apply` no cambia ni una línea.
+3. **El cliente adopta el sello del servidor** (`claimHandle`, §14.3):
+   `handle_claim` devuelve `updated_at` y el cliente escribe su fila local con
+   ESE sello, no con uno propio. Reclamar un handle no es un error de sync ni
+   una tarea de UI diferida: es una operación del motor, y su resultado se
+   propaga como cualquier otro cambio (el pull lo confirma).
 4. **Migración de los usuarios existentes**: medido contra la nube hoy
    (`select count(*) … from profiles`) — **2 perfiles, 1 con handle, 0
    duplicados**, así que el índice se puede crear **sin limpieza previa** y hay
@@ -626,9 +635,12 @@ el badge no necesita una llamada extra).
 - **Amigos**: rejilla de tarjetas — avatar/identicon, `display_name`, `@handle`,
   rompecabezas principal, país, y un pie con 3 mini-datos (mejor single, nº de
   solves, ítems compartidos si comparten Locker). La tarjeta entera abre el perfil.
-- **Estados vacíos cuidados**: "todavía no tienes amigos" con una ilustración y
-  una llamada a la acción (compartir tu handle copiable), que es el momento en
-  que la fase convence o no.
+- **Sin sesión**: la sección no desvía a Ajustes. Muestra el estado "los amigos
+  viven en tu cuenta" con un botón **Continuar con Google** que arranca el OAuth
+  desde aquí mismo, porque lo que el usuario ha venido a hacer (añadir a
+  alguien) necesita cuenta y una cuenta es un clic.
+- **Estado vacío**: "todavía no tienes amigos" con una ilustración y el
+  formulario de añadir ya visible encima. Sin microcopy de relleno.
 - **Menú por tarjeta**: ver perfil, eliminar amigo, bloquear (con confirmación y
   texto que explique que bloquear no avisa al otro).
 
@@ -670,9 +682,11 @@ Es la vista estrella de la fase. Reutiliza la infraestructura del Locker:
 
 ### 8.5 Privacidad, en Ajustes
 
-Un bloque nuevo en la pantalla de Settings: qué compartes (`perfil`, `stats`,
-`Locker`), quién puede solicitar amistad, tu handle (copiable, con reclamación si
-no tienes), y la lista de bloqueados con opción de desbloquear.
+Un bloque nuevo en la pantalla de Settings: tu handle (con reclamación si no lo
+tienes) y qué compartes (`perfil`, `stats`, `Locker`), más quién puede solicitar
+amistad. La lista de bloqueados vive en la sección de Amigos, junto al resto de
+la gestión. Mientras hay una escritura en vuelo se muestra "Guardando…" y nada
+más: no hay texto estático que prometa dónde viven los ajustes.
 
 ### 8.6 i18n y accesibilidad
 
@@ -705,6 +719,12 @@ Orden obligatorio: **F8.0 antes que nada** (sin unicidad no se puede construir
 identidad), y F8.1→F8.3 antes de cualquier UI, porque el contrato de campos debe
 estar cerrado antes de pintarlo.
 
+Estado a 2026-09-12: **F8.0 ✅, F8.1 ✅, F8.2 ✅ y F8.3 ✅** en el motor y en la
+base de datos (migraciones `16`, `17` y `18`, validadas contra el Postgres real
+en transacciones revertidas — §14.1). **F8.4–F8.8 pendientes**: nada de esto
+tiene UI todavía, y por eso tampoco se ha aplicado a la nube (una migración sin
+pantalla que la use solo añade superficie).
+
 ---
 
 ## 10. Pruebas
@@ -729,6 +749,14 @@ Dos usuarios reales (`A`, `B`) y un tercero (`C`), como se hizo en la Fase 6:
 | 12 | `sync_apply` con handle en conflicto | `handle_conflicts = 1`, lote aplicado, watermark avanza |
 | 13 | Paginación del Locker: 400 ítems | todas las páginas, sin duplicados ni huecos |
 | 14 | `delete-account` | amistades, bloqueos y visibilidad desaparecen; fotos purgadas |
+| 15 | `friend_request_send` a un handle **sin reclamar** | `not_found` (no distinguimos "no existe" de "existe sin identidad pública") |
+| 16 | `handle_claim` de un handle que ya tiene otro titular | `taken` + sugerencia; su fila queda intacta (probado también a través de `sync_apply`) |
+| 17 | Un dispositivo con el perfil local **más nuevo** que la nube abre la app | adopta el handle de la cuenta sin pisar sus campos ni su sello (§14.4) |
+
+Cubierto hoy por las dos suites en vivo (`supabase/.freebuff/f82a-social.sql`,
+`f82b-projections.sql`): 1–11, 13–17, más la matriz de grants y RLS. Pendiente
+para F8.4–F8.8: 12 (ya no aplica: no hay `handle_conflicts`) y los casos que
+necesitan la Edge Function de fotos y la UI.
 
 ### Pruebas de regresión
 
@@ -756,6 +784,8 @@ Dos usuarios reales (`A`, `B`) y un tercero (`C`), como se hizo en la Fase 6:
 | R8 | El Locker del amigo se ve obsoleto (no hay pull) | Refresco al abrir + nota de "actualizado hace X", nunca prometer tiempo real |
 | R9 | Complejidad de UI en móvil | La Collection ya tiene layout táctil: reutilizarlo en vez de inventar |
 | R10 | Bloqueo percibido como "no funciona" | Textos claros: bloquear no avisa, y desbloquear no restaura la amistad |
+| R11 | Un cliente manipulado publica un handle **con formato inválido** (saltándose `handle_claim`) | `sync_apply` solo garantiza **unicidad**, no formato (§14.5). El daño es cosmético y propio; se cierra el día que haya moderación real |
+| R12 | El `handle_claim` revela que un handle existe (`taken`) | Inherente a "añadir por handle". Mitigado con formato exacto y rate limit (R2); no hay listado ni búsqueda por prefijo |
 
 ---
 
@@ -794,3 +824,173 @@ Lo que viene después —daily scramble, retar a un amigo, carreras 1v1, ranking
 
 Lo que **no** hay que hacer ahora aunque sea tentador: chat, feed, comentarios,
 notificaciones push, presencia. Cada uno es una fase, no una pantalla.
+
+---
+
+## 14. Ejecución (F8.0–F8.7, 2026-09-12)
+
+### 14.1 Qué se ha construido y cómo se ha verificado
+
+| Artefacto | Contenido |
+|---|---|
+| `supabase/migrations/20260912000016_handle_identity.sql` | `normalize_handle`, `handle_suggestion`, índice único parcial `uq_profiles_handle`, trigger `profiles_protect_handle` (reglas A y B), RPC `handle_claim` |
+| `supabase/migrations/20260912000017_friends_schema.sql` | `friendships` (una fila por par, `check (user_low < user_high)`), `friend_blocks`, `profile_visibility`, `friend_rate_limits`, `are_friends`, RLS de propietario y **cero grants** |
+| `supabase/migrations/20260912000018_friends_rpc.sql` | La superficie RPC completa (solicitudes, gestión, `friend_list`, `privacy_*`, las tres proyecciones con lista blanca, `puzzle_average`) |
+| `supabase/migrations/20260912000019_friend_rate_bump.sql` | `friend_rate_bump(p_actor, …)`: el mismo contador de ventana fija que `friend_rate_check`, pero con actor **explícito** — un `service_role` de Edge Function no tiene `auth.uid()` |
+| `supabase/functions/friend-photo-urls/index.ts` | La Edge Function (F8.5): valida JWT + amistad + `share_locker`, verifica que cada `photo_id` **pertenece de verdad** al `gear_items.photos` del dueño, y firma en lote con TTL 60 s, cuota 30/min y fallo **cerrado** |
+| `packages/sync-engine/src/handle.ts` | `claimHandle`: llama al RPC y adopta el sello del servidor localmente |
+| `packages/sync-engine/src/pull.ts` | Adopción del handle de la cuenta cuando el perfil local es más nuevo (el hallazgo de §14.4) |
+| `apps/web/src/services/friends.ts` | La superficie de cliente completa: RPC tipadas (`friend_*`, `privacy_*`), mapeo `snake_case → camelCase` y **fallos como valores** (`FriendsResult`), no excepciones. Ninguna tabla se lee directamente |
+| `apps/web/src/hooks/useFriends.ts` | Bindings React: directorio como store de módulo (`useSyncExternalStore`, TTL 30 s, petición compartida), detalle por selección, privacidad y `claimHandle` |
+| `apps/web/src/views/Friends/**` | La sección (tabs Amigos/Solicitudes/Bloqueados), la ficha de amigo (perfil + stats + escaparate), la tarjeta de reclamación de handle, el formulario de añadir y las tarjetas del escaparate con cubo 3D |
+| `apps/web/src/components/Settings/sections/PrivacySection.tsx` | La pantalla de consentimiento en Ajustes: handle + los cuatro interruptores, con escritura optimista que **se revierte** si el servidor la rechaza |
+
+**Verificación en vivo (no simulada).** Tres suites SQL contra el Postgres
+linkado, cada una dentro de `begin … rollback` (no queda ni una fila), en
+**`supabase/validation/`** y ejecutables con `supabase/validation/run.sh` (ver
+su README para qué cubre cada una y por qué existen habiendo tests en el repo):
+
+- `validation/f8-identity.sql` — índice parcial, formato (reservados, `@`,
+  longitud), reglas A y B, idempotencia, sello creciente y la relectura que
+  impide un `ok` mentiroso.
+- `validation/f8-social.sql` — grants/RLS de las 4 tablas nuevas, las
+tres puertas (`not_friends` antes de la amistad), formato del handle
+(`@F8_TEST_B`, `nadie_existe_9999`, `ab`), auto-aceptación de la solicitud
+cruzada, idempotencia de aceptar dos veces, eliminación, bloqueo
+(desbloqueo **no** restaura) y el cruce de bloqueo contra solicitud.
+- `validation/f8-projections.sql` — el escaparate con señuelos
+(`SERIAL-SECRETO`, `AABBCCDDEEFF`, `NOTA-PRIVADA`, `tienda.example`, `99.99`) que
+**no** pueden aparecer en el JSON, paginación keyset (cursor = último ítem
+servido, tope saturado a 100), taxonomía, ítems demo fuera, y las agregadas
+exactas del 3x3 (total 5, count 4, best 7000, worst 14000, suma 39000, ao5
+10667, ao12 nulo por falta de datos, racha 0).
+
+Ambas pasan con la migración `15` (el hardening de la auditoría) delante, así que
+la composición con lo ya desplegado está probada. Los usuarios de la suite B son
+**sintéticos** (`insert into auth.users`, borrados por el rollback): los dos
+perfiles de producción tienen solves reales, así que sus agregados no son un
+número fijo y una aserción absoluta sobre ellos habría sido frágil o falsa.
+
+En el repo: `packages/sync-engine` 66 tests (5 ficheros) con la sección **T**
+nueva; `pnpm test` 27/27 tareas, `typecheck:all` y `lint:lines` limpios.
+
+Las suites son **reproducibles desde el repo** y no un artefacto de sesión: se
+movieron de un directorio temporal a `supabase/validation/` precisamente porque
+un documento que apunta a ficheros que no existen no es verificable por nadie.
+
+### 14.2 El savepoint de `sync_apply` se descartó (a favor del trigger)
+
+El §4.4 preveía capturar el `unique_violation` dentro del bloque de `profiles` de
+`sync_apply` con un savepoint y contar `handle_conflicts`. Se descartó por dos
+razones medidas, no estéticas: **(1)** un trigger `BEFORE` que reescribe `NEW` no
+puede lanzar, así que no hay ninguna forma de atascar el lote, y protege a todos
+los escritores en vez de solo a ese; y **(2)** habría implicado reescribir 500
+líneas de una función que hoy funciona para cambiar 15. El resultado funcional
+que prometía el plan se conserva íntegro: un conflicto de identidad nunca es un
+error fatal de sync.
+
+Los dos caminos del `on conflict … do update` están cubiertos: el UPDATE (rules
+A y B) y el INSERT de una fila que aún no existía (un handle ya tomado entra
+vacío, que es un estado válido: "sin identidad pública").
+
+### 14.3 El sello del servidor, no el del dispositivo
+
+`claimHandle` escribe la fila local con el `updated_at` **que devuelve el
+servidor**, no con `Date.now()`. Es la diferencia entre que la identidad exista
+también en la app o solo en la nube: con un sello local, la fila local quedaría
+"más nueva" que la de la nube, el LWW local ganaría y el pull nunca entregaría
+el handle. El watermark de push **no** se adelanta: así una edición local
+pendiente (nombre, bio) no pierde su turno en la cola.
+
+### 14.4 Hallazgo: el handle no llegaba a los dispositivos "más nuevos"
+
+El más grave de la fase hasta ahora, y no estaba en el plan. **Un segundo
+dispositivo no llega con el handle de la cuenta: llega con un perfil local por
+defecto sellado con su propio `Date.now()`**, que suele ser más nuevo que el
+sello de la reclamación del primero. El pull de `profiles` aplica por LWW
+estricto (`local.updated_at < cloud.updated_at`), así que esa fila **nunca** se
+aplicaba: la UI mostraba "sin handle" para una cuenta que sí lo tenía.
+
+Y no se arreglaba sola: los sellos ya habían convergido y el cursor de pull no
+vuelve a mirar una fila por debajo del watermark. **Silencioso y permanente**,
+exactamente la misma clase de fallo que el cursor envenenado de la auditoría.
+
+Lo encontré escribiendo el test antes del arreglo: las dos aserciones fallaron
+(`expected '' to be 'ana'`) con el código desplegado. La corrección está en el
+pull: si el perfil local no es más viejo, **se adopta solo el `handle`** (nunca
+el resto de la fila) y se conserva el sello local, así que no se pisa ninguna
+edición pendiente ni se reabre el ciclo de sync. Que el servidor mande en esta
+columna no es una excepción al LWW: es la única columna que el servidor **sí**
+arbitra (él decide titularidad y unicidad), y un handle local sin reclamar no es
+una edición, es una petición.
+
+Tres tests nuevos lo fijan (sección T): la adopción con sello más nuevo, que el
+push posterior no borra el handle de la nube (regla A), y que reclamar adopta el
+sello exacto del servidor y no gasta un push.
+
+### 14.5 Residuales aceptados
+
+- **`sync_apply` solo garantiza unicidad, no formato** (R11): un cliente
+  manipulado puede publicar `handle = 'x'` saltándose `handle_claim`. El daño es
+  cosmético y propio, y el trigger garantiza que no roba el de nadie.
+- **`not_found` para un handle sin reclamar**: revela que ese handle no tiene
+  identidad pública. Es la respuesta correcta (no distinguimos "no existe" de
+  "existe sin handle") y es consistente con el bloqueo, que devuelve lo mismo.
+- **El fake del test reimplementa `normalize_handle`**: no puede importar SQL. Si
+  diverge, lo detectan las suites en vivo — que es precisamente por lo que se
+  ejecutan contra el Postgres real y no contra el fake.
+
+### 14.6 Un bug real encontrado por la propia suite (`puzzle_average`)
+
+La suite B no compilaba la función: `select avg(eff) … order by eff` con un
+`ORDER BY` sobre una columna sin agregar → **42803**. El recorte del ao5/ao12
+tiene que ocurrir dentro de una subconsulta con su propio orden. Arreglado, y la
+paridad con `averageOf` del cliente es exacta por construcción: mismo
+`ceil(n/20)` de recorte, `DNF → null` ordenado al final (que en `averageOf` es
+`Infinity`, así que el recorte lo descarta igual) y `dnf > trim → DNF`.
+
+### 14.7 Desplegado, y qué queda
+
+**Las migraciones 16–19 están aplicadas a la nube** (`supabase migration list
+--linked` las muestra en Local y Remote) y la Edge Function `friend-photo-urls`
+está `ACTIVE` (versión 1). La prueba de que lo desplegado es lo probado: las
+cuatro suites se ejecutan también con `--deployed`, que **quita el prefijo de
+migraciones** y ejerce el esquema que realmente vive en Supabase. Las cuatro
+pasan.
+
+El pipeline completo queda verde de punta a punta: `lint:lines` (0 violaciones
+nuevas, 22 allowlisted), `lint` (0 errores), `typecheck` (27/27 paquetes),
+`test` (27/27 tareas; `sync-engine` 66 tests) y `build` (13/13).
+
+Lo único que **no** está cerrado son tres decisiones de producto de §12, que no
+son código:
+
+1. **D2** — caducidad de solicitudes de amistad (hoy no caducan).
+2. **D5** — límites numéricos (nº máximo de amigos, de solicitudes por ventana).
+3. **D7** — si el escaparate incluye ítems `sold`/`wishlist` (hoy la lista
+   blanca los sirve; ocultarlos sería un `where` en `friend_locker`).
+
+Y una capacidad de §8.5 que se dejó fuera por alcance: la **vista previa "así te
+ve un amigo"** dentro de Ajustes. El código que la necesitaría ya existe
+(las tres proyecciones aceptan `owner = auth.uid()`, que es la ruta que usa la
+propia suite); es una pantalla, no un cambio de contrato.
+
+### 14.8 Ajustes de producto en la UI (2026-09-12)
+
+Tres correcciones pedidas tras ver la sección montada, ya aplicadas:
+
+1. **El estado sin sesión ya no manda a Ajustes.** Ofrece **Continuar con
+   Google** (`friends.signedOut.continueWithGoogle`), reutilizando
+   `GoogleIcon` y `useAccount().signInWithGoogle` — el mismo flujo que `/auth`,
+   sin página intermedia. Se deshabilita si `configured` es falso y muestra el
+   motivo, en vez de un botón que no haría nada.
+2. **Fuera el microcopy del estado vacío** (`empty.hint` "Solo tus amigos ven tu
+   Armario" y `empty.refresh` "Actualizar"): el bloque se queda en título,
+   descripción e ilustración.
+3. **Fuera la nota estática de privacidad** (`privacy.note`) tanto en la sección
+   de Amigos como en Ajustes; en Ajustes queda solo el indicador "Guardando…"
+   mientras la escritura está en vuelo.
+
+Las tres claves retiradas se borraron de `en.json` y `es.json` (no se dejan
+claves muertas) y el chequeo de uso confirma que ninguna vista las referencia
+ya: 113 claves usadas, todas presentes en ambos idiomas.

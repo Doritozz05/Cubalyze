@@ -192,8 +192,33 @@ async function applyRows(
           row.identicon_seed == null ? undefined : String(row.identicon_seed);
         if (seed) await ctx.meta.setIdenticonSeed(seed);
         const local = await ctx.profiles.findById(profile.userId);
-        if (!local || (local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
+        if (!local) {
           await ctx.profiles.upsert(profile);
+          break;
+        }
+        if ((local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
+          await ctx.profiles.upsert(profile);
+          break;
+        }
+        // F8.0 — el handle NO se rige por LWW: lo decide el servidor.
+        //
+        // Un segundo dispositivo no llega con el handle de la cuenta: llega
+        // con un perfil local por defecto sellado con su propio `Date.now()`,
+        // que suele ser más nuevo que el sello de la reclamación del primero.
+        // Con LWW estricto esa fila nunca se aplica, así que la UI mostraría
+        // "sin handle" para una cuenta que sí lo tiene — y no se arreglaría
+        // sola: los sellos ya han convergido y el cursor no vuelve a mirarla.
+        //
+        // Que el servidor mande aquí no es una excepción al LWW, es su misma
+        // regla aplicada a la única columna que el servidor SÍ arbitra: el
+        // trigger `profiles_protect_handle` decide titularidad y unicidad, y
+        // un handle local sin reclamar no es una edición, es una petición.
+        //
+        // Se adopta SOLO el handle: los demás campos y el sello local se
+        // conservan, así que no se pisa ninguna edición pendiente (display
+        // name, bio, país) ni se reabre el ciclo de sync.
+        if (profile.handle !== "" && local.handle !== profile.handle) {
+          await ctx.profiles.upsert({ ...local, handle: profile.handle });
         }
       }
       break;

@@ -23,6 +23,7 @@ import {
 } from "@/services/sync";
 import { wipeAccountLocalData } from "@/services/accountCleanup";
 import { refreshProfile, resetIdentity } from "@/hooks/useProfile";
+import { resetFriendDirectory } from "@/hooks/useFriends";
 import type { LocalDataCounts } from "@cubeforge/sync-engine";
 import type { User } from "@supabase/supabase-js";
 import type { SyncEngine } from "@cubeforge/sync-engine";
@@ -197,6 +198,10 @@ function ensureInitialized(): Promise<void> {
         } catch (err) {
           console.warn('[useAccount] engine.unlink on sign-out failed:', err);
         }
+        // Fase 8 — the friend list and the blocked list are ACCOUNT data:
+        // leaving them in memory would show the previous account's social
+        // graph to whoever signs in next on a shared device.
+        resetFriendDirectory();
         setState({
           user: null,
           linked: false,
@@ -291,6 +296,7 @@ async function signOut(): Promise<void> {
   engine?.unlink();
   const supabase = getSupabaseClient();
   await supabase?.auth.signOut();
+  resetFriendDirectory();
   setState({
     user: null,
     linked: false,
