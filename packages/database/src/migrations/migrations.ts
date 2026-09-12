@@ -1278,4 +1278,36 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '033_repair_method_scope',
+    description:
+      'Data repair: solves.method held a copy of the global method preference, so every event persisted "CFOP" — including the ones with no method concept at all (2×2, Pyraminx, and every non-3×3 event the registry declares). Only the events whose spec declares analysis methods (333, 333oh) keep a method; the rest are cleared. The rewritten rows take a monotonic stamp (floored at their own updated_at + 1, exactly the lesson of 031) so the correction actually LEAVES the device: push selects rows with updated_at > watermark, and a correction without a new stamp would sit in local storage forever. local_clock_solves is then advanced past the highest stamp, otherwise the next local edit of a repaired row would be born BELOW its own updated_at and lose the cloud LWW guard (excluded.updated_at >= solves.updated_at). What is rewritten is a provably false label — time, scramble, penalty, moves, orientation and analysis are untouched — so no backup table is kept (the migration is idempotent, and re-running it is a no-op).',
+    sql: `
+      UPDATE solves
+         SET method = NULL,
+             updated_at = MAX(
+               updated_at + 1,
+               CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+             )
+       WHERE method IS NOT NULL
+         AND puzzle_type NOT IN ('333', '333oh');
+
+      -- Keep the per-table monotonic write clock (repositories/local-clock.ts)
+      -- ahead of every repair stamp so later local edits of these rows stay
+      -- "newer" than the repair itself.
+      INSERT OR REPLACE INTO app_meta (key, value)
+      VALUES (
+        'local_clock_solves',
+        CAST(
+          MAX(
+            COALESCE(
+              (SELECT CAST(value AS INTEGER) FROM app_meta WHERE key = 'local_clock_solves'),
+              0
+            ),
+            COALESCE((SELECT MAX(updated_at) FROM solves), 0)
+          ) AS TEXT
+        )
+      );
+    `,
+  },
 ];

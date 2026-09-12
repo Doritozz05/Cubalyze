@@ -25,7 +25,7 @@ import { useTimerFocus } from "@/hooks/useTimerFocus";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { copyTextWithFallback } from "@/utils/clipboard";
-import { preloadSolvers, getEventForCategory } from "@/utils/puzzleUtils";
+import { preloadSolvers, getEventForCategory, methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 // Side-effect: registers the 2×2/3×3 ScrambleProviders BEFORE the first
 // render, so useScrambleState's initial scramble generation finds them.
 import "@/utils/scrambleProviders";
@@ -502,7 +502,10 @@ export default function App() {
       onReplay={handleReplaySolve}
       onUpdatePenalty={handleUpdatePenalty}
       onManualSubmit={handleManualSubmit}
-      defaultMethod={methodPref}
+      // The manual sheet only shows a method picker for events that declare
+      // methods (3×3, 3×3 OH); on a 2×2 it stays hidden and the solve is saved
+      // without one.
+      defaultMethod={methodForEvent(puzzleCategoryToType(puzzle), methodPref)}
       onManualSubmitSheet={handleAddManual}
       lastAnalysis={lastAnalysis}
       tourActive={tourActive}

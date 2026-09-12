@@ -22,12 +22,18 @@ export interface ManualSolveSheetProps {
   onClose: () => void;
   /** Pre-fill when adding a solve for a specific scramble (e.g. Review). */
   initialScramble?: string;
-  defaultMethod: SolveMethod;
+  /**
+   * Method pre-selected for the active event, or `undefined` when the event has
+   * no method concept at all (2×2, Pyraminx…). When it is `undefined` the
+   * picker is not rendered: storing a method there would be a lie.
+   */
+  defaultMethod: SolveMethod | undefined;
   /** Submit handler called with the parsed fields. */
   onSubmit: (input: {
     time: number;
     scramble: string;
-    method: SolveMethod;
+    /** Absent when the active event has no method. */
+    method?: SolveMethod;
     notes: string;
     penalty: Penalty;
   }) => Promise<void> | void;
@@ -51,7 +57,7 @@ export function ManualSolveSheet({
   const { t } = useTranslation("stats");
   const [time, setTime] = useState("");
   const [scramble, setScramble] = useState(initialScramble ?? "");
-  const [method, setMethod] = useState<SolveMethod>(defaultMethod);
+  const [method, setMethod] = useState<SolveMethod | undefined>(defaultMethod);
   const [notes, setNotes] = useState("");
   const [penalty, setPenalty] = useState<Penalty>("none");
   const [submitting, setSubmitting] = useState(false);
@@ -212,31 +218,34 @@ export function ManualSolveSheet({
                 />
               </section>
 
-              {/* Method */}
-              <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Tag className="size-3.5 text-ink-3" />
-                  <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
-                    {t("method")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {METHODS.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setMethod(m)}
-                      className={cn(
-                        "rounded-md px-2 py-2 text-xs font-medium transition-all",
-                        method === m
-                          ? "bg-ink text-surface shadow-sm"
-                          : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
-                      )}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </section>
+              {/* Method — only meaningful for events that declare methods
+                  (3×3, 3×3 OH). A 2×2 has none, so the picker is hidden. */}
+              {defaultMethod !== undefined && (
+                <section className="rounded-lg border border-line bg-surface px-4 py-3.5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Tag className="size-3.5 text-ink-3" />
+                    <span className="text-[0.65rem] uppercase tracking-[0.16em] text-ink-3 font-medium">
+                      {t("method")}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {METHODS.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setMethod(m)}
+                        className={cn(
+                          "rounded-md px-2 py-2 text-xs font-medium transition-all",
+                          method === m
+                            ? "bg-ink text-surface shadow-sm"
+                            : "bg-surface-2 text-ink-3 hover:text-ink hover:bg-line",
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Penalty */}
               <section className="rounded-lg border border-line bg-surface px-4 py-3.5">

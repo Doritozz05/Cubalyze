@@ -31,12 +31,26 @@ describe('MIGRATIONS — schema migrations module', () => {
     }
   });
 
+  /**
+   * Data-repair migrations: pure `UPDATE`s that fix a value a past bug wrote.
+   * They are legitimate — 033 clears the bogus `solves.method` copied onto
+   * events that have no method — but they are the EXCEPTION, so each one is
+   * declared here on purpose. A new UPDATE-only migration that is not listed
+   * fails this test, which is the review prompt we want.
+   */
+  const DATA_REPAIR_MIGRATION_IDS = new Set(['033_repair_method_scope']);
+
   it('every non-base-table migration references a CREATE/ALTER/DROP statement', () => {
     // Validates we don't ship a malformed migration that does nothing.
     const forbidden = /^\s*$/;
     for (const m of MIGRATIONS) {
       expect(forbidden.test(m.sql)).toBe(false);
       const upper = m.sql.toUpperCase();
+      if (DATA_REPAIR_MIGRATION_IDS.has(m.id)) {
+        // A declared repair must actually rewrite rows.
+        expect(upper).toMatch(/UPDATE\s+\w+\s+SET/);
+        continue;
+      }
       expect(upper).toMatch(
         /CREATE\s+(TABLE|INDEX|TRIGGER)|ALTER\s+TABLE|DROP\s+(TABLE|TRIGGER)|INSERT\s+INTO/,
       );

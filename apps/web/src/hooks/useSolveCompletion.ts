@@ -16,7 +16,7 @@ import type {
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { runAnalysis } from "@/hooks/useSolveSession";
-import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { hapticCelebrate } from "@/utils/haptics";
 import { isDev } from "@/utils/env";
@@ -111,7 +111,13 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       const capturedScramble = overrides?.scramble ?? currentScramble;
       const capturedPuzzleType = overrides?.puzzleType ?? puzzleCategoryToType(puzzle);
       const capturedNextScramble = overrides?.onNextScramble ?? onNextScramble;
+      // Two different questions, deliberately answered separately:
+      //   • the ANALYSIS input — only ever used inside the 3×3-only branch
+      //     below, where "the user's method" is exactly right;
+      //   • the PERSISTED method — an event without a method (2×2, Pyraminx,
+      //     …) must store none, or the row claims "CFOP" for a Pyraminx solve.
       const capturedMethod = methodPref;
+      const capturedPersistedMethod = methodForEvent(capturedPuzzleType, methodPref);
       const solveId = uuidv4();
       const completionToken = ++completionTokenRef.current;
 
@@ -154,7 +160,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         time,
         scramble: scrambleDisplay ? capturedScramble : "",
         penalty,
-        method: capturedMethod,
+        method: capturedPersistedMethod,
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,

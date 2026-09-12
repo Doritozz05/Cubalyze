@@ -43,6 +43,25 @@ export const DEFAULT_FILTERS: StatsFilters = {
 };
 
 /**
+ * Does a solve pass the method filter?
+ *
+ * An EMPTY selection means "no filter" and lets everything through. A
+ * non-empty one excludes solves with no method: since only the events whose
+ * spec declares methods (3×3, 3×3 OH) store one, a 2×2 or Pyraminx solve is
+ * not a vote for CFOP and must not slip past a CFOP filter (that was the old
+ * `if (s.method && …)` behaviour).
+ *
+ * Exported for tests: hooks are not rendered in this project's test setup.
+ */
+export function passesMethodFilter(
+  solve: Pick<Solve, "method">,
+  methods: ReadonlySet<SolveMethod>,
+): boolean {
+  if (methods.size === 0) return true;
+  return solve.method != null && methods.has(solve.method);
+}
+
+/**
  * Filter + sort solves in-memory. Hook returns memoised `filtered` plus
  * the active filter state + setters. Reset clears everything to defaults.
  *
@@ -93,12 +112,7 @@ export function useStatsFilters(
         return false;
       if (filters.activeFilter === "virtual" && s.source !== "virtual")
         return false;
-      if (
-        s.method &&
-        filters.methods.size > 0 &&
-        !filters.methods.has(s.method)
-      )
-        return false;
+      if (!passesMethodFilter(s, filters.methods)) return false;
       if (debouncedSearch.trim().length > 0) {
         const q = debouncedSearch.trim().toLowerCase();
         const noteOk = s.note?.toLowerCase().includes(q) ?? false;

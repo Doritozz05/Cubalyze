@@ -354,3 +354,38 @@ describe("formula-marker round-trip (unescapeFormulaMarker)", () => {
     expect(toSolveInput({ ...plain, note: undefined }).note).toBeUndefined();
   });
 });
+
+/**
+ * Foreign exports (csTimer, Twisty Timer, older CubeForge backups) happily
+ * carry a method on every row, including 2×2 and Pyraminx ones. The import
+ * applies the same scope rule as the live writers, or the bug the app just
+ * repaired would come back through the import door.
+ */
+describe("toSolveInput — method scope", () => {
+  const base: ImportedSolve = {
+    time: 12340,
+    penalty: "none",
+    scramble: "R U R' U'",
+    timestamp: 1737013787000,
+  };
+
+  it("keeps the method on a 3×3 solve", () => {
+    const input = toSolveInput({ ...base, puzzleType: "333", method: "Roux" });
+    expect(input.method).toBe("Roux");
+  });
+
+  it("keeps the method on a 3×3 OH solve", () => {
+    const input = toSolveInput({ ...base, puzzleType: "333oh", method: "CFOP" });
+    expect(input.method).toBe("CFOP");
+  });
+
+  it("drops the method on an event that has none", () => {
+    expect(toSolveInput({ ...base, puzzleType: "222", method: "CFOP" }).method).toBeUndefined();
+    expect(toSolveInput({ ...base, puzzleType: "pyram", method: "CFOP" }).method).toBeUndefined();
+  });
+
+  it("leaves rows without a method alone", () => {
+    const input = toSolveInput({ ...base, puzzleType: "333" });
+    expect(input.method).toBeUndefined();
+  });
+});

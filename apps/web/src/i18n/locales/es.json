@@ -485,7 +485,7 @@
       "rotateWithCubeHint": "La notación del scramble rota para coincidir con la orientación física de tu cubo, de modo que siempre muestre lo que ves desde tu perspectiva actual."
     },
     "analysis": {
-      "header": "Selecciona tu método de resolución. La detección de fases y las métricas se adaptarán automáticamente. El análisis se ejecuta cuando hay un Smart Cube conectado.",
+      "header": "Selecciona tu método de resolución para 3×3 y 3×3 OH. La detección de fases y las métricas se adaptarán automáticamente, y el análisis se ejecuta cuando hay un Smart Cube conectado. El resto de eventos no guardan método.",
       "solvingMethod": "Método de resolución",
       "methodCfop": "Cross, F2L, OLL, PLL — el método más popular.",
       "methodRoux": "Construcción de bloques con CMLL y LSE — sin rotaciones.",

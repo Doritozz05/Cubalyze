@@ -20,7 +20,13 @@
  */
 
 import type { PuzzleCategory } from "@/types";
-import { EVENT_REGISTRY, generateScramble, getEvent, type PuzzleType } from "@cubeforge/events";
+import {
+  EVENT_REGISTRY,
+  generateScramble,
+  getEvent,
+  isPuzzleType,
+  type PuzzleType,
+} from "@cubeforge/events";
 import { Min2PhaseSolver, TwoByTwoScrambler, TwoByTwoSolver } from "@cubeforge/solver-engine";
 
 // ── Mappings ─────────────────────────────────────────────────────────────
@@ -113,6 +119,42 @@ export const SELECTABLE_PUZZLE_CATEGORIES: readonly PuzzleCategory[] = PUZZLE_SE
 /** Resolve the event spec behind a UI category. */
 export function getEventForCategory(category: PuzzleCategory) {
   return getEvent(CATEGORY_TO_EVENT_CODE[category]);
+}
+
+// ── Solving-method scope (one rule, one place) ───────────────────────────────
+//
+// `solves.method` used to be a blind copy of the global
+// `preferencesStore.method`, so EVERY event persisted "CFOP" — including the
+// ones that have no method at all (2×2, Pyraminx, and whatever comes next).
+// The registry already declares, per event, which methods the ANALYSIS engine
+// can detect (`EventSpec.analysis.methods`: `["CFOP", "Roux"]` for 3×3 and
+// 3×3 OH, `[]` for every other event), and that is the only honest rule
+// available:
+//
+//   • event declares methods (333, 333oh) → persist the user's method;
+//   • event declares none                  → persist nothing (undefined).
+//
+// It is deliberately NOT "is this method allowed here": the registry describes
+// analysis capability, not what the user may solve with. Someone solving 3×3
+// with ZZ has a fact worth storing even though the phase detector only knows
+// CFOP/Roux.
+
+/**
+ * The method to persist for a solve of `puzzleType`, or `undefined` when the
+ * event has no method concept at all.
+ *
+ * Used by every writer of `solves.method` (timer, manual entry, import) so the
+ * rule cannot drift between them.
+ */
+export function methodForEvent<M extends string>(
+  puzzleType: string,
+  preferred: M,
+): M | undefined {
+  // Unknown/legacy codes carry no method either: the DB never accepts them,
+  // and guessing "333" here would resurrect the exact bug this fixes.
+  if (!isPuzzleType(puzzleType)) return undefined;
+  const spec = getEvent(puzzleType);
+  return (spec?.analysis.methods.length ?? 0) > 0 ? preferred : undefined;
 }
 
 /** Map a UI PuzzleCategory to the 3D engine cube order (2 or 3). */

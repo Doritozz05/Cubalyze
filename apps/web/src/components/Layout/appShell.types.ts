@@ -82,12 +82,16 @@ export interface AppShellProps {
   onUpdatePenalty: (id: string, penalty: Penalty) => void;
   /** Inline manual-mode submit (timer stage). */
   onManualSubmit: (time: number, penalty: Penalty, note?: string | null) => void;
-  /** Manual solve sheet submit (header "+" button). */
-  defaultMethod: SolveMethod;
+  /**
+   * Manual solve sheet submit (header "+" button). The method is absent when
+   * the active event has no method concept (2×2, Pyraminx…): only events that
+   * declare methods (3×3, 3×3 OH) persist one.
+   */
+  defaultMethod: SolveMethod | undefined;
   onManualSubmitSheet: (input: {
     time: number;
     scramble: string;
-    method: SolveMethod;
+    method?: SolveMethod;
     notes: string;
     penalty: Penalty;
   }) => Promise<void>;

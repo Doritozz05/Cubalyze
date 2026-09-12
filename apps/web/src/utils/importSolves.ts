@@ -3,6 +3,7 @@
 import type { Penalty, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty } from "@/types";
 import { WCA_EVENT_CODES } from "@cubeforge/events";
+import { methodForEvent } from "@/utils/puzzleUtils";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -1143,14 +1144,20 @@ export function toSolveInput(
   analysis?: SolveMetrics;
   orientationTimeline?: OrientationTimeline;
 } {
+  const puzzleType = normalizePuzzleType(
+    imported.puzzleType ?? inferPuzzleType(imported.scramble),
+  );
   return {
     time: imported.time,
     penalty: imported.penalty,
     scramble: imported.scramble,
-    method: imported.method,
+    // Foreign exports (csTimer, Twisty Timer) happily carry a method on 2×2
+    // rows: the same rule as the live writers applies here, or the bug comes
+    // back through the import door.
+    method: imported.method ? methodForEvent(puzzleType, imported.method) : undefined,
     timestamp: imported.timestamp,
     note: unescapeFormulaMarker(imported.note),
-    puzzleType: normalizePuzzleType(imported.puzzleType ?? inferPuzzleType(imported.scramble)),
+    puzzleType,
     source: imported.source ?? "manual",
     moves: imported.moves,
     analysis: imported.analysis,

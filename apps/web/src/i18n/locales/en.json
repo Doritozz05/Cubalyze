@@ -485,7 +485,7 @@
       "rotateWithCubeHint": "The scramble notation rotates to match your cube's physical orientation so it always shows what you see from your current perspective."
     },
     "analysis": {
-      "header": "Select your solving method. Phase detection and metrics will adapt automatically. Analysis runs when a Smart Cube is connected.",
+      "header": "Select your solving method for 3×3 and 3×3 OH. Phase detection and metrics adapt automatically, and analysis runs when a Smart Cube is connected. Other events store no method.",
       "solvingMethod": "Solving Method",
       "methodCfop": "Cross, F2L, OLL, PLL — the most popular method.",
       "methodRoux": "Blockbuilding with CMLL and LSE — no rotations.",

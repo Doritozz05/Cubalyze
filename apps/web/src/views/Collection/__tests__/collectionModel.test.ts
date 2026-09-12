@@ -103,12 +103,14 @@ describe("collection — taxonomy", () => {
     const before = seeded();
     const after = upsertCategory(before, { name: "  Smart cubes ", kind: "cube", icon: "Zap" });
     expect(after.categories).toHaveLength(before.categories.length + 1);
-    const created = after.categories.at(-1)!;
+    // Index access, not `.at(-1)`: the desktop tsconfig (ES2020 lib) type-checks
+    // web sources too, and this is the only file that would break it.
+    const created = after.categories[after.categories.length - 1]!;
     expect(created.name).toBe("Smart cubes");
     expect(created.kind).toBe("cube");
 
     const renamed = upsertCategory(after, { id: created.id, name: "Smart", kind: "gear", icon: "Box" });
-    expect(renamed.categories.at(-1)).toMatchObject({ name: "Smart", kind: "gear", icon: "Box" });
+    expect(renamed.categories[renamed.categories.length - 1]).toMatchObject({ name: "Smart", kind: "gear", icon: "Box" });
     expect(renamed.categories).toHaveLength(after.categories.length);
     // The original array was never mutated.
     expect(before.categories).toHaveLength(3);
@@ -335,7 +337,7 @@ describe("collection — queries", () => {
   it("sinks wishlist items below owned gear", () => {
     const state = populated();
     const sorted = sortItems(queryItems(state, {}));
-    expect(sorted.at(-1)?.name).toBe("Smart Timer");
+    expect(sorted[sorted.length - 1]?.name).toBe("Smart Timer");
   });
 
   it("sorts by name, price, rating and recency", () => {
