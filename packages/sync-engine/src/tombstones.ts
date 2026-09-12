@@ -47,9 +47,14 @@ export interface CloudTombstone extends CloudRow {
 /**
  * Apply remote tombstones locally with LWW: a tombstone only deletes a row
  * when the row was NOT edited after the tombstone's deleted_at (a newer
- * offline edit survives and is re-pushed, resurrecting the row). The deletes
- * fire the local triggers and re-create tombstones — idempotent, and the
- * natural termination (a second apply deletes nothing) prevents any loop.
+ * offline edit survives and is re-pushed, resurrecting the row).
+ *
+ * These deletes are ECHOES, not user deletions, and the repositories treat
+ * them as such: the tombstone the DELETE trigger would write is dropped
+ * (tombstone-echo.ts). Re-announcing a remote delete would stamp it with a
+ * fresher `deleted_at` and, once pushed, destroy a newer edit made elsewhere
+ * in the meantime — the opposite of what the conditional delete is for. A
+ * second apply still deletes nothing, so the pass stays idempotent.
  */
 export async function applyRemoteTombstones(
   ctx: SyncContext,
@@ -75,6 +80,18 @@ export async function applyRemoteTombstones(
           t.entity_id,
           t.deleted_at,
         );
+        break;
+      case "gear_items":
+        await ctx.gear.deleteItemIfNotNewer(t.entity_id, t.deleted_at);
+        break;
+      case "gear_types":
+        await ctx.gear.deleteTypeIfNotNewer(t.entity_id, t.deleted_at);
+        break;
+      case "gear_categories":
+        // A category delete also takes its children locally (FK cascade). Any
+        // child edited after the tombstone is protected by its own row/tombstone
+        // (the cloud keeps it and this device re-pushes it).
+        await ctx.gear.deleteCategoryIfNotNewer(t.entity_id, t.deleted_at);
         break;
       default:
         continue; // unknown entity — ignore defensively

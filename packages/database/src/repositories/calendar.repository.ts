@@ -9,6 +9,7 @@
  */
 
 import { nextLocalStamps } from './local-clock.js';
+import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -178,10 +179,14 @@ export class CalendarRepository {
    * it was not edited after the tombstone.
    */
   async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    if (!(await rowIsDoomed(this.db, 'training_tasks', 'id', id, 'updated_at', deletedAt))) {
+      return;
+    }
     await this.db(
       "DELETE FROM training_tasks WHERE id = ? AND updated_at <= ?",
       [id, deletedAt],
     );
+    await purgeTombstoneEchoes(this.db, 'training_tasks', [id]);
   }
 
   async clear(): Promise<void> {

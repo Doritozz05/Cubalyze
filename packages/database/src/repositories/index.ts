@@ -23,4 +23,7 @@ export type {
   GearLink,
   GearPhotoRef,
   GearCollectionSnapshot,
+  GearTable,
+  GearPhotoSyncState,
+  GearPhotoSyncStatus,
 } from './gear.repository.js';

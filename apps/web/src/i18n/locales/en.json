@@ -4577,6 +4577,8 @@
       "tasks_other": "{{count}} calendar tasks",
       "skills": "{{count}} skill",
       "skills_other": "{{count}} skills",
+      "items": "{{count}} Locker item",
+      "items_other": "{{count}} Locker items",
       "merge": "Upload and combine",
       "mergeDesc": "Push everything on this device to your account and merge with the cloud.",
       "fresh": "Start fresh from the cloud",

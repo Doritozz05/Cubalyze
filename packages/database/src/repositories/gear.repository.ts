@@ -19,14 +19,28 @@
  * write clock (local-clock.ts), so an edit that keeps a row's old `updated_at`
  * cannot be skipped by the sync push cursor.
  *
+ * Sync (Fase 6, migration 037) adds three things here:
+ *   • the push cursor (`find*Since`) and the pull LWW checks (`findUpdatedAts`);
+ *   • the versioned deletes used by remote tombstones (`delete*IfNotNewer`);
+ *   • two behaviours that the naive implementation gets wrong, both because
+ *     SQLite does not fire row triggers on FK cascades and an FK `SET NULL`
+ *     does not touch `updated_at`:
+ *       - `deleteCategory` deletes children EXPLICITLY so every row produces a
+ *         tombstone (otherwise the cloud keeps them and they resurrect);
+ *       - `deleteType` re-homes its items with a fresh stamp (otherwise the
+ *         re-home never leaves the device).
+ *
  * Photos are NOT here: `photos` holds references (id + natural size) and the
- * bytes live as blobs in IndexedDB (see the web-side photo store). Base64 in a
- * row costs ~2× and would travel to the cloud.
+ * bytes live as blobs in IndexedDB (see the web-side photo store). What IS here
+ * is `gear_photo_sync`, a DEVICE-LOCAL ledger of which blobs are already in
+ * Storage — deliberately not a synced column, because writing upload state into
+ * the row would bump `updated_at` and loop the sync forever.
  */
 
 import { nextLocalStamps } from './local-clock.js';
 import { withTransaction } from './transaction.js';
 import { normalizeSmartId } from '../smart-cube-id.js';
+import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -35,6 +49,9 @@ type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unkn
 export type GearCategoryKind = 'cube' | 'gear';
 export type GearItemStatus = 'owned' | 'wishlist' | 'sold' | 'lent';
 export type GearItemCondition = 'mint' | 'good' | 'used' | 'broken';
+
+/** The three synced tables — used by the sync cursors and tombstone deletes. */
+export type GearTable = 'gear_categories' | 'gear_types' | 'gear_items';
 
 export interface GearCategory {
   id: string;
@@ -45,6 +62,11 @@ export interface GearCategory {
   /** Optional accent colour for the category chip. */
   accent?: string;
   createdAt: number;
+  /**
+   * LWW stamp. The UI does not edit it, but the sync engine needs it: a
+   * category edited on one device must beat an older copy on another.
+   */
+  updatedAt?: number;
 }
 
 export interface GearType {
@@ -57,6 +79,8 @@ export interface GearType {
    */
   puzzleCategory: string | null;
   createdAt: number;
+  /** LWW stamp (see GearCategory.updatedAt). */
+  updatedAt?: number;
 }
 
 export interface GearPrice {
@@ -126,6 +150,26 @@ export interface GearCollectionSnapshot {
   items: GearItem[];
 }
 
+// ─── Photo-upload ledger (device-local) ───────────────────────────────────
+
+export type GearPhotoSyncStatus = 'pending' | 'synced' | 'missing';
+
+export interface GearPhotoSyncState {
+  /** `<itemId>:<photoId>` — the same key the blob store uses. */
+  photoKey: string;
+  itemId: string;
+  photoId: string;
+  status: GearPhotoSyncStatus;
+  /** Content fingerprint: skips re-uploading bytes that did not change. */
+  contentHash: string;
+  fullBytes: number;
+  thumbBytes: number;
+  attempts: number;
+  lastAttemptAt: number;
+  uploadedAt: number;
+  lastError?: string;
+}
+
 // ─── Row types (snake_case, matching SQL) ─────────────────────────────────
 
 interface GearCategoryRow {
@@ -135,6 +179,7 @@ interface GearCategoryRow {
   icon: string;
   accent: string | null;
   created_at: number;
+  updated_at: number;
 }
 
 interface GearTypeRow {
@@ -143,6 +188,7 @@ interface GearTypeRow {
   name: string;
   puzzle_category: string | null;
   created_at: number;
+  updated_at: number;
 }
 
 interface GearItemRow {
@@ -171,6 +217,20 @@ interface GearItemRow {
   quantity: number;
   created_at: number;
   updated_at: number;
+}
+
+interface GearPhotoSyncRow {
+  photo_key: string;
+  item_id: string;
+  photo_id: string;
+  status: string;
+  content_hash: string;
+  full_bytes: number;
+  thumb_bytes: number;
+  attempts: number;
+  last_attempt_at: number;
+  uploaded_at: number;
+  last_error: string | null;
 }
 
 // ─── Row ↔ domain converters ──────────────────────────────────────────────
@@ -217,6 +277,7 @@ function rowToCategory(row: GearCategoryRow): GearCategory {
     icon: row.icon,
     ...(row.accent ? { accent: row.accent } : {}),
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -227,6 +288,7 @@ function rowToType(row: GearTypeRow): GearType {
     name: row.name,
     puzzleCategory: row.puzzle_category,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -258,6 +320,23 @@ function rowToItem(row: GearItemRow): GearItem {
     ...(row.condition ? { condition: row.condition as GearItemCondition } : {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function rowToPhotoSyncState(row: GearPhotoSyncRow): GearPhotoSyncState {
+  const status = row.status === 'synced' ? 'synced' : row.status === 'missing' ? 'missing' : 'pending';
+  return {
+    photoKey: row.photo_key,
+    itemId: row.item_id,
+    photoId: row.photo_id,
+    status,
+    contentHash: row.content_hash,
+    fullBytes: Number(row.full_bytes) || 0,
+    thumbBytes: Number(row.thumb_bytes) || 0,
+    attempts: Number(row.attempts) || 0,
+    lastAttemptAt: Number(row.last_attempt_at) || 0,
+    uploadedAt: Number(row.uploaded_at) || 0,
+    ...(row.last_error ? { lastError: row.last_error } : {}),
   };
 }
 
@@ -367,12 +446,17 @@ const ITEM_UPSERT = `INSERT INTO gear_items (
     quantity = excluded.quantity,
     updated_at = excluded.updated_at`;
 
+/** Max ids per IN () clause — far below SQLite's variable limit. */
+const ID_BATCH = 400;
+
 export class GearRepository {
   private db: DBExecutor;
 
   constructor(db: DBExecutor) {
     this.db = db;
   }
+
+  // ── Reads ───────────────────────────────────────────────────────────────
 
   /**
    * Every row, in creation order (the order the model appends in). The Locker
@@ -393,8 +477,114 @@ export class GearRepository {
     };
   }
 
+  /**
+   * Push cursor for one gear table: all NON-demo rows edited strictly after
+   * `updatedAt`, with the same (updated_at, id) keyset pagination as solves —
+   * rows sharing a timestamp are never skipped.
+   */
+  private async findSince<T>(
+    table: GearTable,
+    updatedAt: number,
+    opts: { limit?: number; afterUpdatedAt?: number; afterId?: string } | undefined,
+    map: (row: Record<string, unknown>) => T,
+  ): Promise<T[]> {
+    let sql = `SELECT * FROM ${table} WHERE is_demo = 0`;
+    const bind: unknown[] = [];
+    if (opts?.afterUpdatedAt !== undefined && opts.afterId !== undefined) {
+      sql += ' AND (updated_at > ? OR (updated_at = ? AND id > ?))';
+      bind.push(opts.afterUpdatedAt, opts.afterUpdatedAt, opts.afterId);
+    } else {
+      sql += ' AND updated_at > ?';
+      bind.push(updatedAt);
+    }
+    sql += ' ORDER BY updated_at ASC, id ASC';
+    if (opts?.limit !== undefined) {
+      sql += ' LIMIT ?';
+      bind.push(opts.limit);
+    }
+    const rows = await this.db(sql, bind);
+    return rows.map(map);
+  }
+
+  findCategoriesSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<GearCategory[]> {
+    return this.findSince('gear_categories', updatedAt, opts, (r) =>
+      rowToCategory(r as unknown as GearCategoryRow),
+    );
+  }
+
+  findTypesSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<GearType[]> {
+    return this.findSince('gear_types', updatedAt, opts, (r) =>
+      rowToType(r as unknown as GearTypeRow),
+    );
+  }
+
+  findItemsSince(
+    updatedAt: number,
+    opts?: { limit?: number; afterUpdatedAt?: number; afterId?: string },
+  ): Promise<GearItem[]> {
+    return this.findSince('gear_items', updatedAt, opts, (r) =>
+      rowToItem(r as unknown as GearItemRow),
+    );
+  }
+
+  /** Existing `updated_at` values for a batch of ids (pull LWW check). */
+  async findUpdatedAts(table: GearTable, ids: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    for (let i = 0; i < ids.length; i += ID_BATCH) {
+      const chunk = ids.slice(i, i + ID_BATCH);
+      if (chunk.length === 0) continue;
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id, updated_at FROM ${table} WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) map.set(String(r.id), Number(r.updated_at) || 0);
+    }
+    return map;
+  }
+
+  /**
+   * Which of the given ids exist locally. The pull uses these to keep the local
+   * FK graph valid: a type whose category is missing would fail the insert and
+   * block the whole pull, exactly like an orphaned solve (pull.ts).
+   */
+  private async findExistingIds(table: GearTable, ids: string[]): Promise<Set<string>> {
+    const found = new Set<string>();
+    for (let i = 0; i < ids.length; i += ID_BATCH) {
+      const chunk = ids.slice(i, i + ID_BATCH);
+      if (chunk.length === 0) continue;
+      const placeholders = chunk.map(() => '?').join(', ');
+      const rows = await this.db(
+        `SELECT id FROM ${table} WHERE id IN (${placeholders})`,
+        chunk,
+      );
+      for (const r of rows) found.add(String(r.id));
+    }
+    return found;
+  }
+
+  findExistingCategoryIds(ids: string[]): Promise<Set<string>> {
+    return this.findExistingIds('gear_categories', ids);
+  }
+
+  findExistingTypeIds(ids: string[]): Promise<Set<string>> {
+    return this.findExistingIds('gear_types', ids);
+  }
+
+  // ── Writes (local edits) ────────────────────────────────────────────────
+
   async upsertCategory(category: GearCategory, opts?: { local?: boolean }): Promise<void> {
-    const updatedAt = await this.stamp('gear_categories', category.createdAt, opts);
+    const updatedAt = await this.stamp(
+      'gear_categories',
+      category.updatedAt ?? category.createdAt,
+      opts,
+    );
     const row = categoryToRow(category);
     await this.db(CATEGORY_UPSERT, [
       row.id,
@@ -408,7 +598,11 @@ export class GearRepository {
   }
 
   async upsertType(type: GearType, opts?: { local?: boolean }): Promise<void> {
-    const updatedAt = await this.stamp('gear_types', type.createdAt, opts);
+    const updatedAt = await this.stamp(
+      'gear_types',
+      type.updatedAt ?? type.createdAt,
+      opts,
+    );
     const row = typeToRow(type);
     await this.db(TYPE_UPSERT, [
       row.id,
@@ -452,9 +646,13 @@ export class GearRepository {
     ]);
   }
 
-  /** Edit-path stamp: monotonic and strictly newer than the row's own stamp. */
+  /**
+   * Edit-path stamp: monotonic and strictly newer than the row's own stamp.
+   * Without `{ local: true }` the caller's timestamp is written verbatim —
+   * which is exactly what a pull-applied cloud row needs.
+   */
   private async stamp(
-    table: 'gear_categories' | 'gear_types' | 'gear_items',
+    table: GearTable,
     floor: number,
     opts?: { local?: boolean },
   ): Promise<number> {
@@ -462,41 +660,231 @@ export class GearRepository {
     return nextLocalStamps(this.db, table, 1, { floor });
   }
 
+  // ── Deletes ─────────────────────────────────────────────────────────────
+
+  /**
+   * Delete a category AND its children, each with its own statement.
+   *
+   * The schema cascades, but SQLite does NOT fire row triggers on cascaded
+   * deletes (`recursive_triggers` defaults to OFF), so a bare
+   * `DELETE FROM gear_categories` would leave its types and items alive in the
+   * cloud — and the next pull would resurrect them on every other device.
+   * Deleting children first makes every row produce its tombstone (037); it is
+   * the same contract `deleteSession` already uses for solves.
+   */
   async deleteCategory(id: string): Promise<void> {
-    // The FK cascades take the types and their items (mirrors `removeCategory`).
-    await this.db('DELETE FROM gear_categories WHERE id = ?', [id]);
+    await withTransaction(this.db, async () => {
+      // Items directly under the category…
+      await this.db('DELETE FROM gear_items WHERE category_id = ?', [id]);
+      // …and any item that reached into one of this category's types (defensive:
+      // a cross-category type reference must not survive its type).
+      await this.db(
+        'DELETE FROM gear_items WHERE type_id IN (SELECT id FROM gear_types WHERE category_id = ?)',
+        [id],
+      );
+      await this.db('DELETE FROM gear_types WHERE category_id = ?', [id]);
+      await this.db('DELETE FROM gear_categories WHERE id = ?', [id]);
+    });
   }
 
+  /**
+   * Delete a type: its items are RE-HOMED in the category (`type_id = NULL`),
+   * not deleted, mirroring `removeType`.
+   *
+   * The re-home is an explicit UPDATE with a fresh stamp, NOT the FK's
+   * `ON DELETE SET NULL`: an FK action does not touch `updated_at`, so the
+   * re-homed items would keep their old stamp and the push cursor
+   * (`updated_at > watermark`) would never upload them — the other device would
+   * keep them pointing at a type that no longer exists anywhere.
+   */
   async deleteType(id: string): Promise<void> {
-    // `ON DELETE SET NULL` re-homes the items in their category (mirrors
-    // `removeType`), and it happens inside the statement, so no partial state.
-    await this.db('DELETE FROM gear_types WHERE id = ?', [id]);
+    await withTransaction(this.db, async () => {
+      const rows = await this.db('SELECT id FROM gear_items WHERE type_id = ?', [id]);
+      const ids = rows.map((r) => String(r.id));
+      if (ids.length > 0) {
+        // One reserved, strictly-increasing range for the whole re-home: all
+        // stamps are >= the wall clock and the local clock, and each row moves
+        // past its own previous stamp.
+        const base = await nextLocalStamps(this.db, 'gear_items', ids.length);
+        for (let i = 0; i < ids.length; i += 1) {
+          await this.db('UPDATE gear_items SET type_id = NULL, updated_at = ? WHERE id = ?', [
+            base + i,
+            ids[i],
+          ]);
+        }
+      }
+      await this.db('DELETE FROM gear_types WHERE id = ?', [id]);
+    });
   }
 
   async deleteItem(id: string): Promise<void> {
+    // Photos are bytes in IndexedDB with no FK to this table — the caller
+    // (collectionStore) deletes their blobs and their ledger rows.
     await this.db('DELETE FROM gear_items WHERE id = ?', [id]);
   }
 
+  /**
+   * Versioned delete for a remote tombstone (LWW): removes the row only when it
+   * was NOT edited after the delete. A newer local edit survives and is
+   * re-pushed, resurrecting the row — deletes only win against older data.
+   *
+   * Each of these deletes is an ECHO of a tombstone the cloud already owns, so
+   * none of them may announce itself: the trigger-written tombstone carries a
+   * FRESHER deleted_at and, once pushed, would destroy a newer edit made on
+   * another device in the meantime (tombstone-echo.ts has the full story).
+   * Hence the "is this row really doomed?" probe before deleting: a device that
+   * had already deleted the row on its own keeps its pending tombstone.
+   */
+  async deleteItemIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    if (!(await rowIsDoomed(this.db, 'gear_items', 'id', id, 'updated_at', deletedAt))) return;
+    await this.db('DELETE FROM gear_items WHERE id = ? AND updated_at <= ?', [id, deletedAt]);
+    await purgeTombstoneEchoes(this.db, 'gear_items', [id]);
+  }
+
+  async deleteTypeIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    // The items that referenced the type are re-homed by the FK (`SET NULL`),
+    // an UPDATE that produces no tombstone of its own.
+    if (!(await rowIsDoomed(this.db, 'gear_types', 'id', id, 'updated_at', deletedAt))) return;
+    await this.db('DELETE FROM gear_types WHERE id = ? AND updated_at <= ?', [id, deletedAt]);
+    await purgeTombstoneEchoes(this.db, 'gear_types', [id]);
+  }
+
+  /**
+   * A remote category delete takes its contents, exactly like the local one —
+   * but spelled out statement by statement (the FK's cascade fires no row
+   * trigger). Every deleted row's echo is then dropped, so the children are not
+   * re-announced with a fresher stamp: a child edited elsewhere after the
+   * delete keeps its newer copy in the cloud instead of being destroyed by an
+   * echo (see tombstone-echo.ts).
+   */
+  async deleteCategoryIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    if (!(await rowIsDoomed(this.db, 'gear_categories', 'id', id, 'updated_at', deletedAt))) {
+      return;
+    }
+    await withTransaction(this.db, async () => {
+      const itemRows = await this.db(
+        `SELECT id FROM gear_items
+          WHERE category_id = ?
+             OR type_id IN (SELECT id FROM gear_types WHERE category_id = ?)`,
+        [id, id],
+      );
+      const typeRows = await this.db('SELECT id FROM gear_types WHERE category_id = ?', [id]);
+      await this.db('DELETE FROM gear_items WHERE category_id = ?', [id]);
+      await this.db(
+        'DELETE FROM gear_items WHERE type_id IN (SELECT id FROM gear_types WHERE category_id = ?)',
+        [id],
+      );
+      await this.db('DELETE FROM gear_types WHERE category_id = ?', [id]);
+      await this.db('DELETE FROM gear_categories WHERE id = ?', [id]);
+      await purgeTombstoneEchoes(
+        this.db,
+        'gear_items',
+        itemRows.map((r) => String(r.id)),
+      );
+      await purgeTombstoneEchoes(
+        this.db,
+        'gear_types',
+        typeRows.map((r) => String(r.id)),
+      );
+      await purgeTombstoneEchoes(this.db, 'gear_categories', [id]);
+    });
+  }
+
+  /** Delete every row (and the photo ledger). The caller purges tombstones. */
   async clear(): Promise<void> {
     await this.db('DELETE FROM gear_items');
     await this.db('DELETE FROM gear_types');
     await this.db('DELETE FROM gear_categories');
+    await this.db('DELETE FROM gear_photo_sync');
   }
+
+  // ── Photo-upload ledger ─────────────────────────────────────────────────
+
+  async loadPhotoSyncStates(): Promise<Map<string, GearPhotoSyncState>> {
+    const rows = await this.db('SELECT * FROM gear_photo_sync');
+    const map = new Map<string, GearPhotoSyncState>();
+    for (const row of rows) {
+      const state = rowToPhotoSyncState(row as unknown as GearPhotoSyncRow);
+      map.set(state.photoKey, state);
+    }
+    return map;
+  }
+
+  async getPhotoSyncState(photoKey: string): Promise<GearPhotoSyncState | null> {
+    const rows = await this.db('SELECT * FROM gear_photo_sync WHERE photo_key = ?', [photoKey]);
+    if (rows.length === 0) return null;
+    return rowToPhotoSyncState(rows[0] as unknown as GearPhotoSyncRow);
+  }
+
+  async upsertPhotoSyncState(state: GearPhotoSyncState): Promise<void> {
+    await this.db(
+      `INSERT INTO gear_photo_sync (
+         photo_key, item_id, photo_id, status, content_hash, full_bytes, thumb_bytes,
+         attempts, last_attempt_at, uploaded_at, last_error
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(photo_key) DO UPDATE SET
+         status = excluded.status,
+         content_hash = excluded.content_hash,
+         full_bytes = excluded.full_bytes,
+         thumb_bytes = excluded.thumb_bytes,
+         attempts = excluded.attempts,
+         last_attempt_at = excluded.last_attempt_at,
+         uploaded_at = excluded.uploaded_at,
+         last_error = excluded.last_error`,
+      [
+        state.photoKey,
+        state.itemId,
+        state.photoId,
+        state.status,
+        state.contentHash,
+        state.fullBytes,
+        state.thumbBytes,
+        state.attempts,
+        state.lastAttemptAt,
+        state.uploadedAt,
+        state.lastError ?? null,
+      ],
+    );
+  }
+
+  async deletePhotoSyncState(photoKey: string): Promise<void> {
+    await this.db('DELETE FROM gear_photo_sync WHERE photo_key = ?', [photoKey]);
+  }
+
+  /** Ledger rows in one state (the photo sync service drives off these). */
+  async listPhotoSyncByStatus(status: GearPhotoSyncStatus): Promise<GearPhotoSyncState[]> {
+    const rows = await this.db(
+      'SELECT * FROM gear_photo_sync WHERE status = ? ORDER BY last_attempt_at ASC',
+      [status],
+    );
+    return rows.map((r) => rowToPhotoSyncState(r as unknown as GearPhotoSyncRow));
+  }
+
+  // ── Bulk replace (import / reset) ───────────────────────────────────────
 
   /**
    * Rewrite the whole collection in one transaction. Used by the one-shot
    * legacy import (*) and by reset-to-seed, where the incoming state IS the
    * new truth — anything not listed must be gone.
    *
-   * (*) The import deliberately does not go through here: it must leave the
-   * existing rows alone if a later step fails. See the web-side hook.
+   * (*) The import deliberately does not go through here directly: the web hook
+   *     keeps the existing rows if a later step fails.
+   *
+   * F5: `clear()` deletes the rows, which fires the tombstone triggers — and
+   * then the snapshot re-inserts the SAME ids. Those tombstones must not
+   * survive: pushed after the rows, a `deleted_at` in the same millisecond as
+   * the fresh `updated_at` would make the cloud `delete ... where updated_at
+   * <= deleted_at` remove the row that was just imported, and the next pull
+   * would delete it locally too. Tombstones are therefore purged for exactly
+   * the ids that were re-inserted; the ones for ids that are really gone stay,
+   * because those are how the cloud learns about the deletion.
    */
   async replaceAll(snapshot: GearCollectionSnapshot, opts?: { local?: boolean }): Promise<void> {
     const local = opts?.local ?? true;
-    // One transaction: a reset/import either lands whole or not at all. The
-    // parent rows go first, so the children's FKs always resolve.
     await withTransaction(this.db, async () => {
-      await this.clear();
+      await this.db('DELETE FROM gear_items');
+      await this.db('DELETE FROM gear_types');
+      await this.db('DELETE FROM gear_categories');
       for (const category of snapshot.categories) {
         await this.upsertCategory(category, { local });
       }
@@ -506,7 +894,23 @@ export class GearRepository {
       for (const item of snapshot.items) {
         await this.upsertItem(item, { local });
       }
+      await this.purgeTombstones('gear_categories', snapshot.categories.map((c) => c.id));
+      await this.purgeTombstones('gear_types', snapshot.types.map((t) => t.id));
+      await this.purgeTombstones('gear_items', snapshot.items.map((i) => i.id));
     });
+  }
+
+  /** Drop tombstones for ids that are alive again (see replaceAll). */
+  private async purgeTombstones(entity: GearTable, ids: string[]): Promise<void> {
+    for (let i = 0; i < ids.length; i += ID_BATCH) {
+      const chunk = ids.slice(i, i + ID_BATCH);
+      if (chunk.length === 0) continue;
+      const placeholders = chunk.map(() => '?').join(', ');
+      await this.db(
+        `DELETE FROM sync_tombstones WHERE entity = ? AND entity_id IN (${placeholders})`,
+        [entity, ...chunk],
+      );
+    }
   }
 
   async count(): Promise<{ categories: number; types: number; items: number }> {

@@ -231,6 +231,24 @@ export async function readPhoto(itemId: string, photoId: string): Promise<Stored
   }
 }
 
+/**
+ * Keys (`<itemId>:<photoId>`) whose bytes are present locally.
+ *
+ * ONE read for the whole store: the photo sync needs to know, for every
+ * referenced photo, whether the bytes are here — asking `readPhoto` per photo
+ * would be an IndexedDB round-trip per card.
+ */
+export async function storedPhotoKeys(): Promise<Set<string>> {
+  const db = await openPhotosDB();
+  try {
+    const tx = db.transaction(STORE, "readonly");
+    const keys = await request<IDBValidKey[]>(tx.objectStore(STORE).getAllKeys());
+    return new Set(keys.map((key) => String(key)));
+  } finally {
+    db.close();
+  }
+}
+
 export interface PhotoStoreUsage {
   photos: number;
   bytes: number;

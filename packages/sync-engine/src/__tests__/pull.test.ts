@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -103,6 +104,7 @@ function makeCtx(db: DBExecutor, supabase: unknown): SyncContext {
     training: new TrainingRepository(db),
     calendar: new CalendarRepository(db),
     skills: new SkillProgressRepository(db),
+    gear: new GearRepository(db),
   };
 }
 

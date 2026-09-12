@@ -9,6 +9,7 @@
  */
 
 import { nextLocalStamps } from './local-clock.js';
+import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -16,6 +17,22 @@ export interface SkillProgressRow {
   skill_id: string;
   completed_at: number;
 }
+
+/**
+ * Re-completing a skill is an UPDATE, never a delete + insert.
+ *
+ * `INSERT OR REPLACE` looks equivalent and is not: REPLACE removes the
+ * conflicting row first, and `skill_progress` has an AFTER DELETE trigger that
+ * records a sync tombstone (migration 028). With `PRAGMA recursive_triggers`
+ * enabled (the worker currently leaves it off, but nothing guarantees it stays
+ * that way) every re-completion would mint a tombstone for a skill that is
+ * still completed, get it pushed, and the cloud's conditional delete would
+ * remove the very row the user just completed. The explicit upsert has no
+ * delete, so it can never look like one.
+ */
+const UPSERT_COMPLETION =
+  "INSERT INTO skill_progress (skill_id, completed_at) VALUES (?, ?)\n" +
+  "  ON CONFLICT(skill_id) DO UPDATE SET completed_at = excluded.completed_at";
 
 export class SkillProgressRepository {
   private db: DBExecutor;
@@ -56,23 +73,17 @@ export class SkillProgressRepository {
     // that collides with the push watermark, and two rapid toggles stay
     // strictly ordered.
     const completedAt = await nextLocalStamps(this.db, "skill_progress");
-    await this.db(
-      "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
-      [skillId, completedAt],
-    );
+    await this.db(UPSERT_COMPLETION, [skillId, completedAt]);
   }
 
   /**
-   * Insert-or-replace preserving the CLOUD completion timestamp (pull).
+   * Upsert preserving the CLOUD completion timestamp (pull).
    * `??` (not `||`): a cloud row that legitimately carries completed_at = 0
    * must stay 0, never be re-sealed with a local Date.now() (M6) — the 0
    * value is what the next push compares against.
    */
   async setCompletedAt(skillId: string, completedAt: number): Promise<void> {
-    await this.db(
-      "INSERT OR REPLACE INTO skill_progress (skill_id, completed_at) VALUES (?, ?)",
-      [skillId, completedAt ?? Date.now()],
-    );
+    await this.db(UPSERT_COMPLETION, [skillId, completedAt ?? Date.now()]);
   }
 
   async setIncomplete(skillId: string): Promise<void> {
@@ -84,10 +95,16 @@ export class SkillProgressRepository {
    * skill when it was not re-completed after the tombstone.
    */
   async setIncompleteIfNotNewer(skillId: string, deletedAt: number): Promise<void> {
+    if (
+      !(await rowIsDoomed(this.db, 'skill_progress', 'skill_id', skillId, 'completed_at', deletedAt))
+    ) {
+      return;
+    }
     await this.db(
       "DELETE FROM skill_progress WHERE skill_id = ? AND completed_at <= ?",
       [skillId, deletedAt],
     );
+    await purgeTombstoneEchoes(this.db, 'skill_progress', [skillId]);
   }
 
   /**
@@ -99,6 +116,19 @@ export class SkillProgressRepository {
     for (const id of completedIds) {
       await this.setCompleted(id);
     }
+    // The DELETE above minted a tombstone for every row, including the ones
+    // re-inserted a line later (this is a rewrite of the set, not a deletion).
+    // Left behind, those tombstones would be pushed and the cloud's
+    // conditional delete (`completed_at <= deleted_at`) could remove a skill
+    // that is still completed — same-millisecond stamps make that a real
+    // collision, not a theoretical one. Tombstones for ids that are NOT in the
+    // new set stay: they are how the cloud learns about the un-completion.
+    if (completedIds.length === 0) return;
+    const placeholders = completedIds.map(() => "?").join(", ");
+    await this.db(
+      `DELETE FROM sync_tombstones WHERE entity = 'skill_progress' AND entity_id IN (${placeholders})`,
+      completedIds,
+    );
   }
 
   async count(): Promise<number> {

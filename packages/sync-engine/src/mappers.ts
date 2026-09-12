@@ -7,7 +7,14 @@
  */
 
 import type { Profile, Session, Solve } from "@cubeforge/models";
-import type { TrainingAttempt, TrainingTask } from "@cubeforge/database";
+import type {
+  GearCategory,
+  GearItem,
+  GearPhotoRef,
+  GearType,
+  TrainingAttempt,
+  TrainingTask,
+} from "@cubeforge/database";
 import type { TrainingSessionProgressRecord } from "@cubeforge/training";
 
 export type CloudRow = Record<string, unknown>;
@@ -355,5 +362,160 @@ export function skillToCloudRow(
     user_id: userId,
     skill_id: skillId,
     completed_at: b(completedAt) ?? 0,
+  };
+}
+
+// ─── Gear (the Locker) ────────────────────────────────────────────────────
+
+/**
+ * Defensive JSON-array parse for the gear columns that hold JSON text
+ * (palette/links/photos/tags), mirroring the local repository's `parseJsonArray`.
+ * A hand-edited or half-written value degrades to `[]` instead of throwing and
+ * taking a whole pull batch down with it.
+ */
+function parseCloudJsonArray<T>(raw: unknown): T[] {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+const isCloudPhotoRef = (value: unknown): value is GearPhotoRef => {
+  if (typeof value !== "object" || value === null) return false;
+  const ref = value as Record<string, unknown>;
+  return (
+    typeof ref.id === "string" &&
+    typeof ref.width === "number" &&
+    typeof ref.height === "number" &&
+    typeof ref.addedAt === "number"
+  );
+};
+
+export function gearCategoryToCloudRow(
+  category: GearCategory,
+  userId: string,
+): CloudRow {
+  return {
+    user_id: userId,
+    id: category.id,
+    name: category.name,
+    kind: category.kind,
+    icon: category.icon,
+    accent: category.accent ?? null,
+    is_demo: 0,
+    created_at: b(category.createdAt) ?? 0,
+    updated_at: b(category.updatedAt ?? category.createdAt) ?? 0,
+  };
+}
+
+export function cloudRowToGearCategory(row: CloudRow): GearCategory {
+  return {
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    kind: row.kind === "cube" ? "cube" : "gear",
+    icon: String(row.icon ?? "Box"),
+    ...(row.accent == null ? {} : { accent: String(row.accent) }),
+    createdAt: Number(row.created_at) || 0,
+    updatedAt: Number(row.updated_at) || 0,
+  };
+}
+
+export function gearTypeToCloudRow(type: GearType, userId: string): CloudRow {
+  return {
+    user_id: userId,
+    id: type.id,
+    category_id: type.categoryId,
+    name: type.name,
+    puzzle_category: type.puzzleCategory ?? null,
+    is_demo: 0,
+    created_at: b(type.createdAt) ?? 0,
+    updated_at: b(type.updatedAt ?? type.createdAt) ?? 0,
+  };
+}
+
+export function cloudRowToGearType(row: CloudRow): GearType {
+  return {
+    id: String(row.id),
+    categoryId: String(row.category_id ?? ""),
+    name: String(row.name ?? ""),
+    puzzleCategory: row.puzzle_category == null ? null : String(row.puzzle_category),
+    createdAt: Number(row.created_at) || 0,
+    updatedAt: Number(row.updated_at) || 0,
+  };
+}
+
+export function gearItemToCloudRow(item: GearItem, userId: string): CloudRow {
+  return {
+    user_id: userId,
+    id: item.id,
+    category_id: item.categoryId,
+    type_id: item.typeId ?? null,
+    name: item.name,
+    brand: item.brand ?? null,
+    model: item.model ?? null,
+    finish: item.finish ?? null,
+    serial: item.serial ?? null,
+    smart_id: item.smartId ?? null,
+    palette: JSON.stringify(item.palette ?? []),
+    acquired_at: item.acquiredAt ?? null,
+    price_amount: item.price?.amount ?? null,
+    price_currency: item.price?.currency ?? null,
+    notes: item.notes ?? null,
+    links: JSON.stringify(item.links ?? []),
+    photos: JSON.stringify(item.photos ?? []),
+    tags: JSON.stringify(item.tags ?? []),
+    status: item.status,
+    condition: item.condition ?? null,
+    is_primary: item.primary ? 1 : 0,
+    is_favorite: item.favorite ? 1 : 0,
+    rating: item.rating ?? null,
+    quantity: item.quantity,
+    is_demo: 0,
+    created_at: b(item.createdAt) ?? 0,
+    updated_at: b(item.updatedAt ?? item.createdAt) ?? 0,
+  };
+}
+
+export function cloudRowToGearItem(row: CloudRow): GearItem {
+  const priceAmount = row.price_amount == null ? null : Number(row.price_amount);
+  const priceCurrency = row.price_currency == null ? null : String(row.price_currency);
+  const rating = row.rating == null ? null : Number(row.rating);
+  const condition = row.condition == null ? null : String(row.condition);
+  return {
+    id: String(row.id),
+    categoryId: String(row.category_id ?? ""),
+    typeId: row.type_id == null ? null : String(row.type_id),
+    name: String(row.name ?? ""),
+    ...(row.brand == null ? {} : { brand: String(row.brand) }),
+    ...(row.model == null ? {} : { model: String(row.model) }),
+    ...(row.finish == null ? {} : { finish: String(row.finish) }),
+    ...(row.serial == null ? {} : { serial: String(row.serial) }),
+    ...(row.smart_id == null ? {} : { smartId: String(row.smart_id) }),
+    palette: parseCloudJsonArray<string>(row.palette).filter(
+      (v): v is string => typeof v === "string",
+    ),
+    ...(row.acquired_at == null ? {} : { acquiredAt: String(row.acquired_at) }),
+    ...(priceAmount !== null && priceCurrency
+      ? { price: { amount: priceAmount, currency: priceCurrency } }
+      : {}),
+    ...(row.notes == null ? {} : { notes: String(row.notes) }),
+    links: parseCloudJsonArray<{ label: string; url: string }>(row.links).filter(
+      (v) => typeof v?.label === "string" && typeof v?.url === "string",
+    ),
+    photos: parseCloudJsonArray<unknown>(row.photos).filter(isCloudPhotoRef),
+    tags: parseCloudJsonArray<string>(row.tags).filter(
+      (v): v is string => typeof v === "string",
+    ),
+    status: (String(row.status ?? "owned") as GearItem["status"]),
+    primary: Number(row.is_primary) === 1,
+    favorite: Number(row.is_favorite) === 1,
+    ...(rating === null ? {} : { rating }),
+    quantity: Number(row.quantity) > 0 ? Number(row.quantity) : 1,
+    ...(condition == null ? {} : { condition: condition as GearItem["condition"] }),
+    createdAt: Number(row.created_at) || 0,
+    updatedAt: Number(row.updated_at) || 0,
   };
 }

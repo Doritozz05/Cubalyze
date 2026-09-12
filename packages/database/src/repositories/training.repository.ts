@@ -16,6 +16,7 @@ import type {
 } from "@cubeforge/training";
 import { withTransaction } from "./transaction.js";
 import { nextLocalStamps } from "./local-clock.js";
+import { purgeTombstoneEchoes, rowIsDoomed } from "./tombstone-echo.js";
 
 /** Generate a unique ID without external dependencies */
 function generateId(): string {
@@ -448,15 +449,35 @@ export class TrainingRepository {
   }
 
   /**
-   * Insert a training session from the cloud during a pull (full replace).
-   * The domain record already carries every column, including `updated_at`.
+   * Upsert a training session (cloud pull, and any local write that replaces
+   * the whole record). The domain record already carries every column,
+   * including `updated_at`.
+   *
+   * An explicit `ON CONFLICT … DO UPDATE`, NOT `INSERT OR REPLACE`: REPLACE
+   * deletes the conflicting row first, and `training_sessions` has an AFTER
+   * DELETE trigger that records a sync tombstone (migration 028). With
+   * `recursive_triggers` on, the pull path would then mint a tombstone for the
+   * record it just stored, push it, and the cloud's conditional delete would
+   * erase the session on every device. The upsert has no delete, so a re-store
+   * can never be mistaken for a removal.
    */
   async upsertTrainingSession(record: TrainingSessionRecord): Promise<void> {
     const updatedAt = record.updatedAt ?? record.startedAt ?? Date.now();
     await this.db(
-      `INSERT OR REPLACE INTO training_sessions
+      `INSERT INTO training_sessions
         (id, exercise_id, method_id, phase_id, subset_id, started_at, completed_at, duration_ms, smart_cube_used, status, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         exercise_id = excluded.exercise_id,
+         method_id = excluded.method_id,
+         phase_id = excluded.phase_id,
+         subset_id = excluded.subset_id,
+         started_at = excluded.started_at,
+         completed_at = excluded.completed_at,
+         duration_ms = excluded.duration_ms,
+         smart_cube_used = excluded.smart_cube_used,
+         status = excluded.status,
+         updated_at = excluded.updated_at`,
       [
         record.id,
         record.exerciseId,
@@ -491,10 +512,14 @@ export class TrainingRepository {
     id: string,
     deletedAt: number,
   ): Promise<void> {
+    if (!(await rowIsDoomed(this.db, 'training_sessions', 'id', id, 'updated_at', deletedAt))) {
+      return;
+    }
     await this.db(
       "DELETE FROM training_sessions WHERE id = ? AND updated_at <= ?",
       [id, deletedAt],
     );
+    await purgeTombstoneEchoes(this.db, 'training_sessions', [id]);
   }
 
   /** One training session by id (pull LWW check). */

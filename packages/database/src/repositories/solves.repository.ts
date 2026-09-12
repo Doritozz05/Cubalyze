@@ -3,6 +3,7 @@ import { isDbPuzzleType } from '@cubeforge/events';
 import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
 import { withTransaction } from './transaction.js';
 import { nextLocalStamps } from './local-clock.js';
+import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';
 
 export interface SolveRow {
   id: string;
@@ -406,10 +407,16 @@ export class SolvesRepository {
    * is re-pushed, resurrecting the row — deletes only win against older data.
    */
   async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    // Only delete when a row is really removed…
+    if (!(await rowIsDoomed(this.db, 'solves', 'id', id, 'updated_at', deletedAt))) return;
     await this.db(
       'DELETE FROM solves WHERE id = ? AND updated_at <= ?',
       [id, deletedAt],
     );
+    // …and then drop the tombstone the trigger echoed back: pushed with a
+    // fresher deleted_at it would destroy a newer edit made elsewhere (see
+    // tombstone-echo.ts).
+    await purgeTombstoneEchoes(this.db, 'solves', [id]);
   }
 
   async delete(id: string): Promise<void> {

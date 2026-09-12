@@ -134,11 +134,15 @@ describe('GearRepository', () => {
       );
 
       const snapshot = await repo.loadAll();
+      // `updatedAt` travels with every row: the sync engine speaks LWW with it
+      // (`find*Since` cursors, `findUpdatedAts` comparisons, the cloud mappers),
+      // so the repository must surface the real column instead of letting
+      // callers infer it from createdAt.
       expect(snapshot.categories).toEqual([
-        { id: 'c1', name: 'Category c1', kind: 'gear', icon: 'Wrench', accent: '#ff0000', createdAt: 1000 },
+        { id: 'c1', name: 'Category c1', kind: 'gear', icon: 'Wrench', accent: '#ff0000', createdAt: 1000, updatedAt: 1000 },
       ]);
       expect(snapshot.types).toEqual([
-        { id: 't1', categoryId: 'c1', name: 'Type t1', puzzleCategory: '3x3 OH', createdAt: 1000 },
+        { id: 't1', categoryId: 'c1', name: 'Type t1', puzzleCategory: '3x3 OH', createdAt: 1000, updatedAt: 1000 },
       ]);
       expect(snapshot.items).toHaveLength(1);
       expect(snapshot.items[0]).toMatchObject({
@@ -327,6 +331,218 @@ describe('GearRepository', () => {
     } finally {
       db.close();
     }
+  });
+
+  describe('sync surface (migration 037)', () => {
+    /** Tombstones as the sync engine reads them (entity → entity_id). */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tombstones = (db: any): string[] =>
+      db
+        .exec({
+          sql: 'SELECT entity || \':\' || entity_id AS ref FROM sync_tombstones ORDER BY ref',
+          rowMode: 'object',
+        })
+        .map((row: { ref: string }) => row.ref);
+
+    it('deleteCategory leaves a tombstone for the category AND every child', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertType(type('t1', 'c1'));
+        await repo.upsertItem(item('i1', 'c1', { typeId: 't1' }));
+
+        await repo.deleteCategory('c1');
+
+        // SQLite does NOT fire row triggers for rows removed by an FK cascade
+        // (recursive_triggers off), so a bare `DELETE FROM gear_categories`
+        // would leave the children alive in the cloud and the next pull would
+        // resurrect them here. The repository deletes children explicitly.
+        expect(tombstones(db)).toEqual([
+          'gear_categories:c1',
+          'gear_items:i1',
+          'gear_types:t1',
+        ]);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('deleteType re-homes its items with a stamp the push cursor can see', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertType(type('t1', 'c1'));
+        await repo.upsertItem(item('i1', 'c1', { typeId: 't1' }));
+        await repo.upsertItem(item('i2', 'c1', { typeId: 't1' }));
+        const before = (await repo.loadAll()).items.map((i) => i.updatedAt);
+
+        await repo.deleteType('t1');
+
+        const after = await repo.loadAll();
+        expect(after.items.map((i) => i.typeId)).toEqual([null, null]);
+        // The FK's ON DELETE SET NULL would have re-homed the rows WITHOUT
+        // touching updated_at, leaving them below the push watermark forever:
+        // the other device would keep them pointing at a type that no longer
+        // exists anywhere. The re-home is an explicit UPDATE with a fresh
+        // stamp, so `findItemsSince` must see both rows.
+        for (const [index, row] of after.items.entries()) {
+          expect(row.updatedAt).toBeGreaterThan(before[index] ?? 0);
+        }
+        const pushed = await repo.findItemsSince(Math.max(...(before as number[])));
+        expect(pushed.map((i) => i.id).sort()).toEqual(['i1', 'i2']);
+        // …and the cursor at rest returns nothing (the stamps are consecutive,
+        // so only the highest one is a true "nothing above me" watermark).
+        const maxStamp = Math.max(...after.items.map((i) => i.updatedAt ?? 0));
+        expect(await repo.findItemsSince(maxStamp)).toEqual([]);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('replaceAll keeps only the tombstones of the rows that really left', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertCategory(category('c2'));
+        await repo.upsertItem(item('i1', 'c1'));
+        await repo.upsertItem(item('i2', 'c2'));
+
+        // A rewrite (legacy import / reset): i1 stays, i2 is dropped, and the
+        // rows are deleted + re-inserted. The delete fires the tombstone
+        // triggers, so the re-inserted row would otherwise be deleted from the
+        // cloud by its own tombstone (same millisecond, `updated_at <=
+        // deleted_at`).
+        await repo.replaceAll({
+          categories: [category('c1')],
+          types: [],
+          items: [item('i1', 'c1')],
+        });
+
+        expect(tombstones(db)).toEqual(['gear_categories:c2', 'gear_items:i2']);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('the push cursors page by (updated_at, id) and never return demo rows', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        for (const id of ['a', 'b', 'c']) {
+          await repo.upsertItem(item(id, 'c1', { updatedAt: 5000 }));
+        }
+        // A demo row must never leave the device (M7).
+        db.exec(
+          "INSERT INTO gear_items (id, category_id, name, palette, links, photos, tags, status, is_primary, is_favorite, quantity, is_demo, created_at, updated_at) VALUES ('demo', 'c1', 'Demo', '[]', '[]', '[]', '[]', 'owned', 0, 0, 1, 1, 5000, 5000)",
+        );
+
+        const all = await repo.findItemsSince(0);
+        expect(all.map((i) => i.id)).toEqual(['a', 'b', 'c']);
+
+        // Keyset continuation: three rows share one timestamp, so `> 5000`
+        // alone would skip the rest of the group.
+        const page1 = await repo.findItemsSince(0, { limit: 2 });
+        const page2 = await repo.findItemsSince(0, {
+          limit: 2,
+          afterUpdatedAt: page1[1]!.updatedAt,
+          afterId: page1[1]!.id,
+        });
+        expect([...page1, ...page2].map((i) => i.id)).toEqual(['a', 'b', 'c']);
+        expect(await repo.findCategoriesSince(0)).toHaveLength(1);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('reports the stamps and the ids the pull needs to keep the FK graph valid', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertType(type('t1', 'c1'));
+
+        const stamps = await repo.findUpdatedAts('gear_items', ['i1']);
+        expect(stamps.get('i1')).toBeUndefined();
+        await repo.upsertItem(item('i1', 'c1', { updatedAt: 4242 }));
+        expect((await repo.findUpdatedAts('gear_items', ['i1'])).get('i1')).toBe(4242);
+
+        expect([...(await repo.findExistingCategoryIds(['c1', 'nope']))]).toEqual(['c1']);
+        expect([...(await repo.findExistingTypeIds(['t1', 'nope']))]).toEqual(['t1']);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('tracks the photo-upload ledger, which is cache and never syncs', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertItem(item('i1', 'c1'));
+
+        await repo.upsertPhotoSyncState({
+          photoKey: 'i1:p1',
+          itemId: 'i1',
+          photoId: 'p1',
+          status: 'pending',
+          contentHash: 'hash-1',
+          fullBytes: 120_000,
+          thumbBytes: 4_000,
+          attempts: 0,
+          lastAttemptAt: 0,
+          uploadedAt: 0,
+        });
+        expect((await repo.getPhotoSyncState('i1:p1'))?.status).toBe('pending');
+
+        await repo.upsertPhotoSyncState({
+          photoKey: 'i1:p1',
+          itemId: 'i1',
+          photoId: 'p1',
+          status: 'synced',
+          contentHash: 'hash-1',
+          fullBytes: 120_000,
+          thumbBytes: 4_000,
+          attempts: 1,
+          lastAttemptAt: 999,
+          uploadedAt: 1000,
+        });
+        const states = await repo.loadPhotoSyncStates();
+        expect(states.get('i1:p1')?.status).toBe('synced');
+        expect(await repo.listPhotoSyncByStatus('pending')).toEqual([]);
+
+        // The ledger is device-local: writing it must not dirty the sync (it
+        // would loop forever) nor mint a tombstone.
+        db.exec("DELETE FROM app_meta WHERE key = 'sync_dirty'");
+        await repo.upsertPhotoSyncState({
+          photoKey: 'i1:p2',
+          itemId: 'i1',
+          photoId: 'p2',
+          status: 'missing',
+          contentHash: '',
+          fullBytes: 0,
+          thumbBytes: 0,
+          attempts: 3,
+          lastAttemptAt: 2000,
+          uploadedAt: 0,
+          lastError: 'gone',
+        });
+        expect(db.exec({ sql: "SELECT value FROM app_meta WHERE key = 'sync_dirty'", rowMode: 'object' })).toEqual([]);
+        expect(tombstones(db)).toEqual([]);
+        expect((await repo.listPhotoSyncByStatus('missing'))[0]?.lastError).toBe('gone');
+
+        await repo.deletePhotoSyncState('i1:p1');
+        expect(await repo.getPhotoSyncState('i1:p1')).toBeNull();
+
+        await repo.clear();
+        expect(await repo.loadPhotoSyncStates()).toEqual(new Map());
+      } finally {
+        db.close();
+      }
+    });
   });
 
   describe('smart cube identity (smart_id)', () => {

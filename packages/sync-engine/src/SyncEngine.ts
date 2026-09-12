@@ -21,6 +21,7 @@
 import {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -43,6 +44,19 @@ import type {
   SyncTotals,
 } from "./types";
 import { SYNCABLE_TABLES } from "./types";
+
+/**
+ * App-injected callbacks the engine cannot implement itself (it lives in a
+ * package with no DOM/IndexedDB access).
+ */
+export interface SyncEngineHooks {
+  /**
+   * Fase 6 — remove the Locker's photo BYTES on a "fresh" claim. They live in
+   * IndexedDB, which this package does not touch; the web app wires this to
+   * its blob store. A failure is logged and never blocks the row wipe.
+   */
+  clearLocalPhotos?: () => Promise<void>;
+}
 
 const EMPTY_TOTALS: SyncTotals = {
   pushed: {},
@@ -101,12 +115,14 @@ export class SyncEngine {
    * would already have pushed the local history it was meant to discard).
    */
   private claimPending = false;
+  private readonly hooks?: SyncEngineHooks;
 
   constructor(
     db: DBExecutor,
     supabase: SupabaseClient,
     onStatus?: (status: SyncStatus) => void,
     onCycle?: (totals: SyncTotals) => void,
+    hooks?: SyncEngineHooks,
   ) {
     this.ctx = {
       db,
@@ -118,9 +134,11 @@ export class SyncEngine {
       training: new TrainingRepository(db),
       calendar: new CalendarRepository(db),
       skills: new SkillProgressRepository(db),
+      gear: new GearRepository(db),
     };
     this.onStatus = onStatus;
     this.onCycle = onCycle;
+    this.hooks = hooks;
   }
 
   get userId(): string | null {
@@ -179,7 +197,13 @@ export class SyncEngine {
       if (
         table === "profiles" ||
         table === "sessions" ||
-        table === "training_sessions"
+        table === "training_sessions" ||
+        // Fase 6 — a category or a type with no items is empty scaffolding:
+        // counting it would show the claim dialog (and offer "start fresh",
+        // which discards local data) on an account with nothing worth keeping.
+        // Only gear_items signals "this account already has a Locker".
+        table === "gear_categories" ||
+        table === "gear_types"
       )
         continue;
       const { count, error } = await this.ctx.supabase
@@ -237,6 +261,7 @@ export class SyncEngine {
       trainingAttempts: (await this.ctx.training.findAttemptsAll()).length,
       trainingTasks: await this.ctx.calendar.count(),
       skills: await this.ctx.skills.count(),
+      gearItems: (await this.ctx.gear.count()).items,
     };
   }
 
@@ -500,6 +525,18 @@ export class SyncEngine {
     await this.ctx.training.clearAllData();
     await this.ctx.calendar.clear();
     await this.ctx.skills.replaceAll([]);
+    // Fase 6 — the Locker is data too. Without this, "fresh" discarded the
+    // solves but kept the collection and pushed it into the account the user
+    // explicitly chose to start from the cloud.
+    await this.ctx.gear.clear();
+    // Photo BYTES live in IndexedDB, which this package does not reach. A
+    // failure here must not block the wipe — the ledger is already gone, so
+    // orphaned blobs are simply unreferenced, never resurrected.
+    try {
+      await this.hooks?.clearLocalPhotos?.();
+    } catch (err) {
+      console.warn("[sync-engine] fresh claim: could not clear local photos", err);
+    }
     // The wipes fired the tombstone triggers — purge so a fresh start can
     // never delete the cloud rows the user explicitly chose to keep.
     await purgeLocalTombstones(this.ctx.db);

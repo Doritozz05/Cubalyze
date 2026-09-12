@@ -4577,6 +4577,8 @@
       "tasks_other": "{{count}} tareas de calendario",
       "skills": "{{count}} habilidad",
       "skills_other": "{{count}} habilidades",
+      "items": "{{count}} pieza del Locker",
+      "items_other": "{{count}} piezas del Locker",
       "merge": "Subir y combinar",
       "mergeDesc": "Sube todo lo de este dispositivo a tu cuenta y combínalo con la nube.",
       "fresh": "Empezar de cero con la nube",

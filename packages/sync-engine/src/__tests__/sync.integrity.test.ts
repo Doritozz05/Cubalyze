@@ -22,6 +22,7 @@ import { MIGRATIONS } from "@cubeforge/database";
 import {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -98,6 +99,7 @@ function makeDevice(cloud: FakeCloud) {
     training: new TrainingRepository(executor),
     calendar: new CalendarRepository(executor),
     skills: new SkillProgressRepository(executor),
+    gear: new GearRepository(executor),
   };
   return { db, ctx, executor };
 }
@@ -130,6 +132,9 @@ class FakeCloud {
   training_sessions = new Map<string, Record<string, unknown>>();
   training_tasks = new Map<string, Record<string, unknown>>();
   skill_progress = new Map<string, Record<string, unknown>>();
+  gear_categories = new Map<string, Record<string, unknown>>();
+  gear_types = new Map<string, Record<string, unknown>>();
+  gear_items = new Map<string, Record<string, unknown>>();
   sync_tombstones = new Map<string, Record<string, unknown>>();
 
   /** Number of sync_apply RPC calls made (batching assertions). */
@@ -170,6 +175,11 @@ class FakeCloud {
     this.applyLww("training_attempts", p.training_attempts ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("training_sessions", p.training_sessions ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     this.applyLww("training_tasks", p.training_tasks ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    // Fase 6 — the Locker. Order (categories → types → items) mirrors the
+    // production blocks and the parent-before-child contract.
+    this.applyLww("gear_categories", p.gear_categories ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    this.applyLww("gear_types", p.gear_types ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
+    this.applyLww("gear_items", p.gear_items ?? [], (r) => `${r.user_id}:${r.id}`, "updated_at", UID);
     for (const r of p.skill_progress ?? []) {
       const key = `${r.user_id}:${r.skill_id}`;
       const cur = this.skill_progress.get(key);
@@ -232,6 +242,24 @@ class FakeCloud {
       case "training_sessions": {
         const row = this.findRow(this.training_sessions, id, user);
         if (row && Number(row.updated_at) <= deletedAt) this.training_sessions.delete(`${user}:${id}`);
+        break;
+      }
+      // The cloud gear tables carry NO FKs (schema note: a push must never
+      // depend on block order), so a deleted category does NOT cascade here —
+      // exactly like production. Every child travels as its own tombstone.
+      case "gear_items": {
+        const row = this.findRow(this.gear_items, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.gear_items.delete(`${user}:${id}`);
+        break;
+      }
+      case "gear_types": {
+        const row = this.findRow(this.gear_types, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.gear_types.delete(`${user}:${id}`);
+        break;
+      }
+      case "gear_categories": {
+        const row = this.findRow(this.gear_categories, id, user);
+        if (row && Number(row.updated_at) <= deletedAt) this.gear_categories.delete(`${user}:${id}`);
         break;
       }
       default:
@@ -1163,5 +1191,637 @@ describe("L) solve attribution travels between devices (M13)", () => {
     expect(norm(next.replace(solvesBlock(next), ""))).toBe(
       norm(previous.replace(solvesBlock(previous), "")),
     );
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// M) The Locker (Fase 6) travels whole: categories → types → items, with the
+// photos as references and the smart-cube address as a plain column.
+// ────────────────────────────────────────────────────────────────────────────
+const gearCategory = (id: string, overrides: Record<string, unknown> = {}) => ({
+  id,
+  name: `Category ${id}`,
+  kind: "cube" as const,
+  icon: "Box",
+  createdAt: 1000,
+  updatedAt: 1000,
+  ...overrides,
+});
+
+const gearType = (id: string, categoryId: string, overrides: Record<string, unknown> = {}) => ({
+  id,
+  categoryId,
+  name: `Type ${id}`,
+  puzzleCategory: null,
+  createdAt: 1000,
+  updatedAt: 1000,
+  ...overrides,
+});
+
+const gearItem = (id: string, categoryId: string, overrides: Record<string, unknown> = {}) => ({
+  id,
+  categoryId,
+  typeId: null as string | null,
+  name: `Item ${id}`,
+  palette: ["#ffffff", "#ffd500"],
+  links: [],
+  photos: [],
+  tags: [],
+  status: "owned" as const,
+  primary: false,
+  favorite: false,
+  quantity: 1,
+  createdAt: 1000,
+  updatedAt: 1000,
+  ...overrides,
+});
+
+describe("M) the Locker syncs between two devices", () => {
+  it("A's collection (category, type, item with photos) arrives whole on B", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.gear.upsertCategory(gearCategory("c1", { name: "3x3", icon: "Box" }));
+    await a.ctx.gear.upsertType(gearType("t1", "c1", { puzzleCategory: "333" }));
+    await a.ctx.gear.upsertItem(
+      gearItem("i1", "c1", {
+        typeId: "t1",
+        name: "GAN 12 UI",
+        brand: "GAN",
+        serial: "SN-1",
+        smartId: "AABBCCDDEEFF",
+        photos: [{ id: "p1", width: 1200, height: 1200, addedAt: 42 }],
+        tags: ["maglev"],
+        price: { amount: 64.95, currency: "EUR" },
+        rating: 4.5,
+        condition: "mint",
+      }),
+    );
+
+    const pushed = await pushChanges(a.ctx, UID);
+    expect(pushed.pushed.gear_categories).toBe(1);
+    expect(pushed.pushed.gear_types).toBe(1);
+    expect(pushed.pushed.gear_items).toBe(1);
+    expect(cloud.gear_items.get(`${UID}:i1`)?.photos).toBe(
+      JSON.stringify([{ id: "p1", width: 1200, height: 1200, addedAt: 42 }]),
+    );
+
+    await pullChanges(b.ctx, UID);
+    const snapshot = await b.ctx.gear.loadAll();
+    expect(snapshot.categories.map((c) => c.name)).toEqual(["3x3"]);
+    expect(snapshot.types.map((t) => t.puzzleCategory)).toEqual(["333"]);
+    expect(snapshot.items).toHaveLength(1);
+    const item = snapshot.items[0]!;
+    expect(item.typeId).toBe("t1");
+    expect(item.smartId).toBe("AABBCCDDEEFF");
+    expect(item.photos).toEqual([{ id: "p1", width: 1200, height: 1200, addedAt: 42 }]);
+    expect(item.price).toEqual({ amount: 64.95, currency: "EUR" });
+    expect(item.rating).toBe(4.5);
+    expect(item.condition).toBe("mint");
+    expect(item.tags).toEqual(["maglev"]);
+
+    // Convergence: A's watermarks are already at the rows' stamps, so its next
+    // push is empty. B's pull re-dirtied the rows (the local triggers fire on
+    // every applied row), so B pushes them back ONCE — an idempotent trip that
+    // LWW accepts with `>=` — and is at rest from then on.
+    const againOnA = await pushChanges(a.ctx, UID);
+    expect(againOnA.pushed.gear_items ?? 0).toBe(0);
+    await pushChanges(b.ctx, UID);
+    const restOnB = await pushChanges(b.ctx, UID);
+    expect(restOnB.pushed.gear_items ?? 0).toBe(0);
+  });
+});
+
+describe("N) a deleted Locker category is deleted everywhere (cascade + tombstones)", () => {
+  it("category, type and items all disappear from the cloud and from B", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.gear.upsertCategory(gearCategory("c1"));
+    await a.ctx.gear.upsertType(gearType("t1", "c1"));
+    await a.ctx.gear.upsertItem(gearItem("i1", "c1", { typeId: "t1" }));
+    await a.ctx.gear.upsertItem(gearItem("i2", "c1"));
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+    expect((await b.ctx.gear.loadAll()).items).toHaveLength(2);
+
+    // Delete the category on A: the repository deletes children explicitly
+    // (a plain cascade would not fire the tombstone triggers), so three
+    // tombstones are produced.
+    await a.ctx.gear.deleteCategory("c1");
+    const pushed = await pushChanges(a.ctx, UID);
+    expect(pushed.pushedTombstones).toBe(4);
+    expect(cloud.gear_categories.size).toBe(0);
+    expect(cloud.gear_types.size).toBe(0);
+    expect(cloud.gear_items.size).toBe(0);
+
+    await pullChanges(b.ctx, UID);
+    const onB = await b.ctx.gear.loadAll();
+    expect(onB.categories).toHaveLength(0);
+    expect(onB.types).toHaveLength(0);
+    expect(onB.items).toHaveLength(0);
+
+    // …and it stays gone on a brand-new device (nothing resurrects).
+    const c = makeDevice(cloud);
+    await pullChanges(c.ctx, UID);
+    expect((await c.ctx.gear.loadAll()).items).toHaveLength(0);
+  });
+
+  it("an ITEM deleted on A but edited later on B survives (LWW)", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.gear.upsertCategory(gearCategory("c1"));
+    await a.ctx.gear.upsertItem(gearItem("i1", "c1", { name: "Original" }));
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+
+    await a.ctx.gear.deleteItem("i1");
+    await pushChanges(a.ctx, UID);
+    expect(cloud.gear_items.size).toBe(0);
+
+    // B renamed the item offline, after A's delete was published.
+    await b.ctx.gear.upsertItem(gearItem("i1", "c1", { name: "Still mine" }), { local: true });
+    const editedOnB = (await b.ctx.gear.loadAll()).items[0]!;
+
+    // B pushes first, the tombstone pull comes after: the conditional delete
+    // (`updated_at <= deleted_at`) spares the newer row, which stays in the
+    // cloud under B's name.
+    await runCycle(b.ctx);
+    expect(cloud.gear_items.get(`${UID}:i1`)?.name).toBe("Still mine");
+    expect(Number(cloud.gear_items.get(`${UID}:i1`)?.updated_at)).toBe(editedOnB.updatedAt);
+
+    // A gets its item back on the next pull: the category is still there.
+    await runCycle(a.ctx);
+    const onA = await a.ctx.gear.loadAll();
+    expect(onA.items.map((i) => i.name)).toEqual(["Still mine"]);
+  });
+
+  it("a child edited later is never destroyed by the parent's delete (no echo escalation)", async () => {
+    // The bug this pins: B applied the category tombstone, its local cascade
+    // deleted the item, and the TRIGGER re-announced that delete with a FRESHER
+    // `deleted_at` than A's original tombstone. Pushed back, the echo destroyed
+    // B's newer "Edited after" row in the cloud (`updated_at <= deleted_at`),
+    // on every device, permanently — the exact opposite of what a
+    // LWW-conditional delete exists to guarantee. Applying a remote tombstone
+    // now deletes locally and says nothing (tombstone-echo.ts), so the newer
+    // edit survives.
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.gear.upsertCategory(gearCategory("c1"));
+    await a.ctx.gear.upsertItem(gearItem("i1", "c1"));
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+
+    // A deletes the whole category and publishes it.
+    await a.ctx.gear.deleteCategory("c1");
+    await pushChanges(a.ctx, UID);
+    expect((await a.ctx.gear.loadAll()).items).toHaveLength(0);
+
+    // B renames the item offline, after the delete.
+    await b.ctx.gear.upsertItem(gearItem("i1", "c1", { name: "Edited after" }), { local: true });
+
+    for (let i = 0; i < 3; i += 1) {
+      await runCycle(b.ctx);
+      await runCycle(a.ctx);
+    }
+
+    // The newer edit is alive in the cloud — not escalated away by an echo.
+    expect(cloud.gear_items.get(`${UID}:i1`)?.name).toBe("Edited after");
+
+    // Locally the parent delete still wins (a child with no category has no
+    // home): B dropped it with the cascade, A re-pulled the re-published
+    // category and item. Documented in the phase plan, risks.
+    expect((await a.ctx.gear.loadAll()).items.map((i) => i.name)).toEqual(["Edited after"]);
+    expect((await b.ctx.gear.loadAll()).items).toHaveLength(0);
+  });
+});
+
+describe("O) deleting a Locker type re-homes its items instead of losing them", () => {
+  it("the re-homed items carry a fresh stamp and reach the other device", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.gear.upsertCategory(gearCategory("c1"));
+    await a.ctx.gear.upsertType(gearType("t1", "c1"));
+    await a.ctx.gear.upsertItem(gearItem("i1", "c1", { typeId: "t1" }));
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+    expect((await b.ctx.gear.loadAll()).items[0]?.typeId).toBe("t1");
+
+    await a.ctx.gear.deleteType("t1");
+    await pushChanges(a.ctx, UID);
+
+    // The type is gone from the cloud, the item is not — and it no longer
+    // points at the deleted type anywhere.
+    expect(cloud.gear_types.size).toBe(0);
+    expect(cloud.gear_items.get(`${UID}:i1`)?.type_id).toBeNull();
+
+    await pullChanges(b.ctx, UID);
+    const onB = await b.ctx.gear.loadAll();
+    expect(onB.types).toHaveLength(0);
+    expect(onB.items).toHaveLength(1);
+    expect(onB.items[0]?.typeId).toBeNull();
+    expect(onB.items[0]?.categoryId).toBe("c1");
+  });
+});
+
+describe("P) the pull never wedges on an incomplete Locker (FK guards)", () => {
+  it("skips a type and an item whose category is missing, re-homes an unknown type", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    // A type whose category never reached this device, an item in the same
+    // state, and an item whose TYPE is unknown but whose category is present.
+    cloud.gear_types.set(`${UID}:orphan-type`, {
+      user_id: UID,
+      id: "orphan-type",
+      category_id: "nowhere",
+      name: "Orphan",
+      puzzle_category: null,
+      is_demo: 0,
+      created_at: 10,
+      updated_at: 10,
+    });
+    cloud.gear_categories.set(`${UID}:c1`, {
+      user_id: UID,
+      id: "c1",
+      name: "Cubes",
+      kind: "cube",
+      icon: "Box",
+      accent: null,
+      is_demo: 0,
+      created_at: 10,
+      updated_at: 10,
+    });
+    cloud.gear_items.set(`${UID}:orphan-item`, {
+      user_id: UID,
+      id: "orphan-item",
+      category_id: "nowhere",
+      type_id: null,
+      name: "Homeless",
+      palette: "[]",
+      links: "[]",
+      photos: "[]",
+      tags: "[]",
+      status: "owned",
+      is_primary: 0,
+      is_favorite: 0,
+      quantity: 1,
+      is_demo: 0,
+      created_at: 10,
+      updated_at: 10,
+    });
+    cloud.gear_items.set(`${UID}:rehomed`, {
+      user_id: UID,
+      id: "rehomed",
+      category_id: "c1",
+      type_id: "ghost-type",
+      name: "Re-homed",
+      palette: "[]",
+      links: "[]",
+      photos: "[]",
+      tags: "[]",
+      status: "owned",
+      is_primary: 0,
+      is_favorite: 0,
+      quantity: 1,
+      is_demo: 0,
+      created_at: 10,
+      updated_at: 10,
+    });
+
+    await expect(pullChanges(dev.ctx, UID)).resolves.toBeDefined();
+
+    const snapshot = await dev.ctx.gear.loadAll();
+    expect(snapshot.types).toHaveLength(0);
+    expect(snapshot.items.map((i) => i.id)).toEqual(["rehomed"]);
+    // The item survived; only its dangling reference was dropped.
+    expect(snapshot.items[0]?.typeId).toBeNull();
+    expect(snapshot.items[0]?.categoryId).toBe("c1");
+  });
+});
+
+describe("Q) the Locker respects LWW in both directions", () => {
+  it("a pull never overwrites a newer local item, which then wins on the cloud", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+
+    await dev.ctx.gear.upsertCategory(gearCategory("c1"));
+    cloud.gear_categories.set(`${UID}:c1`, {
+      user_id: UID,
+      id: "c1",
+      name: "Cubes",
+      kind: "cube",
+      icon: "Box",
+      accent: null,
+      is_demo: 0,
+      created_at: 1000,
+      updated_at: 1000,
+    });
+    // Cloud has an OLDER copy of the item…
+    cloud.gear_items.set(`${UID}:i1`, {
+      user_id: UID,
+      id: "i1",
+      category_id: "c1",
+      type_id: null,
+      name: "From the cloud",
+      palette: "[]",
+      links: "[]",
+      photos: "[]",
+      tags: "[]",
+      status: "owned",
+      is_primary: 0,
+      is_favorite: 0,
+      quantity: 1,
+      is_demo: 0,
+      created_at: 1000,
+      updated_at: 2000,
+    });
+    // …while this device edited it later, offline.
+    await dev.ctx.gear.upsertItem(gearItem("i1", "c1", { name: "Local edit", updatedAt: 9000 }));
+
+    await pullChanges(dev.ctx, UID);
+    expect((await dev.ctx.gear.loadAll()).items[0]?.name).toBe("Local edit");
+
+    await pushChanges(dev.ctx, UID);
+    expect(cloud.gear_items.get(`${UID}:i1`)?.name).toBe("Local edit");
+
+    // An older cloud copy must never claw back a newer local row, even after
+    // the watermark advanced past it.
+    await dev.ctx.gear.upsertItem(
+      gearItem("i1", "c1", { name: "Local edit 2", updatedAt: 12000 }),
+    );
+    cloud.gear_items.set(`${UID}:i1`, {
+      ...(cloud.gear_items.get(`${UID}:i1`) as Record<string, unknown>),
+      name: "Stale cloud",
+      updated_at: 11000,
+    });
+    await dev.ctx.meta.set(`sync_watermark_pull_gear_items_${UID}`, "0");
+    await pullChanges(dev.ctx, UID);
+    expect((await dev.ctx.gear.loadAll()).items[0]?.name).toBe("Local edit 2");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// R) The cloud function must DECLARE every gear column the client sends: a key
+// missing from `jsonb_to_recordset(...) as x(<columns>)` is dropped silently,
+// so a push looks successful while the data never leaves the device (the M13
+// lesson, applied to the Locker).
+// ────────────────────────────────────────────────────────────────────────────
+describe("R) the cloud gear blocks declare every column the client sends", () => {
+  it("every key of the mapped rows appears in the recordset declaration", async () => {
+    const { readFileSync } = await import("node:fs");
+    const read = (name: string) =>
+      readFileSync(new URL(`../../../../supabase/migrations/${name}`, import.meta.url), "utf8");
+    // The DEPLOYED body is the last migration that recreates sync_apply; the
+    // guardian constants still live in 12, which defines sync_payload_guard and
+    // is not redefined afterwards.
+    const sql = read("20260912000015_sync_apply_hardening.sql");
+    const guardSql = read("20260912000012_gear_sync_apply.sql");
+
+    const declaration = (table: string) => {
+      const from = sql.indexOf(`jsonb_to_recordset(payload -> '${table}')`);
+      expect(from, `${table} block missing`).toBeGreaterThan(-1);
+      return sql.slice(from, sql.indexOf("loop", from));
+    };
+    const insertBlock = (table: string) => {
+      const from = sql.indexOf(`insert into public.${table} (`);
+      expect(from, `${table} insert missing`).toBeGreaterThan(-1);
+      return sql.slice(from, sql.indexOf("where excluded.updated_at", from));
+    };
+
+    const { gearCategoryToCloudRow, gearTypeToCloudRow, gearItemToCloudRow } = await import(
+      "../mappers"
+    );
+    // A fully populated item: every optional field set, so the key set is the
+    // widest the client can produce.
+    const rows: Record<string, Record<string, unknown>> = {
+      gear_categories: gearCategoryToCloudRow(
+        {
+          id: "c1",
+          name: "Cubes",
+          kind: "cube",
+          icon: "Box",
+          accent: "#fff",
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        UID,
+      ),
+      gear_types: gearTypeToCloudRow(
+        {
+          id: "t1",
+          categoryId: "c1",
+          name: "3x3",
+          puzzleCategory: "333",
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        UID,
+      ),
+      gear_items: gearItemToCloudRow(
+        {
+          id: "i1",
+          categoryId: "c1",
+          typeId: "t1",
+          name: "GAN 12",
+          brand: "GAN",
+          model: "12 UI",
+          finish: "Stickerless",
+          serial: "SN-1",
+          smartId: "AABBCCDDEEFF",
+          palette: ["#fff"],
+          acquiredAt: "2026-01-01",
+          price: { amount: 1, currency: "EUR" },
+          notes: "note",
+          links: [{ label: "Shop", url: "https://example.com" }],
+          photos: [{ id: "p1", width: 10, height: 10, addedAt: 1 }],
+          tags: ["tag"],
+          status: "owned",
+          primary: true,
+          favorite: true,
+          rating: 3,
+          quantity: 2,
+          condition: "good",
+          createdAt: 1,
+          updatedAt: 2,
+        },
+        UID,
+      ),
+    };
+
+    for (const [table, row] of Object.entries(rows)) {
+      const declared = declaration(table);
+      for (const key of Object.keys(row)) {
+        // Every key the mapper emits must be declared, or the value is dropped
+        // without an error and never reaches the cloud.
+        expect(declared, `${table}.${key} is not declared`).toContain(`${key} `);
+      }
+      // …and the insert + LWW update actually write them (not just declare).
+      const insert = insertBlock(table);
+      for (const key of Object.keys(row)) {
+        expect(insert, `${table}.${key} is never written`).toContain(key);
+      }
+    }
+
+    // The payload guardian (bounded size and row count) is what keeps a buggy
+    // or hostile client from making the function materialise a huge JSON.
+    expect(sql).toContain("sync_payload_guard");
+    expect(guardSql).toContain("8388608");
+    expect(guardSql).toContain("4000");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// S) Hardening de la auditoría (2026-09-12). Dos invariantes que el SQL
+// desplegado debe cumplir, porque su incumplimiento cuesta el sync COMPLETO:
+//
+//   H2 · `jsonb_to_recordset` deja NULL en una clave AUSENTE (no aplica el
+//        DEFAULT de la tabla), y un NULL explícito en una columna NOT NULL
+//        revierte el lote entero — solves, training y Locker incluidos —
+//        dejando el watermark atrás: cuelgue hasta actualizar la app.
+//        ⇒ toda columna NOT NULL debe ir envuelta en `coalesce`.
+//
+//   H1 · El pull avanza su watermark al MÁXIMO de lo descargado, así que un
+//        solo sello en el futuro (reloj roto o cliente manipulado) fija el
+//        cursor de TODOS los dispositivos en ese instante y no vuelven a
+//        descargar nada de esa tabla: apagón permanente y silencioso.
+//        ⇒ todo sello temporal debe ir acotado con `least(..., max_stamp)`.
+//        ⇒ y una DURACIÓN (time_ms, duration_ms) NUNCA debe acotarse: no es
+//          un instante y acotarla corrompería el dato.
+// ────────────────────────────────────────────────────────────────────────────
+describe("S) sync_apply: null-safety y acotado de sellos (auditoría 2026-09-12)", () => {
+  const CONTRACT: Record<
+    string,
+    { notNull: string[]; stamps: string[]; durations: string[] }
+  > = {
+    solves: {
+      notNull: [
+        "id", "session_id", "time_ms", "timestamp", "scramble", "penalty", "source",
+        "moves", "puzzle_type", "is_demo", "created_at", "updated_at",
+      ],
+      stamps: ["timestamp", "created_at", "updated_at"],
+      durations: ["time_ms"],
+    },
+    sessions: {
+      notNull: ["id", "name", "created_at", "updated_at", "is_demo"],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    profiles: {
+      notNull: [
+        "display_name", "handle", "bio", "avatar_kind", "main_puzzle",
+        "declared_methods", "country", "created_at", "updated_at",
+      ],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    training_attempts: {
+      notNull: [
+        "id", "exercise_id", "method_id", "scramble", "time_ms", "verdict",
+        "play_mode", "metric_kind", "timestamp", "updated_at",
+      ],
+      stamps: ["timestamp", "updated_at"],
+      durations: ["time_ms"],
+    },
+    training_sessions: {
+      notNull: [
+        "id", "exercise_id", "method_id", "started_at", "duration_ms",
+        "smart_cube_used", "status", "updated_at",
+      ],
+      stamps: ["started_at", "updated_at"],
+      durations: ["duration_ms"],
+    },
+    training_tasks: {
+      notNull: [
+        "id", "title", "description", "start_date", "repeat", "days_of_week",
+        "color", "created_at", "updated_at",
+      ],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    skill_progress: {
+      notNull: ["skill_id", "completed_at"],
+      stamps: ["completed_at"],
+      durations: [],
+    },
+    gear_categories: {
+      notNull: ["id", "name", "kind", "icon", "is_demo", "created_at", "updated_at"],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    gear_types: {
+      notNull: ["id", "category_id", "name", "is_demo", "created_at", "updated_at"],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    gear_items: {
+      notNull: [
+        "id", "category_id", "name", "palette", "links", "photos", "tags", "status",
+        "is_primary", "is_favorite", "quantity", "is_demo", "created_at", "updated_at",
+      ],
+      stamps: ["created_at", "updated_at"],
+      durations: [],
+    },
+    tombstones: {
+      notNull: ["entity", "entity_id", "deleted_at"],
+      stamps: ["deleted_at"],
+      durations: [],
+    },
+  };
+
+  it("every NOT NULL column is coalesced and every stamp is clamped", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(
+      new URL(
+        "../../../../supabase/migrations/20260912000015_sync_apply_hardening.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    /** Text of one table's block: from its recordset declaration to the next. */
+    const block = (table: string) => {
+      const start = sql.indexOf(`jsonb_to_recordset(payload -> '${table}')`);
+      expect(start, `${table} block missing`).toBeGreaterThan(-1);
+      const next = sql.indexOf("jsonb_to_recordset(payload -> '", start + 10);
+      return sql.slice(start, next === -1 ? sql.length : next);
+    };
+
+    for (const [table, rule] of Object.entries(CONTRACT)) {
+      const text = block(table);
+      for (const col of rule.notNull) {
+        // `user_id` is written as `uid` on purpose (never trusted from the
+        // payload), so it is not part of the contract.
+        expect(text, `${table}.${col} is not coalesced`).toContain(`coalesce(rec.${col}`);
+      }
+      for (const col of rule.stamps) {
+        expect(text, `${table}.${col} is not clamped`).toContain(
+          `least(coalesce(rec.${col}, 0), max_stamp)`,
+        );
+      }
+      for (const col of rule.durations) {
+        expect(text, `${table}.${col} must NOT be clamped (it is a duration)`).not.toContain(
+          `least(coalesce(rec.${col}`,
+        );
+      }
+    }
+
+    // The clamp must exist and be bounded, and the guard must run first.
+    expect(sql).toContain("max_stamp bigint := now_ms + 300000");
+    expect(sql).toContain("perform public.sync_payload_guard(payload)");
+
+    // H3: an entity with no physical-delete branch must still be purged.
+    expect(sql).toContain("st.entity not in (");
+
+    // …and the index the sessions guard needs must be created here.
+    expect(sql).toContain("idx_solves_user_session");
   });
 });
