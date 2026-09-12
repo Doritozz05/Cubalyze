@@ -740,11 +740,12 @@ export function CrossTrainerView({
                 <button
                   onClick={handlePlayPause}
                   disabled={!hasReplay}
+                  // Same theme primary (Ink) as every other Play control in the
+                  // app; the state lives in the icon (▶/⏸). The previous blue
+                  // was `--phase-blue-500`, a literal the theme never rewrites.
                   className={cn(
                     "grid size-9 place-items-center rounded-full transition-all duration-150 disabled:opacity-30",
-                    replayState === "playing"
-                      ? "bg-ink text-background hover:bg-ink/80"
-                      : "bg-phase-blue-500 text-white hover:bg-phase-blue-600",
+                    "bg-ink text-background hover:bg-ink/80",
                   )}
                   aria-label={replayState === "playing" ? t("crossTrainer.pause") : t("crossTrainer.play")}
                 >
@@ -783,7 +784,7 @@ export function CrossTrainerView({
               {totalMs > 0 && (
                 <div className="mt-2 h-0.5 rounded bg-line/40 overflow-hidden">
                   <div
-                    className="h-full bg-phase-blue-500/60 transition-[width] duration-75 linear"
+                    className="h-full bg-ink/70 transition-[width] duration-75 linear"
                     style={{
                       width: `${Math.min(100, (positionMs / totalMs) * 100)}%`,
                     }}

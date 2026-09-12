@@ -249,9 +249,16 @@
      of the old dry fill or milky blur-over-blur. */
   --glass-nested-bg: rgba(255, 255, 255, calc(var(--glass-opacity, 0.65) * 0.5));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
-  /* Overlay surfaces (selection bars, chart tooltips, floating chips):
-     NEARLY OPAQUE glass — background text must never read through. */
+  /* Overlay surfaces (chart tooltips, floating chips): NEARLY OPAQUE glass —
+     background text must never read through. Derived from the theme's SOLID
+     surface (`--surface-solid`, which the theme engine sets for every preset)
+     instead of a literal, so a custom palette tints it rather than showing a
+     raw white rectangle. Classic light resolves to the same 0.94 white and
+     classic dark to the same 0.96 black, so nothing moves for the stock
+     themes. The literal line stays first as the fallback: browsers without
+     color-mix drop the second declaration and keep it. */
   --glass-bg-dense: rgba(255, 255, 255, 0.94);
+  --glass-bg-dense: color-mix(in srgb, var(--surface-solid, #ffffff) 94%, transparent);
 }
 
 .dark {
@@ -334,8 +341,10 @@
      light theme comment. Dark nudges a touch denser for legibility. */
   --glass-nested-bg: rgba(27, 31, 35, calc(var(--glass-opacity, 0.65) * 0.55));
   --glass-nested-blur: calc(var(--glass-blur) * 0.5);
-  /* Overlay surfaces: nearly opaque glass (see light theme comment). */
+  /* Overlay surfaces: nearly opaque glass (see light theme comment). Same
+     theme-derived value; `--surface-solid` is already the dark surface here. */
   --glass-bg-dense: rgba(27, 31, 35, 0.96);
+  --glass-bg-dense: color-mix(in srgb, var(--surface-solid, #1b1f23) 96%, transparent);
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -1596,6 +1605,23 @@ body.replay-fullscreen-active [class*="relative z-1"] {
 .animate-accordion-up {
   animation: accordion-up 220ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
   will-change: height, opacity;
+}
+
+/* ── Skill tree: the node subtree is hit-transparent while panning ──────────
+   The canvas is dragged by moving its own layer, so nothing under the pointer
+   has to react while the drag lasts. Leaving the 130 nodes hit-testable makes
+   the browser re-run hit testing and re-resolve the `:hover` chain on EVERY
+   pointer sample (a 1 kHz mouse sends a thousand per second, each one against
+   a transformed subtree of 130 nodes with CSS transitions), and the pan
+   crawled whenever the press started over a node or a connector while the same
+   pan from the bare canvas stayed smooth. `pointer-events: auto` on the node
+   re-enables it inside a `none` ancestor, so the override has to land on the
+   node itself — hence `!important`. Toggled by `beginPan`/`endPan` in
+   views/SkillTree/SkillGraphCanvas.tsx (imperatively, to keep the drag free of
+   React re-renders). */
+.skill-canvas.is-panning [data-skill-nodes],
+.skill-canvas.is-panning [data-skill-nodes] * {
+  pointer-events: none !important;
 }
 
 /* Procedural sequential entry for changelog items */

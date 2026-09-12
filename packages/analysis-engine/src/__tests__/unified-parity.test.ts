@@ -170,7 +170,19 @@ function expectParity(
   );
 }
 
-describe('Unified pipeline — smart route ≡ text route', () => {
+/**
+ * Every test in this file runs the WHOLE analysis pipeline twice (smart route
+ * and text route) and compares them. On a laptop one such test takes 0.4-0.7 s,
+ * but turbo runs all 27 package suites in parallel on a shared runner and the
+ * same test has been observed past the default 5 s limit — a failing check for
+ * a test that is merely starved of CPU (`CI` run 2026-09-12, `Lint, Test, and
+ * Build`). The pipeline is correct and fast; the default timeout is the thing
+ * that does not fit, so the file gets an explicit budget instead of passing a
+ * number to each test.
+ */
+const PIPELINE_TIMEOUT_MS = 30_000;
+
+describe('Unified pipeline — smart route ≡ text route', { timeout: PIPELINE_TIMEOUT_MS }, () => {
   const SCRAMBLES = [
     "R U R' U' R' F R2 U' R' U' R U R' F'", // T-perm solve
     "U' L' U L U F U' F'",                   // 8-move

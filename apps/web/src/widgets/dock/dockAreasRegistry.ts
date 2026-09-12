@@ -15,6 +15,8 @@ import {
   Dices,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { BiCube } from "react-icons/bi";
+import type { IconType } from "react-icons";
 import type { ParseKeys } from "i18next";
 
 // ── Area definition ────────────────────────────────────────────────────
@@ -22,11 +24,18 @@ import type { ParseKeys } from "i18next";
 /** Typed keys of the "dock" i18n namespace (flattened). */
 export type DockKey = ParseKeys<"dock">;
 
+/**
+ * Areas draw from both icon sets: the app's own chrome is lucide, but a piece
+ * that names a specific object (the cube) uses the puzzle-shaped cube from
+ * react-icons, which reads better than any single-box lucide glyph.
+ */
+export type DockAreaIcon = LucideIcon | IconType;
+
 export interface DockAreaDef {
   /** Unique identifier for this area. */
   id: string;
   /** Icon for the area (shown in edit mode and explorer). */
-  icon: LucideIcon;
+  icon: DockAreaIcon;
   /** i18n label key (resolved from "dock" namespace). */
   labelKey: DockKey;
   /** i18n description key (shown in DockExplorer cards). */
@@ -52,6 +61,7 @@ export const DOCK_AREAS: DockAreaDef[] = [
   { id: "manual-solve", icon: Plus, labelKey: "manualSolve", descKey: "desc.manualSolve", category: "core" },
   { id: "session", icon: History, labelKey: "sessionArea", descKey: "desc.sessionArea", category: "core" },
   { id: "puzzle", icon: Puzzle, labelKey: "puzzleArea", descKey: "desc.puzzleArea", category: "core" },
+  { id: "cube", icon: BiCube, labelKey: "cubeArea", descKey: "desc.cubeArea", category: "core" },
   { id: "clock", icon: Clock, labelKey: "clock", descKey: "desc.clock", category: "system" },
   { id: "profile", icon: User, labelKey: "profile", descKey: "desc.profile", category: "system" },
   { id: "battery", icon: Battery, labelKey: "battery", descKey: "desc.battery", category: "system" },
@@ -69,7 +79,22 @@ export const DEFAULT_DOCK_AREA_ORDER = [
   "spacer-0",
   "session",
   "puzzle",
+  "cube",
 ];
+
+/**
+ * Dock areas introduced AFTER the first shipped layout.
+ *
+ * Persisted orders are only sanitized, never extended (see
+ * `migratePersistedWidgetState`), because appending on every load would
+ * resurrect a piece the user deliberately removed. So each new area is added
+ * exactly once, by the store-version bump that introduced it, and only when
+ * the persisted layout predates that version.
+ */
+export const DOCK_AREAS_ADDED_IN_VERSION: Record<number, string[]> = {
+  // v9 — "which of my cubes am I using?" (Locker-backed).
+  9: ["cube"],
+};
 
 /**
  * Strip the per-instance suffix from a repeatable area id so it can be
@@ -84,3 +109,34 @@ export function areaBaseId(id: string): string {
 export function getDockArea(id: string): DockAreaDef | undefined {
   return DOCK_AREAS.find((a) => a.id === id);
 }
+
+/**
+ * Append the areas introduced between `oldVersion` (exclusive) and the current
+ * store version, each one position after its anchor area when possible.
+ *
+ * Pure and idempotent for a given `oldVersion`: a layout that already contains
+ * the area is left untouched, so a user who removes it never sees it return.
+ */
+export function addAreasIntroducedAfter(order: string[], oldVersion: number): string[] {
+  let next = order;
+  for (const [versionKey, areas] of Object.entries(DOCK_AREAS_ADDED_IN_VERSION)) {
+    const introduced = Number(versionKey);
+    if (!Number.isFinite(introduced) || introduced <= oldVersion) continue;
+    for (const area of areas) {
+      if (next.includes(area)) continue;
+      // Prefer sitting next to its anchor ("cube" right after "puzzle"), so the
+      // new piece lands where it makes sense instead of at the far end.
+      const anchorIndex = next.indexOf(AREA_ANCHORS[area] ?? "");
+      next =
+        anchorIndex >= 0
+          ? [...next.slice(0, anchorIndex + 1), area, ...next.slice(anchorIndex + 1)]
+          : [...next, area];
+    }
+  }
+  return next;
+}
+
+/** Where a late-added area wants to sit, if that area is present. */
+const AREA_ANCHORS: Record<string, string> = {
+  cube: "puzzle",
+};

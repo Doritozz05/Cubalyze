@@ -10,6 +10,9 @@
 
 import {
   cloudRowToAttempt,
+  cloudRowToGearCategory,
+  cloudRowToGearItem,
+  cloudRowToGearType,
   cloudRowToProfile,
   cloudRowToSession,
   cloudRowToSolve,
@@ -42,6 +45,12 @@ const TABLE_DEFS: Record<string, TableDef> = {
   training_attempts: { watermarkColumn: "updated_at" },
   training_tasks: { watermarkColumn: "updated_at" },
   skill_progress: { watermarkColumn: "completed_at" },
+  // Fase 6 — the Locker. The relative order of these three is load-bearing:
+  // SQLite enforces the local FKs, so a type must land after its category and
+  // an item after its category (and after its type, when it has one).
+  gear_categories: { watermarkColumn: "updated_at" },
+  gear_types: { watermarkColumn: "updated_at" },
+  gear_items: { watermarkColumn: "updated_at" },
 };
 
 export async function pullChanges(
@@ -262,6 +271,95 @@ async function applyRows(
         await ctx.skills.setCompletedAt(
           String(row.skill_id),
           Number(row.completed_at) || 0,
+        );
+      }
+      break;
+    }
+    case "gear_categories": {
+      const existing = await ctx.gear.findUpdatedAts(
+        "gear_categories",
+        rows.map((r) => String(r.id)),
+      );
+      for (const row of rows) {
+        const category = cloudRowToGearCategory(row);
+        const localUpdated = existing.get(category.id) ?? 0;
+        if (localUpdated === 0 || localUpdated < (category.updatedAt ?? 0)) {
+          await ctx.gear.upsertCategory(category);
+        }
+      }
+      break;
+    }
+    case "gear_types": {
+      const parsed = rows.map((r) => cloudRowToGearType(r));
+      // Local FK guard, same contract as orphaned solves: the category is
+      // pulled first, so a type whose category is missing either refers to a
+      // category that never reached this device or was deleted there. Skip it
+      // (and warn) instead of failing the whole batch on one row.
+      const categoryIds = [...new Set(parsed.map((t) => t.categoryId).filter(Boolean))];
+      const existingCategories =
+        categoryIds.length > 0
+          ? await ctx.gear.findExistingCategoryIds(categoryIds)
+          : new Set<string>();
+      const existing = await ctx.gear.findUpdatedAts(
+        "gear_types",
+        parsed.map((t) => t.id),
+      );
+      let orphaned = 0;
+      for (const type of parsed) {
+        if (!existingCategories.has(type.categoryId)) {
+          orphaned += 1;
+          continue;
+        }
+        const localUpdated = existing.get(type.id) ?? 0;
+        if (localUpdated === 0 || localUpdated < (type.updatedAt ?? 0)) {
+          await ctx.gear.upsertType(type);
+        }
+      }
+      if (orphaned > 0) {
+        console.warn(
+          `[sync-engine] pull: skipped ${orphaned} gear type(s) whose category does not exist`,
+        );
+      }
+      break;
+    }
+    case "gear_items": {
+      const parsed = rows.map((r) => cloudRowToGearItem(r));
+      const categoryIds = [...new Set(parsed.map((i) => i.categoryId).filter(Boolean))];
+      const typeIds = [
+        ...new Set(parsed.map((i) => i.typeId).filter((id): id is string => id != null)),
+      ];
+      const [existingCategories, existingTypes, existing] = await Promise.all([
+        categoryIds.length > 0
+          ? ctx.gear.findExistingCategoryIds(categoryIds)
+          : Promise.resolve(new Set<string>()),
+        typeIds.length > 0
+          ? ctx.gear.findExistingTypeIds(typeIds)
+          : Promise.resolve(new Set<string>()),
+        ctx.gear.findUpdatedAts("gear_items", parsed.map((i) => i.id)),
+      ]);
+      let orphaned = 0;
+      let rehomed = 0;
+      for (const item of parsed) {
+        if (!existingCategories.has(item.categoryId)) {
+          orphaned += 1;
+          continue;
+        }
+        // An item whose TYPE is unknown keeps its data and is re-homed in the
+        // category (type_id = NULL) rather than dropped — the type catalog is
+        // not a required fact for an item to be useful.
+        let next = item;
+        if (item.typeId != null && !existingTypes.has(item.typeId)) {
+          next = { ...item, typeId: null };
+          rehomed += 1;
+        }
+        const localUpdated = existing.get(item.id) ?? 0;
+        if (localUpdated === 0 || localUpdated < (next.updatedAt ?? 0)) {
+          await ctx.gear.upsertItem(next);
+        }
+      }
+      if (orphaned > 0 || rehomed > 0) {
+        console.warn(
+          `[sync-engine] pull: ${orphaned} gear item(s) skipped (missing category), ${rehomed} re-homed (missing type)`,
         );
       }
       break;

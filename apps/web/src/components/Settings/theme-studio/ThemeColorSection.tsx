@@ -54,8 +54,8 @@ export function ThemeColorSection({
   return (
     <div className="flex flex-col gap-6">
       {/* Header and Reset Action */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <h4 className="text-sm font-semibold text-ink">
             {t('appearance.colors.title')}
           </h4>
@@ -67,7 +67,7 @@ export function ThemeColorSection({
           <button
             type="button"
             onClick={onResetColors}
-            className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
           >
             <RotateCcw className="size-3.5" />
             <span>{t('appearance.colors.reset')}</span>

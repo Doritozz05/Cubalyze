@@ -106,13 +106,14 @@ async function runHandleUser(
   const counts = await engine.getCounts();
   // Only REAL data justifies the merge dialog. An empty session (zero
   // solves) is scaffolding, not data — asking to merge it is pure noise
-  // (the user has nothing to upload). Solves, training attempts/tasks and
-  // skills are the only things that make a device worth merging.
+  // (the user has nothing to upload). Solves, training attempts/tasks,
+  // skills and Locker items are the things that make a device worth merging.
   const hasData =
     counts.solves +
       counts.trainingAttempts +
       counts.trainingTasks +
-      counts.skills >
+      counts.skills +
+      counts.gearItems >
     0;
   if (!hasData) {
     await engine.claim("merge");

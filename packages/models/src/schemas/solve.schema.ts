@@ -26,6 +26,14 @@ export const SolveSchema = z.object({
    *  same analysis pipeline as smart-cube solves). */
   source: z.enum(['smart', 'manual', 'virtual']).default('manual'),
   note: z.string().nullable().optional(),
+  /**
+   * The Locker item this solve was done with (a `gear_items.id`), when the
+   * active cube belonged to the event being solved. The label is denormalised
+   * on purpose: it is what the history and the exports show, and it must
+   * survive the item being renamed or deleted from the Locker.
+   */
+  cubeId: z.string().optional(),
+  cubeLabel: z.string().optional(),
   moves: z.array(CubeMoveEventSchema).default([]),
   /**
    * Compact gyro/orientation timeline for smart cube solves with IMU.

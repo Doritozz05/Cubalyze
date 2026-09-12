@@ -30,11 +30,12 @@ export interface StageOverlaysProps {
   // Manual solve sheet
   manualOpen: boolean;
   onManualClose: () => void;
-  defaultMethod: SolveMethod;
+  /** `undefined` when the active event has no method (2×2, Pyraminx…). */
+  defaultMethod: SolveMethod | undefined;
   onManualSubmit: (input: {
     time: number;
     scramble: string;
-    method: SolveMethod;
+    method?: SolveMethod;
     notes: string;
     penalty: Penalty;
   }) => Promise<void>;

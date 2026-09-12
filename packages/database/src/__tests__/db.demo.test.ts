@@ -20,14 +20,26 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
     updatedAt: 1767225600000,
   };
 
+  /**
+   * Position of a column in an `INSERT INTO <table> (a, b, …) VALUES (…, …)`
+   * statement — i.e. the index of the matching bound value.
+   */
+  function insertColumnIndex(sql: string, column: string): number {
+    const list = sql.slice(sql.indexOf('(') + 1, sql.indexOf(')'));
+    const index = list.split(',').map((c) => c.trim()).indexOf(column);
+    if (index < 0) throw new Error(`column ${column} not in: ${list}`);
+    return index;
+  }
+
   it('insert without options binds is_demo = 0', async () => {
     const db = mockDb();
     const repo = new SolvesRepository(db);
     await repo.insert({ ...baseSolve });
     const call = db.mock.calls[0];
     expect(call[0]).toContain('is_demo');
-    // Column order: … analysis, puzzle_type, is_demo, created_at, updated_at
-    expect((call[1] as unknown[])[14]).toBe(0);
+    // Read the index off the statement's own column list instead of a magic
+    // number: adding a column must not silently point this at another value.
+    expect((call[1] as unknown[])[insertColumnIndex(call[0] as string, 'is_demo')]).toBe(0);
   });
 
   it('insert with { isDemo: true } binds is_demo = 1', async () => {
@@ -36,7 +48,7 @@ describe('SolvesRepository — demo data isolation (is_demo)', () => {
     await repo.insert({ ...baseSolve }, { isDemo: true });
     const call = db.mock.calls[0];
     expect(call[0]).toContain('is_demo');
-    expect((call[1] as unknown[])[14]).toBe(1);
+    expect((call[1] as unknown[])[insertColumnIndex(call[0] as string, 'is_demo')]).toBe(1);
   });
 
   it('countNonDemo counts only real (non-demo) solves', async () => {

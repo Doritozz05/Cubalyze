@@ -1278,4 +1278,337 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '033_repair_method_scope',
+    description:
+      'Data repair: solves.method held a copy of the global method preference, so every event persisted "CFOP" — including the ones with no method concept at all (2×2, Pyraminx, and every non-3×3 event the registry declares). Only the events whose spec declares analysis methods (333, 333oh) keep a method; the rest are cleared. The rewritten rows take a monotonic stamp (floored at their own updated_at + 1, exactly the lesson of 031) so the correction actually LEAVES the device: push selects rows with updated_at > watermark, and a correction without a new stamp would sit in local storage forever. local_clock_solves is then advanced past the highest stamp, otherwise the next local edit of a repaired row would be born BELOW its own updated_at and lose the cloud LWW guard (excluded.updated_at >= solves.updated_at). What is rewritten is a provably false label — time, scramble, penalty, moves, orientation and analysis are untouched — so no backup table is kept (the migration is idempotent, and re-running it is a no-op).',
+    sql: `
+      UPDATE solves
+         SET method = NULL,
+             updated_at = MAX(
+               updated_at + 1,
+               CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)
+             )
+       WHERE method IS NOT NULL
+         AND puzzle_type NOT IN ('333', '333oh');
+
+      -- Keep the per-table monotonic write clock (repositories/local-clock.ts)
+      -- ahead of every repair stamp so later local edits of these rows stay
+      -- "newer" than the repair itself.
+      INSERT OR REPLACE INTO app_meta (key, value)
+      VALUES (
+        'local_clock_solves',
+        CAST(
+          MAX(
+            COALESCE(
+              (SELECT CAST(value AS INTEGER) FROM app_meta WHERE key = 'local_clock_solves'),
+              0
+            ),
+            COALESCE((SELECT MAX(updated_at) FROM solves), 0)
+          ) AS TEXT
+        )
+      );
+    `,
+  },
+  {
+    id: '034_gear_collection',
+    description:
+      'The Locker (gear collection) becomes real database rows: gear_categories → gear_types → gear_items, matching the model in apps/web/src/views/Collection/collectionModel.ts (two levels, types optionally mirroring an app puzzle category, "main" per item). It replaces the single localStorage JSON blob (`cubeforge-locker`), which capped the whole collection at a handful of photos and could not be queried, backed up or synced. Photos are NOT stored here: the row keeps references (id + natural size) and the bytes live as blobs in IndexedDB — the same split the app already uses for background media — because base64 in a row costs ~2× and would travel to the cloud. Shape is sync-ready (id/updated_at/is_demo + dirty/tombstone triggers come with the sync step) so adding it to the engine later is a pull/push registration, not a rebuild. Cascades mirror the model exactly: deleting a category takes its types and items, deleting a type re-homes its items in the category (type_id ⇒ NULL).',
+    sql: `
+      CREATE TABLE IF NOT EXISTS gear_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'gear' CHECK (kind IN ('cube', 'gear')),
+        icon TEXT NOT NULL DEFAULT 'Box',
+        accent TEXT,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_categories_created ON gear_categories(created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_categories_updated ON gear_categories(updated_at);
+
+      CREATE TABLE IF NOT EXISTS gear_types (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        puzzle_category TEXT,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (category_id) REFERENCES gear_categories(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_types_category ON gear_types(category_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_types_updated ON gear_types(updated_at);
+
+      CREATE TABLE IF NOT EXISTS gear_items (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        type_id TEXT,
+        name TEXT NOT NULL,
+        brand TEXT,
+        model TEXT,
+        finish TEXT,
+        serial TEXT,
+        palette TEXT NOT NULL DEFAULT '[]',
+        acquired_at TEXT,
+        price_amount REAL,
+        price_currency TEXT,
+        notes TEXT,
+        links TEXT NOT NULL DEFAULT '[]',
+        photos TEXT NOT NULL DEFAULT '[]',
+        tags TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'owned' CHECK (status IN ('owned', 'wishlist', 'sold', 'lent')),
+        condition TEXT CHECK (condition IS NULL OR condition IN ('mint', 'good', 'used', 'broken')),
+        is_primary INTEGER NOT NULL DEFAULT 0,
+        is_favorite INTEGER NOT NULL DEFAULT 0,
+        rating REAL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (category_id) REFERENCES gear_categories(id) ON DELETE CASCADE,
+        FOREIGN KEY (type_id) REFERENCES gear_types(id) ON DELETE SET NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_items_category ON gear_items(category_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_type ON gear_items(type_id);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_status ON gear_items(status);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_updated ON gear_items(updated_at);
+    `,
+  },
+  {
+    id: '035_solve_cube',
+    description:
+      'A solve can say WHICH cube it was done with: solves.cube_id (a gear_items.id, no FK on purpose — deleting a cube from the Locker must never rewrite solve history) plus cube_label, the denormalised name shown in the history, the exports and the per-cube stats (so a renamed or deleted item does not turn past solves into "unknown"). Indexed by cube_id for the per-cube queries of the stats phase. Both columns are nullable: virtual solves have no physical cube, and a manual or imported solve may predate the field. The cloud table gets the same two columns (supabase migration 20260912000009) so the attribution travels with the solve instead of being a local-only detail.',
+    sql: `
+      ALTER TABLE solves ADD COLUMN cube_id TEXT;
+      ALTER TABLE solves ADD COLUMN cube_label TEXT;
+      CREATE INDEX IF NOT EXISTS idx_solves_cube ON solves(cube_id);
+    `,
+  },
+  {
+    id: '036_gear_smart_id',
+    description:
+      'A Locker item can carry the Bluetooth address of the physical cube it IS: gear_items.smart_id, stored in the canonical form (12 hex digits, no separators — see smart-cube-id.ts). It is the key the smart-cube link resolves against, so a connected cube turns into "this item" without the user picking one from a list. Kept apart from `serial` on purpose: the printed serial number and the hardware address are two different facts, and the automatic link must never be able to overwrite something a person typed by hand. Nullable (only smart cubes have one) and indexed, because every connection looks an item up by it. Local-only for now: the gear tables are not registered with the sync engine yet (that is phase 6), so there is no cloud counterpart to add here.',
+    sql: `
+      ALTER TABLE gear_items ADD COLUMN smart_id TEXT;
+      CREATE INDEX IF NOT EXISTS idx_gear_items_smart ON gear_items(smart_id);
+    `,
+  },
+  {
+    id: '037_gear_sync',
+    description:
+      'The Locker joins the sync engine (Fase 6). Two pieces: (a) the same infrastructure the other synced tables got in 028/029/030/031 — DELETE triggers that write a millisecond-precision tombstone (floored at OLD.updated_at + 1 so the delete always wins LWW against the row it removes) and INSERT/UPDATE triggers that flag sync_dirty, on gear_categories / gear_types / gear_items; and (b) a DEVICE-LOCAL ledger (gear_photo_sync) that tracks whether each photo blob is already in Supabase Storage. The ledger must NOT be a synced column: writing "uploaded" into gear_items.photos would bump updated_at, which would trigger a push, then a pull on the other device, then another write — an endless loop. It has no FKs and no tombstone/dirty triggers on purpose (it is cache, not data).',
+    sql: `
+      -- ── Photo-upload ledger (device-local; never synced) ──────────────
+      CREATE TABLE IF NOT EXISTS gear_photo_sync (
+        photo_key       TEXT PRIMARY KEY,
+        item_id         TEXT NOT NULL,
+        photo_id        TEXT NOT NULL,
+        status          TEXT NOT NULL DEFAULT 'pending',
+        content_hash    TEXT NOT NULL DEFAULT '',
+        full_bytes      INTEGER NOT NULL DEFAULT 0,
+        thumb_bytes     INTEGER NOT NULL DEFAULT 0,
+        attempts        INTEGER NOT NULL DEFAULT 0,
+        last_attempt_at INTEGER NOT NULL DEFAULT 0,
+        uploaded_at     INTEGER NOT NULL DEFAULT 0,
+        last_error      TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_photo_sync_status
+        ON gear_photo_sync(status, last_attempt_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_photo_sync_item
+        ON gear_photo_sync(item_id);
+
+      -- ── DELETE triggers → tombstones (idiom of 031: ms + floor) ───────
+      -- SQLite does NOT fire row triggers for rows removed by an FK cascade
+      -- (recursive_triggers defaults to OFF), so the repository must delete
+      -- children explicitly before their parent; these triggers are what
+      -- turn those explicit deletes into tombstones. Demo rows never
+      -- tombstone (M7): a demo item never existed in the cloud.
+      DROP TRIGGER IF EXISTS trg_tombstone_gear_items;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_gear_items
+      AFTER DELETE ON gear_items
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'gear_items',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_gear_types;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_gear_types
+      AFTER DELETE ON gear_types
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'gear_types',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      DROP TRIGGER IF EXISTS trg_tombstone_gear_categories;
+      CREATE TRIGGER IF NOT EXISTS trg_tombstone_gear_categories
+      AFTER DELETE ON gear_categories
+      FOR EACH ROW
+      WHEN (OLD.is_demo = 0)
+      BEGIN
+        INSERT OR REPLACE INTO sync_tombstones (entity, entity_id, deleted_at)
+        VALUES (
+          'gear_categories',
+          OLD.id,
+          MAX(
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER),
+            OLD.updated_at + 1
+          )
+        );
+      END;
+
+      -- ── Dirty flags (catch-all change notification) ───────────────────
+      -- DELETE is intentionally absent: the tombstones above already are a
+      -- change. Same contract as every other synced table (028) — but NOT the
+      -- same statement, and the difference is load-bearing:
+      --
+      --   INSERT OR REPLACE INTO app_meta CANNOT be used here. The gear
+      --   repositories upsert with INSERT … ON CONFLICT(id) DO UPDATE
+      --   (upsertCategory/Type/Item), and SQLite refuses to resolve ANY
+      --   constraint conflict inside a trigger fired by the DO UPDATE arm of
+      --   an UPSERT — including one the sub-statement would have resolved
+      --   itself with OR REPLACE or OR IGNORE. The result is a bogus
+      --   SQLITE_CONSTRAINT_PRIMARYKEY: UNIQUE constraint failed: app_meta.key,
+      --   raised by the OUTER insert, on the second write to the same row,
+      --   once sync_dirty already exists. The explicit
+      --   ON CONFLICT(key) DO UPDATE form is the one spelling SQLite accepts
+      --   there. Migration 038 applies the same repair to the pre-existing
+      --   triggers of 028/031, which had the identical latent bug on every
+      --   table whose repository upserts through a conflict clause.
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_categories
+      AFTER INSERT ON gear_categories
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_categories_upd
+      AFTER UPDATE ON gear_categories
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_types
+      AFTER INSERT ON gear_types
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_types_upd
+      AFTER UPDATE ON gear_types
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_items
+      AFTER INSERT ON gear_items
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_items_upd
+      AFTER UPDATE ON gear_items
+      BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+    `,
+  },
+  {
+    id: '038_upsert_safe_dirty_triggers',
+    description:
+      'Recreates the sync_dirty triggers of 028/031/033 with the UPSERT-safe statement. The original form — INSERT OR REPLACE INTO app_meta — is silently fatal when the trigger fires from the DO UPDATE arm of an UPSERT: SQLite refuses to resolve any conflict inside such a trigger (even one the sub-statement would resolve itself with OR REPLACE/OR IGNORE) and aborts the OUTER statement with "SQLITE_CONSTRAINT_PRIMARYKEY: UNIQUE constraint failed: app_meta.key". That is not theoretical: CalendarRepository.upsert uses INSERT … ON CONFLICT(id) DO UPDATE on training_tasks, so editing any calendar task a SECOND time threw and the edit never reached the database or the cloud. Same for the Locker repositories added in 037. The fix is to spell the flag write as an explicit INSERT … ON CONFLICT(key) DO UPDATE, which SQLite allows from any context. Only the statement changes; the trigger names, the tables and the dirty semantics are identical, so no data or watermark is affected.',
+    sql: `
+      DROP TRIGGER IF EXISTS trg_dirty_solves;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves AFTER INSERT ON solves BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_solves_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_solves_upd AFTER UPDATE ON solves BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions AFTER INSERT ON sessions BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_sessions_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_sessions_upd AFTER UPDATE ON sessions BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_attempts;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_attempts AFTER INSERT ON training_attempts BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_attempts_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_attempts_upd AFTER UPDATE ON training_attempts BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_tasks;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_tasks AFTER INSERT ON training_tasks BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_tasks_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_tasks_upd AFTER UPDATE ON training_tasks BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_skill_progress;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_skill_progress AFTER INSERT ON skill_progress BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_skill_progress_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_skill_progress_upd AFTER UPDATE ON skill_progress BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_sessions;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_sessions AFTER INSERT ON training_sessions BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_training_sessions_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_training_sessions_upd AFTER UPDATE ON training_sessions BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_profiles;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_profiles AFTER INSERT ON profiles BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_profiles_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_profiles_upd AFTER UPDATE ON profiles BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+    `,
+  },
 ];

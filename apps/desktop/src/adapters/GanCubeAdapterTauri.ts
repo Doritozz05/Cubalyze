@@ -16,7 +16,7 @@
  */
 
 import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
-import { SmartCubeAdapter, ClockDriftReconciler } from '@cubeforge/hardware-hal';
+import { SmartCubeAdapter, ClockDriftReconciler, type CubeIdentity } from '@cubeforge/hardware-hal';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
@@ -92,6 +92,30 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   public model = 'SmartCube';
   public gyroSupported = false;
 
+  // ── Hardware identity (parity with the web adapter) ─────────────────────
+  //
+  // The Rust side already knows the address when the connection comes up, and
+  // the HARDWARE answer carries the internal model name, the firmware and the
+  // production date. Published as one stream so the Locker can resolve which
+  // item this cube is, exactly as on the web.
+  private hardwareName: string | null = null;
+  private hardwareVersion: string | null = null;
+  private softwareVersion: string | null = null;
+  private productDate: string | null = null;
+  private gyroReported = false;
+  private currentIdentity: CubeIdentity | null = null;
+  private identitySubject = new ReplaySubject<CubeIdentity | null>(1);
+
+  public identity$ = this.identitySubject.asObservable();
+
+  constructor() {
+    this.identitySubject.next(null);
+  }
+
+  public get identity(): CubeIdentity | null {
+    return this.currentIdentity;
+  }
+
   public onConnectionChange:
     | ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void)
     | null = null;
@@ -123,6 +147,24 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
   public gyro$ = this.gyroSubject.asObservable();
   public invalidMoves$ = this.invalidMovesSubject.asObservable();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
+
+  private publishIdentity(): void {
+    if (!this.driver) {
+      this.currentIdentity = null;
+      this.identitySubject.next(null);
+      return;
+    }
+    this.currentIdentity = {
+      vendor: this.vendor,
+      model: this.hardwareName,
+      mac: this.macAddress || null,
+      hardwareVersion: this.hardwareVersion,
+      softwareVersion: this.softwareVersion,
+      productDate: this.productDate,
+      gyroSupported: this.gyroReported ? this.gyroSupported : null,
+    };
+    this.identitySubject.next(this.currentIdentity);
+  }
 
   // ── Protocol objects ───────────────────────────────────────────────────
   private driver: GanProtocolDriver | null = null;
@@ -175,6 +217,15 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     this._connected = true;
     this.model = result?.name ?? 'SmartCube';
     this.macAddress = result?.mac ?? '';
+
+    // A new connection may be a different cube: nothing learned from the
+    // previous one survives (the HARDWARE request below repopulates it).
+    this.hardwareName = null;
+    this.hardwareVersion = null;
+    this.softwareVersion = null;
+    this.productDate = null;
+    this.gyroReported = false;
+    this.gyroSupported = false;
 
     const genService = result.generation.toLowerCase();
     const salt = macToSalt(this.macAddress);
@@ -233,6 +284,9 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
 
     this.reconnectAttempts = 0;
 
+    // The address is known now; the model is not, so the identity is published
+    // here and again when the cube answers the hardware request.
+    this.publishIdentity();
     this.connectionStatusSubject.next('connected');
     this.onConnectionChange?.('connected');
 
@@ -270,6 +324,7 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     this.encrypter = null;
     this.rawConn = null;
     this._connected = false;
+    this.publishIdentity();
 
     if (!this.isUserDisconnect && this.macAddress) {
       this.attemptReconnect();
@@ -329,6 +384,7 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
     this.rawConn = null;
     this._connected = false;
     this.macAddress = '';
+    this.publishIdentity();
 
     invoke('disconnect_gan_cube').catch(() => {});
   }
@@ -410,8 +466,17 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
         }
         break;
       case 'HARDWARE':
-        if (evt.hardwareName) this.model = evt.hardwareName;
-        if (typeof evt.gyroSupported === 'boolean') this.gyroSupported = evt.gyroSupported;
+        if (evt.hardwareName) {
+          this.hardwareName = evt.hardwareName;
+          this.model = evt.hardwareName;
+        }
+        if (evt.hardwareVersion) this.hardwareVersion = evt.hardwareVersion;
+        if (evt.softwareVersion) this.softwareVersion = evt.softwareVersion;
+        if (evt.productDate) this.productDate = evt.productDate;
+        if (typeof evt.gyroSupported === 'boolean') {
+          this.gyroSupported = evt.gyroSupported;
+          this.gyroReported = true;
+        }
         // Only notify if something actually changed (matches web adapter guard)
         if (typeof evt.gyroSupported === 'boolean' || evt.hardwareName) {
           this.onHardwareInfo?.({
@@ -419,6 +484,7 @@ export class GanCubeAdapterTauri implements SmartCubeAdapter {
             gyroSupported: this.gyroSupported,
           });
         }
+        this.publishIdentity();
         break;
     }
   }

@@ -11,11 +11,18 @@
  * This wipes every syncable row, every sync cursor/flag, the claimed
  * identity and the CubeMark seed, and regenerates a fresh anonymous id, so
  * the device returns to a pristine first-launch state.
+ *
+ * The Locker counts too: its rows, its photo blobs (IndexedDB) and the
+ * pre-database localStorage blob — which still holds the deleted account's
+ * photos as base64 — are all removed. The Locker's own `locker_*` bookkeeping
+ * goes as well, so the next launch seeds a fresh taxonomy instead of adopting
+ * the one that is being deleted.
  */
 
 import {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -25,6 +32,8 @@ import {
   initDB,
   USER_ID_KEY,
 } from "@cubeforge/database";
+import { clearAllPhotos } from "@/views/Collection/collectionPhotos";
+import { COLLECTION_STORAGE_KEY } from "@/views/Collection/collectionStore";
 
 export async function wipeAccountLocalData(): Promise<void> {
   const dbClient = await initDB();
@@ -45,6 +54,17 @@ export async function wipeAccountLocalData(): Promise<void> {
   await calendar.clear();
   await skills.replaceAll([]);
   await profiles.deleteAll();
+
+  // The Locker: rows, photo blobs, its own `locker_*` bookkeeping and the
+  // pre-database blob (the only copy of some photos).
+  await new GearRepository(executor).clear();
+  await clearAllPhotos();
+  await meta.deleteByPrefix("locker_");
+  try {
+    localStorage.removeItem(COLLECTION_STORAGE_KEY);
+  } catch {
+    // Private mode / no storage: nothing was ever written there.
+  }
 
   // Every sync cursor, linked flag and dirty marker, plus the identity keys
   // (user_id, identicon_seed) of the deleted account.

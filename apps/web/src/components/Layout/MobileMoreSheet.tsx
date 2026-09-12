@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid } from "lucide-react";
+import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -98,6 +98,13 @@ export function MobileMoreSheet({
       onClick: () => handleAction(() => onNavigate?.("reconstructions")),
     },
     {
+      key: "collection",
+      icon: Package,
+      title: tNav("locker"),
+      subtitle: t("more.collectionSubtitle"),
+      onClick: () => handleAction(() => onNavigate?.("collection")),
+    },
+    {
       key: "virtual-cube",
       icon: Box,
       title: tNav("virtual"),
@@ -125,15 +132,18 @@ export function MobileMoreSheet({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] p-0 pb-safe focus:outline-none">
-          <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
+        <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[80vh] flex flex-col p-0 pb-safe focus:outline-none">
+          <DrawerHeader className="shrink-0 border-b border-line px-5 py-3.5 text-left">
             <DrawerTitle className="text-sm font-semibold text-ink">
               {tNav("moreOptions")}
             </DrawerTitle>
           </DrawerHeader>
 
-          {/* Grid of secondary action cards */}
-          <div className="grid grid-cols-2 gap-3 p-4">
+          {/* Grid of secondary action cards.
+              `min-h-0 flex-1 overflow-y-auto` is required: the drawer caps at
+              80vh while the grid keeps growing with every destination, and a
+              non-scrolling flex child is clipped instead of reachable. */}
+          <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-y-auto overscroll-contain p-4">
             {items.map((item, index) => {
               const Icon = item.icon;
               const isLast = index === items.length - 1;

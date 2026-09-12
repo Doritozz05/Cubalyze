@@ -132,7 +132,10 @@ describe('SolvesRepository', () => {
     });
     const bind = db.mock.calls[0][1] as unknown[];
     expect(bind[6]).toBe('CFOP'); // method
-    expect(bind[7]).toBe('smart'); // source (column order: ..., method, source, moves, ...)
+    // column order: ..., method, cube_id, cube_label, source, moves, ...
+    expect(bind[7]).toBeNull(); // cube_id
+    expect(bind[8]).toBeNull(); // cube_label
+    expect(bind[9]).toBe('smart'); // source
   });
 
   it('insertMany wraps the batch in a transaction (BEGIN → inserts → COMMIT)', async () => {
@@ -146,7 +149,7 @@ describe('SolvesRepository', () => {
     expect(db.mock.calls[0][0]).toBe('BEGIN');
     // Both rows land in ONE multi-row INSERT (batched to cut worker round-trips).
     expect(db.mock.calls[1][0]).toContain('INSERT INTO solves');
-    expect(db.mock.calls[1][0]).toContain('VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    expect(db.mock.calls[1][0]).toContain('VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     expect(db.mock.calls[2][0]).toBe('COMMIT');
   });
 

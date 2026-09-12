@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -23,7 +24,12 @@ export type SyncableEntity =
   | "training_attempts"
   | "training_sessions"
   | "training_tasks"
-  | "skill_progress";
+  | "skill_progress"
+  // Fase 6 — the Locker. Order matters on pull (a type needs its category, an
+  // item needs its category), never on push (the cloud has no FKs).
+  | "gear_categories"
+  | "gear_types"
+  | "gear_items";
 
 export const SYNCABLE_TABLES: readonly SyncableEntity[] = [
   "solves",
@@ -33,6 +39,9 @@ export const SYNCABLE_TABLES: readonly SyncableEntity[] = [
   "training_sessions",
   "training_tasks",
   "skill_progress",
+  "gear_categories",
+  "gear_types",
+  "gear_items",
 ];
 
 export type SyncStatus =
@@ -51,6 +60,8 @@ export interface LocalDataCounts {
   trainingAttempts: number;
   trainingTasks: number;
   skills: number;
+  /** Locker items (Fase 6) — the part of the collection that would be merged. */
+  gearItems: number;
 }
 
 export interface SyncTotals {
@@ -74,4 +85,5 @@ export interface SyncContext {
   training: TrainingRepository;
   calendar: CalendarRepository;
   skills: SkillProgressRepository;
+  gear: GearRepository;
 }

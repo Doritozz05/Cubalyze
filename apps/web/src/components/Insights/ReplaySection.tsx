@@ -995,7 +995,7 @@ function ReplaySection({
                 {totalMs > 0 && (
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-line/40">
                     <div
-                      className="h-full bg-phase-blue-500/80 transition-[width] duration-75 ease-out"
+                      className="h-full bg-ink/70 transition-[width] duration-75 ease-out"
                       style={{ width: `${Math.min(100, Math.max(0, (positionMs / totalMs) * 100))}%` }}
                     />
                   </div>
@@ -1105,11 +1105,15 @@ function ReplaySection({
                         <button
                           onClick={handlePlayPause}
                           disabled={!canPlay}
+                          // No per-state fill on purpose: the button uses the same
+                          // theme primary as every other Play control in the app
+                          // (Ink), and the state is carried by the icon (▶/⏸) and
+                          // the tooltip — exactly like the metronome toggle. The
+                          // old blue was `--phase-blue-500`, a literal the theme
+                          // engine never rewrites, so it ignored the theme.
                           className={cn(
                             "grid size-9 place-items-center rounded-full transition-all duration-150 active:scale-95 disabled:opacity-30 cursor-pointer shadow-xs shrink-0",
-                            replayState === "playing"
-                              ? "bg-ink text-background hover:bg-ink/90 hover:scale-105"
-                              : "bg-phase-blue-500 text-white hover:bg-phase-blue-600 hover:scale-105",
+                            "bg-ink text-background hover:bg-ink/90 hover:scale-105",
                           )}
                           aria-label={
                             replayState === "playing" ? t("replay.pause") : t("replay.play")

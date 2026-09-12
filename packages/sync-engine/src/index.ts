@@ -11,6 +11,7 @@
  */
 
 export { SyncEngine } from "./SyncEngine";
+export type { SyncEngineHooks } from "./SyncEngine";
 export {
   createSupabaseClient,
   isSupabaseConfigured,

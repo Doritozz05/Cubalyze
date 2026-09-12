@@ -50,9 +50,39 @@ Environment Variables, en los tres entornos) y redespliega.
 `supabase functions deploy delete-account` (solo necesario para el botón
 "Eliminar cuenta"; sin ella, el login/sync funciona igual).
 
+### 6. Locker y fotos (Fase 6)
+
+La migración `20260912000011_gear_sync_schema.sql` crea las tablas del Locker
+(`gear_categories`, `gear_types`, `gear_items`) y la
+`20260912000013_locker_photos_bucket.sql` crea el bucket **privado**
+`locker-photos` con sus políticas. No hay que hacer nada a mano en el
+dashboard: `supabase db push` lo deja listo.
+
+Convención de ruta de las fotos (la primera carpeta es la partición de RLS):
+
+```
+{user_id}/{item_id}/{photo_id}/full.jpg
+{user_id}/{item_id}/{photo_id}/thumb.jpg
+```
+
+Límites del bucket: 1 MB por objeto, solo `image/jpeg`, `image/png` y
+`image/webp`. El bucket es privado; la Fase 8 compartirá con URLs firmadas, no
+haciéndolo público.
+
+Comprobar el estado tras un push (SQL, no el mensaje de éxito):
+
+```bash
+supabase migration list --linked
+supabase db query --linked "select id, public, file_size_limit from storage.buckets"
+supabase db query --linked "select policyname, cmd from pg_policies where tablename like 'gear%' or (schemaname='storage' and tablename='objects')"
+```
+
 ## Desarrollo local
 
 - `supabase start` levanta Postgres + Auth + Edge Runtime local; útil para
   los tests de integración (ver `packages/sync-engine/src/__tests__/`).
 - La app sin variables de entorno funciona 100% local como antes: el botón
   de login muestra "no configurado" y no se sincroniza nada.
+- Sin Docker (este entorno) no hay Postgres ni Storage locales: el SQL se
+  valida contra el proyecto linkado dentro de `begin; … rollback;` con
+  `supabase db query --linked`, que no persiste nada.

@@ -63,6 +63,7 @@ export function ClaimDataDialog() {
             {counts.trainingAttempts > 0 && <CountChip label={t("claim.attempts", { count: counts.trainingAttempts })} />}
             {counts.trainingTasks > 0 && <CountChip label={t("claim.tasks", { count: counts.trainingTasks })} />}
             {counts.skills > 0 && <CountChip label={t("claim.skills", { count: counts.skills })} />}
+            {counts.gearItems > 0 && <CountChip label={t("claim.items", { count: counts.gearItems })} />}
           </div>
         )}
 

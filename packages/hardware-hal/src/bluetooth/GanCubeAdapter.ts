@@ -1,6 +1,6 @@
 import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
 import type { Subscription } from 'rxjs';
-import { SmartCubeAdapter } from '../interfaces/SmartCubeAdapter';
+import { SmartCubeAdapter, type CubeIdentity } from '../interfaces/SmartCubeAdapter';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
 import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
 import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC, type GanCubeEvent } from '@cubeforge/gan-protocol';
@@ -25,6 +25,37 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public model = 'SmartCube';
   /** Whether the connected cube has gyro/IMU support. Set from HARDWARE event. */
   public gyroSupported = false;
+
+  // ── Hardware identity ───────────────────────────────────────────────────
+  //
+  // The HARDWARE response carries the model name, the firmware and the
+  // production date, and the connection carries the address. Only the model and
+  // the gyro flag used to be kept, so the rest of the app could not answer "which
+  // cube is this?" — which is what the per-cube attribution needs. They are
+  // kept here and published as one object, because they arrive in two beats:
+  // the address at connect, the rest when the cube answers.
+  private hardwareName: string | null = null;
+  private hardwareVersion: string | null = null;
+  private softwareVersion: string | null = null;
+  private productDate: string | null = null;
+  /** Whether the cube has actually answered the hardware request yet. */
+  private gyroReported = false;
+  private currentIdentity: CubeIdentity | null = null;
+  private identitySubject = new ReplaySubject<CubeIdentity | null>(1);
+
+  /** Who the connected cube is, re-emitted as the handshake fills it in. */
+  public identity$ = this.identitySubject.asObservable();
+
+  constructor() {
+    // Nothing is connected at boot: subscribers get the honest answer straight
+    // away instead of waiting for a first cube that may never come.
+    this.identitySubject.next(null);
+  }
+
+  /** The connected cube's identity right now, or null when there is none. */
+  public get identity(): CubeIdentity | null {
+    return this.currentIdentity;
+  }
 
   public onConnectionChange: ((status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void) | null = null;
 
@@ -58,6 +89,30 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   public invalidMoves$ = this.invalidMovesSubject.asObservable();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
+  /**
+   * Build the identity from whatever the handshake has produced so far and
+   * publish it. Called at connect, on every HARDWARE answer and on (real)
+   * disconnect, so subscribers always hold the current truth.
+   */
+  private publishIdentity(): void {
+    if (!this.connection) {
+      this.currentIdentity = null;
+      this.identitySubject.next(null);
+      return;
+    }
+    this.currentIdentity = {
+      vendor: this.vendor,
+      model: this.hardwareName,
+      mac: this.device?.mac || null,
+      hardwareVersion: this.hardwareVersion,
+      softwareVersion: this.softwareVersion,
+      productDate: this.productDate,
+      // `false` before the cube answers would be a claim, not a fact.
+      gyroSupported: this.gyroReported ? this.gyroSupported : null,
+    };
+    this.identitySubject.next(this.currentIdentity);
+  }
+
   public onFacelets: ((facelets: string) => void) | null = null;
   private clockReconciler = new ClockDriftReconciler();
 
@@ -71,6 +126,17 @@ export class GanCubeAdapter implements SmartCubeAdapter {
   async connect(manualMac?: string): Promise<void> {
     this.manualMac = manualMac;
     this.isUserDisconnect = false;
+
+    // A new connection may be a DIFFERENT cube, so nothing learned from the
+    // previous one may survive: otherwise the first thing the UI says about the
+    // new cube would be the old cube's name.
+    this.hardwareName = null;
+    this.hardwareVersion = null;
+    this.softwareVersion = null;
+    this.productDate = null;
+    this.gyroReported = false;
+    this.gyroSupported = false;
+    this.model = 'SmartCube';
 
     try {
       this.connection = await connectGanCube(async (device: BluetoothDeviceWithMAC, isFallback?: boolean) => {
@@ -98,6 +164,9 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     // starts at -1). Requesting facelets right after connect closes that
     // window, so the first moves are never dropped.
     this.requestFacelets().catch(() => {});
+    // The address is known as soon as the connection is; the model is not, so
+    // the identity is published now and again when the cube answers.
+    this.publishIdentity();
     this.onConnectionChange?.('connected');
     this.connectionStatusSubject.next('connected');
   }
@@ -157,6 +226,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
       this.connection = null;
     }
     this.device = null;
+    this.publishIdentity();
     this.onConnectionChange?.('disconnected');
     this.connectionStatusSubject.next('disconnected');
   }
@@ -186,10 +256,15 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.handleGyro(evt);
       } else if (evt.type === 'HARDWARE') {
         if (evt.hardwareName) {
+          this.hardwareName = evt.hardwareName;
           this.model = evt.hardwareName;
         }
+        if (evt.hardwareVersion) this.hardwareVersion = evt.hardwareVersion;
+        if (evt.softwareVersion) this.softwareVersion = evt.softwareVersion;
+        if (evt.productDate) this.productDate = evt.productDate;
         if (typeof evt.gyroSupported === 'boolean') {
           this.gyroSupported = evt.gyroSupported;
+          this.gyroReported = true;
         }
         // Notify upstream consumers (e.g. orientation store) immediately
         // so the UI shows correct gyro status without needing the 3D panel.
@@ -199,6 +274,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
             gyroSupported: this.gyroSupported,
           });
         }
+        this.publishIdentity();
       }
     });
   }
@@ -257,6 +333,15 @@ export class GanCubeAdapter implements SmartCubeAdapter {
     this.teardownEventsSubscription();
     // Subjects are NEVER replaced — existing subscribers continue to work.
     // New events from reconnection flow through the same subjects.
+    //
+    // The GATT connection is dead either way, so it must not be kept around: it
+    // used to stay set, which left `isConnected` true forever AND made
+    // `attemptReconnect()` return on its own guard (`this.connection !== null`),
+    // so an unexpected drop never reconnected at all — silently, and with the UI
+    // still showing a connected cube. Clearing it is what makes the retry below
+    // reachable.
+    this.connection = null;
+    this.publishIdentity();
 
     if (!this.isUserDisconnect && this.device) {
       this.attemptReconnect();
@@ -299,6 +384,7 @@ export class GanCubeAdapter implements SmartCubeAdapter {
         this.requestHardware().catch(() => {});
         // Re-seed the serial tracker so moves aren't discarded after reconnect
         this.requestFacelets().catch(() => {});
+        this.publishIdentity();
         this.onConnectionChange?.('connected');
         this.connectionStatusSubject.next('connected');
       } catch {

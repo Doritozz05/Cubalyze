@@ -42,6 +42,24 @@ describe('renderCubeMark — SVG output', () => {
     expect(transparent).not.toContain('var(--surface-2-solid)');
   });
 
+  it('lets the host frame own the corner radius when asked (tileRadius: 0)', () => {
+    // The avatar renders inside a `rounded-*` + `overflow-hidden` frame. Two
+    // radii can only ever disagree, and the symptom is a tile whose corners do
+    // not reach the frame's (16px inside a 12px frame), so the tile must be
+    // square and let the frame clip it.
+    const size = 100;
+    const framed = renderCubeMark(generateCubeMarkSpec('framed'), {
+      size,
+      tile: 'surface-2',
+      tileRadius: 0,
+    });
+    expect(framed).toContain(`<rect x="0" y="0" width="${size}" height="${size}" rx="0"`);
+
+    // A standalone mark (data URI, bare inline SVG) keeps its own curve.
+    const standalone = renderCubeMark(generateCubeMarkSpec('framed'), { size, tile: 'surface-2' });
+    expect(standalone).toContain(`rx="${size * 0.16}"`);
+  });
+
   it('is deterministic for a given spec', () => {
     const spec = generateCubeMarkSpec('det-render');
     expect(renderCubeMark(spec)).toBe(renderCubeMark(spec));

@@ -11,3 +11,19 @@ export { AppMetaRepository, USER_ID_KEY, ONBOARDING_KEY, DEVICE_ID_KEY, IDENTICO
 export type { AppMetaRow } from './app-meta.repository.js';
 export { ProfilesRepository } from './profiles.repository.js';
 export type { ProfileRow } from './profiles.repository.js';
+export { GearRepository } from './gear.repository.js';
+export type {
+  GearCategory,
+  GearCategoryKind,
+  GearType,
+  GearItem,
+  GearItemStatus,
+  GearItemCondition,
+  GearPrice,
+  GearLink,
+  GearPhotoRef,
+  GearCollectionSnapshot,
+  GearTable,
+  GearPhotoSyncState,
+  GearPhotoSyncStatus,
+} from './gear.repository.js';

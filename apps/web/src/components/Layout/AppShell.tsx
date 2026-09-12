@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { useStore } from "zustand";
 import { useTranslation } from "react-i18next";
 import { MainLayout } from "@/components/Layout/MainLayout";
+import type { ViewId } from "@/components/Layout/sidebar.constants";
 import { LeftSidebar } from "@/components/Layout/LeftSidebar";
 import { StageOverlays } from "@/components/Layout/StageOverlays";
 import { MainStage } from "@/components/Stage/MainStage";
@@ -67,6 +68,7 @@ export function AppShell(props: AppShellProps) {
     onExportAllJSON,
     onNavigate,
     onOpenProfile,
+    onOpenLocker,
     isFocused,
     session$,
     timerStateRef,
@@ -258,7 +260,10 @@ export function AppShell(props: AppShellProps) {
           },
           onOpenThemeStudio: (tab) => openThemeStudioRef.current(tab),
           onOpenWidgets: () => widgetExplorerRef.current(true),
-          onNavigate: (view) => onNavigateRef.current(view as any),
+          // The context-menu resolver deliberately stays decoupled from the
+          // view union (it takes a plain string); the items it can produce
+          // only ever carry a real ViewId, so the narrowing happens here.
+          onNavigate: (view) => onNavigateRef.current(view as ViewId),
         },
       });
 
@@ -346,7 +351,8 @@ export function AppShell(props: AppShellProps) {
               activeView === "reconstructions" ||
               activeView === "insights" ||
               activeView === "training" ||
-              activeView === "profile"
+              activeView === "profile" ||
+              activeView === "collection"
             )) ||
             headerMode === "hidden"
           }
@@ -403,6 +409,7 @@ export function AppShell(props: AppShellProps) {
           isFocused={isFocused}
           onAddManual={() => setManualOpen(true)}
           onOpenProfile={onOpenProfile}
+          onOpenLocker={onOpenLocker}
           onOpenMore={() => setMobileMoreOpen(true)}
           main={
             <MainStage

@@ -3,6 +3,7 @@ import { isDbPuzzleType } from '@cubeforge/events';
 import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
 import { withTransaction } from './transaction.js';
 import { nextLocalStamps } from './local-clock.js';
+import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';
 
 export interface SolveRow {
   id: string;
@@ -12,6 +13,8 @@ export interface SolveRow {
   scramble: string;
   penalty: string;
   method: string | null;
+  cube_id: string | null;
+  cube_label: string | null;
   source: string;
   note: string | null;
   moves: string;
@@ -87,6 +90,8 @@ function rowToSolve(row: SolveRow): Solve {
     scramble: row.scramble,
     penalty: row.penalty as Solve['penalty'],
     method: row.method ?? undefined,
+    cubeId: row.cube_id ?? undefined,
+    cubeLabel: row.cube_label ?? undefined,
     source: (row.source as Solve['source']) ?? 'manual',
     note: row.note ?? undefined,
     moves: safeParseMoves(row.moves),
@@ -122,6 +127,8 @@ function solveToRow(solve: Solve): SolveRow {
     scramble: solve.scramble,
     penalty: solve.penalty,
     method: solve.method ?? null,
+    cube_id: solve.cubeId ?? null,
+    cube_label: solve.cubeLabel ?? null,
     source: solve.source ?? 'manual',
     note: solve.note ?? null,
     moves: JSON.stringify(solve.moves || []),
@@ -166,6 +173,52 @@ export class SolvesRepository {
     const rows = await this.db('SELECT * FROM solves WHERE id = ?', [id]);
     if (rows.length === 0) return null;
     return rowToSolve(rows[0] as unknown as SolveRow);
+  }
+
+  /**
+   * Every NON-demo solve attributed to one Locker item, oldest first (so the
+   * order matches `findAll` and a caller can slice a chronological window
+   * without reversing anything).
+   *
+   * Backed by `idx_solves_cube` (migration 035). The per-cube statistics are a
+   * FILTER over the solve history, never a synced counter (ADR-029): a device
+   * that edits a penalty offline would otherwise silently disagree with the
+   * cloud, and the number would be wrong in both places.
+   *
+   * Solves are deliberately NOT tied to an item by a foreign key (see 035), so
+   * this keeps answering for a cube that has since been sold or deleted — the
+   * history is a fact and the frozen `cube_label` keeps it readable.
+   */
+  async findByCube(cubeId: string): Promise<Solve[]> {
+    const rows = await this.db(
+      'SELECT * FROM solves WHERE is_demo = 0 AND cube_id = ? ORDER BY timestamp ASC',
+      [cubeId],
+    );
+    return rows.map((r) => rowToSolve(r as unknown as SolveRow));
+  }
+
+  /**
+   * How many NON-demo solves each attributed cube has, and when it was last
+   * used — ONE grouped query for the whole Locker grid.
+   *
+   * Asking per card would mean N queries for N cubes on every render; this is a
+   * single pass over the `cube_id` index. Unattributed solves (cube_id NULL)
+   * have no owner and are simply absent from the result.
+   */
+  async summarizeCubes(): Promise<Map<string, { count: number; lastUsedAt: number }>> {
+    const rows = await this.db(
+      'SELECT cube_id, COUNT(*) AS cnt, MAX(timestamp) AS last_ts FROM solves WHERE is_demo = 0 AND cube_id IS NOT NULL GROUP BY cube_id',
+    );
+    const summary = new Map<string, { count: number; lastUsedAt: number }>();
+    for (const row of rows) {
+      const cubeId = row.cube_id == null ? '' : String(row.cube_id);
+      if (!cubeId) continue;
+      summary.set(cubeId, {
+        count: Number(row.cnt) || 0,
+        lastUsedAt: Number(row.last_ts) || 0,
+      });
+    }
+    return summary;
   }
 
   /**
@@ -241,8 +294,8 @@ export class SolvesRepository {
         : solve;
     const row = solveToRow(stamped);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, cube_id, cube_label, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.cube_id, row.cube_label, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
     );
   }
 
@@ -256,8 +309,8 @@ export class SolvesRepository {
    * Performance: solves are grouped into multi-row INSERT statements instead
    * of one round-trip per solve. Every `execute()` crosses the worker bridge
    * (Comlink postMessage → WASM → postMessage), so a 5000-solve import used to
-   * cost 5000+ round-trips; batching cuts that to a handful. 500 rows × 17
-   * columns = 8500 bound variables, well under SQLite's MAX_VARIABLE_NUMBER
+   * cost 5000+ round-trips; batching cuts that to a handful. 500 rows × 19
+   * columns = 9500 bound variables, well under SQLite's MAX_VARIABLE_NUMBER
    * (32766) and SQL length limits.
    */
   async insertMany(solves: Solve[]): Promise<number> {
@@ -283,9 +336,9 @@ export class SolvesRepository {
     return withTransaction(this.db, async (exec) => {
       for (let start = 0; start < solves.length; start += ROWS_PER_STATEMENT) {
         const chunk = solves.slice(start, start + ROWS_PER_STATEMENT);
-        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
         const sql =
-          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ' +
+          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, cube_id, cube_label, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ' +
           placeholders;
         const bind: unknown[] = [];
         for (const solve of chunk) {
@@ -296,7 +349,8 @@ export class SolvesRepository {
           const row = solveToRow(stamped);
           bind.push(
             row.id, row.session_id, row.time_ms, row.timestamp, row.scramble,
-            row.penalty, row.method, row.source, row.note, row.moves,
+            row.penalty, row.method, row.cube_id, row.cube_label, row.source,
+            row.note, row.moves,
             row.orientation_timeline, row.analysis_engine_version, row.analysis,
             row.puzzle_type, 0, row.created_at, row.updated_at
           );
@@ -342,8 +396,8 @@ export class SolvesRepository {
     const row = solveToRow(stamped);
     const updatedAt = row.updated_at > 0 ? row.updated_at : Date.now();
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, updatedAt, row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, cube_id = ?, cube_label = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.cube_id, row.cube_label, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, updatedAt, row.id]
     );
   }
 
@@ -353,10 +407,16 @@ export class SolvesRepository {
    * is re-pushed, resurrecting the row — deletes only win against older data.
    */
   async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    // Only delete when a row is really removed…
+    if (!(await rowIsDoomed(this.db, 'solves', 'id', id, 'updated_at', deletedAt))) return;
     await this.db(
       'DELETE FROM solves WHERE id = ? AND updated_at <= ?',
       [id, deletedAt],
     );
+    // …and then drop the tombstone the trigger echoed back: pushed with a
+    // fresher deleted_at it would destroy a newer edit made elsewhere (see
+    // tombstone-echo.ts).
+    await purgeTombstoneEchoes(this.db, 'solves', [id]);
   }
 
   async delete(id: string): Promise<void> {
@@ -395,6 +455,41 @@ export class SolvesRepository {
   async countNonDemo(): Promise<number> {
     const rows = await this.db('SELECT COUNT(*) as cnt FROM solves WHERE is_demo = 0');
     return (rows[0] as { cnt: number }).cnt;
+  }
+
+  /**
+   * Total time spent solving across the WHOLE history — every session, every
+   * puzzle, smart / virtual / manual alike — in ONE aggregate query.
+   *
+   * Deliberate choices, because a total is easy to make quietly wrong:
+   *
+   *   • It sums the TABLE, not a loop over sessions. Per-session iteration can
+   *     never double count (a solve belongs to exactly one session) but it CAN
+   *     miss a row whose session is gone; an aggregate can do neither.
+   *   • DNFs are left out: a failed attempt has no time to add.
+   *   • +2 adds its two seconds, mirroring `effectiveTime` / `normalizePenalty`
+   *     in the app — a total that disagreed with the times shown next to it
+   *     would be worse than no total at all.
+   *   • Penalties are compared case-insensitively and trimmed, so the legacy
+   *     lowercase 'dnf' that the schema CHECK still admits is not miscounted as
+   *     a finished solve. The '+2' branch also accepts 'PLUS2' / 'PLUS_TWO' for
+   *     exact parity with `normalizePenalty`, even though the CHECK constraint
+   *     makes those two unreachable today.
+   *   • Demo solves are excluded, like every other profile statistic.
+   */
+  async totalEffectiveTimeMs(): Promise<number> {
+    const rows = await this.db(
+      `SELECT COALESCE(SUM(
+         time_ms + CASE
+           WHEN UPPER(TRIM(COALESCE(penalty, ''))) IN ('+2', 'PLUS2', 'PLUS_TWO') THEN 2000
+           ELSE 0
+         END
+       ), 0) AS total
+       FROM solves
+       WHERE is_demo = 0
+         AND UPPER(TRIM(COALESCE(penalty, ''))) <> 'DNF'`,
+    );
+    return Number((rows[0] as { total: number | string | null } | undefined)?.total ?? 0);
   }
 
   /**

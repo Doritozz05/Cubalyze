@@ -16,7 +16,14 @@ import type {
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { runAnalysis } from "@/hooks/useSolveSession";
-import { puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { useCollectionStore } from "@/views/Collection/collectionStore";
+import { activeCubeStore } from "@/stores/activeCubeStore";
+import {
+  cubeAttribution,
+  latestCubeIdForEvent,
+  resolveActiveCube,
+} from "@/views/Collection/activeCube";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { hapticCelebrate } from "@/utils/haptics";
 import { isDev } from "@/utils/env";
@@ -111,7 +118,13 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       const capturedScramble = overrides?.scramble ?? currentScramble;
       const capturedPuzzleType = overrides?.puzzleType ?? puzzleCategoryToType(puzzle);
       const capturedNextScramble = overrides?.onNextScramble ?? onNextScramble;
+      // Two different questions, deliberately answered separately:
+      //   • the ANALYSIS input — only ever used inside the 3×3-only branch
+      //     below, where "the user's method" is exactly right;
+      //   • the PERSISTED method — an event without a method (2×2, Pyraminx,
+      //     …) must store none, or the row claims "CFOP" for a Pyraminx solve.
       const capturedMethod = methodPref;
+      const capturedPersistedMethod = methodForEvent(capturedPuzzleType, methodPref);
       const solveId = uuidv4();
       const completionToken = ++completionTokenRef.current;
 
@@ -123,6 +136,23 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       const capturedSource: SolveSource =
         overrides?.source ??
         (smartCubeConnectedRef.current ? "smart" : "manual");
+
+      // Which of the user's cubes this solve belongs to. A virtual solve has no
+      // physical cube, and `resolveActiveCube` only ever answers with a cube of
+      // THIS event that is still owned — an event with nothing registered in
+      // the Locker stores no attribution rather than a guess. Read imperatively
+      // so a Locker edit never re-renders the timer.
+      const capturedCube =
+        capturedSource === "virtual"
+          ? {} // no physical cube — the simulator is not in your hand
+          : cubeAttribution(
+              resolveActiveCube(
+                useCollectionStore.getState().data,
+                capturedPuzzleType,
+                activeCubeStore.getState().byEvent[capturedPuzzleType],
+                latestCubeIdForEvent(solvesRef.current, capturedPuzzleType),
+              ),
+            );
 
       const pbResult = detectPbMilestones(
         solvesRef.current,
@@ -154,7 +184,8 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         time,
         scramble: scrambleDisplay ? capturedScramble : "",
         penalty,
-        method: capturedMethod,
+        method: capturedPersistedMethod,
+        ...capturedCube,
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,

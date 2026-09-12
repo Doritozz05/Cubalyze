@@ -51,9 +51,14 @@ export function BackgroundLayer({ activeView }: BackgroundLayerProps) {
     }
   }, [effectiveIsAnimating, mediaType, animationKey, effectiveMediaUrl]);
 
+  // The Locker is a personal surface too — its panels are glass, so the theme
+  // background belongs behind it exactly like the timer and the cube view.
   const isVisible =
     !!effectiveMediaUrl &&
-    (timerBackgroundAllViews || activeView === "timer" || activeView === "cube");
+    (timerBackgroundAllViews ||
+      activeView === "timer" ||
+      activeView === "cube" ||
+      activeView === "collection");
 
   if (!isVisible) return null;
 

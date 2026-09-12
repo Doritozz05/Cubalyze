@@ -6,6 +6,7 @@ export { SeparatorPiece } from "./separator/SeparatorPiece";
 export { ManualSolvePiece } from "./manual-solve/ManualSolvePiece";
 export { SessionPiece } from "./session/SessionPiece";
 export { PuzzlePiece } from "./puzzle/PuzzlePiece";
+export { CubePiece } from "./cube/CubePiece";
 export { SessionStatsPiece } from "./session-stats/SessionStatsPiece";
 export { SessionChartPiece } from "./session-chart/SessionChartPiece";
 export { RandomPuzzlePiece } from "./random-puzzle/RandomPuzzlePiece";

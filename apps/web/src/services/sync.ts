@@ -25,6 +25,8 @@ import {
 } from "@cubeforge/sync-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { refreshProfile } from "@/hooks/useProfile";
+import { clearAllPhotos } from "@/views/Collection/collectionPhotos";
+import { runPhotoSync } from "@/views/Collection/collectionPhotoSync";
 
 let engine: SyncEngine | null = null;
 let client: SupabaseClient | null = null;
@@ -117,7 +119,17 @@ export async function getSyncEngine(): Promise<SyncEngine | null> {
       // edits) means every tab's cached UI state is stale — including THIS
       // tab's, which may hold rows the pull just replaced.
       if (movedRows(totals)) notifyDataChanged();
+      // Fase 6 — the row cycle is the trigger for the photo channel: refs that
+      // just arrived need their bytes downloaded, refs that just left need
+      // their bytes uploaded. It runs AFTER the rows so a fresh device can see
+      // what to fetch.
+      void runPhotoSync({ supabase, userId: engine?.userId ?? null }).catch((err) => {
+        console.warn("[sync] photo sync failed:", err);
+      });
     },
+    // Fase 6 — a "start fresh" claim must also drop the Locker's photo bytes
+    // (IndexedDB), which this package cannot reach on its own.
+    { clearLocalPhotos: clearAllPhotos },
   );
   return engine;
 }

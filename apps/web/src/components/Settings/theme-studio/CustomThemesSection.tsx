@@ -93,8 +93,8 @@ export function CustomThemesSection() {
 
   return (
     <div className="mt-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <h4 className="text-sm font-semibold text-ink">
             {t('appearance.customThemesTitle')}
           </h4>

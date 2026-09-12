@@ -469,11 +469,14 @@ export function ReconstructionsView() {
               {t("list.subtitle")}
             </p>
           </div>
+          {/* The count is rendered once, emphasised, before a bare pluralised
+           *  label — the label key must NOT re-interpolate `count`, or the
+           *  header reads "98 98 solves". */}
           <div className="nums flex items-baseline gap-1.5 text-xs text-ink-3">
             <span className="text-sm font-semibold text-ink">
               {sorted.length.toLocaleString()}
             </span>
-            {t("list.solvesCount", { count: sorted.length })}
+            {t("list.solvesLabel", { count: sorted.length })}
           </div>
         </div>
 

@@ -48,6 +48,33 @@ describe("solve mappers", () => {
     expect(back).toEqual(solve);
   });
 
+  it("carries the cube attribution both ways, one column each", () => {
+    const row = solveToCloudRow({ ...solve, cubeId: "item_gan12", cubeLabel: "GAN 12" }, UID);
+    expect(row.cube_id).toBe("item_gan12");
+    expect(row.cube_label).toBe("GAN 12");
+
+    const back = cloudRowToSolve(row);
+    expect(back.cubeId).toBe("item_gan12");
+    expect(back.cubeLabel).toBe("GAN 12");
+  });
+
+  it("maps a missing cube to NULL, not the string \"undefined\"", () => {
+    const row = solveToCloudRow({ ...solve, cubeId: undefined, cubeLabel: undefined }, UID);
+    expect(row.cube_id).toBeNull();
+    expect(row.cube_label).toBeNull();
+
+    // NULL — and a row pulled before the columns existed — both read back as
+    // "no cube", so no history entry ever shows a placeholder name.
+    expect(cloudRowToSolve({ ...row, cube_id: null, cube_label: null }).cubeId).toBeUndefined();
+    expect(cloudRowToSolve({ ...row, cube_id: null, cube_label: null }).cubeLabel).toBeUndefined();
+
+    const legacyRow = { ...row } as Record<string, unknown>;
+    delete legacyRow.cube_id;
+    delete legacyRow.cube_label;
+    expect(cloudRowToSolve(legacyRow as never).cubeId).toBeUndefined();
+    expect(cloudRowToSolve(legacyRow as never).cubeLabel).toBeUndefined();
+  });
+
   it("rounds float times to whole ms so Postgres bigint accepts them", () => {
     // StackMat/BLE timers deliver sub-ms floats (112.729…); the cloud
     // declares time_ms as bigint and rejects floats with 22P02.

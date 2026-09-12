@@ -11,6 +11,8 @@ import { refreshProfile } from "@/hooks/useProfile";
 import { startSyncService } from "@/services/sync";
 import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { useCollectionStore } from "@/views/Collection/collectionStore";
+import { activeCubeStore } from "@/stores/activeCubeStore";
 import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
@@ -25,7 +27,7 @@ import { useTimerFocus } from "@/hooks/useTimerFocus";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { copyTextWithFallback } from "@/utils/clipboard";
-import { preloadSolvers, getEventForCategory } from "@/utils/puzzleUtils";
+import { preloadSolvers, getEventForCategory, methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 // Side-effect: registers the 2×2/3×3 ScrambleProviders BEFORE the first
 // render, so useScrambleState's initial scramble generation finds them.
 import "@/utils/scrambleProviders";
@@ -79,6 +81,7 @@ const VIEW_PATH: Record<ViewId, string> = {
   "skill-tree": "/skill-tree",
   profile: "/profile",
   reconstructions: "/reconstructions",
+  collection: "/collection",
   cube: "/cube",
 };
 
@@ -116,6 +119,15 @@ export default function App() {
   // Background sync: dirty-flag poller + online/visibility listeners.
   useEffect(() => {
     startSyncService();
+  }, []);
+
+  // The Locker is no longer a view-only concern: the dock's cube piece and the
+  // per-solve attribution read it, whether or not the user ever opens the view.
+  // Both reads are tiny (three SELECTs, one key/value scan) and idempotent —
+  // the Locker's own `hydrate()` then finds them already done.
+  useEffect(() => {
+    void useCollectionStore.getState().hydrate();
+    void activeCubeStore.getState().hydrate();
   }, []);
 
   // After the claim remaps the identity to the account, re-read the profile
@@ -310,6 +322,7 @@ export default function App() {
     currentScramble,
     puzzle,
     resetScramble,
+    solves,
   });
 
   // ── Focus mode (chrome collapses while solving) ────────────────────────
@@ -363,6 +376,8 @@ export default function App() {
         return t("profile");
       case "reconstructions":
         return null; // owned by ReconstructionsView (has the record data)
+      case "collection":
+        return t("collection");
       case "cube":
         return t("cube");
     }
@@ -480,6 +495,7 @@ export default function App() {
       onExportAllJSON={handleExportAllJSON}
       onNavigate={handleNavigate}
       onOpenProfile={() => handleNavigate("profile")}
+      onOpenLocker={() => handleNavigate("collection")}
       isFocused={isFocused}
       session$={session$}
       timerStateRef={timerStateRef}
@@ -499,7 +515,10 @@ export default function App() {
       onReplay={handleReplaySolve}
       onUpdatePenalty={handleUpdatePenalty}
       onManualSubmit={handleManualSubmit}
-      defaultMethod={methodPref}
+      // The manual sheet only shows a method picker for events that declare
+      // methods (3×3, 3×3 OH); on a 2×2 it stays hidden and the solve is saved
+      // without one.
+      defaultMethod={methodForEvent(puzzleCategoryToType(puzzle), methodPref)}
       onManualSubmitSheet={handleAddManual}
       lastAnalysis={lastAnalysis}
       tourActive={tourActive}

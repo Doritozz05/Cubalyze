@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AppMetaRepository,
   CalendarRepository,
+  GearRepository,
   ProfilesRepository,
   SessionsRepository,
   SkillProgressRepository,
@@ -29,6 +30,15 @@ function cloud(rowsByTable: Record<string, Record<string, unknown>[]>) {
 }
 
 /**
+ * Number of columns in an `INSERT INTO <table> (a, b, …) VALUES …` statement —
+ * one row's worth of bound values.
+ */
+function insertColumnCount(sql: string): number {
+  const list = sql.slice(sql.indexOf('(') + 1, sql.indexOf(')'));
+  return list.split(',').length;
+}
+
+/**
  * Fake SQLite that emulates the real constraints the pull must respect:
  *  - solves.session_id → sessions(id) FK (throws on violation),
  *  - training_attempts.case_id → algorithm_cases(id) FK,
@@ -51,7 +61,11 @@ function makeDb(knownCases: string[] = []) {
       return [];
     }
     if (/INSERT INTO solves/.test(sql)) {
-      for (let i = 0; i < bind.length; i += 17) {
+      // Derive the row stride from the statement itself: the column list grows
+      // over time (cube_id/cube_label did), and a hardcoded 17 would silently
+      // mis-parse every row after the first.
+      const stride = insertColumnCount(sql);
+      for (let i = 0; i < bind.length; i += stride) {
         const sessionId = String(bind[i + 1]);
         if (!sessions.has(sessionId)) {
           throw new Error(
@@ -90,6 +104,7 @@ function makeCtx(db: DBExecutor, supabase: unknown): SyncContext {
     training: new TrainingRepository(db),
     calendar: new CalendarRepository(db),
     skills: new SkillProgressRepository(db),
+    gear: new GearRepository(db),
   };
 }
 

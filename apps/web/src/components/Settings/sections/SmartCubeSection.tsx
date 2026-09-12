@@ -8,6 +8,7 @@ import { useStore } from "zustand";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { orientationStore, preferencesStore } from "@cubeforge/state";
 import { Switch } from "@/components/ui/switch";
+import { LockerLinkCard } from "@/components/Hardware/LockerLinkCard";
 import { cn } from "@/lib/utils";
 
 type ConnStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
@@ -180,6 +181,9 @@ export function SmartCubeSection() {
           )}
         </div>
       </div>
+
+      {/* Which Locker item the connected cube IS (the hardware→Locker link) */}
+      <LockerLinkCard />
 
       {/* 3×3 as 2×2 (corners-only) */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 rounded-xl border border-line bg-surface p-5">

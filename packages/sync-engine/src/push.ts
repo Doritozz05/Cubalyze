@@ -18,6 +18,9 @@
 
 import {
   attemptToCloudRow,
+  gearCategoryToCloudRow,
+  gearItemToCloudRow,
+  gearTypeToCloudRow,
   profileToCloudRow,
   sessionToCloudRow,
   skillToCloudRow,
@@ -177,6 +180,40 @@ export async function pushChanges(
       maxOf(changedSkills.map((s) => s.completedAt)),
     );
   }
+
+  // ── Gear / Locker (Fase 6, paged) ─────────────────────────────────────
+  // Parents before children in the payload order (the cloud has no FKs, but a
+  // reader of a log should still see a coherent order). Each table is its own
+  // RPC batch, exactly like solves.
+  await pushPageable(
+    ctx,
+    totals,
+    "gear_categories",
+    pushWatermarkKey("gear_categories", uid),
+    async (wm, opts) => ctx.gear.findCategoriesSince(wm, opts),
+    (c) => gearCategoryToCloudRow(c, uid),
+    (c) => c.updatedAt ?? c.createdAt ?? 0,
+  );
+
+  await pushPageable(
+    ctx,
+    totals,
+    "gear_types",
+    pushWatermarkKey("gear_types", uid),
+    async (wm, opts) => ctx.gear.findTypesSince(wm, opts),
+    (t) => gearTypeToCloudRow(t, uid),
+    (t) => t.updatedAt ?? t.createdAt ?? 0,
+  );
+
+  await pushPageable(
+    ctx,
+    totals,
+    "gear_items",
+    pushWatermarkKey("gear_items", uid),
+    async (wm, opts) => ctx.gear.findItemsSince(wm, opts),
+    (i) => gearItemToCloudRow(i, uid),
+    (i) => i.updatedAt ?? i.createdAt ?? 0,
+  );
 
   // ── Tombstones (final RPC, then purge) ────────────────────────────────
   if (tombstones.length > 0) {

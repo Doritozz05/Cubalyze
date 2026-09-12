@@ -1070,9 +1070,13 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                     </p>
                   </div>
 
+                  {/* Same row shape as the Settings reset card: the text column
+                      is `min-w-0 flex-1` (so a long description WRAPS instead of
+                      growing past the button) and the action is `shrink-0`,
+                      with a gap so the two can never touch. */}
                   <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
                         <h5 className="text-xs font-semibold text-ink">
                           {t('appearance.resetColorsOnly')}
                         </h5>
@@ -1083,14 +1087,14 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       <button
                         type="button"
                         onClick={resetCustomThemeColors}
-                        className="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
+                        className="shrink-0 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface hover:text-dnf"
                       >
                         {t('appearance.tabs.reset')}
                       </button>
                     </div>
 
-                    <div className="border-t border-line pt-3 flex items-center justify-between">
-                      <div>
+                    <div className="border-t border-line pt-3 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
                         <h5 className="text-xs font-semibold text-ink">
                           {t('appearance.resetAllVisual')}
                         </h5>
@@ -1101,7 +1105,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       <button
                         type="button"
                         onClick={() => setConfirmResetAllOpen(true)}
-                        className="rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90 cursor-pointer"
+                        className="shrink-0 rounded-lg bg-dnf px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-dnf/90 cursor-pointer"
                       >
                         {t('appearance.resetAll')}
                       </button>

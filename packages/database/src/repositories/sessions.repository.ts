@@ -1,5 +1,6 @@
 import type { Session } from './types.js';
 import { nextLocalStamps } from './local-clock.js';
+import { doomedIds, purgeTombstoneEchoes } from './tombstone-echo.js';
 
 export interface SessionRow {
   id: string;
@@ -161,6 +162,20 @@ export class SessionsRepository {
    * FK cascade would otherwise orphan it).
    */
   async deleteIfNotNewer(id: string, deletedAt: number): Promise<void> {
+    // Same contract as the cloud (`not exists` a newer child solve), applied
+    // locally BEFORE the delete so we can tell "this apply removed the row"
+    // (its trigger echo must be dropped) from "the row was already gone" (a
+    // local tombstone still waiting to be pushed, which must be kept).
+    const doomed = await doomedIds(
+      this.db,
+      'sessions',
+      'id',
+      'id = ? AND NOT EXISTS (SELECT 1 FROM solves WHERE session_id = ? AND updated_at > ?)',
+      [id, id, deletedAt],
+      'updated_at',
+      deletedAt,
+    );
+    if (doomed.length === 0) return;
     await this.db(
       `DELETE FROM sessions WHERE id = ? AND updated_at <= ?
          AND NOT EXISTS (
@@ -168,6 +183,7 @@ export class SessionsRepository {
          )`,
       [id, deletedAt, id, deletedAt],
     );
+    await purgeTombstoneEchoes(this.db, 'sessions', doomed);
   }
 
   async delete(id: string): Promise<void> {
