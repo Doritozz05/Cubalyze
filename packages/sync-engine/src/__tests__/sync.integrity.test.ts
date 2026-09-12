@@ -2047,20 +2047,48 @@ describe("T) el handle lo decide el servidor, no el dispositivo", () => {
 
   it("el contrato de `handle_claim` que el cliente espera sigue en la migración", async () => {
     const { readFileSync } = await import("node:fs");
-    const sql = readFileSync(
+    // `handle_claim` vive en la 18: necesita el freno de intentos (capa
+    // social) y llamarlo desde la 16 sería una referencia hacia delante. El
+    // formato, el índice y el trigger siguen en la 16 — el contrato del
+    // cliente es la suma de las dos.
+    const identitySql = readFileSync(
       new URL(
         "../../../../supabase/migrations/20260912000016_handle_identity.sql",
         import.meta.url,
       ),
       "utf8",
     );
+    const rpcSql = readFileSync(
+      new URL(
+        "../../../../supabase/migrations/20260912000018_friends_rpc.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const sql = `${identitySql}\n${rpcSql}`;
 
-    // Los DOS motivos de rechazo que `HandleClaimFailure` sabe interpretar. Un
-    // tercero ('rate_limited', 'conflict', …) se degradaría a `invalid` en el
-    // cliente y el usuario vería "elige otro" para algo que no es formato.
-    expect(sql).toContain("'reason', 'invalid'");
-    expect(sql).toContain("'reason', 'taken'");
-    expect(sql).not.toMatch(/'reason', '(?!invalid|taken')/);
+    // El contrato de `handle_claim`, AISLADO del resto del fichero: las demás
+    // RPC de la 18 tienen sus propios motivos (not_found, closed, pending…) y
+    // todos son legítimos. Aquí solo se vigila lo que puede devolver el claim.
+    const claimStart = rpcSql.indexOf(
+      "create or replace function public.handle_claim",
+    );
+    expect(claimStart).toBeGreaterThan(-1);
+    const claim = rpcSql.slice(claimStart, rpcSql.indexOf("end $$;", claimStart));
+
+    // Los TRES motivos de rechazo que `HandleClaimFailure` sabe interpretar:
+    // formato, nombre ocupado y freno de intentos. Un cuarto ('conflict', …) se
+    // degradaría a `invalid` en el cliente y el usuario vería "elige otro" para
+    // algo que no es formato.
+    expect(claim).toContain("'reason', 'invalid'");
+    expect(claim).toContain("'reason', 'taken'");
+    expect(claim).toContain("'reason', 'rate_limited'");
+    expect(claim).not.toMatch(/'reason', '(?!invalid|taken|rate_limited')/);
+
+    // El freno del claim es real y tiene dos ventanas (ráfaga horaria + techo
+    // diario): sin él, `taken` era un oráculo de existencia a coste cero.
+    expect(claim).toContain("friend_rate_check('claim_hour'");
+    expect(claim).toContain("friend_rate_check('claim_day'");
 
     // El sello que el cliente adopta tiene que ser estrictamente mayor que el
     // anterior, o el pull del propio dispositivo no lo vería como nuevo.

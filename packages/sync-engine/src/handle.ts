@@ -23,25 +23,36 @@
  * Failure modes are all "the handle did not change locally":
  *   - `taken`        — someone else owns it; the server offers a suggestion.
  *   - `invalid`      — rejected by the format (length, charset, reserved).
+ *   - `rate_limited` — too many attempts for now. NOT a format problem: telling
+ *                      the user "pick another name" when the server is simply
+ *                      saying "slow down" is the kind of wrong instruction that
+ *                      makes people retype a perfectly good handle forever.
  *   - `offline`      — the RPC could not be reached (transport, or a server
  *                      error we cannot interpret).
  *   - `unauthorized` — no valid session; the fix is signing in, not the network.
  *
  * `taken` reveals that a handle exists. That is inherent to "add by handle"
- * and accepted in the plan (§6.4); what is avoided is enumeration (exact format
- * plus the friend-layer rate limit) and guessing at scale.
+ * and accepted in the plan (§6.4); what is avoided is enumeration at rate — the
+ * exact format narrows the space and `handle_claim` itself enforces a burst
+ * window plus a daily ceiling, so `taken` cannot be swept.
  */
 
 import type { SyncContext } from "./types";
 
-export type HandleClaimFailure = "taken" | "invalid" | "offline" | "unauthorized";
+export type HandleClaimFailure =
+  | "taken"
+  | "invalid"
+  | "offline"
+  | "unauthorized"
+  | "rate_limited";
 
 export type HandleClaimResult =
   | { ok: true; handle: string }
   | { ok: false; reason: "taken"; suggestion: string | null }
   | { ok: false; reason: "invalid" }
   | { ok: false; reason: "offline" }
-  | { ok: false; reason: "unauthorized" };
+  | { ok: false; reason: "unauthorized" }
+  | { ok: false; reason: "rate_limited" };
 
 interface ClaimResponse {
   ok?: unknown;
@@ -94,10 +105,15 @@ export async function claimHandle(
         suggestion: typeof payload.suggestion === "string" ? payload.suggestion : null,
       };
     }
-    // The server's contract is exactly {ok, taken, invalid}. Anything else is
-    // a version skew, and `invalid` is the honest answer: we could not
-    // establish this handle. It prompts the user to choose another, which is
-    // the safe direction (never claim something we did not verify).
+    // `rate_limited` is its own outcome, not a format error: the handle may be
+    // perfectly free, the server is just refusing to answer right now.
+    if (payload.reason === "rate_limited") {
+      return { ok: false, reason: "rate_limited" };
+    }
+    // Any other rejection is a version skew, and `invalid` is the honest
+    // answer: we could not establish this handle. It prompts the user to
+    // choose another, which is the safe direction (never claim something we
+    // did not verify).
     return { ok: false, reason: "invalid" };
   }
 

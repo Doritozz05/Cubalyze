@@ -9,9 +9,18 @@
 // ones we never asked for. A signer can answer exactly the refs it was asked
 // about, in one batch, with a short TTL, and refuse everything else.
 //
+// The pure half of this file (segments, `photos` parsing, object paths) lives in
+// `./logic.ts`, where vitest can execute it. What stays here is I/O — the gates
+// and the Storage call — plus the order in which they run.
+//
 // Deno Deploy runtime (esm.sh import) — do not add npm imports.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildWanted,
+  canonicalUserId,
+  declaredPhotoIds,
+} from "./logic.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,37 +38,21 @@ const TTL_SECONDS = 60;
 /** Refs per call. The client's page is 60 items, so 120 covers a full page. */
 const MAX_REFS = 120;
 
-/** Photo-signing budget per user and minute (mirrors the RPC rate limits). */
+/**
+ * Photo-signing budget per user and minute.
+ *
+ * The client signs a whole page in ONE call, so 30/minute is generous for a
+ * human and useless for a scraper. It applies to EVERY caller, including the
+ * account asking for its own photos: a signed-in session is not a licence for
+ * unbounded egress, and the own-photos shortcut only exists so the Locker's
+ * previews keep working.
+ */
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
-
-/** `{user}/{item}/{photo}/{full|thumb}.jpg` — same layout the uploader writes. */
-function objectPath(
-  userId: string,
-  itemId: string,
-  photoId: string,
-  rendition: "full" | "thumb",
-): string {
-  return `${userId}/${itemId}/${photoId}/${rendition}.jpg`;
-}
-
-interface PhotoRef {
-  item_id?: unknown;
-  photo_id?: unknown;
-  thumb?: unknown;
-}
 
 interface ReqBody {
   owner?: unknown;
   refs?: unknown;
-}
-
-/** A safe identifier for a path segment: no slashes, no traversal, bounded. */
-function safeSegment(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  if (value.length === 0 || value.length > 64) return null;
-  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null;
-  return value;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -67,6 +60,11 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+/** When the URLs handed out with this response stop working (epoch ms). */
+function expiresAt(now = Date.now()): number {
+  return now + TTL_SECONDS * 1000;
 }
 
 /**
@@ -130,14 +128,29 @@ Deno.serve(async (req) => {
     return json({ ok: false, reason: "invalid" }, 400);
   }
 
-  const owner = safeSegment(body.owner);
+  // The owner is a uuid, and it is compared as such (friend pair, storage
+  // folder). Everything downstream uses this canonical form, so an uppercase
+  // copy of a real id cannot invert the friendship pair or sign a path that
+  // does not exist.
+  const owner = canonicalUserId(body.owner);
   if (!owner) return json({ ok: false, reason: "invalid" }, 400);
 
-  const rawRefs = Array.isArray(body.refs) ? (body.refs as PhotoRef[]) : [];
-  if (rawRefs.length === 0) return json({ ok: true, urls: {}, ttl: TTL_SECONDS });
-  if (rawRefs.length > MAX_REFS) return json({ ok: false, reason: "too_many" }, 400);
+  const built = buildWanted(body.refs, owner, MAX_REFS);
+  if (!built.ok) return json({ ok: false, reason: built.reason }, 400);
+  const { wanted } = built;
+  if (wanted.length === 0) {
+    return json({ ok: true, urls: {}, ttl: TTL_SECONDS, expires_at: expiresAt() });
+  }
 
-  // Own photos need no friendship (the Locker's own previews use local blobs,
+  // Quota first, for EVERY caller (own photos included). Putting it after the
+  // ownership branch meant a session could pull unlimited egress out of its own
+  // folder with no counter at all; and doing it before the reads below keeps an
+  // abusive caller from turning this function into a query amplifier.
+  if (!(await rateCheck(supabase, uid))) {
+    return json({ ok: false, reason: "rate_limited" }, 429);
+  }
+
+  // Own photos need no relationship (the Locker's own previews use local blobs,
   // but the account could legitimately ask for its own signed URLs).
   if (owner !== uid) {
     const low = owner < uid ? owner : uid;
@@ -152,40 +165,34 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!friendship) return json({ ok: false, reason: "not_friends" }, 403);
 
+    // Friendship is NOT enough on its own: `are_friends` also denies when a
+    // block exists in either direction, and this function has to mean the same
+    // thing the RPCs mean. Checking it here too is not redundant — `friend_block`
+    // revokes the friendship in the same transaction, but a concurrent block can
+    // interleave and leave an `accepted` row behind, and then the signer would
+    // be the only door still open.
+    const { data: block } = await supabase
+      .from("friend_blocks")
+      .select("blocker")
+      .or(`and(blocker.eq.${uid},blocked.eq.${owner}),and(blocker.eq.${owner},blocked.eq.${uid})`)
+      .limit(1);
+    if (block && block.length > 0) {
+      // Same answer as "not friends": a blocked caller must not learn that the
+      // block exists.
+      return json({ ok: false, reason: "not_friends" }, 403);
+    }
+
     const { data: visibility } = await supabase
       .from("profile_visibility")
       .select("share_locker")
       .eq("user_id", owner)
       .maybeSingle();
     if (!visibility?.share_locker) return json({ ok: false, reason: "not_shared" }, 403);
-
-    if (!(await rateCheck(supabase, uid))) {
-      return json({ ok: false, reason: "rate_limited" }, 429);
-    }
-  }
-
-  // Validate every ref before signing anything: a mixed batch must not sign
-  // the valid half and silently drop the rest.
-  const wanted: { key: string; itemId: string; photoId: string; path: string }[] = [];
-  const seen = new Set<string>();
-  for (const ref of rawRefs) {
-    const itemId = safeSegment(ref?.item_id);
-    const photoId = safeSegment(ref?.photo_id);
-    if (!itemId || !photoId) return json({ ok: false, reason: "invalid" }, 400);
-    const key = `${itemId}:${photoId}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    wanted.push({
-      key,
-      itemId,
-      photoId,
-      path: objectPath(owner, itemId, photoId, ref?.thumb === false ? "full" : "thumb"),
-    });
   }
 
   // The ref has to be one the item actually declares: signing a path derived
-  // from a forged id would hand out a URL for an object that is not part of
-  // any shared item (and, for a nonexistent object, one that merely 404s).
+  // from a forged id would hand out a URL for an object that is not part of any
+  // shared item (and, for a nonexistent object, one that merely 404s).
   const itemIds = [...new Set(wanted.map((w) => w.itemId))];
   const { data: items, error: itemsError } = await supabase
     .from("gear_items")
@@ -195,31 +202,47 @@ Deno.serve(async (req) => {
     .in("id", itemIds);
   if (itemsError) return json({ ok: false, reason: "server" }, 500);
 
-  const declared = new Map<string, Set<string>>();
-  for (const row of items ?? []) {
-    const photos = Array.isArray(row.photos) ? row.photos : [];
-    declared.set(
-      String(row.id),
-      new Set(
-        photos
-          .map((p: { id?: unknown }) => (typeof p?.id === "string" ? p.id : null))
-          .filter((id: string | null): id is string => id !== null),
-      ),
+  const declared = declaredPhotoIds(items ?? []);
+
+  const toSign = wanted.filter((want) =>
+    declared.get(want.itemId)?.has(want.photoId),
+  );
+  if (toSign.length === 0) {
+    return json({ ok: true, urls: {}, ttl: TTL_SECONDS, expires_at: expiresAt() });
+  }
+
+  // One call for the whole batch (`createSignedUrls`, plural) instead of a
+  // sequential round trip per object: a 60-item page used to be up to 60
+  // requests to Storage, each one billed and each one a chance to time out.
+  const { data: signed, error: signError } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrls(
+      toSign.map((entry) => entry.path),
+      TTL_SECONDS,
     );
+  if (signError) {
+    // A signing failure is not a client error: the showcase falls back to the
+    // 3D render. Answering `ok` with no URLs says the same thing as a 500 would
+    // (the client turns both into "no photos"), without pretending the request
+    // was malformed.
+    console.warn("[friend-photo-urls] batch sign failed:", signError.message);
+    return json({ ok: true, urls: {}, ttl: TTL_SECONDS, expires_at: expiresAt() });
   }
 
   const urls: Record<string, string> = {};
-  for (const want of wanted) {
-    if (!declared.get(want.itemId)?.has(want.photoId)) continue; // not part of a shared item
-    const { data: signed, error: signError } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrl(want.path, TTL_SECONDS);
-    if (signError) {
-      console.warn("[friend-photo-urls] sign failed:", signError.message);
-      continue;
-    }
-    if (signed?.signedUrl) urls[want.key] = signed.signedUrl;
+  const keyByPath = new Map(toSign.map((entry) => [entry.path, entry.key]));
+  for (const [index, entry] of (signed ?? []).entries()) {
+    if (!entry?.signedUrl) continue;
+    // Storage echoes the path back; fall back to position if it ever does not.
+    const key = (entry.path != null ? keyByPath.get(entry.path) : undefined) ??
+      toSign[index]?.key;
+    if (key) urls[key] = entry.signedUrl;
   }
 
-  return json({ ok: true, urls, ttl: TTL_SECONDS });
+  return json({
+    ok: true,
+    urls,
+    ttl: TTL_SECONDS,
+    expires_at: expiresAt(),
+  });
 });
