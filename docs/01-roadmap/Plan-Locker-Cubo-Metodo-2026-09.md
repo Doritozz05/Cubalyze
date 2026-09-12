@@ -624,16 +624,7 @@ tocar `solves`, ni el sync, ni la nube**, porque la identidad del hardware se
 traduce a una escritura en el `activeCubeStore` que ya existe, y el vínculo es
 una columna más de una tabla de gear que todavía no sincroniza.
 
-### 7.2 Fase 7 — bitácora de setups (esfuerzo BAJO-MEDIO, valor ALTO)
-
-Por cubo: lubricante, tensión, fecha de cada cambio. Es lo genuinamente
-**no genérico** — ni Steam ni Discogs lo tienen — y se apoya en lo que acaba de
-aterrizar: con las stats por cubo ya calculadas por replay, "¿fue mejor después
-del cambio de muelle?" es comparar dos ventanas de solves que ya sabemos
-recorrer. Tabla hija de `gear_items`, una línea de tiempo en la ficha y, si
-apetece, un antes/después en la tabla de métricas. Mucho valor por poco código.
-
-### 7.3 Fase 6 — sincronizar el Locker (esfuerzo ALTO, valor MEDIO-ALTO)
+### 7.2 Fase 6 — sincronizar el Locker (esfuerzo ALTO, valor MEDIO-ALTO)
 
 La grande: tabla espejo de categorías/tipos/ítems, RLS, mappers, tombstones y
 `sync_apply` (ADR-029), **más** las fotos. Decisión importante ya tomada en el
@@ -645,14 +636,11 @@ riguroso que la Fase 2 (esquema compatible, fotos referenciadas, tests contra
 SQLite real). Hoy el Locker es local por dispositivo y las **dos personas** que
 usan la app pueden vivir así una temporada sin dolor.
 
-### 7.4 Fase 8 — estante público compartible (esfuerzo BAJO técnicamente, valor MEDIO, y DEPENDE de la 6)
+### 7.3 Fase 8 — sistema de amigos, ver stats y ver locker (esfuerzo MEDIO, valor ALTO)
 
-Un enlace público de solo lectura con tu colección (y quizá tus PBs por cubo).
-El trabajo no es la UI, es el producto y el permiso: ruta sin sesión, token de
-compartir, opt-in explícito y decidir qué es público. El detalle que la coloca
-la última: **necesita la Fase 6**, porque el servidor no tiene la colección —
-sin espejo en la nube no hay nada que servir. Se puede tener una maqueta con
-datos locales, pero no es la fase.
+Social: añadir amigos, ver sus stats y su Locker. El trabajo no es la UI — es el
+producto y los permisos: quién puede ver qué, opt-in explícito, y decidir qué
+es público. Necesita la Fase 6 porque el servidor tiene que tener la colección.
+Se puede tener una maqueta con datos locales, pero no es la fase real.
 
-**Orden recomendado:** 5 y 7 (pequeñas, alto rendimiento, y ninguna toca datos
-delicados) → 6 (la que requiere diseño y cuidado) → 8.
+**Quedan las fases 5 (✅), 6 y 8. La 7 se descartó.**
