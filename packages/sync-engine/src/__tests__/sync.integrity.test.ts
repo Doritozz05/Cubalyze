@@ -864,6 +864,148 @@ describe("E3) identicon seed propagates across devices (M11)", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// E4) The signup trigger creates an EMPTY profile row (`handle_new_user`), so
+// "the account has no edited profile yet" must be asked by CONTENT, not by row
+// existence: otherwise the very first sign-in discards the profile the user
+// had edited anonymously.
+// ────────────────────────────────────────────────────────────────────────────
+describe("E4) an empty signup row still lets the first device seed the account", () => {
+  it("the locally edited profile seeds the account instead of being discarded", async () => {
+    const cloud = new FakeCloud();
+    // Exactly what `public.handle_new_user` leaves in the cloud for a new
+    // account: a row that exists but carries NOTHING.
+    cloud.profiles.set(UID, {
+      user_id: UID,
+      display_name: "",
+      handle: "",
+      bio: "",
+      avatar_kind: "identicon",
+      avatar_data: null,
+      main_puzzle: "333",
+      declared_methods: "[]",
+      country: "",
+      created_at: 4000,
+      updated_at: 4000,
+    });
+
+    const dev = makeDevice(cloud);
+    await dev.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await dev.ctx.profiles.upsert({
+      userId: "anon-A",
+      displayName: "Ada Cube",
+      handle: "ada",
+      bio: "edited before signing in",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "AR",
+      createdAt: 1000,
+      updatedAt: 0,
+    });
+
+    const engine = new SyncEngine(dev.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    await engine.claim("merge");
+
+    // The local edit is the account's profile now; it was not thrown away in
+    // favour of the empty signup row.
+    expect(cloud.profiles.get(UID)?.display_name).toBe("Ada Cube");
+    expect(cloud.profiles.get(UID)?.bio).toBe("edited before signing in");
+    expect(cloud.profiles.get(UID)?.country).toBe("AR");
+    const local = await dev.ctx.profiles.findById(UID);
+    expect(local?.displayName).toBe("Ada Cube");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// E5) The incident this all comes from: a device whose profile row is still the
+// installation default (it links later, and `getOrCreate` stamps it with
+// `Date.now()`) must NOT upload that emptiness over the account's edited
+// profile. A stamp cannot tell a default row from an edit — content can.
+// ────────────────────────────────────────────────────────────────────────────
+describe("E5) a default local row cannot overwrite the account's profile", () => {
+  it("the cloud keeps its profile and the device receives it", async () => {
+    const cloud = new FakeCloud();
+    cloud.profiles.set(UID, {
+      user_id: UID,
+      display_name: "Ada Cube",
+      handle: "ada",
+      bio: "edited on another device",
+      avatar_kind: "identicon",
+      avatar_data: null,
+      main_puzzle: "333",
+      declared_methods: "[]",
+      country: "US",
+      created_at: 4000,
+      updated_at: 5000,
+    });
+
+    const dev = makeDevice(cloud);
+    // The device's identity IS the account, and its profile row is the
+    // installation default written on first launch — with a `Date.now()`
+    // stamp, i.e. NEWER than the cloud's edited row.
+    await dev.ctx.meta.set(USER_ID_KEY, UID);
+    await dev.ctx.profiles.getOrCreate(UID);
+
+    const engine = new SyncEngine(dev.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    await engine.syncNow();
+
+    // The account's profile was not clobbered by the default row...
+    expect(cloud.profiles.get(UID)?.display_name).toBe("Ada Cube");
+    expect(cloud.profiles.get(UID)?.bio).toBe("edited on another device");
+    expect(cloud.profiles.get(UID)?.country).toBe("US");
+    // ...and the device now shows the account's profile instead of emptiness.
+    const local = await dev.ctx.profiles.findById(UID);
+    expect(local?.displayName).toBe("Ada Cube");
+    expect(local?.country).toBe("US");
+  });
+
+  it("a device with real local content still wins its own edit (LWW intact)", async () => {
+    const cloud = new FakeCloud();
+    cloud.profiles.set(UID, {
+      user_id: UID,
+      display_name: "Old Cloud",
+      handle: "",
+      bio: "",
+      avatar_kind: "identicon",
+      avatar_data: null,
+      main_puzzle: "333",
+      declared_methods: "[]",
+      country: "US",
+      created_at: 4000,
+      updated_at: 5000,
+    });
+
+    const dev = makeDevice(cloud);
+    await dev.ctx.meta.set(USER_ID_KEY, UID);
+    await dev.ctx.profiles.upsert(
+      {
+        userId: UID,
+        displayName: "New Local",
+        handle: "",
+        bio: "edited here",
+        avatarKind: "identicon",
+        mainPuzzle: "333",
+        declaredMethods: [],
+        country: "ES",
+        createdAt: 4000,
+        updatedAt: 0,
+      },
+      { local: true },
+    );
+
+    const engine = new SyncEngine(dev.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    await engine.syncNow();
+
+    // An edit with content is still an edit: it beats the older cloud row.
+    expect(cloud.profiles.get(UID)?.display_name).toBe("New Local");
+    expect(cloud.profiles.get(UID)?.country).toBe("ES");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // F) Batched pushes: keyset cursors never lose rows that share a timestamp,
 // and maxOf() survives 200k-element arrays (the Math.max(...spread) crash).
 // ────────────────────────────────────────────────────────────────────────────

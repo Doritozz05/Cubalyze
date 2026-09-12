@@ -32,6 +32,7 @@ import {
   purgeLocalTombstones,
   readLocalTombstones,
 } from "./tombstones";
+import { profileHasContent } from "./pull";
 import type { SyncContext, SyncTotals, SyncableEntity } from "./types";
 import { getWatermark, pushWatermarkKey, setWatermark } from "./watermarks";
 
@@ -105,7 +106,21 @@ export async function pushChanges(
     pushWatermarkKey("profiles", uid),
   );
   const profile = await ctx.profiles.findById(uid);
-  if (profile && (profile.updatedAt ?? 0) > profilesWm) {
+  // Una fila de perfil VACÍA no viaja hacia arriba, nunca.
+  //
+  // Toda instalación escribe un perfil por defecto en su primer arranque, con
+  // `updated_at = Date.now()`. Ese sello es MÁS NUEVO que el de una cuenta
+  // editada hace tiempo, y `sync_apply` aplica LWW estricto (`>=`), así que
+  // subirlo solo puede terminar en una cosa: borrar el perfil que la cuenta ya
+  // tenía en la nube desde cualquier dispositivo nuevo (o desde uno al que se
+  // le recreó la fila). El vacío no es una edición; si algún día hace falta
+  // propagar un vaciado deliberado, se hace con una acción explícita, no
+  // dejando que un valor por defecto gane una carrera de sellos.
+  if (
+    profile &&
+    profileHasContent(profile) &&
+    (profile.updatedAt ?? 0) > profilesWm
+  ) {
     const row = profileToCloudRow(profile, uid);
     // M11 — carry the CubeMark seed with the profile so the mark stays
     // stable across every device that links the account (the cloud profile
