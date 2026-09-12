@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
 import { orientationStore, connectionStore } from "@cubeforge/state";
 import { startOrientationTracking } from "@/services/orientationTracking";
+import { startAppCubeIdentity } from "@/services/cubeIdentity";
 
 // Global singleton adapter to keep connection alive across re-renders.
 // Imported by useSolveSession, useScrambleValidator and Cube3DPanel —
@@ -41,6 +42,12 @@ export const globalCubeAdapter = new GanCubeAdapter();
 // connection lifetime (solve capture + replay grip + dynamic notation),
 // independent of whether any 3D panel is mounted.
 startOrientationTracking(globalCubeAdapter);
+
+// Headless hardware→Locker link — resolves the connected cube to the Locker
+// item it IS, selects it for its event on this device, and (first time) files
+// the cube in the Locker with an undo. Also started here, and only here, so
+// every entry point (desktop included, which reuses this UI) gets it.
+startAppCubeIdentity(globalCubeAdapter);
 
 // Wire hardware info events to the orientation store so the UI (e.g.
 // SmartCubeSection) shows the correct gyro status immediately after
@@ -56,6 +63,17 @@ globalCubeAdapter.onHardwareInfo = ({ gyroSupported }) => {
     }
   }
 };
+
+// The adapter's authoritative answer about WHICH cube is connected: the address
+// as soon as the link is up, then the model and firmware when the cube answers
+// REQUEST_HARDWARE. Feeding it to the connection store is what stops the UI from
+// showing the adapter's "SmartCube" placeholder forever. The Locker's link
+// service subscribes to the same stream to resolve the bound item.
+globalCubeAdapter.identity$?.subscribe((identity) => {
+  // A null identity means "no cube"; the status stream already clears the store.
+  if (!identity) return;
+  connectionStore.getState().setHardware({ model: identity.model, mac: identity.mac });
+});
 
 // Sync global connectionStore with BLE adapter observables
 globalCubeAdapter.connectionStatus$?.subscribe((status) => {

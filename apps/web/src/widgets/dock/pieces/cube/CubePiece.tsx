@@ -25,7 +25,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, Check, Plus } from "lucide-react";
+import { ArrowUpRight, BluetoothConnected, Check, Plus } from "lucide-react";
 import { BiCube } from "react-icons/bi";
 import {
   Select,
@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useStore } from "zustand";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import { cubeShortLabel, cubesForEvent, NO_CUBE, resolveActiveCube } from "@/views/Collection/activeCube";
 
 export interface CubePieceProps {
@@ -55,6 +56,13 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
   const { t } = useTranslation("dock");
   const collection = useCollectionStore((state) => state.data);
   const chosen = useStore(activeCubeStore, (state) => state.byEvent[event]);
+  // The cube the hardware says is in your hand ("linked" only): a badge marks it
+  // in the list so the automatic choice is visible, not something to discover by
+  // noticing the row moved. Nothing here reads the link to MAKE the choice —
+  // `services/cubeIdentity` already did that.
+  const linkedId = useStore(hardwareLinkStore, (state) =>
+    state.status === "linked" ? state.itemId : null,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const candidates = cubesForEvent(collection, event);
@@ -112,6 +120,7 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
           candidates={candidates}
           chosen={chosen}
           resolvedId={resolved?.id ?? null}
+          linkedId={linkedId}
           storedIsGone={storedIsGone}
           onChoose={(id) => {
             setActive(id);
@@ -144,8 +153,11 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
       <SelectContent align="center">
         {candidates.map((cube) => (
           <SelectItem key={cube.id} value={cube.id} className="text-xs">
-            {cubeShortLabel(cube)}
-            {cube.primary ? ` · ${t("cube.main")}` : ""}
+            <span className="flex items-center gap-1.5">
+              {cube.id === linkedId ? <BluetoothConnected className="size-3 shrink-0" /> : null}
+              {cubeShortLabel(cube)}
+              {cube.primary ? ` · ${t("cube.main")}` : ""}
+            </span>
           </SelectItem>
         ))}
         <SelectItem value={NO_CUBE} className="text-xs">
@@ -190,6 +202,7 @@ function CubeSheet({
   candidates,
   chosen,
   resolvedId,
+  linkedId,
   storedIsGone,
   onChoose,
   onOpenLocker,
@@ -200,6 +213,8 @@ function CubeSheet({
   candidates: ReturnType<typeof cubesForEvent>;
   chosen: string | undefined;
   resolvedId: string | null;
+  /** Item the connected smart cube IS, so the sheet can name it. */
+  linkedId: string | null;
   storedIsGone: boolean;
   /** A candidate's item id, or `NO_CUBE` for the explicit "no cube" choice. */
   onChoose: (value: string) => void;
@@ -231,7 +246,13 @@ function CubeSheet({
                   {cubeShortLabel(cube)}
                 </span>
                 <span className="block truncate text-[0.66rem] text-ink-3">
-                  {[cube.brand, cube.primary ? t("cube.main") : null].filter(Boolean).join(" · ")}
+                  {[
+                    cube.brand,
+                    cube.primary ? t("cube.main") : null,
+                    cube.id === linkedId ? t("cube.connected") : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               </span>
               {active ? <Check className="size-4 shrink-0 text-ink" /> : null}

@@ -23,11 +23,27 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Activity, Camera, ChevronLeft, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
+import {
+  Activity,
+  BluetoothConnected,
+  Camera,
+  ChevronLeft,
+  ExternalLink,
+  Heart,
+  Link2,
+  Pencil,
+  Trash2,
+  Unlink,
+  X,
+} from "lucide-react";
+import { useStore } from "zustand";
+import { toast } from "sonner";
+import { formatSmartId } from "@cubeforge/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import { ItemMedia } from "./ItemMedia";
 import { PhotoImage } from "./PhotoImage";
 import { usePhotoUrl } from "../usePhotoUrl";
@@ -46,6 +62,16 @@ interface SpecRow {
   key: string;
   label: string;
   value: string;
+}
+
+/** One row of the plain spec grammar this panel already uses. */
+function SpecLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2">
+      <dt className="text-[0.74rem] text-ink-3">{label}</dt>
+      <dd className="truncate text-right text-[0.78rem] font-medium text-ink">{value}</dd>
+    </div>
+  );
 }
 
 export interface ItemDetailPanelProps {
@@ -114,6 +140,24 @@ export function ItemDetailPanel({
     }
   }
 
+  // The connected cube, and whether it is THIS item: what turns the Locker from
+  // a catalogue into the place the hardware points at. Only read (the headless
+  // service already resolved it); the buttons below are the only writes.
+  const link = useStore(hardwareLinkStore);
+  const isLinkedHere = link.status === "linked" && link.itemId === item.id;
+  const hardwareAddress = link.mac !== null;
+
+  const useConnectedCube = () => {
+    const result = link.linkTo(item.id);
+    if (!result.ok) {
+      toast.error(
+        result.reason === "taken"
+          ? t("hardware.taken")
+          : i18n.t("toast:cubeConnectFailed"),
+      );
+    }
+  };
+
   const rows: SpecRow[] = [];
   if (categoryName) rows.push({ key: "category", label: t("spec.category"), value: categoryName });
   if (typeName) rows.push({ key: "type", label: t("spec.type"), value: typeName });
@@ -130,6 +174,8 @@ export function ItemDetailPanel({
   if (item.quantity > 1) rows.push({ key: "quantity", label: t("spec.quantity"), value: `×${item.quantity}` });
   if (item.rating) rows.push({ key: "rating", label: t("spec.rating"), value: `${item.rating}/5` });
   if (item.serial) rows.push({ key: "serial", label: t("spec.serial"), value: item.serial });
+  const smartAddress = formatSmartId(item.smartId);
+  if (smartAddress) rows.push({ key: "smartId", label: t("spec.smartId"), value: smartAddress });
   const acquired = formatAcquired(item.acquiredAt, locale);
   if (acquired) rows.push({ key: "acquired", label: t("spec.acquired"), value: acquired });
   const price = formatPrice(item.price, locale);
@@ -240,6 +286,62 @@ export function ItemDetailPanel({
             </div>
           ))}
         </dl>
+
+        {isCube && (smartAddress || hardwareAddress) ? (
+          <section>
+            <h3 className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+              <BluetoothConnected className="size-3" />
+              {t("hardware.title")}
+            </h3>
+
+            {isLinkedHere ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Badge variant="outline" className="gap-1 rounded-full text-[0.6rem] font-normal">
+                  <BluetoothConnected className="size-2.5" />
+                  {t("hardware.connectedNow")}
+                </Badge>
+              </div>
+            ) : null}
+
+            {isLinkedHere ? (
+              <dl className="mt-2 divide-y divide-line border-y border-line">
+                {link.identity?.hardwareVersion ? (
+                  <SpecLine label={t("hardware.firmware")} value={link.identity.hardwareVersion} />
+                ) : null}
+                {link.identity?.softwareVersion ? (
+                  <SpecLine label={t("hardware.software")} value={link.identity.softwareVersion} />
+                ) : null}
+                {link.identity?.productDate ? (
+                  <SpecLine label={t("hardware.productionDate")} value={link.identity.productDate} />
+                ) : null}
+              </dl>
+            ) : null}
+
+            {!isLinkedHere && hardwareAddress ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 gap-2 text-xs"
+                onClick={useConnectedCube}
+              >
+                <Link2 className="size-3.5" />
+                {t("hardware.useConnected")}
+              </Button>
+            ) : null}
+
+            {isLinkedHere ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 gap-2 text-xs text-ink-3"
+                onClick={() => link.unlink()}
+              >
+                <Unlink className="size-3.5" />
+                {t("hardware.unlink")}
+              </Button>
+            ) : null}
+          </section>
+        ) : null}
 
         {isCube ? (
           <section>

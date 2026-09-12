@@ -35,6 +35,7 @@ import {
   toggleFavorite,
   togglePrimary,
   typeOf,
+  updateItem,
   upsertCategory,
   upsertItem,
   upsertType,
@@ -552,5 +553,97 @@ describe("collection — byte formatting", () => {
     expect(formatBytes(1_572_864)).toBe("1.5 MB");
     expect(formatBytes(-4)).toBe("0 B");
     expect(formatBytes(Number.NaN)).toBe("0 B");
+  });
+});
+
+describe("collection — smart cube identity", () => {
+  it("canonicalises the address when an item is created", () => {
+    const state = seeded();
+    const category = state.categories.find((entry) => entry.kind === "cube")!;
+    const next = upsertItem(state, {
+      categoryId: category.id,
+      name: "GAN 12 ui Maglev",
+      smartId: "aa:bb:cc:dd:ee:ff",
+    });
+
+    expect(next.items[0]?.smartId).toBe("AABBCCDDEEFF");
+  });
+
+  it("drops a value that is not an address instead of storing it", () => {
+    const state = seeded();
+    const category = state.categories.find((entry) => entry.kind === "cube")!;
+    const next = upsertItem(state, {
+      categoryId: category.id,
+      name: "Cube",
+      serial: "SN-12345678",
+      // A printed serial typed into the wrong field: the serial stays, the
+      // identity does not.
+      smartId: "SN-12345678",
+    });
+
+    expect(next.items[0]?.smartId).toBeUndefined();
+    expect(next.items[0]?.serial).toBe("SN-12345678");
+  });
+
+  it("canonicalises an address applied through a patch", () => {
+    const state = seeded();
+    const category = state.categories.find((entry) => entry.kind === "cube")!;
+    const created = upsertItem(state, { categoryId: category.id, name: "Cube" });
+    const itemId = created.items[0]!.id;
+
+    const patched = updateItem(created, itemId, { smartId: "11-22-33-44-55-66" });
+    expect(patched.items[0]?.smartId).toBe("112233445566");
+
+    // And a patch can clear it, which is how unlinking works.
+    const cleared = updateItem(patched, itemId, { smartId: undefined });
+    expect(cleared.items[0]?.smartId).toBeUndefined();
+  });
+
+  it("canonicalises an address that arrives in an imported file", () => {
+    const restored = normalizeState({
+      version: COLLECTION_VERSION,
+      categories: [{ id: "c1", name: "Cubes", kind: "cube", icon: "Box", createdAt: 1 }],
+      types: [],
+      items: [
+        {
+          id: "i1",
+          categoryId: "c1",
+          typeId: null,
+          name: "Cube",
+          palette: [...DEFAULT_PALETTE],
+          links: [],
+          photos: [],
+          tags: [],
+          status: "owned",
+          primary: false,
+          favorite: false,
+          quantity: 1,
+          smartId: "aabbccddeeff",
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        {
+          id: "i2",
+          categoryId: "c1",
+          typeId: null,
+          name: "Cube 2",
+          palette: [...DEFAULT_PALETTE],
+          links: [],
+          photos: [],
+          tags: [],
+          status: "owned",
+          primary: false,
+          favorite: false,
+          quantity: 1,
+          smartId: "nonsense",
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+      excludedCategories: [],
+    });
+
+    expect(restored?.items[0]?.smartId).toBe("AABBCCDDEEFF");
+    expect(restored?.items[1]?.smartId).toBeUndefined();
   });
 });

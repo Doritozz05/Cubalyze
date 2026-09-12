@@ -21,7 +21,8 @@
     "updateAvailable": "Update available",
     "updateAvailableBody": "A new version of CubeForge is ready. Reload when convenient.",
     "reload": "Reload",
-    "noCube": "No cube"
+    "noCube": "No cube",
+    "undo": "Undo"
   },
   "meta": {
     "brand": "CubeForge",
@@ -653,6 +654,28 @@
       "connecting": "Connecting...",
       "use3x3As2x2": "Use 3×3 Smart Cube as 2×2",
       "use3x3As2x2Hint": "With the 2×2 puzzle selected, solve 2×2 scrambles using only the corners of your 3×3 cube. Timer stop looks at corners only; moves are filtered on save and rotations are not recorded.",
+      "locker": {
+        "title": "Locker",
+        "linkedTo": "Linked to {{name}}",
+        "notLinked": "Not in your Locker yet",
+        "notLinkedHint": "Link it to one of your cubes so its solves are recorded on the right one.",
+        "conflict": "Two items share this cube's address",
+        "conflictHint": "Solves cannot be attributed until one of them is unlinked.",
+        "noAddress": "The cube's address could not be read",
+        "noAddressHint": "Enter the MAC address when connecting to link this cube to an item.",
+        "unavailable": "Linked, but it cannot receive solves",
+        "unknownModel": "Unrecognised model: {{name}}",
+        "suppressedHint": "You chose “No cube” for this event, so solves are not being attributed.",
+        "soldOrLent": "{{name}} is marked as sold or lent, so it is not in your hand.",
+        "noEventHint": "The linked item has no event, so it cannot receive solves.",
+        "thisCube": "the linked cube",
+        "chooseWhich": "Is it one of these?",
+        "unlink": "Unlink",
+        "addToLocker": "Add to Locker",
+        "notNow": "Not now",
+        "errorTaken": "That cube is already linked to another item",
+        "errorNoTarget": "Add a 3×3 type in the Locker first"
+      },
       "status": {
         "connecting": "Connecting",
         "connected": "Connected",
@@ -1018,6 +1041,9 @@
     "solveLoggedCount": "{{count}} solves logged",
     "solveLoggedCount_one": "Solve logged",
     "solveAddFailed": "Couldn't add solve",
+    "cubeAutoSelected": "Solving with {{name}}",
+    "cubeAddedToLocker": "Added to your Locker: {{name}}",
+    "cubeLinkedToLocker": "{{name}} is now the connected cube",
     "cubeConnected": "Cube connected!",
     "cubeDisconnected": "Cube disconnected",
     "cubeConnectFailed": "Failed to connect cube",
@@ -4006,6 +4032,16 @@
       "rating": "Rating",
       "brand": "Brand"
     },
+    "hardware": {
+      "title": "Smart cube",
+      "connectedNow": "Connected now",
+      "useConnected": "Use connected cube",
+      "unlink": "Unlink",
+      "taken": "That address is already linked to another item",
+      "firmware": "Firmware",
+      "software": "Software",
+      "productionDate": "Made"
+    },
     "spec": {
       "category": "Category",
       "type": "Type",
@@ -4017,6 +4053,7 @@
       "quantity": "Quantity",
       "rating": "Rating",
       "serial": "Serial",
+      "smartId": "Smart ID",
       "acquired": "Acquired",
       "price": "Price"
     },
@@ -4077,6 +4114,9 @@
       "condition": "Condition",
       "noCondition": "Not set",
       "serial": "Serial",
+      "smartId": "Smart cube ID",
+      "smartIdHint": "Bluetooth address of this cube when it is a smart cube. Filled in automatically the first time you connect it.",
+      "useConnected": "Use connected",
       "favorite": "Favorite",
       "mainHint": "Mark this cube as a main for its type. A type can have several.",
       "palette": "Sticker palette",
@@ -4460,8 +4500,9 @@
       "title": "Cube for {{event}}",
       "empty": "No {{event}} cubes in your Locker yet",
       "add": "Add cube",
-      "main": "Main",
-      "none": "No cube",
+    "main": "Main",
+    "connected": "Connected",
+    "none": "No cube",
       "unavailable": "The chosen cube is no longer available for this event.",
       "openLocker": "Open Locker"
     }

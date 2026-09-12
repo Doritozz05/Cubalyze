@@ -1386,4 +1386,13 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_solves_cube ON solves(cube_id);
     `,
   },
+  {
+    id: '036_gear_smart_id',
+    description:
+      'A Locker item can carry the Bluetooth address of the physical cube it IS: gear_items.smart_id, stored in the canonical form (12 hex digits, no separators — see smart-cube-id.ts). It is the key the smart-cube link resolves against, so a connected cube turns into "this item" without the user picking one from a list. Kept apart from `serial` on purpose: the printed serial number and the hardware address are two different facts, and the automatic link must never be able to overwrite something a person typed by hand. Nullable (only smart cubes have one) and indexed, because every connection looks an item up by it. Local-only for now: the gear tables are not registered with the sync engine yet (that is phase 6), so there is no cloud counterpart to add here.',
+    sql: `
+      ALTER TABLE gear_items ADD COLUMN smart_id TEXT;
+      CREATE INDEX IF NOT EXISTS idx_gear_items_smart ON gear_items(smart_id);
+    `,
+  },
 ];

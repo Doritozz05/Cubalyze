@@ -26,6 +26,7 @@
 
 import { nextLocalStamps } from './local-clock.js';
 import { withTransaction } from './transaction.js';
+import { normalizeSmartId } from '../smart-cube-id.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -106,7 +107,15 @@ export interface GearItem {
   rating?: number;
   quantity: number;
   condition?: GearItemCondition;
+  /** Serial number printed by the manufacturer (a person types this). */
   serial?: string;
+  /**
+   * Bluetooth address of this item when it is a smart cube, in canonical form.
+   * This is what a connection resolves against; a non-smart item simply has
+   * none. Distinct from `serial` so an automatic link can never overwrite a
+   * value somebody typed by hand.
+   */
+  smartId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -145,6 +154,7 @@ interface GearItemRow {
   model: string | null;
   finish: string | null;
   serial: string | null;
+  smart_id: string | null;
   palette: string;
   acquired_at: string | null;
   price_amount: number | null;
@@ -230,6 +240,7 @@ function rowToItem(row: GearItemRow): GearItem {
     ...(row.model ? { model: row.model } : {}),
     ...(row.finish ? { finish: row.finish } : {}),
     ...(row.serial ? { serial: row.serial } : {}),
+    ...(row.smart_id ? { smartId: row.smart_id } : {}),
     palette: parseJsonArray<string>(row.palette, isString),
     ...(row.acquired_at ? { acquiredAt: row.acquired_at } : {}),
     ...(row.price_amount !== null && row.price_currency
@@ -281,6 +292,12 @@ function itemToRow(item: GearItem) {
     model: item.model ?? null,
     finish: item.finish ?? null,
     serial: item.serial ?? null,
+    // Canonicalised here as well as in the web model, so the column cannot hold
+    // a non-canonical address no matter who writes it. Normalisation is
+    // idempotent, so doing it twice can never produce a different row than the
+    // one the model already has in memory (which would show up as a phantom
+    // diff on the next reload).
+    smart_id: normalizeSmartId(item.smartId),
     palette: JSON.stringify(item.palette ?? []),
     acquired_at: item.acquiredAt ?? null,
     price_amount: item.price?.amount ?? null,
@@ -320,11 +337,11 @@ const TYPE_UPSERT = `INSERT INTO gear_types (id, category_id, name, puzzle_categ
     updated_at = excluded.updated_at`;
 
 const ITEM_UPSERT = `INSERT INTO gear_items (
-    id, category_id, type_id, name, brand, model, finish, serial, palette,
+    id, category_id, type_id, name, brand, model, finish, serial, smart_id, palette,
     acquired_at, price_amount, price_currency, notes, links, photos, tags,
     status, condition, is_primary, is_favorite, rating, quantity,
     created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     category_id = excluded.category_id,
     type_id = excluded.type_id,
@@ -333,6 +350,7 @@ const ITEM_UPSERT = `INSERT INTO gear_items (
     model = excluded.model,
     finish = excluded.finish,
     serial = excluded.serial,
+    smart_id = excluded.smart_id,
     palette = excluded.palette,
     acquired_at = excluded.acquired_at,
     price_amount = excluded.price_amount,
@@ -414,6 +432,7 @@ export class GearRepository {
       row.model,
       row.finish,
       row.serial,
+      row.smart_id,
       row.palette,
       row.acquired_at,
       row.price_amount,

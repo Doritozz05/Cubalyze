@@ -328,4 +328,124 @@ describe('GearRepository', () => {
       db.close();
     }
   });
+
+  describe('smart cube identity (smart_id)', () => {
+    it('separates the radio address from the printed serial number', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        // Two DIFFERENT facts on the same item: the serial is typed by a person,
+        // the address is what a connection matches against.
+        await repo.upsertItem(
+          item('i1', 'c1', { serial: 'SN-123', smartId: 'AABBCCDDEEFF' }),
+        );
+
+        const [loaded] = (await repo.loadAll()).items;
+        expect(loaded?.serial).toBe('SN-123');
+        expect(loaded?.smartId).toBe('AABBCCDDEEFF');
+
+        // Writing one must not disturb the other.
+        await repo.upsertItem(item('i1', 'c1', { serial: 'SN-999', smartId: 'AABBCCDDEEFF' }));
+        const [afterSerial] = (await repo.loadAll()).items;
+        expect(afterSerial?.serial).toBe('SN-999');
+        expect(afterSerial?.smartId).toBe('AABBCCDDEEFF');
+
+        await repo.upsertItem(item('i1', 'c1', { serial: 'SN-999', smartId: '112233445566' }));
+        const [afterSmart] = (await repo.loadAll()).items;
+        expect(afterSmart?.serial).toBe('SN-999');
+        expect(afterSmart?.smartId).toBe('112233445566');
+      } finally {
+        db.close();
+      }
+    });
+
+    it('stores the canonical form whatever spelling the writer used', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertItem(item('i1', 'c1', { smartId: 'aa:bb:cc:dd:ee:ff' }));
+        await repo.upsertItem(item('i2', 'c1', { smartId: 'AA-BB-CC-DD-EE-FF' }));
+
+        const rows = db.exec({
+          sql: 'SELECT smart_id FROM gear_items ORDER BY id',
+          rowMode: 'object',
+        });
+        expect(rows.map((row: { smart_id: string }) => row.smart_id)).toEqual([
+          'AABBCCDDEEFF',
+          'AABBCCDDEEFF',
+        ]);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('stores NULL instead of a value that is not an address', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        // A printed serial typed into the wrong field must never become an
+        // identity the link could match against.
+        await repo.upsertItem(item('i1', 'c1', { smartId: 'SN-12345678' }));
+        await repo.upsertItem(item('i2', 'c1', { smartId: 'AABBCCDDEEF' }));
+
+        const rows = db.exec({
+          sql: 'SELECT smart_id FROM gear_items ORDER BY id',
+          rowMode: 'object',
+        });
+        expect(rows.map((row: { smart_id: string | null }) => row.smart_id)).toEqual([null, null]);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('clears the identity when an item stops claiming a cube', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertItem(item('i1', 'c1', { smartId: 'AABBCCDDEEFF' }));
+        await repo.upsertItem(item('i1', 'c1'));
+
+        const rows = db.exec({
+          sql: 'SELECT smart_id FROM gear_items WHERE id = ?',
+          bind: ['i1'],
+          rowMode: 'object',
+        });
+        expect(rows[0]?.smart_id).toBeNull();
+      } finally {
+        db.close();
+      }
+    });
+
+    it('indexes the address, because every connection looks an item up by it', async () => {
+      const db = openDb();
+      try {
+        const rows = db.exec({
+          sql: "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_gear_items_smart'",
+          rowMode: 'object',
+        });
+        expect(rows).toHaveLength(1);
+      } finally {
+        db.close();
+      }
+    });
+
+    it('keeps an item without an identity intact across a reload', async () => {
+      const db = openDb();
+      try {
+        const repo = repoFor(db);
+        await repo.upsertCategory(category('c1'));
+        await repo.upsertItem(item('i1', 'c1', { serial: 'SN-1' }));
+
+        const [loaded] = (await repo.loadAll()).items;
+        expect(loaded?.smartId).toBeUndefined();
+        expect(loaded?.serial).toBe('SN-1');
+      } finally {
+        db.close();
+      }
+    });
+  });
 });

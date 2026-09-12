@@ -290,6 +290,7 @@ describe('ConnectionStore', () => {
     expect(state.status).toBe('disconnected');
     expect(state.deviceName).toBeNull();
     expect(state.deviceModel).toBeNull();
+    expect(state.deviceMac).toBeNull();
     expect(state.batteryLevel).toBeNull();
     expect(state.error).toBeNull();
   });
@@ -314,6 +315,68 @@ describe('ConnectionStore', () => {
     expect(connectionStore.getState().batteryLevel).toBe(85);
   });
 
+  it('corrects the placeholder model once the cube answers the hardware request', () => {
+    // `setConnected` fires with the adapter's placeholder because the link is
+    // up before REQUEST_HARDWARE is answered; this is the correction that used
+    // to never happen (the panel showed "SmartCube" forever).
+    const store = createConnectionStore();
+    store.getState().setConnected('GAN', 'SmartCube');
+    store.getState().setHardware({ model: 'GAN12uiM' });
+    expect(store.getState().deviceModel).toBe('GAN12uiM');
+  });
+
+  it('keeps the address exactly as the adapter read it', () => {
+    const store = createConnectionStore();
+    store.getState().setConnected('GAN', 'SmartCube');
+    // Raw, not canonicalised: the protocol walks the bytes backwards and only
+    // the Locker knows the canonical form.
+    store.getState().setHardware({ mac: 'FFEEDDCCBBAA' });
+    expect(store.getState().deviceMac).toBe('FFEEDDCCBBAA');
+  });
+
+  it('ignores a hardware answer that arrives while disconnected', () => {
+    const store = createConnectionStore();
+    store.getState().setConnected('GAN', 'SmartCube');
+    store.getState().setDisconnected();
+    store.getState().setHardware({ model: 'GAN12uiM', mac: 'FFEEDDCCBBAA' });
+    expect(store.getState().deviceModel).toBeNull();
+    expect(store.getState().deviceMac).toBeNull();
+  });
+
+  it('clears the address on disconnect so a stale one cannot survive', () => {
+    const store = createConnectionStore();
+    store.getState().setConnected('GAN', 'SmartCube');
+    store.getState().setHardware({ mac: 'AABBCCDDEEFF' });
+    store.getState().setDisconnected();
+    expect(store.getState().deviceMac).toBeNull();
+  });
+
+  it('accepts a hardware answer during the connecting window', () => {
+    // The identity is published right before the 'connected' status, so an
+    // answer landing while still "connecting" must not be dropped.
+    const store = createConnectionStore();
+    store.getState().setConnecting();
+    store.getState().setHardware({ mac: 'AABBCCDDEEFF' });
+    expect(store.getState().deviceMac).toBe('AABBCCDDEEFF');
+  });
+
+  it('does not notify subscribers when a hardware answer changes nothing', () => {
+    const store = createConnectionStore();
+    store.getState().setConnecting();
+    store.getState().setHardware({ model: 'GAN12uiM', mac: 'FFEEDDCCBBAA' });
+
+    let notifications = 0;
+    const unsubscribe = store.subscribe(() => {
+      notifications += 1;
+    });
+    // The same answer again, and an answer with nothing in it.
+    store.getState().setHardware({ model: 'GAN12uiM', mac: 'FFEEDDCCBBAA' });
+    store.getState().setHardware({ model: null, mac: null });
+    unsubscribe();
+
+    expect(notifications).toBe(0);
+  });
+
   it('transitions to reconnecting', () => {
     connectionStore.getState().setConnected('Test', 'T1');
     connectionStore.getState().setReconnecting();
@@ -335,6 +398,7 @@ describe('ConnectionStore', () => {
     const state = connectionStore.getState();
     expect(state.status).toBe('disconnected');
     expect(state.batteryLevel).toBeNull();
+    expect(state.deviceMac).toBeNull();
   });
 
   it('isolated store instances do not share state', () => {

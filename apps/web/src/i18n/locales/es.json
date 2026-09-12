@@ -21,7 +21,8 @@
     "updateAvailable": "Actualización disponible",
     "updateAvailableBody": "Hay una nueva versión de CubeForge lista. Recarga cuando te venga bien.",
     "reload": "Recargar",
-    "noCube": "Sin cubo"
+    "noCube": "Sin cubo",
+    "undo": "Deshacer"
   },
   "meta": {
     "brand": "CubeForge",
@@ -653,6 +654,28 @@
       "connecting": "Conectando...",
       "use3x3As2x2": "Usar Smart Cube 3×3 como 2×2",
       "use3x3As2x2Hint": "Con el puzzle 2×2 seleccionado, resuelve scrambles de 2×2 usando solo las esquinas de tu cubo 3×3. El cronómetro solo mira las esquinas; los movimientos se filtran al guardar y no se registran rotaciones.",
+      "locker": {
+        "title": "Locker",
+        "linkedTo": "Vinculado a {{name}}",
+        "notLinked": "Todavía no está en tu Locker",
+        "notLinkedHint": "Vincúlalo a uno de tus cubos para que sus solves se registren en el correcto.",
+        "conflict": "Dos objetos comparten la dirección de este cubo",
+        "conflictHint": "No se pueden atribuir solves hasta que desvincules uno de ellos.",
+        "noAddress": "No se ha podido leer la dirección del cubo",
+        "noAddressHint": "Escribe la dirección MAC al conectar para vincular este cubo a un objeto.",
+        "unavailable": "Vinculado, pero no puede recibir solves",
+        "unknownModel": "Modelo no reconocido: {{name}}",
+        "suppressedHint": "Elegiste “Sin cubo” para esta categoría, así que no se están atribuyendo los solves.",
+        "soldOrLent": "{{name}} está marcado como vendido o prestado, así que no lo tienes en la mano.",
+        "noEventHint": "El objeto vinculado no pertenece a ninguna categoría, así que no puede recibir solves.",
+        "thisCube": "el cubo vinculado",
+        "chooseWhich": "¿Es alguno de estos?",
+        "unlink": "Desvincular",
+        "addToLocker": "Añadir al Locker",
+        "notNow": "Ahora no",
+        "errorTaken": "Ese cubo ya está vinculado a otro objeto",
+        "errorNoTarget": "Crea antes un tipo de 3×3 en el Locker"
+      },
       "status": {
         "connecting": "Conectando",
         "connected": "Conectado",
@@ -1018,6 +1041,9 @@
     "solveLoggedCount": "{{count}} solves registrados",
     "solveLoggedCount_one": "Solve registrado",
     "solveAddFailed": "No se pudo añadir el solve",
+    "cubeAutoSelected": "Ahora resuelves con {{name}}",
+    "cubeAddedToLocker": "Añadido a tu Locker: {{name}}",
+    "cubeLinkedToLocker": "{{name}} es ahora el cubo conectado",
     "cubeConnected": "¡Cubo conectado!",
     "cubeDisconnected": "Cubo desconectado",
     "cubeConnectFailed": "No se pudo conectar el cubo",
@@ -4006,6 +4032,16 @@
       "rating": "Valoración",
       "brand": "Marca"
     },
+    "hardware": {
+      "title": "Cubo inteligente",
+      "connectedNow": "Conectado ahora",
+      "useConnected": "Usar el cubo conectado",
+      "unlink": "Desvincular",
+      "taken": "Esa dirección ya está vinculada a otro objeto",
+      "firmware": "Firmware",
+      "software": "Software",
+      "productionDate": "Fabricado"
+    },
     "spec": {
       "category": "Categoría",
       "type": "Tipo",
@@ -4017,6 +4053,7 @@
       "quantity": "Cantidad",
       "rating": "Valoración",
       "serial": "Número de serie",
+      "smartId": "ID de smart cube",
       "acquired": "Adquirido",
       "price": "Precio"
     },
@@ -4077,6 +4114,9 @@
       "condition": "Condición",
       "noCondition": "Sin definir",
       "serial": "Número de serie",
+      "smartId": "ID de cubo inteligente",
+      "smartIdHint": "Dirección Bluetooth de este cubo cuando es un cubo inteligente. Se rellena sola la primera vez que lo conectas.",
+      "useConnected": "Usar el conectado",
       "favorite": "Favorito",
       "mainHint": "Marca este cubo como principal de su tipo. Un tipo puede tener varios.",
       "palette": "Paleta de pegatinas",
@@ -4461,6 +4501,7 @@
       "empty": "Todavía no tienes cubos de {{event}} en tu Locker",
       "add": "Añadir cubo",
       "main": "Main",
+      "connected": "Conectado",
       "none": "Sin cubo",
       "unavailable": "El cubo elegido ya no está disponible para esta categoría.",
       "openLocker": "Abrir Locker"

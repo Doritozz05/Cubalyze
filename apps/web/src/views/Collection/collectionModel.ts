@@ -26,6 +26,7 @@
  */
 
 import type { ParseKeys } from 'i18next';
+import { normalizeSmartId } from '@cubeforge/database';
 import type { GearPhotoRef } from '@cubeforge/database';
 import type { PuzzleCategory } from '@/types';
 
@@ -156,7 +157,16 @@ export interface GearItem {
   rating?: number;
   quantity: number;
   condition?: ItemCondition;
+  /** Serial number printed by the manufacturer (typed by a person). */
   serial?: string;
+  /**
+   * Bluetooth address, when this item IS a smart cube, in canonical form
+   * (`normalizeSmartId`). This is the key the hardware link resolves against.
+   * Separate from `serial` because they are different facts: the printed serial
+   * and the radio address, and an automatic link must never overwrite the
+   * former.
+   */
+  smartId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -486,6 +496,8 @@ export interface ItemInput {
   quantity?: number;
   condition?: ItemCondition;
   serial?: string;
+  /** Smart cube address; invalid values are dropped rather than stored. */
+  smartId?: string;
 }
 
 /** Create or update an item (an `id` in the input selects update mode). */
@@ -524,6 +536,7 @@ export function upsertItem(
       quantity: Math.max(1, Math.round(input.quantity ?? existing.quantity)),
       condition: input.condition,
       serial: input.serial?.trim() || undefined,
+      smartId: normalizeSmartId(input.smartId) ?? undefined,
       updatedAt: now,
     };
     return { ...state, items: state.items.map((item) => (item.id === existing.id ? updated : item)) };
@@ -551,6 +564,7 @@ export function upsertItem(
     quantity: Math.max(1, Math.round(input.quantity ?? 1)),
     condition: input.condition,
     serial: input.serial?.trim() || undefined,
+    smartId: normalizeSmartId(input.smartId) ?? undefined,
     createdAt: now,
     updatedAt: now,
   };
@@ -566,10 +580,18 @@ export function updateItem(
   itemId: string,
   patch: Partial<GearItem>,
 ): CollectionState {
+  // A patch is the other way into an item (the store's `patchItem`, the primary
+  // and favourite toggles), so the identity is canonicalised here too: an
+  // address that is not one is dropped rather than written as-is, and the field
+  // can never enter the state in a spelling the link would not recognise.
+  const normalized: Partial<GearItem> =
+    "smartId" in patch ? { ...patch, smartId: normalizeSmartId(patch.smartId) ?? undefined } : patch;
   return {
     ...state,
     items: state.items.map((item) =>
-      item.id === itemId ? { ...item, ...patch, updatedAt: patch.updatedAt ?? Date.now() } : item,
+      item.id === itemId
+        ? { ...item, ...normalized, updatedAt: patch.updatedAt ?? Date.now() }
+        : item,
     ),
   };
 }
@@ -1045,6 +1067,8 @@ export function normalizeState(raw: unknown): CollectionState | null {
       primary: !!item.primary,
       favorite: !!item.favorite,
       quantity: item.quantity ?? 1,
+      // An imported file can carry anything; only a real address survives.
+      smartId: normalizeSmartId(item.smartId) ?? undefined,
       createdAt: item.createdAt ?? now,
       updatedAt: item.updatedAt ?? now,
     })),

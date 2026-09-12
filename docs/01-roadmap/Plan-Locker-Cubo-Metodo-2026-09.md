@@ -1,12 +1,12 @@
 # Plan — Método por evento, Locker en la BD, cubo por solve y pieza del dock
 
-> Estado: **fases 1–3 hechas, commiteadas y pusheadas** (2026-09-12); la **fase 4
-> está implementada y verificada, a la espera de commit**. Rama:
-> `exp/cube-collection`.
+> Estado: **fases 1–4 hechas, commiteadas y pusheadas** (2026-09-12). Rama:
+> `feat/cube-collection` (renombrada desde `exp/`: ya no es un experimento).
 > Alcance de este documento: **fases 1–4**. Las fases 5–8 (identificación
 > automática del smart cube, sincronización del Locker, bitácora de setups y
 > estante público) quedan **fuera** y no bloquean nada: el diseño deja los
-> ganchos puestos (`cube_label`, `updated_at`, `source`).
+> ganchos puestos (`cube_label`, `updated_at`, `source`). La 5 ya tiene plan
+> propio: [Plan-Fase5-SmartCube-Locker-2026-09.md](./Plan-Fase5-SmartCube-Locker-2026-09.md).
 > Contexto: el Locker nació como prototipo en `localStorage` y los solves
 > guardan un `method` que es una copia de la preferencia global, así que un
 > 2×2 registra "CFOP". Esta es la corrección ordenada de las dos cosas.
@@ -605,8 +605,12 @@ rendimiento, una es la grande de verdad y la última depende de ella.
 
 ### 7.1 Fase 5 — el cubo se identifica solo (esfuerzo BAJO, valor ALTO)
 
+**Diseñada a detalle en
+[Plan-Fase5-SmartCube-Locker-2026-09.md](./Plan-Fase5-SmartCube-Locker-2026-09.md).**
+
 `vendor`/`model` y el MAC de GAN **ya llegan** en el handshake BLE y no los lee
-nadie. Con eso: al conectar, la app sabe qué cubo físico es y puede ofrecer
+nadie (y el firmware y la fecha de producción se descartan en el propio
+adaptador). Con eso: al conectar, la app sabe qué cubo físico es y puede ofrecer
 "este es mi GAN 12 — vincúlalo a ese objeto del Locker", que es exactamente el
 paso que hoy se hace a mano en la pieza del dock. El hardware pasa a ser la
 fuente de verdad de la atribución y la elección manual queda como respaldo
@@ -614,6 +618,11 @@ fuente de verdad de la atribución y la elección manual queda como respaldo
 cierra el círculo "hardware → dato" y la que hace que la app se sienta una app
 de speedcubing y no un timer con extras. Riesgo real: hace falta un catálogo de
 modelos y un plan honesto para el cubo desconocido.
+
+El plan de detalle confirma lo que este resumen solo intuía: **no hace falta
+tocar `solves`, ni el sync, ni la nube**, porque la identidad del hardware se
+traduce a una escritura en el `activeCubeStore` que ya existe, y el vínculo es
+una columna más de una tabla de gear que todavía no sincroniza.
 
 ### 7.2 Fase 7 — bitácora de setups (esfuerzo BAJO-MEDIO, valor ALTO)
 

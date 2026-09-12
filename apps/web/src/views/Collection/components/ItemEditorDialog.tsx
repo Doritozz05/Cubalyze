@@ -44,6 +44,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ColorPicker } from "@/components/Settings/components/ColorPicker";
+import { useStore } from "zustand";
+import { formatSmartId } from "@cubeforge/database";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { FormDialog } from "./FormDialog";
@@ -94,6 +97,7 @@ interface FormState {
   model: string;
   finish: string;
   serial: string;
+  smartId: string;
   palette: string[];
   acquiredAt: string;
   priceAmount: string;
@@ -120,6 +124,7 @@ function emptyForm(categoryId: string, typeId: string): FormState {
     model: "",
     finish: "",
     serial: "",
+    smartId: "",
     palette: [...DEFAULT_PALETTE],
     acquiredAt: "",
     priceAmount: "",
@@ -146,6 +151,7 @@ function formFromItem(item: GearItem): FormState {
     model: item.model ?? "",
     finish: item.finish ?? "",
     serial: item.serial ?? "",
+    smartId: item.smartId ?? "",
     palette: normalizePalette(item.palette),
     acquiredAt: item.acquiredAt ?? "",
     priceAmount: item.price ? String(item.price.amount) : "",
@@ -232,6 +238,11 @@ export function ItemEditorDialog({
 
   const isCube = categories.find((category) => category.id === form.categoryId)?.kind === "cube";
 
+  // The connected cube's address, formatted for the field, or null when there
+  // is no cube to read it from.
+  const linkMac = useStore(hardwareLinkStore, (state) => state.mac);
+  const connectedAddress = formatSmartId(linkMac);
+
   const patch = (values: Partial<FormState>) => setForm((current) => ({ ...current, ...values }));
 
   const setCategory = (categoryId: string) => {
@@ -288,6 +299,7 @@ export function ItemEditorDialog({
       model: form.model,
       finish: form.finish,
       serial: form.serial,
+      smartId: form.smartId,
       palette: form.palette,
       acquiredAt: form.acquiredAt,
       price: form.priceAmount && !Number.isNaN(amount)
@@ -521,6 +533,30 @@ export function ItemEditorDialog({
           <Field label={t("editor.serial")}>
             <Input value={form.serial} onChange={(event) => patch({ serial: event.target.value })} />
           </Field>
+          {isCube ? (
+            <Field label={t("editor.smartId")} hint={t("editor.smartIdHint")}>
+              <div className="flex gap-2">
+                <Input
+                  value={form.smartId}
+                  placeholder="AA:BB:CC:DD:EE:FF"
+                  onChange={(event) => patch({ smartId: event.target.value })}
+                />
+                {// Filling it from the cube in your hand beats reading it off a
+                // label — and it is the value that makes the link work.
+                connectedAddress ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs"
+                    onClick={() => patch({ smartId: connectedAddress })}
+                  >
+                    {t("editor.useConnected")}
+                  </Button>
+                ) : null}
+              </div>
+            </Field>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <StarRating value={form.rating} onChange={(rating) => patch({ rating })} />
@@ -674,11 +710,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-[0.72rem] font-normal text-ink-3">{label}</Label>
       {children}
+      {hint ? <p className="text-[0.68rem] leading-snug text-ink-3">{hint}</p> : null}
     </div>
   );
 }
