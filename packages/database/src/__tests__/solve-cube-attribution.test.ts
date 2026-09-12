@@ -173,6 +173,71 @@ describe('solves.cube_id / cube_label — round-trip', () => {
   });
 });
 
+describe('per-cube queries (the stats are a filter, never a stored count)', () => {
+  it("findByCube returns only that cube's solves, oldest first", async () => {
+    const repo = repoFor(openDb());
+    await repo.insertMany([
+      solve({ id: 'g1', cubeId: 'gan', cubeLabel: 'GAN 12', timestamp: 3000, timeMs: 10_000 }),
+      solve({ id: 'g2', cubeId: 'gan', cubeLabel: 'GAN 12', timestamp: 1000, timeMs: 12_000 }),
+      solve({ id: 'v1', cubeId: 'valk', cubeLabel: 'Valk', timestamp: 2000, timeMs: 11_000 }),
+      solve({ id: 'n1', timestamp: 4000, timeMs: 9000 }),
+    ]);
+
+    const gan = await repo.findByCube('gan');
+    expect(gan.map((s) => s.id)).toEqual(['g2', 'g1']); // chronological
+    expect(gan.map((s) => s.timeMs)).toEqual([12_000, 10_000]);
+
+    expect((await repo.findByCube('valk')).map((s) => s.id)).toEqual(['v1']);
+    // A cube nobody used, and an id that was never a Locker item at all.
+    expect(await repo.findByCube('nobody')).toEqual([]);
+    expect(await repo.findByCube('deleted-item')).toEqual([]);
+  });
+
+  it('findByCube excludes demo solves', async () => {
+    const repo = repoFor(openDb());
+    await repo.insert(solve({ id: 'real', cubeId: 'gan' }));
+    await repo.insert(solve({ id: 'demo', cubeId: 'gan', timestamp: 5_000_000 }), {
+      isDemo: true,
+    });
+    expect((await repo.findByCube('gan')).map((s) => s.id)).toEqual(['real']);
+  });
+
+  it('summarizeCubes counts and dates every attributed cube in one pass', async () => {
+    const repo = repoFor(openDb());
+    await repo.insertMany([
+      solve({ id: 'a1', cubeId: 'gan', timestamp: 1000 }),
+      solve({ id: 'a2', cubeId: 'gan', timestamp: 5000 }),
+      solve({ id: 'a3', cubeId: 'gan', timestamp: 3000 }),
+      solve({ id: 'b1', cubeId: 'valk', timestamp: 2000 }),
+      // Unattributed solves belong to no cube and must not be counted anywhere.
+      solve({ id: 'c1', timestamp: 9000 }),
+    ]);
+    await repo.insert(solve({ id: 'd1', cubeId: 'gan', timestamp: 9_999_999 }), {
+      isDemo: true,
+    });
+
+    const summary = await repo.summarizeCubes();
+    expect(summary.get('gan')).toEqual({ count: 3, lastUsedAt: 5000 });
+    expect(summary.get('valk')).toEqual({ count: 1, lastUsedAt: 2000 });
+    expect(summary.size).toBe(2);
+  });
+
+  it('summarizeCubes is empty when nothing has been attributed', async () => {
+    const repo = repoFor(openDb());
+    await repo.insert(solve({ id: 'n1' }));
+    expect((await repo.summarizeCubes()).size).toBe(0);
+  });
+
+  it('keeps answering for a cube that no longer exists in the Locker', async () => {
+    // Sold, deleted, gone from the grid — but the solves happened. This is the
+    // whole reason per-cube stats are a filter and there is no FK.
+    const repo = repoFor(openDb());
+    await repo.insert(solve({ id: 'gone-1', cubeId: 'sold-cube', cubeLabel: 'Sold cube' }));
+    expect((await repo.findByCube('sold-cube')).length).toBe(1);
+    expect((await repo.summarizeCubes()).get('sold-cube')?.count).toBe(1);
+  });
+});
+
 describe('solves.cube_id — no foreign key to gear_items', () => {
   it('keeps the solve untouched when the Locker item is deleted', async () => {
     const db = openDb();

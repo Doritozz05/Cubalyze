@@ -44,6 +44,7 @@ import {
   FaceChip,
   CoherenceBadge,
   WarningsBadge,
+  CubeBadge,
   FACE_HEX,
 } from "./atoms";
 import { ReplaySection, type ReplaySectionHandle } from "./ReplaySection";
@@ -242,6 +243,10 @@ export function SolveAnalysisPanel({
                   ? t("analysis.virtualCube")
                   : t("analysis.manual")}
             </span>
+            {/* Which physical cube this solve was done with. The detail is the
+                right home for it: on the row it would repeat the same name
+                down the whole column. */}
+            <CubeBadge label={solve.cubeLabel} />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1">

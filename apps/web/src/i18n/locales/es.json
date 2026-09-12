@@ -20,7 +20,8 @@
     "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing",
     "updateAvailable": "Actualización disponible",
     "updateAvailableBody": "Hay una nueva versión de CubeForge lista. Recarga cuando te venga bien.",
-    "reload": "Recargar"
+    "reload": "Recargar",
+    "noCube": "Sin cubo"
   },
   "meta": {
     "brand": "CubeForge",
@@ -1286,11 +1287,17 @@
       "empty": "Aún no hay casos con reconocimiento desglosado en esta sesión. Resuelve con un Smart Cube o el Cubo Virtual para acumular datos."
     },
     "list": {
+      "filters": "Filtros",
+      "filterByResult": "Filtrar por resultado",
+      "all": "Todas",
+      "source": "Origen",
+      "method": "Método",
+      "myCube": "Mi cubo",
+      "removeFilter": "Quitar filtro {{label}}",
       "sortNewest": "Más recientes",
       "sortOldest": "Más antiguas",
       "sortFastest": "Más rápidas",
       "sortSlowest": "Más lentas",
-      "sortPbGap": "Diferencia PB",
       "trend": "Tendencia",
       "avg": "media {{time}}",
       "searchPlaceholder": "Buscar tiempo, scramble, DNF, notas…",
@@ -3905,6 +3912,21 @@
     }
   },
   "collection": {
+    "stats": {
+    "title": "Solves",
+    "best": "Mejor single",
+    "ao5": "Mejor Ao5",
+    "ao12": "Mejor Ao12",
+    "mean": "Media",
+    "lastUsed": "Último uso",
+    "loading": "Buscando los solves de este cubo…",
+    "empty": "Todavía no hay solves con este cubo.",
+    "emptyHint": "Elígelo como cubo activo en el dock y sus solves aparecerán aquí.",
+    "count_one": "{{count}} solve",
+    "count_other": "{{count}} solves",
+    "cardCount_one": "{{count}} solve con este cubo",
+    "cardCount_other": "{{count}} solves con este cubo"
+    },
     "eyebrow": "Equipo",
     "title": "Armario",
     "summary": "{{total}} objetos · {{cubes}} en propiedad · {{wishlist}} deseados",

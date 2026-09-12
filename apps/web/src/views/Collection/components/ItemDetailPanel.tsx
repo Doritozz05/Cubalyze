@@ -23,7 +23,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Camera, ChevronLeft, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
+import { Activity, Camera, ChevronLeft, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +38,9 @@ import {
   formatPrice,
   type GearItem,
 } from "../collectionModel";
+import { formatLastUsed, isCubeStatsEmpty } from "../cubeStats";
+import { useCubeStats } from "../useCubeStats";
+import { formatTime } from "@/utils/formatTime";
 
 interface SpecRow {
   key: string;
@@ -48,6 +51,8 @@ interface SpecRow {
 export interface ItemDetailPanelProps {
   item: GearItem;
   isCube: boolean;
+  /** Injectable "now" for the "last used" line (tests / SSR stability). */
+  now?: number;
   cubeOrder?: number;
   categoryIconId?: string;
   typeName?: string;
@@ -65,6 +70,7 @@ export interface ItemDetailPanelProps {
 export function ItemDetailPanel({
   item,
   isCube,
+  now,
   cubeOrder,
   categoryIconId,
   typeName,
@@ -82,6 +88,31 @@ export function ItemDetailPanel({
   // Product page shows the full rendition; the gallery below uses thumbnails.
   const cover = item.photos[0];
   const coverUrl = usePhotoUrl(item.id, cover?.id, "full");
+
+  // Only a cube category can be the target of a solve attribution (see
+  // views/Collection/activeCube.ts), so the numbers are asked for — and shown —
+  // for cubes only. The hook is still called unconditionally: hooks cannot be
+  // conditional, and an item id of null simply resolves to "no numbers".
+  const { stats, loading: statsLoading } = useCubeStats(isCube ? item.id : null);
+  const lastUsed = formatLastUsed(stats?.lastUsedAt ?? null, now ?? Date.now(), locale);
+  const statRows: SpecRow[] = [];
+  if (stats && !isCubeStatsEmpty(stats)) {
+    if (stats.best) {
+      statRows.push({ key: "best", label: t("stats.best"), value: formatTime(stats.best.timeMs) });
+    }
+    if (stats.bestAo5 != null) {
+      statRows.push({ key: "ao5", label: t("stats.ao5"), value: formatTime(stats.bestAo5) });
+    }
+    if (stats.bestAo12 != null) {
+      statRows.push({ key: "ao12", label: t("stats.ao12"), value: formatTime(stats.bestAo12) });
+    }
+    if (stats.mean != null) {
+      statRows.push({ key: "mean", label: t("stats.mean"), value: formatTime(stats.mean) });
+    }
+    if (lastUsed) {
+      statRows.push({ key: "lastUsed", label: t("stats.lastUsed"), value: lastUsed });
+    }
+  }
 
   const rows: SpecRow[] = [];
   if (categoryName) rows.push({ key: "category", label: t("spec.category"), value: categoryName });
@@ -209,6 +240,39 @@ export function ItemDetailPanel({
             </div>
           ))}
         </dl>
+
+        {isCube ? (
+          <section>
+            <h3 className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+              <Activity className="size-3" />
+              {t("stats.title")}
+              {stats && stats.count > 0 ? (
+                <span className="tabular-nums opacity-70">
+                  {t("stats.count", { count: stats.count })}
+                </span>
+              ) : null}
+            </h3>
+            {statRows.length > 0 ? (
+              <dl className="mt-2 divide-y divide-line border-y border-line">
+                {statRows.map((row) => (
+                  <div key={row.key} className="flex items-baseline justify-between gap-4 py-2">
+                    <dt className="text-[0.74rem] text-ink-3">{row.label}</dt>
+                    <dd className="truncate text-right text-[0.78rem] font-medium tabular-nums text-ink">
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-2 text-[0.7rem] leading-relaxed text-ink-3">
+                {statsLoading && isCube ? t("stats.loading") : t("stats.empty")}
+                {!statsLoading ? (
+                  <span className="mt-0.5 block text-ink-3/80">{t("stats.emptyHint")}</span>
+                ) : null}
+              </p>
+            )}
+          </section>
+        ) : null}
 
         <section>
           <h3 className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-ink-3">

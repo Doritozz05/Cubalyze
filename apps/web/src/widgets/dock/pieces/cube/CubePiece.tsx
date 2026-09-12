@@ -25,7 +25,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, Check, Cuboid, Plus } from "lucide-react";
+import { ArrowUpRight, Check, Plus } from "lucide-react";
+import { BiCube } from "react-icons/bi";
 import {
   Select,
   SelectContent,
@@ -102,7 +103,7 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
     return (
       <>
         <IconButton label={t("cube.title", { event: eventLabel })} onClick={() => setSheetOpen(true)}>
-          <Cuboid className="size-5" />
+          <BiCube className="size-5" />
         </IconButton>
         <CubeSheet
           open={sheetOpen}
@@ -137,7 +138,7 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
         aria-label={t("cube.title", { event: eventLabel })}
         className="h-8 max-w-[11rem] gap-2 rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium leading-normal text-ink-2 shadow-none hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
       >
-        <Cuboid className="size-3.5 shrink-0" />
+        <BiCube className="size-3.5 shrink-0" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="center">

@@ -16,6 +16,7 @@ import {
   type CollectionState,
   type GearItem,
 } from "../collectionModel";
+import { useCubeUsage } from "../useCubeStats";
 
 export interface ItemGridProps {
   items: readonly GearItem[];
@@ -38,6 +39,10 @@ export function ItemGrid({
   onToggleFavorite,
   empty,
 }: ItemGridProps) {
+  // One grouped query for the whole wall, not one per card. The hook sits
+  // above the early return so the hook order never depends on the list.
+  const usage = useCubeUsage();
+
   if (items.length === 0) return <>{empty}</>;
 
   return (
@@ -55,6 +60,7 @@ export function ItemGrid({
             typeName={type?.name}
             cubeOrder={cubeOrderFor(type?.puzzleCategory)}
             selected={item.id === selectedId}
+            solveCount={usage.get(item.id)?.count}
             locale={locale}
             onSelect={() => onSelect(item)}
             onTogglePrimary={() => onTogglePrimary(item)}

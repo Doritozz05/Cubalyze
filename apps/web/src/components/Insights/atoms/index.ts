@@ -1,4 +1,5 @@
 export { PenaltyBadge } from "./PenaltyBadge";
+export { CubeBadge } from "./CubeBadge";
 export { SectionHeader } from "./SectionHeader";
 export { EmptyState } from "./EmptyState";
 export { AnimatedNumber } from "./AnimatedNumber";

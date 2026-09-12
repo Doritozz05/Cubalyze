@@ -175,6 +175,52 @@ export class SolvesRepository {
   }
 
   /**
+   * Every NON-demo solve attributed to one Locker item, oldest first (so the
+   * order matches `findAll` and a caller can slice a chronological window
+   * without reversing anything).
+   *
+   * Backed by `idx_solves_cube` (migration 035). The per-cube statistics are a
+   * FILTER over the solve history, never a synced counter (ADR-029): a device
+   * that edits a penalty offline would otherwise silently disagree with the
+   * cloud, and the number would be wrong in both places.
+   *
+   * Solves are deliberately NOT tied to an item by a foreign key (see 035), so
+   * this keeps answering for a cube that has since been sold or deleted — the
+   * history is a fact and the frozen `cube_label` keeps it readable.
+   */
+  async findByCube(cubeId: string): Promise<Solve[]> {
+    const rows = await this.db(
+      'SELECT * FROM solves WHERE is_demo = 0 AND cube_id = ? ORDER BY timestamp ASC',
+      [cubeId],
+    );
+    return rows.map((r) => rowToSolve(r as unknown as SolveRow));
+  }
+
+  /**
+   * How many NON-demo solves each attributed cube has, and when it was last
+   * used — ONE grouped query for the whole Locker grid.
+   *
+   * Asking per card would mean N queries for N cubes on every render; this is a
+   * single pass over the `cube_id` index. Unattributed solves (cube_id NULL)
+   * have no owner and are simply absent from the result.
+   */
+  async summarizeCubes(): Promise<Map<string, { count: number; lastUsedAt: number }>> {
+    const rows = await this.db(
+      'SELECT cube_id, COUNT(*) AS cnt, MAX(timestamp) AS last_ts FROM solves WHERE is_demo = 0 AND cube_id IS NOT NULL GROUP BY cube_id',
+    );
+    const summary = new Map<string, { count: number; lastUsedAt: number }>();
+    for (const row of rows) {
+      const cubeId = row.cube_id == null ? '' : String(row.cube_id);
+      if (!cubeId) continue;
+      summary.set(cubeId, {
+        count: Number(row.cnt) || 0,
+        lastUsedAt: Number(row.last_ts) || 0,
+      });
+    }
+    return summary;
+  }
+
+  /**
    * All NON-demo solves edited strictly after `updatedAt` (epoch ms) — the
    * sync push cursor. A fresh link passes 0 so every real solve is pushed.
    * Solves are immutable-ish (penalty/method/note/analysis edits bump

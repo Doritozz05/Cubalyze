@@ -13,9 +13,10 @@ import {
   Activity,
   TrendingUp,
   Dices,
-  Cuboid,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { BiCube } from "react-icons/bi";
+import type { IconType } from "react-icons";
 import type { ParseKeys } from "i18next";
 
 // ── Area definition ────────────────────────────────────────────────────
@@ -23,11 +24,18 @@ import type { ParseKeys } from "i18next";
 /** Typed keys of the "dock" i18n namespace (flattened). */
 export type DockKey = ParseKeys<"dock">;
 
+/**
+ * Areas draw from both icon sets: the app's own chrome is lucide, but a piece
+ * that names a specific object (the cube) uses the puzzle-shaped cube from
+ * react-icons, which reads better than any single-box lucide glyph.
+ */
+export type DockAreaIcon = LucideIcon | IconType;
+
 export interface DockAreaDef {
   /** Unique identifier for this area. */
   id: string;
   /** Icon for the area (shown in edit mode and explorer). */
-  icon: LucideIcon;
+  icon: DockAreaIcon;
   /** i18n label key (resolved from "dock" namespace). */
   labelKey: DockKey;
   /** i18n description key (shown in DockExplorer cards). */
@@ -53,7 +61,7 @@ export const DOCK_AREAS: DockAreaDef[] = [
   { id: "manual-solve", icon: Plus, labelKey: "manualSolve", descKey: "desc.manualSolve", category: "core" },
   { id: "session", icon: History, labelKey: "sessionArea", descKey: "desc.sessionArea", category: "core" },
   { id: "puzzle", icon: Puzzle, labelKey: "puzzleArea", descKey: "desc.puzzleArea", category: "core" },
-  { id: "cube", icon: Cuboid, labelKey: "cubeArea", descKey: "desc.cubeArea", category: "core" },
+  { id: "cube", icon: BiCube, labelKey: "cubeArea", descKey: "desc.cubeArea", category: "core" },
   { id: "clock", icon: Clock, labelKey: "clock", descKey: "desc.clock", category: "system" },
   { id: "profile", icon: User, labelKey: "profile", descKey: "desc.profile", category: "system" },
   { id: "battery", icon: Battery, labelKey: "battery", descKey: "desc.battery", category: "system" },

@@ -8,7 +8,7 @@ import i18n from "@/i18n";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, X, ChevronDown, Check, CheckSquare, FolderInput, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { effectiveTime, normalizePenalty } from "@/types";
+import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
 import { deriveSparkline } from "@/utils/insights";
 import type { Solve } from "@/types";
@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
-import type { StatsFilters, SortOrder, SolveFilterCategory } from "@/hooks/useStatsFilters";
+import { SolveFilters } from "./SolveFilters";
+import { countActiveFilters, type StatsFilters, type SortOrder } from "@/hooks/useStatsFilters";
 import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
@@ -33,55 +34,13 @@ const SORT_OPTIONS: {
     | "list.sortNewest"
     | "list.sortOldest"
     | "list.sortFastest"
-    | "list.sortSlowest"
-    | "list.sortPbGap";
+    | "list.sortSlowest";
 }[] = [
   { value: "newest", labelKey: "list.sortNewest" },
   { value: "oldest", labelKey: "list.sortOldest" },
   { value: "best", labelKey: "list.sortFastest" },
   { value: "worst", labelKey: "list.sortSlowest" },
-  { value: "pbDelta", labelKey: "list.sortPbGap" },
 ];
-
-// ─── Sub-components ────────────────────────────────────────────────────────
-
-interface FilterChipProps {
-  active: boolean;
-  count: number;
-  dot?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}
-
-/** Compact toggle chip with an optional colored dot and a count badge. */
-function FilterChip({ active, count, dot, onClick, children }: FilterChipProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.62rem] font-medium transition-colors",
-        // Touch (<768px): compact chips — 28px tall, tighter than the
-        // inflated 32px+ variant so five chips fit on one phone row.
-        "max-lg:h-7 max-lg:px-2.5 max-lg:text-[0.68rem]",
-        active
-          ? "bg-surface-2 text-ink"
-          : "bg-transparent text-ink-3/50 hover:text-ink-3",
-      )}
-    >
-      {dot && (
-        <span
-          className={cn(
-            "size-1.5 rounded-full transition-opacity",
-            dot,
-            !active && "opacity-40",
-          )}
-        />
-      )}
-      {children}
-      <span className="nums text-[0.55rem] tabular-nums opacity-60">{count}</span>
-    </button>
-  );
-}
 
 // ─── Main component ────────────────────────────────────────────────────────
 
@@ -169,34 +128,18 @@ export const SolveListPanel = memo(function SolveListPanel({
   const sparkData = useMemo(() => deriveSparkline(solves, solves.length), [solves]);
 
 
-  // Chip counts (from the full unfiltered set so they don't change when
-  // you toggle a penalty chip).
-  const chipCounts = useMemo(() => {
-    let clean = 0, plus2 = 0, dnf = 0, smart = 0, virtual = 0;
-    for (const s of allSolves) {
-      const pen = normalizePenalty(s.penalty);
-      if (pen === "none") clean++;
-      else if (pen === "+2") plus2++;
-      else if (pen === "DNF") dnf++;
-      if (s.source === "smart") smart++;
-      if (s.source === "virtual") virtual++;
-    }
-    return { clean, plus2, dnf, smart, virtual };
-  }, [allSolves]);
-
+  // Every filter option and count inside `SolveFilters` is derived from the
+  // full unfiltered set of this event, never from a hardcoded list: a solver
+  // who only ever used Petrus sees Petrus, and a cube deleted from the Locker
+  // still has solves worth filtering to. `countActiveFilters` is the single
+  // source of "is anything narrowing the list", so the trigger badge and this
+  // flag can never disagree.
   const isFiltered =
     filteredCount !== totalCount ||
     filters.search.trim().length > 0 ||
-    filters.activeFilter !== null;
+    countActiveFilters(filters) > 0;
   const currentSort =
     SORT_OPTIONS.find((o) => o.value === filters.sort) ?? SORT_OPTIONS[0];
-
-  // ── Handlers ──────────────────────────────────────────────────────────
-  const toggleFilterCategory = (cat: SolveFilterCategory) => {
-    setFilters({
-      activeFilter: filters.activeFilter === cat ? null : cat,
-    });
-  };
 
   // ── Empty states ──────────────────────────────────────────────────────
   const showNoSolvesState = totalCount === 0;
@@ -319,51 +262,17 @@ export const SolveListPanel = memo(function SolveListPanel({
           </div>
         )}
 
-        {/* Filter chips with counts */}
-        {totalCount > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
-            <FilterChip
-              active={filters.activeFilter === "clean"}
-              count={chipCounts.clean}
-              dot="bg-ready"
-              onClick={() => toggleFilterCategory("clean")}
-            >
-              {t("common.clean")}
-            </FilterChip>
-            <FilterChip
-              active={filters.activeFilter === "+2"}
-              count={chipCounts.plus2}
-              dot="bg-plus2"
-              onClick={() => toggleFilterCategory("+2")}
-            >
-              +2
-            </FilterChip>
-            <FilterChip
-              active={filters.activeFilter === "DNF"}
-              count={chipCounts.dnf}
-              dot="bg-dnf"
-              onClick={() => toggleFilterCategory("DNF")}
-            >
-              DNF
-            </FilterChip>
-            <FilterChip
-              active={filters.activeFilter === "smart"}
-              count={chipCounts.smart}
-              dot="bg-ink"
-              onClick={() => toggleFilterCategory("smart")}
-            >
-              Smart
-            </FilterChip>
-            <FilterChip
-              active={filters.activeFilter === "virtual"}
-              count={chipCounts.virtual}
-              dot="bg-phase-violet"
-              onClick={() => toggleFilterCategory("virtual")}
-            >
-              Virtual
-            </FilterChip>
-          </div>
-        )}
+        {/* The unified filter surface: a result segment plus one popover with
+            a section per dimension (source, method, cube). Rendered only when
+            there is something to filter — an empty control would be a lie
+            about what exists. */}
+        {totalCount > 0 ? (
+          <SolveFilters
+            filters={filters}
+            setFilters={setFilters}
+            allSolves={allSolves}
+          />
+        ) : null}
 
         {/* Search + reset */}
         <div className="flex items-center gap-2 px-2.5 pb-2.5">

@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { hapticTap } from "@/utils/haptics";
 import { ItemCard } from "./ItemCard";
 import { ItemDetailPanel } from "./ItemDetailPanel";
+import { useCubeUsage } from "../useCubeStats";
 import { MobileCollectionFilters } from "./MobileCollectionFilters";
 import { MobileCollectionNav } from "./MobileCollectionNav";
 import {
@@ -97,6 +98,8 @@ export interface CollectionTouchProps {
 }
 
 export function CollectionTouchLayout(props: CollectionTouchProps) {
+  // One grouped solve-count query for the whole phone grid (see ItemGrid).
+  const usage = useCubeUsage();
   const {
     state,
     items,
@@ -277,6 +280,7 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
                   typeName={type?.name}
                   cubeOrder={cubeOrderFor(type?.puzzleCategory)}
                   selected={item.id === selectedItem?.id}
+                  solveCount={usage.get(item.id)?.count}
                   compact
                   locale={locale}
                   onSelect={() => onSelectItem(item)}

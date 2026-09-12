@@ -20,7 +20,8 @@
     "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics",
     "updateAvailable": "Update available",
     "updateAvailableBody": "A new version of CubeForge is ready. Reload when convenient.",
-    "reload": "Reload"
+    "reload": "Reload",
+    "noCube": "No cube"
   },
   "meta": {
     "brand": "CubeForge",
@@ -1286,11 +1287,17 @@
       "empty": "No recognized cases with split recognition data yet. Solve with a Smart Cube or the Virtual Cube to accumulate data."
     },
     "list": {
+      "filters": "Filters",
+      "filterByResult": "Filter by result",
+      "all": "All",
+      "source": "Source",
+      "method": "Method",
+      "myCube": "My cube",
+      "removeFilter": "Remove filter {{label}}",
       "sortNewest": "Newest",
       "sortOldest": "Oldest",
       "sortFastest": "Fastest",
       "sortSlowest": "Slowest",
-      "sortPbGap": "PB gap",
       "trend": "Trend",
       "avg": "avg {{time}}",
       "searchPlaceholder": "Search time, scramble, DNF, notes…",
@@ -3905,6 +3912,21 @@
     }
   },
   "collection": {
+    "stats": {
+    "title": "Solves",
+    "best": "Best single",
+    "ao5": "Best Ao5",
+    "ao12": "Best Ao12",
+    "mean": "Mean",
+    "lastUsed": "Last used",
+    "loading": "Looking up the solves of this cube…",
+    "empty": "No solves with this cube yet.",
+    "emptyHint": "Pick it as the active cube in the dock and its solves will show up here.",
+    "count_one": "{{count}} solve",
+    "count_other": "{{count}} solves",
+    "cardCount_one": "{{count}} solve with this cube",
+    "cardCount_other": "{{count}} solves with this cube"
+    },
     "eyebrow": "Gear",
     "title": "Locker",
     "summary": "{{total}} items · {{cubes}} owned · {{wishlist}} on the wishlist",

@@ -22,7 +22,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Heart, Star } from "lucide-react";
+import { Activity, Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItemMedia } from "./ItemMedia";
 import { usePhotoUrl } from "../usePhotoUrl";
@@ -35,6 +35,12 @@ export interface ItemCardProps {
   /** 3D order for cube renders (2×2 vs 3×3). */
   cubeOrder?: number;
   selected: boolean;
+  /**
+   * How many solves this cube has, when it can have any (cube categories
+   * only). Omitted or 0 renders nothing: a "0 solves" badge on a catalogue of
+   * fifty items is noise, not information.
+   */
+  solveCount?: number;
   /** Touch density: squares the media, tightens the body, pins the actions. */
   compact?: boolean;
   onSelect: () => void;
@@ -49,6 +55,7 @@ export function ItemCard({
   typeName,
   cubeOrder,
   selected,
+  solveCount,
   compact = false,
   onSelect,
   onTogglePrimary,
@@ -197,6 +204,18 @@ export function ItemCard({
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
+            {solveCount ? (
+              <span
+                title={t("stats.cardCount", { count: solveCount })}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 tabular-nums text-ink-3",
+                  compact ? "text-[0.6rem]" : "text-[0.66rem]",
+                )}
+              >
+                <Activity className={cn(compact ? "size-2.5" : "size-3")} />
+                {solveCount}
+              </span>
+            ) : null}
             {item.rating ? (
               <span
                 className={cn(

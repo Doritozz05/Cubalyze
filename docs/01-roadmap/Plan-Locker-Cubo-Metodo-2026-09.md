@@ -1,7 +1,8 @@
 # Plan — Método por evento, Locker en la BD, cubo por solve y pieza del dock
 
-> Estado: **fases 1–3 hechas y verificadas** (2026-09-12); la **fase 4 está
-> diseñada y pendiente de ejecutar**. Rama: `exp/cube-collection`.
+> Estado: **fases 1–3 hechas, commiteadas y pusheadas** (2026-09-12); la **fase 4
+> está implementada y verificada, a la espera de commit**. Rama:
+> `exp/cube-collection`.
 > Alcance de este documento: **fases 1–4**. Las fases 5–8 (identificación
 > automática del smart cube, sincronización del Locker, bitácora de setups y
 > estante público) quedan **fuera** y no bloquean nada: el diseño deja los
@@ -395,13 +396,169 @@ comentario que explica por qué el resolver sigue desacoplado del union.
 
 ## 5. Fase 4 — Stats por cubo (derivadas, nunca sincronizadas)
 
-`computeStats`, `averageOf` y `computeBpaWpa` ya reciben arrays, así que esto es
-un **filtro**: dos consultas nuevas en el repo (`findByCube`, `countByCube` con
-el índice) y un hook cacheado por revisión. `solves` en memoria es por sesión,
-así que el histórico no se puede sacar de ahí. Se muestran en la ficha del item
-(solves, mejor single, mejor ao5, último uso) y como badge discreto en la pieza.
-Opcional barato: filtro por cubo en Insights copiando el de método. Recuerda
-ADR-029 §2: los agregados **se recalculan por replay, nunca se sincronizan**.
+> Estado: **hecha, sin commit** (2026-09-12, a la espera del visto bueno).
+> `pnpm typecheck` 33/33, suite completa **3115 pasan / 0 fallan** (12 saltados),
+> lint sin errores y build de producción OK. **No toca ni el esquema de la nube
+> ni el sync**: no hay nada que migrar ni que desplegar por esta fase.
+
+### 5.1 El diseño, en una frase
+
+`computeStats`/`averageOf` ya reciben arrays, así que esto es un **filtro** sobre
+el histórico, no un contador: ADR-029 §2 dice que los agregados **se recalculan
+por replay, nunca se sincronizan**, porque un contador sincronizado se
+desincroniza en cuanto un dispositivo edita un penalty offline y entonces mientes
+en los dos sitios. `solves` en memoria es **de la sesión activa**, así que el
+histórico por cubo no se puede sacar de ahí: va por consulta.
+
+### 5.2 Datos
+
+Dos métodos en `SolvesRepository`, apoyados en `idx_solves_cube` (035):
+
+- `findByCube(cubeId)` — todo el histórico de un cubo, **cronológico** (mismo
+  orden que `findAll`, para que nadie tenga que invertir nada) y sin demo.
+- `summarizeCubes()` — **una** consulta agrupada para toda la rejilla
+  (`COUNT(*)` + `MAX(timestamp)` por `cube_id`). Preguntar por tarjeta serían N
+  consultas por render.
+
+### 5.3 Derivación pura
+
+`views/Collection/cubeStats.ts`: `cubeStatsFor(rows)` → `count`, `valid`, `best`
+(con el id del solve y su timestamp), `mean`, `bestAo5`, `bestAo12` y
+`lastUsedAt`. Tres decisiones deliberadas:
+
+- **Reutiliza `averageOf`**, no reinventa el recorte: un Ao5 de un cubo tiene que
+  significar exactamente lo mismo que el Ao5 de la sesión, o los dos números
+  discreparán sobre los mismos cinco solves.
+- **"Mejor Ao5" es el mejor de TODA la historia**, no el de los últimos cinco
+  (que es lo que muestra la cabecera de sesión). Son preguntas distintas.
+- **Es insensible al orden**: ordena por timestamp una vez, así que pasar el
+  array tal como lo da la app (nuevo→viejo) no puede dar un Ao5 equivocado.
+
+`formatLastUsed` usa `Intl.RelativeTimeFormat` en vez de claves de traducción:
+el navegador ya sabe decir "hace 3 días" en cada idioma que soporta, y cadenas
+escritas a mano serían una cosa más que mantener y estarían mal en cualquier
+idioma que no hayamos traducido.
+
+### 5.4 Presentación
+
+- **Ficha del item** (solo categorías `cube`, que son las únicas que pueden ser
+  destino de una atribución): sección "Solves" con el recuento en la cabecera y
+  una tabla con la misma gramática que la de especificaciones — mejor single,
+  mejor Ao5, mejor Ao12, media y último uso. Con cero solves: un vacío honesto
+  que explica cómo hacer que aparezcan.
+- **Rejilla**: un contador discreto en el pie de cada tarjeta, con **una sola**
+  consulta agrupada por rejilla (no una por tarjeta). Se omite cuando es 0: un
+  "0 solves" en un catálogo de cincuenta cosas es ruido.
+- **Caché por revisión**: los dos hooks (`useCubeStats`, `useCubeUsage`) leen
+  `syncStore.dataRevision`, que cambia en cada escritura local y en cada ciclo de
+  sync (incluido el de otra pestaña), así que los números se refrescan justo
+  cuando las filas podrían haber cambiado y un re-render por otro motivo no
+  cuesta nada. Un fallo de BD no rompe el Locker: se degrada a "sin números".
+
+### 5.5 Tests de la fase
+
+`views/Collection/__tests__/cubeStats.test.ts` (18): vacío, todo-DNF, DNF que no
+gana el mejor single, ventana incompleta, +2 en single y media, independencia del
+orden, mejor ventana de la historia (no la última), Ao12, ventana que es DNF
+(descartada, no Infinity), un único DNF tolerado porque el recorte se lo come,
+último uso, ayudantes de penalty y el formateador relativo en EN y ES (incluido
+"yesterday" y un reloj que va hacia atrás).
+
+`packages/database`: 5 casos nuevos en `solve-cube-attribution.test.ts` (13 en
+total) contra sqlite-wasm real — `findByCube` solo con los de ese cubo y en
+orden, sin demo, ids inexistentes, `summarizeCubes` en una pasada con los no
+atribuidos fuera y el demo también, resumen vacío, y el caso que justifica todo
+el diseño: **un cubo borrado del Locker sigue respondiendo**.
+
+### 5.6 Los filtros de Insights (cubo + método), en el mismo paso
+
+Van juntos porque comparten hueco y porque uno **revive** el otro: el arreglo de
+la Fase 1 (`passesMethodFilter`) era correcto pero **latente**, porque ningún
+control asignaba `filters.methods`. Ahora hay uno.
+
+- **De dónde salen las opciones.** De **la historia**, no de listas fijas ni del
+  Locker: un método que solo tú usas aparece (Petrus, ZZ), y un cubo con 0 solves
+  no ensucia el selector. Además, un cubo **borrado del Locker sigue siendo
+  filtrable** porque sus solves existen y su label está congelado en la fila.
+- **Regla de exclusión, igual para los dos.** Con un filtro activo, un solve
+  **sin** ese dato queda fuera: un 2×2 no es un voto de CFOP y un solve sin cubo
+  no es un solve con ese cubo. Lo importante es que así **el recuento de la
+  opción coincide con lo que el filtro deja pasar** ("GAN 12 · 2" muestra dos
+  filas, no tres).
+- **El evento manda sobre el cubo.** Un cubo pertenece a un evento, así que
+  cambiar de evento **limpia el filtro de cubo** (`mergeStatsFilters`, pura y
+  con test): sin eso quedaría un filtro que no puede casar nada y la lista se
+  vaciaría sin motivo visible.
+- **Nomenclatura.** En Insights "Cube" ya significaba *evento* (`dashboard.cube`
+  → 3×3). El nuevo control es **"My cube" / "Mi cubo"**, para que no haya dos
+  cosas distintas llamadas igual.
+
+Revivido el filtro de método, la deuda de la Fase 1 queda cerrada: ya no hay
+código correcto sin efecto visible en esta área.
+
+### 5.7 Tests de los filtros
+
+`hooks/__tests__/statsCubeFilter.test.ts` (21): pasa-todo sin selección, solo el
+cubo elegido, exclusión de los no atribuidos, coherencia entre el recuento de la
+opción y lo que deja pasar el filtro, opciones derivadas de la historia
+(incluido un cubo ya borrado del Locker y el fallback al id sin label), el
+**escenario exacto de la Fase 1** (un 2×2 no se cuela en un filtro CFOP), la
+combinación Y de método + cubo, las cinco reglas de `mergeStatsFilters`
+(incluida la no-mutación) y la lista de métodos de un evento sin métodos.
+
+### 5.8 Un footgun cerrado de paso
+
+`DEFAULT_FILTERS` contenía un `Set`, así que hacer `{ ...DEFAULT_FILTERS }`
+repartía **el mismo Set** a todas las instancias del hook y a `reset()`. Nada lo
+mutaba (los toggles crean un Set nuevo), pero era suerte, no diseño. Ahora el
+objeto compartido **ya no existe**: `freshFilters()` construye Sets nuevos en
+cada llamada y es la única puerta al estado inicial y al reset, así que la
+versión anterior del footgun ya no es siquiera expresable.
+
+### 5.9 Filtros unificados + el cubo en la fila (2026-09-12)
+
+Dos mejoras sobre lo anterior, sin tocar ni una línea de `packages/statistics`.
+
+**El modelo: una dimensión, un control.** `activeFilter` era UN union
+excluyente (`"clean" | "+2" | "DNF" | "smart" | "virtual"`) que mezclaba dos
+preguntas distintas — la penalización de un solve y cómo se grabó — así que
+elegir "Smart" escondía todos los +2. Ahora son dimensiones independientes que
+se aplican con Y: `penalty` (single-select, porque un solve es limpio O +2 O
+DNF), `sources`, `methods` y `cubeId` (multi-select / single-select según
+corresponda).
+
+**La UI: una barra, un popover, un chip por dimensión.** El resultado tiene
+control segmentado permanente (es lo que más se usa); el resto vive en un
+popover con **una sección por dimensión** (`SolveFilters.tsx`). Las opciones y
+sus recuentos salen siempre de la historia, así que añadir una dimensión futura
+es una sección + un predicado: los recuentos, el badge del disparador y los
+chips quitables se derivan de `filters`, y no pueden desincronizarse.
+`countActiveFilters` es la única fuente de "hay algo filtrando".
+Reset **no** está en el popover a propósito: limpia también la búsqueda y el
+orden, así que vive junto al buscador.
+
+**El cubo, en la ficha (no en la lista).** `CubeBadge` (átomo compartido)
+muestra el nombre congelado junto a los chips de penalización / método / origen
+en la **cabecera del detalle del solve** (`SolveAnalysisPanel`), que es la
+columna derecha de Insights y también la vista táctil. **No** va en las filas
+de ninguna lista: ahí repetiría el mismo nombre columna abajo y añadiría ruido
+(sobre todo "Sin cubo" en todo el histórico anterior a la Fase 3). En la ficha,
+un solve sin atribuir muestra un "Sin cubo" apagado y **nunca un hueco**: la
+ausencia de dato es información y es justo lo que la ficha debe decir.
+
+**Un bug encontrado y borrado.** El orden `pbDelta` ("PB gap") comparaba
+`(a − pb) − (b − pb)` con un único `pb`, o sea `a − b`: era **idéntico a
+"Fastest"** (un DNF cae al final en ambos). Opción duplicada que no hacía nada,
+fuera. La clave `list.sortPbGap` y las dos que quedaron huérfanas
+(`list.filterByCube`, `list.allCubes`) se retiran de `en`/`es`.
+
+**Tests nuevos** (`statsFilterDimensions.test.ts`, 22): el `all` como ausencia
+de filtro, `clean` como "ninguna penalización", normalización de casos legacy
+(`dnf`, `plus2`), la no-filtración cruzada entre `+2` y `DNF`, el origen vacío,
+la exclusión de los no atribuidos, los recuentos y opciones derivados, la
+independencia de dimensiones (el bug del modelo viejo: penalización y origen
+como Y, no como elección única) y que `freshFilters()` reparte Sets
+independientes.
 
 ---
 
