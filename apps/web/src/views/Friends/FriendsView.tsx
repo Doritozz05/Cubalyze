@@ -50,15 +50,24 @@ import { cn } from "@/lib/utils";
 type Confirm = { kind: "remove" | "block" | "unblock"; userId: string; name: string } | null;
 
 export interface FriendsViewProps {
-  /** Opens Settings; used by the "compartir" shortcut. */
-  onOpenSettings?: () => void;
+  /**
+   * Opens Settings pre-selected to *Privacidad y amigos*.
+   *
+   * Deliberately NOT the same hook the Profile screen gets: that one opens the
+   * profile editor, and the "¿qué comparto?" shortcut here asks a different
+   * question — the four consent switches. Sharing one callback sent it to the
+   * profile editor, which answers nothing.
+   */
+  onOpenPrivacySettings?: () => void;
 }
 
-export function FriendsView({ onOpenSettings }: FriendsViewProps) {
+export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
   const { t } = useTranslation("friends");
   const { profile } = useProfile();
   const { user, configured, signInWithGoogle } = useAccount();
-  const { data, loading, error } = useFriendDirectory();
+  // The directory is account data: without a session the read can only 401, so
+  // it is not attempted at all (the signed-out card below is the whole screen).
+  const { data, loading, error } = useFriendDirectory({ enabled: Boolean(user) });
   const actions = useFriendActions();
   const [selected, setSelected] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
@@ -193,10 +202,10 @@ export function FriendsView({ onOpenSettings }: FriendsViewProps) {
         <h1 className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
           {t("title")}
         </h1>
-        {onOpenSettings && (
+        {onOpenPrivacySettings && (
           <button
             type="button"
-            onClick={onOpenSettings}
+            onClick={onOpenPrivacySettings}
             className="cursor-pointer text-[0.68rem] text-ink-3 underline decoration-dotted transition-colors hover:text-ink"
           >
             {t("sharing.shortcut")}

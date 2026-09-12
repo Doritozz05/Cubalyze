@@ -69,8 +69,8 @@ export function ShowcaseItemDetail({
       getSupabaseClient(),
       owner,
       photoIds.map((photoId) => ({ itemId: item.id, photoId, size: "full" as const })),
-    ).then((urls) => {
-      if (alive) setFullUrls(urls);
+    ).then((batch) => {
+      if (alive) setFullUrls(batch.urls);
     });
     return () => {
       alive = false;

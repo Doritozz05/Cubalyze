@@ -84,6 +84,12 @@ export interface MainStageProps {
   onNavigate: (view: ViewId) => void;
   /** Opens Settings pre-selected to the profile section. */
   onOpenSettings: () => void;
+  /**
+   * Opens Settings pre-selected to *Privacidad y amigos*. A different
+   * destination on purpose: the Friends screen's "¿qué comparto?" shortcut
+   * asks about the consent switches, not about the profile editor.
+   */
+  onOpenPrivacySettings?: () => void;
   /** Rendered when `activeView === "timer"`. */
   timerStage: React.ReactNode;
 }
@@ -111,6 +117,7 @@ export function MainStage(props: MainStageProps) {
     onVirtualSolveComplete,
     onNavigate,
     onOpenSettings,
+    onOpenPrivacySettings,
     timerStage,
   } = props;
 
@@ -201,7 +208,7 @@ export function MainStage(props: MainStageProps) {
   if (activeView === "friends") {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <FriendsView onOpenSettings={onOpenSettings} />
+        <FriendsView onOpenPrivacySettings={onOpenPrivacySettings} />
       </Suspense>
     );
   }

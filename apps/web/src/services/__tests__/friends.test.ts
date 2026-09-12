@@ -292,6 +292,39 @@ describe("friends service — profile & showcase", () => {
     expect(res.data.profile.handle).toBe("ana");
   });
 
+  it("degrades the MINIMAL projection without inventing facts", async () => {
+    // A pending request, a block or a friend who closed their profile sends
+    // identity only: no bio, no photo avatar, no country, no methods — and no
+    // made-up main puzzle (it used to default to "333", which is a claim about
+    // a stranger, not a fallback).
+    const minimal = {
+      user_id: "u-2",
+      display_name: "Bea",
+      handle: "bea",
+      avatar_kind: "photo",
+    };
+    const { supabase } = client({
+      friend_list: {
+        data: { ok: true, list: { friends: [{ profile: minimal, shares: {} }] } },
+      },
+    });
+    const res = await fetchFriendDirectory(supabase);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.friends[0].profile).toEqual({
+      userId: "u-2",
+      displayName: "Bea",
+      handle: "bea",
+      bio: "",
+      avatarKind: "photo",
+      avatarData: undefined,
+      mainPuzzle: "",
+      declaredMethods: [],
+      country: "",
+      createdAt: 0,
+    });
+  });
+
   it("maps a showcase page: whitelisted item fields, taxonomy and cursor", async () => {
     const { supabase, calls } = client({
       friend_locker: {
@@ -417,6 +450,10 @@ describe("friends service — stats", () => {
     const res = await fetchFriendStats(supabase, "u-1", 30);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
+    // `owner` is gone from the contract: identity already travels in the
+    // directory and the profile, and repeating it here was a second way to
+    // read an extended profile that `share_stats` does not gate.
+    expect("owner" in res.data).toBe(false);
     expect(res.data.overall.lastActiveAt).toBe(600000);
     expect(res.data.byPuzzle[0].ao5).toEqual({ ms: 10667 });
     expect(res.data.byPuzzle[0].ao12).toBeNull();
@@ -432,16 +469,24 @@ describe("friends service — photo signing", () => {
   const withFunctions = (invoke: ReturnType<typeof vi.fn>) =>
     ({ functions: { invoke } }) as unknown as SupabaseClient;
 
-  it("returns the signed URLs keyed by item:photo", async () => {
+  it("returns the signed URLs keyed by item:photo, with the expiry the server set", async () => {
     const invoke = vi.fn(async () => ({
-      data: { ok: true, urls: { "i1:p1": "https://signed", "i2:p2": "https://signed2" } },
+      data: {
+        ok: true,
+        urls: { "i1:p1": "https://signed", "i2:p2": "https://signed2" },
+        ttl: 60,
+        expires_at: 1_700_000_060_000,
+      },
       error: null,
     }));
-    const urls = await fetchPhotoUrls(withFunctions(invoke), "u-1", [
+    const batch = await fetchPhotoUrls(withFunctions(invoke), "u-1", [
       { itemId: "i1", photoId: "p1" },
       { itemId: "i2", photoId: "p2", size: "full" },
     ]);
-    expect(urls).toEqual({ "i1:p1": "https://signed", "i2:p2": "https://signed2" });
+    expect(batch.urls).toEqual({ "i1:p1": "https://signed", "i2:p2": "https://signed2" });
+    // The client has to know WHEN to ask again: a 60 s URL that nobody
+    // re-signs is a photo that disappears on the next render.
+    expect(batch.expiresAt).toBe(1_700_000_060_000);
     expect(invoke).toHaveBeenCalledWith("friend-photo-urls", {
       body: {
         owner: "u-1",
@@ -453,23 +498,36 @@ describe("friends service — photo signing", () => {
     });
   });
 
+  it("reports no expiry when the server did not say", async () => {
+    const invoke = vi.fn(async () => ({
+      data: { ok: true, urls: { "i:p": "https://signed" } },
+      error: null,
+    }));
+    const batch = await fetchPhotoUrls(withFunctions(invoke), "u-1", [
+      { itemId: "i", photoId: "p" },
+    ]);
+    expect(batch.urls).toEqual({ "i:p": "https://signed" });
+    expect(batch.expiresAt).toBeNull();
+  });
+
   it("never throws and never returns junk on failure — the cube render takes over", async () => {
-    expect(await fetchPhotoUrls(null, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual({});
-    expect(await fetchPhotoUrls(withFunctions(vi.fn()), "u-1", [])).toEqual({});
+    const empty = { urls: {}, expiresAt: null };
+    expect(await fetchPhotoUrls(null, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual(empty);
+    expect(await fetchPhotoUrls(withFunctions(vi.fn()), "u-1", [])).toEqual(empty);
 
     const errored = withFunctions(vi.fn(async () => ({ data: null, error: new Error("403") })));
-    expect(await fetchPhotoUrls(errored, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual({});
+    expect(await fetchPhotoUrls(errored, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual(empty);
 
     const threw = withFunctions(
       vi.fn(async () => {
         throw new Error("boom");
       }),
     );
-    expect(await fetchPhotoUrls(threw, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual({});
+    expect(await fetchPhotoUrls(threw, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual(empty);
 
     // A payload that is not a string map is discarded, not passed to <img>.
     const junk = withFunctions(vi.fn(async () => ({ data: { urls: { "i:p": 42 } }, error: null })));
-    expect(await fetchPhotoUrls(junk, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual({});
+    expect(await fetchPhotoUrls(junk, "u-1", [{ itemId: "i", photoId: "p" }])).toEqual(empty);
   });
 
   it("keys photos the same way the server does", () => {

@@ -33,6 +33,17 @@ import { ShowcaseItemDetail } from "./ShowcaseItemDetail";
 import { FRIEND_FAILURE_KEY } from "../friendsCopy";
 import { cn } from "@/lib/utils";
 
+/**
+ * How long before a signed batch dies the next one is requested, and the
+ * smallest life a batch may have and still be worth re-arming. Signed URLs
+ * live 60 s server-side, so the normal path re-signs at ~45 s.
+ *
+ * They are deliberately the same number: it makes the re-arm condition a
+ * single comparison (`delay >= REFRESH_MARGIN_MS`) with no floor to fall back
+ * on. A floor is what turns clock skew into a loop — see the effect below.
+ */
+const REFRESH_MARGIN_MS = 15_000;
+
 export interface ShowcaseGridProps {
   owner: string;
   page: ShowcasePage | null;
@@ -79,14 +90,46 @@ export function ShowcaseGrid({
     [items],
   );
 
+  // A different friend means a different set of signatures. Clearing on `owner`
+  // (instead of merging forever) means a URL signed for one Locker can never be
+  // painted on another's item, even if two collections happen to reuse the same
+  // item/photo ids.
+  useEffect(() => {
+    setPhotoUrls({});
+  }, [owner]);
+
   useEffect(() => {
     if (firstPhotoRefs.length === 0) return;
     let alive = true;
-    void fetchPhotoUrls(getSupabaseClient(), owner, firstPhotoRefs).then((urls) => {
-      if (alive && Object.keys(urls).length > 0) setPhotoUrls((prev) => ({ ...prev, ...urls }));
-    });
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    // Signing is re-armed BEFORE the TTL runs out. Signed URLs live 60 s and the
+    // map is what paints any card that renders after that (a new page, a
+    // re-render): without this, a batch signed once would quietly turn into
+    // broken images a minute later. A refused or empty batch is NOT retried —
+    // retrying a rate limit is how you turn one refusal into a hammer.
+    const sign = async () => {
+      const batch = await fetchPhotoUrls(getSupabaseClient(), owner, firstPhotoRefs);
+      if (!alive) return;
+      if (Object.keys(batch.urls).length === 0) return;
+      setPhotoUrls((prev) => ({ ...prev, ...batch.urls }));
+      if (batch.expiresAt == null) return;
+      // Only when the batch has more than the margin of life left AFTER the
+      // margin is set aside. A batch that does not means our clock reads ahead
+      // of the signer's, and every re-signed batch would be born equally
+      // short: a 15 s timer would re-fire forever, which is a hammer on our
+      // own edge function over URLs that were about to die anyway. Stopping is
+      // the honest move — the URLs already handed out stay valid for the
+      // browser (expiry is enforced server-side), and the next page or friend
+      // signs from scratch.
+      const delay = batch.expiresAt - Date.now() - REFRESH_MARGIN_MS;
+      if (delay >= REFRESH_MARGIN_MS) timer = setTimeout(() => void sign(), delay);
+    };
+
+    void sign();
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
   }, [owner, firstPhotoRefs]);
 

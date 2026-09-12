@@ -20,7 +20,7 @@
  * other; a full write is idempotent and cheap.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -38,6 +38,12 @@ export function PrivacySection() {
   const { settings, loading, error, saving, save, reload } = usePrivacy();
   // Local copy so a toggle flips instantly; the server echo replaces it.
   const [draft, setDraft] = useState<FriendVisibility | null>(null);
+  //
+  // `edits` must live here, with the other hooks: the two early returns below
+  // would otherwise make this a CONDITIONAL hook, changing the hook order
+  // between renders. It counts the toggle writes so only the newest one rolls
+  // back (see `update`).
+  const edits = useRef(0);
 
   useEffect(() => {
     if (settings) setDraft(settings);
@@ -79,16 +85,23 @@ export function PrivacySection() {
    * BACK and the failure is shown. Leaving a consent switch flipped while the
    * server still has the old value is the one kind of UI lie that matters
    * here — it says "shared" for something that is not.
+   *
+   * The rollback is ordered too. Two switches flipped in a row produce two
+   * writes (`usePrivacy` serialises them); if the FIRST one fails, restoring
+   * ITS previous snapshot would undo the second switch — a consent screen is
+   * the last place to show a state nobody asked for. Only the newest edit rolls
+   * back; an older failure still reports itself.
    */
   const update = (patch: Partial<FriendVisibility>) => {
     if (!current) return;
     const previous = current;
     const next = { ...current, ...patch };
+    const edit = ++edits.current;
     setDraft(next);
     void save(next).then((res) => {
       if (res.ok) return;
-      setDraft(previous);
       toast.error(t(FRIEND_FAILURE_KEY[res.reason]));
+      if (edit === edits.current) setDraft(previous);
     });
   };
 

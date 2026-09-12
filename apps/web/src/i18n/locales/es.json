@@ -58,7 +58,8 @@
     "more": "Más",
     "moreOptions": "Más opciones",
     "primary": "Principal",
-    "friends": "Amigos"
+    "friends": "Amigos",
+    "friendsPending": "{{count}} solicitudes de amistad pendientes"
   },
   "friends": {
     "title": "Amigos",
@@ -92,7 +93,8 @@
         "taken": "Ese handle ya está pillado. Prueba con otro.",
         "invalid": "Ese handle no se puede usar: revisa el formato.",
         "offline": "No pudimos comprobarlo: pareces estar sin conexión. No se ha cambiado nada.",
-        "unauthorized": "Inicia sesión para reservar tu handle."
+        "unauthorized": "Inicia sesión para reservar tu handle.",
+        "rate_limited": "Demasiados intentos seguidos. Espera un momento y vuelve a probar."
       }
     },
     "add": {
@@ -202,7 +204,7 @@
     },
     "privacy": {
       "shareProfile": "Compartir mi perfil",
-      "shareProfileHint": "Nombre, handle, avatar, país y métodos declarados. Es lo que te identifica ante un amigo.",
+      "shareProfileHint": "Nombre, handle, avatar de foto, bio, país y métodos declarados. Apagado, los demás solo ven tu nombre, handle y tu CubeMark.",
       "shareStats": "Compartir mi progreso",
       "shareStatsHint": "Estadísticas agregadas por rompecabezas y un mapa de actividad diaria del último año. El mapa revela cuándo practicas.",
       "shareLocker": "Compartir mi Armario",

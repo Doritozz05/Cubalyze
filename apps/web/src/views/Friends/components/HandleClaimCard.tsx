@@ -15,6 +15,9 @@
  *                is still free as far as we know.
  *  - `unauthorized` → the session is gone; the fix is signing in again, which
  *                is a different instruction from "check your connection".
+ *  - `rate_limited` → too many attempts. It says WAIT, not "that name is bad":
+ *                the server enforces a burst window and a daily ceiling on
+ *                `handle_claim` precisely so `taken` cannot be swept.
  *
  * The input is normalised for display (`@`, lowercase) but the SERVER decides:
  * a client that pre-validates is a convenience, never the rule. This is also
@@ -27,6 +30,7 @@ import { AtSign, Check, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useHandle } from "@/hooks/useFriends";
 import { cn } from "@/lib/utils";
+import type { HandleClaimFailure } from "@cubeforge/sync-engine";
 
 export interface HandleClaimCardProps {
   /** The handle already in the local profile ('' when none yet). */
@@ -38,9 +42,10 @@ export function HandleClaimCard({ current, className }: HandleClaimCardProps) {
   const { t } = useTranslation("friends");
   const { claim, busy } = useHandle();
   const [value, setValue] = useState("");
-  const [error, setError] = useState<"taken" | "invalid" | "offline" | "unauthorized" | null>(
-    null,
-  );
+  // Typed from the engine, not re-declared here: adding a rejection reason used
+  // to mean touching the union in two places, and the one that gets forgotten
+  // is the copy that renders it.
+  const [error, setError] = useState<HandleClaimFailure | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
 
   async function submit(raw: string) {

@@ -58,7 +58,8 @@
     "more": "More",
     "moreOptions": "More options",
     "primary": "Primary",
-    "friends": "Friends"
+    "friends": "Friends",
+    "friendsPending": "{{count}} pending friend requests"
   },
   "friends": {
     "title": "Friends",
@@ -92,7 +93,8 @@
         "taken": "That handle is taken. Try another one.",
         "invalid": "That handle can't be used — check the format.",
         "offline": "We couldn't check it: you appear to be offline. Nothing was changed.",
-        "unauthorized": "Sign in to claim your handle."
+        "unauthorized": "Sign in to claim your handle.",
+        "rate_limited": "Too many attempts just now. Wait a moment and try again."
       }
     },
     "add": {
@@ -202,7 +204,7 @@
     },
     "privacy": {
       "shareProfile": "Share my profile",
-      "shareProfileHint": "Name, handle, avatar, country and declared methods. This is what identifies you to a friend.",
+      "shareProfileHint": "Name, handle, photo avatar, bio, country and declared methods. Turned off, others only see your name, handle and CubeMark.",
       "shareStats": "Share my progress",
       "shareStatsHint": "Aggregated stats per puzzle plus a daily activity map of the last year. The map reveals when you practise.",
       "shareLocker": "Share my Locker",

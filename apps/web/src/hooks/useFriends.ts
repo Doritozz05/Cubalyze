@@ -7,9 +7,10 @@
  *
  *  1. **The directory is a module-level store** (`useSyncExternalStore`, the
  *     same pattern as `useProfile`/`useAccount`) because two places render the
- *     same data: the Friends view and the request badge in the rail. Two
- *     independent hook states would drift and double-fetch; one store with a
- *     TTL means the badge and the screen are never out of step.
+ *     same data: the Friends view and the incoming-request badge in the nav
+ *     rail. Two independent hook states would drift and double-fetch; one
+ *     store with a TTL means the badge and the screen are never out of step —
+ *     and the badge costs no extra request, it reads this store.
  *
  *  2. **Failure is state, not an exception.** `error` carries the
  *     `FriendsFailure` reason so the view can render real copy ("no eres
@@ -43,7 +44,6 @@ import {
   sendFriendRequest,
   unblockUser,
   type FriendDirectory,
-  type FriendEntry,
   type FriendProfileView,
   type FriendStats,
   type FriendVisibility,
@@ -67,6 +67,16 @@ interface DirectoryState {
 let state: DirectoryState = { data: null, loading: false, error: null };
 let loadedAt = 0;
 let inflight: Promise<void> | null = null;
+/**
+ * Invalidates whatever is still on the wire. Bumped by
+ * `resetFriendDirectory`, because clearing the store is not enough: a fetch
+ * that started a moment before a sign-out would otherwise resolve AFTER the
+ * wipe and write the previous account's friend list back into memory — exactly
+ * what the wipe exists to prevent on a shared device.
+ */
+let generation = 0;
+/** A forced refresh that arrived while an unforced one was already in flight. */
+let queuedForce = false;
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -89,16 +99,8 @@ function getSnapshot(): DirectoryState {
   return state;
 }
 
-/**
- * Read the directory, unless a fresh one is already in hand.
- *
- * Concurrent callers share one request (`inflight`): the badge and the view
- * mount together, and two RPCs for one screen would be pure quota waste.
- */
-export async function refreshFriendDirectory(opts?: { force?: boolean }): Promise<void> {
-  if (inflight) return inflight;
-  if (!opts?.force && state.data && Date.now() - loadedAt < DIRECTORY_TTL_MS) return;
-
+/** One read, applied only if the account has not changed in the meantime. */
+async function runFetch(gen: number): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) {
     setState({ data: null, loading: false, error: "unauthorized" });
@@ -106,18 +108,48 @@ export async function refreshFriendDirectory(opts?: { force?: boolean }): Promis
   }
 
   setState({ loading: true, error: null });
-  inflight = fetchFriendDirectory(supabase)
-    .then((res) => {
-      if (res.ok) {
-        loadedAt = Date.now();
-        setState({ data: res.data, loading: false, error: null });
-      } else {
-        setState({ loading: false, error: res.reason });
-      }
-    })
-    .finally(() => {
-      inflight = null;
-    });
+  const res = await fetchFriendDirectory(supabase);
+  if (gen !== generation) return; // otra cuenta: esta respuesta no es de nadie
+
+  if (res.ok) {
+    loadedAt = Date.now();
+    setState({ data: res.data, loading: false, error: null });
+  } else {
+    setState({ loading: false, error: res.reason });
+  }
+}
+
+/**
+ * Read the directory, unless a fresh one is already in hand.
+ *
+ * Concurrent callers share one request (`inflight`): the badge and the view
+ * mount together, and two RPCs for one screen would be pure quota waste.
+ *
+ * The exception is a FORCED read arriving while one is in flight. That is the
+ * post-mutation call: the in-flight answer was computed before the mutation, so
+ * returning it would show a list that is wrong by construction (accept a
+ * request right after opening the screen and the new friend does not appear).
+ * It is queued instead, and the forced read runs as soon as the wire is free.
+ */
+export async function refreshFriendDirectory(opts?: { force?: boolean }): Promise<void> {
+  const force = opts?.force ?? false;
+  if (!force && state.data && Date.now() - loadedAt < DIRECTORY_TTL_MS) return;
+
+  if (inflight) {
+    if (!force) return inflight;
+    queuedForce = true;
+    await inflight;
+    // Another forced caller may have resumed first and already started the
+    // re-read: share theirs instead of firing a second one.
+    if (inflight) return inflight;
+    if (!queuedForce) return;
+  }
+
+  queuedForce = false;
+  const gen = generation;
+  inflight = runFetch(gen).finally(() => {
+    inflight = null;
+  });
   return inflight;
 }
 
@@ -125,10 +157,16 @@ export async function refreshFriendDirectory(opts?: { force?: boolean }): Promis
  * Drop everything. Called on sign-out: a friend list is account data, and
  * leaving it in memory would show the previous account's friends to whoever
  * signs in next on a shared device.
+ *
+ * The generation bump is the other half of the promise: clearing the store
+ * evicts what is HERE, and the bump makes sure a response still travelling
+ * cannot put it back.
  */
 export function resetFriendDirectory(): void {
+  generation += 1;
   loadedAt = 0;
   inflight = null;
+  queuedForce = false;
   setState({ data: null, loading: false, error: null });
 }
 
@@ -137,12 +175,25 @@ export interface UseFriendDirectory extends DirectoryState {
   refresh: (force?: boolean) => Promise<void>;
 }
 
-export function useFriendDirectory(): UseFriendDirectory {
+export interface UseFriendDirectoryOptions {
+  /**
+   * Whether a read is worth attempting at all. The directory is account data,
+   * so the nav rail — mounted for everyone, signed in or not — passes
+   * `enabled: false` without a session rather than firing a request that can
+   * only come back `unauthorized`.
+   */
+  enabled?: boolean;
+}
+
+export function useFriendDirectory(opts?: UseFriendDirectoryOptions): UseFriendDirectory {
+  const enabled = opts?.enabled ?? true;
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
+  // `enabled` flips true the moment an account appears, which is exactly when
+  // the first read becomes possible (and stays a no-op with a warm store).
   useEffect(() => {
-    void refreshFriendDirectory();
-  }, []);
+    if (enabled) void refreshFriendDirectory();
+  }, [enabled]);
 
   const refresh = useCallback(
     (force = true) => refreshFriendDirectory({ force }),
@@ -228,13 +279,23 @@ export function useFriendDetail(userId: string | null): FriendDetail {
   // clicks in the same tick would both read `false` and fetch the SAME page
   // twice, appending every item of it twice. A ref flips before the await.
   const moreInFlight = useRef(false);
+  // Every read carries the number of the selection it belongs to. Nothing older
+  // than the newest one may write state: three parallel reads take different
+  // amounts of time, and the answer that arrives last is not the one the user
+  // is looking at. Without this, opening A and then B could leave A's stats on
+  // B's page — the classic stale-overwrite, and a data-correctness bug, not a
+  // cosmetic one.
+  const selection = useRef(0);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseClient();
+    const seq = ++selection.current;
     if (!supabase || !userId) {
       setProfile(null);
       setStats(null);
       setShowcase(null);
+      setErrors({});
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -244,6 +305,7 @@ export function useFriendDetail(userId: string | null): FriendDetail {
       fetchFriendStats(supabase, userId),
       fetchShowcase(supabase, userId),
     ]);
+    if (seq !== selection.current) return; // llegó tarde: ya hay otra selección
     setProfile(profileRes.ok ? profileRes.data : null);
     setStats(statsRes.ok ? statsRes.data : null);
     setShowcase(showcaseRes.ok ? showcaseRes.data : null);
@@ -263,10 +325,14 @@ export function useFriendDetail(userId: string | null): FriendDetail {
     const supabase = getSupabaseClient();
     if (!supabase || !userId || !showcase?.next || moreInFlight.current) return;
     const cursor = showcase.next;
+    const seq = selection.current;
     moreInFlight.current = true;
     setLoadingMore(true);
     try {
       const res = await fetchShowcase(supabase, userId, cursor);
+      // A page fetched for a previous selection must not be appended to the
+      // current one: the cursor belongs to another Locker.
+      if (seq !== selection.current) return;
       if (res.ok) {
         setShowcase((prev) =>
           prev
@@ -299,12 +365,6 @@ export function useFriendDetail(userId: string | null): FriendDetail {
     refresh: load,
     loadMore,
   };
-}
-
-/** The friends that are actually friends (the showcase's entry points). */
-export function useFriendEntries(): FriendEntry[] {
-  const { data } = useFriendDirectory();
-  return data?.friends ?? [];
 }
 
 // ─── Privacy ───────────────────────────────────────────────────────────────
@@ -345,18 +405,33 @@ export function usePrivacy(): UsePrivacy {
     void reload();
   }, [reload]);
 
+  // Writes are queued, not parallel. Every `privacy_set` sends the WHOLE set,
+  // so two switches flipped quickly must reach the server in the order they
+  // were flipped: otherwise the earlier request can land last and the account
+  // keeps the OLD value while the UI shows the new one. Same reasoning for the
+  // echo: `settings` follows the newest response, which is now the newest
+  // request.
+  const writes = useRef<Promise<unknown>>(Promise.resolve());
+  const pending = useRef(0);
+
   const save = useCallback(
     async (next: FriendVisibility): Promise<FriendsResult<FriendVisibility>> => {
       const supabase = getSupabaseClient();
       if (!supabase) return { ok: false, reason: "unauthorized" };
+      pending.current += 1;
       setSaving(true);
-      try {
+      const run = writes.current.then(async () => {
         const res = await savePrivacy(supabase, next);
         // The server echoes what it stored; trust that, not the local guess.
         if (res.ok) setSettings(res.data);
         return res;
+      });
+      writes.current = run.catch(() => undefined);
+      try {
+        return await run;
       } finally {
-        setSaving(false);
+        pending.current -= 1;
+        if (pending.current === 0) setSaving(false);
       }
     },
     [],

@@ -70,7 +70,23 @@ const KNOWN_REASONS: readonly FriendsFailure[] = [
 
 // ─── Wire shapes ───────────────────────────────────────────────────────────
 
-/** The whitelisted identity fields (never `user_id`-adjacent private fields). */
+/**
+ * The whitelisted identity fields.
+ *
+ * The server has TWO profile projections, and this type is the union of them:
+ *
+ *   · the MINIMAL one (identity: `userId`, `displayName`, `handle`,
+ *     `avatarKind`) is what any active relation sees — a pending request, a
+ *     block, or a friend who turned profile sharing off;
+ *   · the EXTENDED one adds `bio`, `avatarData`, `mainPuzzle`,
+ *     `declaredMethods` and `country`, and only a friend whose owner shares
+ *     their profile receives it.
+ *
+ * So every field past the identity is OPTIONAL in practice: the mapper defaults
+ * them (`""`, `[]`, `0`) and no screen may treat a default as a fact. That is
+ * why `mainPuzzle` is empty when absent instead of a made-up `"333"` — the
+ * detail view already hides it when it is empty.
+ */
 export interface FriendProfile {
   userId: string;
   displayName: string;
@@ -192,7 +208,6 @@ export interface FriendOverall {
 }
 
 export interface FriendStats {
-  owner: FriendProfile;
   overall: FriendOverall;
   byPuzzle: PuzzleAggregate[];
   streakDays: number;
@@ -261,7 +276,7 @@ function toProfile(raw: unknown): FriendProfile {
     bio: str(r.bio),
     avatarKind: r.avatar_kind === "photo" ? "photo" : "identicon",
     avatarData: r.avatar_data == null ? undefined : String(r.avatar_data),
-    mainPuzzle: str(r.main_puzzle) || "333",
+    mainPuzzle: str(r.main_puzzle),
     declaredMethods: strings(r.declared_methods),
     country: str(r.country),
     createdAt: num(r.created_at),
@@ -543,7 +558,6 @@ export async function fetchFriendStats(
   return call(supabase, "friend_stats", { p_other: other, p_window_days: windowDays }, (p) => {
     const overall = (p.overall ?? {}) as Raw;
     return {
-      owner: toProfile(p.owner),
       overall: {
         total: num(overall.total),
         count: num(overall.count),
@@ -569,6 +583,19 @@ export interface PhotoSignRequest {
   size?: "thumb" | "full";
 }
 
+/**
+ * A signed batch and when it dies.
+ *
+ * The TTL is short (60 s) on purpose, so the caller has to know WHEN to ask
+ * again. `expiresAt` comes from the server (`expires_at`), not from the client's
+ * clock plus a guessed TTL: the only clock that matters is the one that signed.
+ */
+export interface SignedPhotoUrls {
+  urls: Record<string, string>;
+  /** Epoch ms; `null` when there was nothing to sign or no server answer. */
+  expiresAt: number | null;
+}
+
 /** Key of a signed URL in the response map. */
 export function photoKey(itemId: string, photoId: string): string {
   return `${itemId}:${photoId}`;
@@ -590,8 +617,8 @@ export async function fetchPhotoUrls(
   supabase: SupabaseClient | null,
   owner: string,
   refs: PhotoSignRequest[],
-): Promise<Record<string, string>> {
-  if (!supabase || refs.length === 0) return {};
+): Promise<SignedPhotoUrls> {
+  if (!supabase || refs.length === 0) return { urls: {}, expiresAt: null };
   try {
     const { data, error } = await supabase.functions.invoke("friend-photo-urls", {
       body: {
@@ -603,15 +630,17 @@ export async function fetchPhotoUrls(
         })),
       },
     });
-    if (error) return {};
-    const urls = ((data ?? {}) as Raw).urls;
-    if (!urls || typeof urls !== "object") return {};
-    const out: Record<string, string> = {};
-    for (const [key, value] of Object.entries(urls as Raw)) {
-      if (typeof value === "string" && value) out[key] = value;
+    if (error) return { urls: {}, expiresAt: null };
+    const payload = (data ?? {}) as Raw;
+    const raw = payload.urls;
+    if (!raw || typeof raw !== "object") return { urls: {}, expiresAt: null };
+    const urls: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw as Raw)) {
+      if (typeof value === "string" && value) urls[key] = value;
     }
-    return out;
+    const expiresAt = nullableNum(payload.expires_at);
+    return { urls, expiresAt };
   } catch {
-    return {};
+    return { urls: {}, expiresAt: null };
   }
 }

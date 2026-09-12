@@ -258,12 +258,14 @@ create table if not exists public.friend_rate_limits (
 );
 ```
 
-Ventana fija por hora/día. Se limpia con la misma retención que los tombstones
-(auditoría P5: moverla a `pg_cron` es un cambio pendiente y esta tabla se sumaría).
+Ventana fija por hora/día. La retención NO espera a `pg_cron` (auditoría P5):
+cada consumo borra sus propias ventanas de más de 7 días usando el prefijo
+`actor` de la PK, así que la tabla no crece sin fin sin depender de un job.
 Los límites concretos son decisión de producto (§12·D5); arranque propuesto:
-**20 solicitudes/día**, **60 búsquedas/hora**, **40 firmas de URL por minuto**,
-**200 amigos máximo**. Al superarse, error tipado `rate_limited` (la UI lo dice
-sin drama).
+**20 solicitudes/día**, **30 intentos de handle/hora + 200/día**, **30 firmas de
+URL por minuto** (el cliente firma la página entera en UNA llamada, así que 30
+sobran), **200 amigos máximo**. Al superarse, error tipado `rate_limited` (la UI
+lo dice sin drama).
 
 ### 4.6 `are_friends` y las proyecciones
 
@@ -332,13 +334,32 @@ me` necesita `idx_friendships_high`). `friend_blocks` igual por `blocker` (PK) y
 
 Esta tabla es el contrato de la fase. Lo que no está aquí, no sale.
 
+### Las DOS proyecciones de perfil (rework 2026-09-12, auditoría A2/N1)
+
+El contrato tiene dos formas, no una, y cada camino usa la suya. Antes había una
+sola (`friend_profile_json`) y `share_profile` se ignoraba en todas partes menos
+en `friend_profile`: el interruptor apagado no cambiaba nada en la práctica.
+
+| Proyección | Campos | Quién la recibe |
+|---|---|---|
+| `friend_profile_min_json` (identidad) | `user_id`, `display_name`, `handle`, `avatar_kind` | Solicitudes pendientes (entrantes y salientes), lista de bloqueados, `friend_request_send.target`, y la lista de amigos de quien tiene el perfil cerrado |
+| `friend_profile_json` (extendida) | identidad + `bio`, `avatar_data`, `main_puzzle`, `declared_methods`, `country`, `created_at` | Amigos, y solo si su dueño comparte perfil |
+| `friend_visible_profile_json` | la que toque según `share_profile` | La lista de amigos (una sola puerta, para que no haya dos respuestas) |
+
+**Por qué el avatar en base64 NO viaja a una solicitud:** `avatar_data` puede ser
+una foto subida, no una semilla. La tarjeta pinta el CubeMark derivado de
+`user_id`, así que reconocer a alguien no cuesta bytes privados. Y
+`friend_stats` ya no lleva `owner`: repetir ahí el perfil era una segunda puerta
+que solo exigía `share_stats`.
+
 ### Perfil (`friend_profile`, requiere amistad + `share_profile`)
 
 `display_name`, `handle`, `bio`, `avatar_kind`, `avatar_data`, `main_puzzle`,
 `declared_methods`, `country`, `created_at`.
 
 `bio` es texto que el usuario escribe para que lo lean: se comparte. `avatar_data`
-es la semilla del identicon, no una foto de archivo.
+es la foto base64 cuando `avatar_kind = 'photo'` (y la semilla del identicon
+cuando no lo es).
 
 ### Locker (`friend_locker`, requiere amistad + `share_locker`)
 
@@ -376,10 +397,11 @@ respuesta corta a "¿se muestra toda la base de datos de solves?": **no, ni una
 fila**. Lo que viaja son agregados calculados en SQL, y literalmente esto:
 
 ```jsonc
-// friend_stats(owner)
+// friend_stats(owner) — sin `owner`: la identidad viaja en el directorio y en el
+// perfil, y repetirla aquí era una segunda puerta al perfil extendido que
+// `share_stats` no protege.
 {
   "ok": true,
-  "owner": { "handle": "dorito", "display_name": "Javi" },
   "overall": { "solves": 4210, "totalTimeMs": 51230000,
                "streakDays": 12, "lastActiveAt": 1757600000000 },
   "byPuzzle": [
@@ -467,13 +489,13 @@ y con estas validaciones:
 
 | RPC | Valida |
 |---|---|
-| `handle_claim(p_handle)` | formato, longitud, reservado, límite de intentos, unicidad atómica |
+| `handle_claim(p_handle)` | formato, longitud, reservado, **doble freno de intentos** (30/hora + 200/día: sin él `taken` era un oráculo de existencia a coste cero), unicidad atómica. Vive en la migración 18, no en la 16: necesita `friend_rate_check`, y llamarlo desde la 16 sería una referencia hacia delante |
 | `friend_request_send(p_handle, p_message)` | handle exacto, no a sí mismo, `allow_requests` del destinatario, no bloqueo en ningún sentido, no amistad ya existente, rate limit, auto-aceptar si hay solicitud inversa (D1) |
 | `friend_request_accept(p_other)` | existe fila `pending`, `requested_by <> me` |
 | `friend_request_decline(p_other)` | existe fila `pending`, `requested_by <> me`; **borra la fila** (rechazar no deja rastro) |
 | `friend_request_cancel(p_other)` | existe fila `pending`, `requested_by = me` |
 | `friend_remove(p_other)` | existe amistad `accepted`; borra la fila; **no notifica** al otro (D6, decidido) |
-| `friend_block(p_other)` | no a sí mismo; inserta bloqueo **y** borra amistad/solicitud del par en la misma transacción |
+| `friend_block(p_other)` | no a sí mismo, existe la cuenta (`not_found` en vez del 500 de la FK); inserta bloqueo **y** borra amistad/solicitud del par en la misma transacción |
 | `friend_unblock(p_other)` | existe bloqueo; solo borra el bloqueo (D3) |
 | `privacy_set(...)` | booleans; `updated_at` |
 
@@ -975,6 +997,24 @@ ve un amigo"** dentro de Ajustes. El código que la necesitaría ya existe
 (las tres proyecciones aceptan `owner = auth.uid()`, que es la ruta que usa la
 propia suite); es una pantalla, no un cambio de contrato.
 
+### 14.9 Deudas técnicas medidas, con criterio de disparo
+
+Ninguna bloquea la fase. Se dejan escritas con la condición que las convertiría
+en trabajo, en vez de como "mejoras" sin umbral:
+
+1. **Índice `(user_id, is_demo, category_id, id)` en `gear_items` (P8).** No se
+   aplica: `idx_gear_items_user_category` ya sirve el filtro y un armario de
+   cientos de ítems no ordena de verdad. Se aplica si un `explain analyze` de
+   `friend_locker` con datos reales muestra un sort/filter que domina el coste.
+2. **`friend_list` calcula dos proyecciones por fila (N4).** Hoy la lista está
+   acotada por el máximo de amigos (200) y el coste es lineal sin subconsultas
+   repetidas; se reescribe con `case` cuando
+deje de serlo.
+3. **Reintento de firmas con reloj adelantado (N3, aplicado).** El timer solo se
+   rearma cuando al lote le queda más vida que el margen (`delay >=
+   REFRESH_MARGIN_MS`), así que un desfase de reloj no puede convertirse en un
+   bucle de 15 s contra la Edge Function.
+
 ### 14.8 Ajustes de producto en la UI (2026-09-12)
 
 Tres correcciones pedidas tras ver la sección montada, ya aplicadas:
@@ -994,3 +1034,30 @@ Tres correcciones pedidas tras ver la sección montada, ya aplicadas:
 Las tres claves retiradas se borraron de `en.json` y `es.json` (no se dejan
 claves muertas) y el chequeo de uso confirma que ninguna vista las referencia
 ya: 113 claves usadas, todas presentes en ambos idiomas.
+
+4. **El atajo *¿qué comparto?* abre Privacidad, no Perfil.** `MainStage`
+   reutilizaba el mismo callback para dos destinos distintos (el editor de
+   perfil que pide `ProfileView` y los cuatro interruptores de consentimiento
+   que pide Amigos), así que el atajo aterrizaba en un sitio que no responde a
+   su pregunta. Ahora hay una entrada propia por destino
+   (`onOpenPrivacySettings` → `initialSection='privacy'`) y el prop de la vista
+   se llama como lo que hace. Un test puro (`settings.constants.test.ts`) fija
+   que los ids por los que se abre Ajustes existen, porque un id que
+   desaparece no falla: cae en silencio a `general`.
+
+5. **El badge de solicitudes entrantes del nav, que §8.1 pedía, ya existe.**
+   `LeftSidebar` lee el mismo store de directorio que la pantalla
+   (`friend_list` ya trae `counts.incoming`, así que no cuesta una llamada
+   extra) y se actualiza tras aceptar/bloquear porque las mutaciones fuerzan
+   el refresh. Sin sesión no se intenta la lectura (`{ enabled }`): el rail
+   está montado siempre y una RPC sin cuenta solo puede volver 401.
+
+6. **La sección *Privacidad y amigos* desaparece de Ajustes sin sesión.** El
+   handle y los cuatro interruptores viven en el servidor tras una cuenta, así
+   que sin sesión la sección solo podía mostrar "no disponible":
+   `visibleSettingsSections(hasAccount)` la filtra y el diálogo entero (barra
+   lateral, select móvil, índice de animación y contenido) usa esa lista, para
+   que ninguna parte pueda discrepar. Verificado en el navegador sin sesión: 16
+   secciones, cero apariciones de la cadena "Privacidad" en el DOM. *Cuenta*
+   sigue ahí, que es donde está el botón de Google: la puerta no se cierra, se
+   deja de ofrecer la habitación que necesita llave.

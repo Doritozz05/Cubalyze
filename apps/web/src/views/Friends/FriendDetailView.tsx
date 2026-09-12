@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FriendAvatar } from "./components/FriendAvatar";
 import { FriendStatsPanel } from "./components/FriendStatsPanel";
 import { ShowcaseGrid } from "./components/ShowcaseGrid";
-import { displayNameOf } from "./friendsCopy";
+import { displayNameOf, FRIEND_FAILURE_KEY } from "./friendsCopy";
 import { useFriendDetail } from "@/hooks/useFriends";
 import { CountryFlag } from "@/components/Identity/CountryFlag";
 import { cn } from "@/lib/utils";
@@ -125,6 +125,15 @@ export function FriendDetailView({
             </button>
           </div>
         </div>
+
+        {errors.profile && (
+          // «No comparte su perfil» tiene que DECIRSE: sin esto, cerrar el
+          // perfil dejaba la cabecera muda (nombre y nada más) y parecía un
+          // fallo de carga en vez de una decisión del dueño.
+          <p className="mt-2 text-[0.72rem] text-ink-3">
+            {t(FRIEND_FAILURE_KEY[errors.profile])}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <ScopeChip
