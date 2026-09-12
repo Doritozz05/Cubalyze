@@ -111,9 +111,6 @@
     "card": {
       "unnamed": "No name",
       "noHandle": "no handle",
-      "sharesLocker": "Locker",
-      "sharesStats": "Stats",
-      "sharesIdentity": "Profile only",
       "actions": "Actions for {{name}}",
       "remove": "Remove friend",
       "block": "Block"

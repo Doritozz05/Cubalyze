@@ -3,17 +3,18 @@
 /**
  * FriendCard — one friend, and the three things you can do about it.
  *
- * The badges (`shares.locker`, `shares.stats`) are not decoration: they are
- * what makes "por qué no veo su armario" answerable before a click. They come
- * from the server's `friend_list` (the friend's own visibility row), so they
- * are the truth at read time, not a guess.
+ * The card shows identity only (avatar, name, handle). The `shares` badges
+ * ("Armario", "Estadísticas") used to sit here and were removed: what a friend
+ * shares is answered where it is asked — inside their page, where the Armario
+ * tab and the stats panel say it in a sentence — and a badge repeating the
+ * server's visibility row on every card was noise, not an answer.
  *
  * Management is deliberately two levels: opening the profile is the primary
  * action (whole card is a button), and the destructive ones live behind a
  * menu so "bloquear" is never one mis-tap away from "abrir".
  */
 
-import { MoreVertical, Package, Star, UserMinus, Ban } from "lucide-react";
+import { MoreVertical, UserMinus, Ban } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FriendAvatar } from "./FriendAvatar";
@@ -33,7 +34,7 @@ export function FriendCard({ entry, onOpen, onRemove, onBlock, busy = false }: F
   const { t } = useTranslation("friends");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const { profile, shares } = entry;
+  const { profile } = entry;
   const name = displayNameOf(profile);
 
   // Close on outside click / Escape: a menu that can only be closed by the
@@ -74,23 +75,6 @@ export function FriendCard({ entry, onOpen, onRemove, onBlock, busy = false }: F
           <p className="truncate font-mono text-[0.7rem] text-ink-3">
             {profile.handle ? `@${profile.handle}` : t("card.noHandle")}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {shares.locker && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-line bg-surface-2/50 px-1.5 py-0.5 text-[0.6rem] text-ink-2">
-                <Package className="size-3" aria-hidden="true" />
-                {t("card.sharesLocker")}
-              </span>
-            )}
-            {shares.stats && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-line bg-surface-2/50 px-1.5 py-0.5 text-[0.6rem] text-ink-2">
-                <Star className="size-3" aria-hidden="true" />
-                {t("card.sharesStats")}
-              </span>
-            )}
-            {!shares.locker && !shares.stats && (
-              <span className="text-[0.6rem] text-ink-3">{t("card.sharesIdentity")}</span>
-            )}
-          </div>
         </div>
       </button>
 

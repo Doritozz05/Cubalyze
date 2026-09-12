@@ -111,9 +111,6 @@
     "card": {
       "unnamed": "Sin nombre",
       "noHandle": "sin handle",
-      "sharesLocker": "Armario",
-      "sharesStats": "Estadísticas",
-      "sharesIdentity": "Solo perfil",
       "actions": "Acciones para {{name}}",
       "remove": "Eliminar amigo",
       "block": "Bloquear"
