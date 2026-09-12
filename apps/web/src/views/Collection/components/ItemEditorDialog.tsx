@@ -535,26 +535,23 @@ export function ItemEditorDialog({
           </Field>
           {isCube ? (
             <Field label={t("editor.smartId")} hint={t("editor.smartIdHint")}>
-              <div className="flex gap-2">
-                <Input
-                  value={form.smartId}
-                  placeholder="AA:BB:CC:DD:EE:FF"
-                  onChange={(event) => patch({ smartId: event.target.value })}
-                />
-                {// Filling it from the cube in your hand beats reading it off a
-                // label — and it is the value that makes the link work.
-                connectedAddress ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 text-xs"
-                    onClick={() => patch({ smartId: connectedAddress })}
-                  >
-                    {t("editor.useConnected")}
-                  </Button>
-                ) : null}
-              </div>
+              <Input
+                value={form.smartId}
+                placeholder="AA:BB:CC:DD:EE:FF"
+                className="font-mono text-xs"
+                onChange={(event) => patch({ smartId: event.target.value })}
+              />
+              {connectedAddress ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1.5 h-7 gap-1.5 text-xs"
+                  onClick={() => patch({ smartId: connectedAddress })}
+                >
+                  {t("editor.useConnected")}
+                </Button>
+              ) : null}
             </Field>
           ) : null}
         </div>

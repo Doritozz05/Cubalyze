@@ -145,9 +145,8 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
         data-no-glass
         size="sm"
         aria-label={t("cube.title", { event: eventLabel })}
-        className="h-8 max-w-[11rem] gap-2 rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium leading-normal text-ink-2 shadow-none hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
+        className="h-8 max-w-[11rem] rounded-full border-transparent bg-transparent px-2.5 py-0 text-xs font-medium leading-normal text-ink-2 shadow-none hover:bg-surface-2 hover:text-ink dark:bg-transparent dark:hover:bg-surface-2"
       >
-        <BiCube className="size-3.5 shrink-0" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="center">
@@ -156,7 +155,7 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
             <span className="flex items-center gap-1.5">
               {cube.id === linkedId ? <BluetoothConnected className="size-3 shrink-0" /> : null}
               {cubeShortLabel(cube)}
-              {cube.primary ? ` · ${t("cube.main")}` : ""}
+
             </span>
           </SelectItem>
         ))}
@@ -246,11 +245,7 @@ function CubeSheet({
                   {cubeShortLabel(cube)}
                 </span>
                 <span className="block truncate text-[0.66rem] text-ink-3">
-                  {[
-                    cube.brand,
-                    cube.primary ? t("cube.main") : null,
-                    cube.id === linkedId ? t("cube.connected") : null,
-                  ]
+                  {[cube.brand, cube.id === linkedId ? t("cube.connected") : null]
                     .filter(Boolean)
                     .join(" · ")}
                 </span>

@@ -39,6 +39,7 @@ export interface CubeModelInfo {
 export const CUBE_MODEL_CATALOG: readonly CubeModelInfo[] = [
   { hardwareName: "GAN12uiM", label: "GAN 12 ui Maglev", generation: "gen4", gyro: true },
   { hardwareName: "GAN356i3", label: "GAN 356 i3", generation: "gen2", gyro: true },
+  { hardwareName: "GANi39YX", label: "GAN i3", generation: "gen2", gyro: true },
 ];
 
 export interface DescribedCubeModel {
