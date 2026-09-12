@@ -167,18 +167,25 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
   return (
     <div
       style={{ left: `${node.x}px`, top: `${node.y}px` }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={onMouseLeave}
-      className="absolute flex flex-col items-center group cursor-pointer"
+      // The wrapper is hit-transparent; only the visible circle is a target.
+      // Its box is as wide as the label (w-36) and includes it, so otherwise the
+      // empty space AROUND a node — exactly where a connector line is grabbed —
+      // counted as hover and re-rendered the whole canvas on every pan move.
+      className="absolute flex flex-col items-center pointer-events-none"
     >
       {/* Round Skill Circle Node */}
       <div
         onClick={handleSelect}
+        // Hover is bound to the visible circle, not the wrapper, so the highlight
+        // matches exactly what the pointer is over (and `group`/`group-hover`
+        // are no longer needed to fake that boundary).
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={onMouseLeave}
         className={cn(
-          "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-200 shadow-md",
+          "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-200 shadow-md pointer-events-auto cursor-pointer",
           isUnlocked && "bg-surface text-ink border-2 border-ink hover:border-ink hover:scale-110 hover:shadow-lg",
-          isCompleted && "bg-ink text-surface font-bold border-2 border-ink shadow-lg group-hover:scale-110",
-          isLocked && "bg-surface-2 border-2 border-line text-ink-3 group-hover:border-ink group-hover:scale-105",
+          isCompleted && "bg-ink text-surface font-bold border-2 border-ink shadow-lg hover:scale-110",
+          isLocked && "bg-surface-2 border-2 border-line text-ink-3 hover:border-ink hover:scale-105",
           isHovered && "z-10 ring-4 ring-ink",
         )}
       >
@@ -225,7 +232,7 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
             isCompleted
               ? "text-ink font-semibold"
               : isUnlocked
-              ? "text-ink group-hover:text-ink"
+              ? "text-ink"
               : "text-ink-3",
           )}
         >
@@ -236,6 +243,56 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
         </span>
       </div>
     </div>
+  );
+});
+
+// ── Memoized Edge ──────────────────────────────────────────────────────────
+
+interface SkillEdgeProps {
+  pathD: string;
+  isActive: boolean;
+  isUnlockedLink: boolean;
+  dashed: boolean;
+}
+
+/**
+ * One prerequisite connector. Memoised on primitives so a hover (which only
+ * changes `isActive` on the few edges touching the hovered node) leaves the
+ * other ~150 paths untouched in the DOM — the difference between a smooth
+ * hover and a full-tree re-render per pointer move.
+ */
+const SkillEdge = React.memo(function SkillEdge({
+  pathD,
+  isActive,
+  isUnlockedLink,
+  dashed,
+}: SkillEdgeProps) {
+  return (
+    <g>
+      {isActive && (
+        <path
+          d={pathD}
+          fill="none"
+          stroke="var(--ink)"
+          strokeWidth={4}
+          strokeOpacity={0.15}
+          strokeLinecap="round"
+        />
+      )}
+      <path
+        d={pathD}
+        fill="none"
+        stroke={
+          isActive
+            ? "var(--ink)"
+            : isUnlockedLink
+            ? "rgba(148, 163, 184, 0.7)"
+            : "rgba(100, 116, 139, 0.25)"
+        }
+        strokeWidth={isActive ? 2.5 : isUnlockedLink ? 1.75 : 1.25}
+        strokeDasharray={dashed ? "4,4" : undefined}
+      />
+    </g>
   );
 });
 
@@ -260,6 +317,10 @@ export function SkillGraphCanvas({
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, pX: 50, pY: 50 });
   const rafIdRef = useRef<number | null>(null);
+  // Set once a pan has actually moved the pointer. Read by the node click
+  // handler (an onClick still fires after a drag that began on a node) and
+  // reset by the next mousedown.
+  const dragMovedRef = useRef(false);
 
   const isTouch = useIsTouch();
   const didInitView = useRef(false);
@@ -278,6 +339,45 @@ export function SkillGraphCanvas({
       transformRef.current.style.transform = `translate3d(${x}px, ${y}px, 0px) scale(${z})`;
     }
   }, []);
+
+  /**
+   * One transform write per frame, at most. Re-scheduling a frame on every
+   * input sample meant a 1 kHz mouse cancelled and re-queued a rAF a thousand
+   * times a second for a single visual update; the ref now holds the *pending*
+   * frame (or null) and the callback reads the latest refs, so a burst of
+   * samples still costs exactly one style write.
+   */
+  const scheduleTransform = useCallback(() => {
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      applyTransform(panRef.current.x, panRef.current.y, zoomRef.current);
+    });
+  }, [applyTransform]);
+
+  /**
+   * Pan lifecycle. Besides the refs, `beginPan` puts the canvas in
+   * `is-panning`, which makes the node subtree hit-transparent for the duration
+   * (see the `.skill-canvas.is-panning` rule in index.css). While the layer
+   * itself is being dragged nothing underneath has to react, and leaving 130
+   * nodes hit-testable made the browser re-resolve the hover chain on every
+   * pointer sample: a pan that started over a node — or over a connector —
+   * crawled, while the same pan from the bare canvas stayed smooth.
+   */
+  const beginPan = useCallback(() => {
+    isDraggingRef.current = true;
+    dragMovedRef.current = false;
+    containerRef.current?.classList.add("is-panning");
+  }, []);
+
+  const endPan = useCallback(() => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    applyTransform(panRef.current.x, panRef.current.y, zoomRef.current);
+    containerRef.current?.classList.remove("is-panning");
+  }, [applyTransform]);
 
   // Set zoom with sync
   const updateZoom = useCallback(
@@ -312,79 +412,111 @@ export function SkillGraphCanvas({
       id: string;
       from: SkillNode;
       to: SkillNode;
-      isActive: boolean;
     }[] = [];
 
     nodes.forEach((target) => {
       target.prerequisites.forEach((reqId) => {
         const source = nodeMap.get(reqId);
         if (source) {
-          const isActive = hoveredNodeId === source.id || hoveredNodeId === target.id;
           lines.push({
             id: `${source.id}->${target.id}`,
             from: source,
             to: target,
-            isActive,
           });
         }
       });
     });
 
     return lines;
-  }, [nodes, nodeMap, hoveredNodeId]);
+    // Deliberately NOT keyed on `hoveredNodeId`: the highlight is resolved at
+    // render time so a hover only re-styles the handful of affected edges
+    // (each `SkillEdge` is memoised) instead of rebuilding the whole list.
+  }, [nodes, nodeMap]);
 
-  // Handle node hover
+  // Handle node hover. Ignored while panning: the whole tree re-renders on a
+  // hover change (146 nodes, 153 edges), which fights the rAF transform writes
+  // and makes a pan that began over a node stutter. Hover is a resting-state
+  // affordance, so it simply has no meaning mid-drag.
   const handleMouseEnterNode = useCallback((id: string) => {
+    if (isDraggingRef.current) return;
     setHoveredNodeId(id);
   }, []);
 
   const handleMouseLeaveNode = useCallback(() => {
+    if (isDraggingRef.current) return;
     setHoveredNodeId(null);
   }, []);
+
+  // A pan that began on a node still ends with a `click` on that node — the
+  // layer moves with the pointer, so the circle stays under the cursor. Without
+  // this guard, panning the tree would open a node modal on release.
+  const handleSelectNode = useCallback(
+    (node: SkillNode) => {
+      if (dragMovedRef.current) return;
+      onSelectNode(node);
+    },
+    [onSelectNode],
+  );
 
   // ── Mouse Drag (Hardware-Accelerated RAF) ────────────────────────────────
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Primary button only, and never from an interactive control (the node's
+    // completion toggle).
+    if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest("button")) return;
-    isDraggingRef.current = true;
+    // Suppress the text-selection / native-drag that a mousedown would
+    // otherwise start, so the pointer is free to pan without artefacts.
+    e.preventDefault();
+    beginPan();
+    // Drop any hover highlight: meaningless while panning, and clearing it at
+    // the start means nothing re-styles during the drag.
+    setHoveredNodeId((prev) => (prev === null ? prev : null));
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
       pX: panRef.current.x,
       pY: panRef.current.y,
     };
-  }, []);
+  }, [beginPan]);
 
   useEffect(() => {
     const handleWindowMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       const dx = e.clientX - dragStartRef.current.x;
       const dy = e.clientY - dragStartRef.current.y;
+      // A pan is only a pan once it has actually moved; a plain click must
+      // still open the node.
+      if (!dragMovedRef.current && Math.abs(dx) + Math.abs(dy) > 3) {
+        dragMovedRef.current = true;
+      }
       const newX = dragStartRef.current.pX + dx;
       const newY = dragStartRef.current.pY + dy;
 
       panRef.current = { x: newX, y: newY };
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = requestAnimationFrame(() => {
-        applyTransform(newX, newY, zoomRef.current);
-      });
+      scheduleTransform();
     };
 
     const handleWindowMouseUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      endPan();
       setPan({ ...panRef.current });
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
     };
 
+    // A pan must end even if the window loses focus mid-drag, or the canvas
+    // would stay hit-transparent with no pointer to release it.
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
+    window.addEventListener("blur", handleWindowMouseUp);
 
     return () => {
       window.removeEventListener("mousemove", handleWindowMouseMove);
       window.removeEventListener("mouseup", handleWindowMouseUp);
+      window.removeEventListener("blur", handleWindowMouseUp);
+      endPan();
     };
-  }, [applyTransform]);
+  }, [scheduleTransform, endPan]);
 
   // ── Touch Drag & Pinch Zoom (Ultra-Smooth 60FPS) ─────────────────────────
 
@@ -403,6 +535,7 @@ export function SkillGraphCanvas({
 
     const handleTouchStart = (e: TouchEvent) => {
       if ((e.target as HTMLElement).closest("button")) return;
+      beginPan();
 
       if (e.touches.length === 1) {
         const t = e.touches[0];
@@ -441,11 +574,14 @@ export function SkillGraphCanvas({
         const newX = touchStartInfo.pX + dx;
         const newY = touchStartInfo.pY + dy;
 
+        // Same 3px rule as the mouse path: a tap must still open the node, a
+        // drag must not (the touchscreens drift more, so give it 6px).
+        if (!dragMovedRef.current && Math.abs(dx) + Math.abs(dy) > 6) {
+          dragMovedRef.current = true;
+        }
+
         panRef.current = { x: newX, y: newY };
-        if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = requestAnimationFrame(() => {
-          applyTransform(newX, newY, zoomRef.current);
-        });
+        scheduleTransform();
       } else if (e.touches.length === 2 && touchStartInfo.startDist && touchStartInfo.startZoom) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -464,10 +600,7 @@ export function SkillGraphCanvas({
         panRef.current = { x: newX, y: newY };
         zoomRef.current = newZoom;
 
-        if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = requestAnimationFrame(() => {
-          applyTransform(newX, newY, newZoom);
-        });
+        scheduleTransform();
       }
     };
 
@@ -477,7 +610,7 @@ export function SkillGraphCanvas({
         setZoom(zoomRef.current);
         touchStartInfo = null;
       }
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      endPan();
     };
 
     container.addEventListener("touchstart", handleTouchStart, { passive: false });
@@ -513,10 +646,7 @@ export function SkillGraphCanvas({
       panRef.current = { x: newPanX, y: newPanY };
       zoomRef.current = targetZoom;
 
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = requestAnimationFrame(() => {
-        applyTransform(newPanX, newPanY, targetZoom);
-      });
+      scheduleTransform();
 
       setPan({ x: newPanX, y: newPanY });
       setZoom(targetZoom);
@@ -530,8 +660,9 @@ export function SkillGraphCanvas({
       container.removeEventListener("touchend", handleTouchEnd);
       container.removeEventListener("touchcancel", handleTouchEnd);
       container.removeEventListener("wheel", handleWheel);
+      endPan();
     };
-  }, [applyTransform]);
+  }, [scheduleTransform, endPan, beginPan]);
 
   // Start centered on the root node: the full 16-branch tree is far larger
   // than any viewport, so the default top-left pan at 100% shows only a
@@ -606,7 +737,9 @@ export function SkillGraphCanvas({
       ref={containerRef}
       onMouseDown={handleMouseDown}
       className={cn(
-        "relative w-full flex-1 min-h-130 overflow-hidden rounded-xl border border-line/80 touch-none",
+        // `skill-canvas` is the hook the `.is-panning` rule in index.css needs to
+        // make the node subtree hit-transparent while a pan is in flight.
+        "skill-canvas relative w-full flex-1 min-h-130 overflow-hidden rounded-xl border border-line/80 touch-none",
         "bg-canvas/95 select-none cursor-grab active:cursor-grabbing shadow-inner",
       )}
     >
@@ -678,40 +811,21 @@ export function SkillGraphCanvas({
 
             const dx = Math.abs(x2 - x1) * 0.5;
             const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-            const isUnlockedLink = c.from.status === "completed" || c.from.status === "unlocked";
 
             return (
-              <g key={c.id}>
-                {c.isActive && (
-                  <path
-                    d={pathD}
-                    fill="none"
-                    stroke="var(--ink)"
-                    strokeWidth={4}
-                    strokeOpacity={0.15}
-                    strokeLinecap="round"
-                  />
-                )}
-                <path
-                  d={pathD}
-                  fill="none"
-                  stroke={
-                    c.isActive
-                      ? "var(--ink)"
-                      : isUnlockedLink
-                      ? "rgba(148, 163, 184, 0.7)"
-                      : "rgba(100, 116, 139, 0.25)"
-                  }
-                  strokeWidth={c.isActive ? 2.5 : isUnlockedLink ? 1.75 : 1.25}
-                  strokeDasharray={c.to.status === "locked" ? "4,4" : undefined}
-                />
-              </g>
+              <SkillEdge
+                key={c.id}
+                pathD={pathD}
+                isActive={hoveredNodeId === c.from.id || hoveredNodeId === c.to.id}
+                isUnlockedLink={c.from.status === "completed" || c.from.status === "unlocked"}
+                dashed={c.to.status === "locked"}
+              />
             );
           })}
         </svg>
 
         {/* Round Nodes Layer */}
-        <div className="absolute inset-0 w-[7200px] h-[3400px]">
+        <div data-skill-nodes className="absolute inset-0 w-[7200px] h-[3400px]">
           {nodes.map((node) => (
             <SkillNodeItem
               key={node.id}
@@ -719,7 +833,7 @@ export function SkillGraphCanvas({
               isHovered={hoveredNodeId === node.id}
               onMouseEnter={handleMouseEnterNode}
               onMouseLeave={handleMouseLeaveNode}
-              onSelectNode={onSelectNode}
+              onSelectNode={handleSelectNode}
               onToggleComplete={onToggleComplete}
             />
           ))}

@@ -31,8 +31,14 @@ export function IdenticonAvatar({
   tile = "surface-2",
   className,
 }: IdenticonAvatarProps) {
+  // `tileRadius: 0` on purpose: this component always renders inside a frame
+  // that already has a radius and clips it (`overflow-hidden`), so the tile must
+  // reach the corners and let THAT radius do the rounding. Leaving the SVG's own
+  // radius in place gave the tile a bigger curve than the frame (16px inside a
+  // `rounded-xl` = 12px), and the frame's corners showed the page through the
+  // sliver between the two — the mark looked like it did not fill its frame.
   const svg = useMemo(
-    () => renderCubeMark(generateCubeMarkSpec(seed), { size, tile }),
+    () => renderCubeMark(generateCubeMarkSpec(seed), { size, tile, tileRadius: 0 }),
     [seed, size, tile],
   );
 

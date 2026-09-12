@@ -3808,6 +3808,8 @@
       "streak": "Racha",
       "bestIn": "mejor en {{puzzle}}",
       "total": "{{count}} en total",
+      "totalTime": "Tiempo total",
+      "totalTimeSub": "todas las sesiones y puzzles",
       "day_one": "día",
       "day_other": "días"
     },
@@ -3819,8 +3821,8 @@
     "list": {
       "errorLoad": "No se pudieron cargar las reconstrucciones",
       "subtitle": "Resoluciones reconstruidas de reco.nz y CubeRoot — explora perfiles de resolutores, casos y técnicas.",
-      "solvesCount_one": "{{count}} resolución",
-      "solvesCount_other": "{{count}} resoluciones",
+      "solvesLabel_one": "resolución",
+      "solvesLabel_other": "resoluciones",
       "searchPlaceholder": "Busca resolutor, competición, técnica…",
       "allSources": "Todas las fuentes",
       "allPuzzles": "Todos los puzzles",

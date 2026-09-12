@@ -568,7 +568,30 @@ independientes.
   local; el SQL de la 033 debe validarse con el test de migración antes de
   confiar en él.
 - Los límites de cuota son cálculo, no medición en este navegador.
-- Sin CI para Supabase: las migraciones de nube las aplica el usuario.
+- **Migraciones de nube aplicadas el 2026-09-12** (008, 009, 010) con la CLI,
+  en orden y verificadas por SQL, no por el mensaje de éxito:
+  - `solves.cube_id` / `cube_label` existen, `text` nullable, e
+    `idx_solves_user_cube (user_id, cube_id)` también;
+  - hay **un solo** `sync_apply(jsonb)` (el `create or replace` no dejó
+    overload) y su cuerpo declara `cube_id text` y escribe
+    `cube_label = excluded.cube_label`;
+  - la reparación dejó `222` 491/491 en NULL, `pyram` 27/27 en NULL y **`333`
+    intacto con sus 27 CFOP**; 627 filas antes y después (ninguna perdida);
+  - push real simulado a través de `sync_apply`: el solve entró con su
+    `cube_id`/`cube_label`, y un push **obsoleto** (mismo id, `updated_at`
+    menor, sin cubo) fue **rechazado** por el guard LWW — el cubo sobrevivió.
+  Backup previo de las 505 filas que la 008 destruye en
+  `%TEMP%/cubeforge-method-repair-backup-20260912.json` (fuera del repo).
+- **Riesgo residual anotado, no arreglado.** En `sync_apply` el LWW usa
+  `excluded.updated_at >= solves.updated_at`, así que un cliente **anterior a la
+  Fase 3** que reenvíe una fila ya sincronizada con el MISMO `updated_at` puede
+  escribir `cube_id = NULL` encima de una atribución existente. Hace falta un
+  push completo desde un build viejo (reset local, re-link) y solo en empate,
+  pero existe; la salida limpia sería distinguir "clave ausente" de "clave
+  nula" en el recordset antes de pisar un valor.
+- Nota de contabilidad: `applied_solves` cuenta filas **procesadas**, no
+  modificadas (suma 1 aunque el guard rechace la escritura). Es cosmético: el
+  watermark avanza por el lote enviado, no por la respuesta.
 - El preview en vivo no es posible en este entorno (dev server HTTPS con
   certificado autofirmado y la pestaña de preview exige loopback HTTP), así que
   el repaso visual de la pieza del dock y del Locker móvil es manual.
@@ -577,11 +600,50 @@ independientes.
 
 ## 7. Fuera de alcance (fases 5–8) y ganchos ya puestos
 
-5. Identificación automática del smart cube al conectar (`vendor`/`model` y MAC
-   de GAN ya llegan y no los lee nadie).
-6. Sincronización del Locker (ADR-029: tabla espejo, RLS, mappers, tombstones y
-   `sync_apply`), que es lo que hace viajar las fotos — y probablemente
-   Supabase Storage, no una columna.
-7. Bitácora de setups (lubricante/tensión/fecha por cubo): lo genuinamente no
-   genérico, y lo que no tiene ni Steam ni Discogs.
-8. Estante público compartible.
+Ordenadas por **valor/esfuerzo**, no por número. Dos son pequeñas y de altísimo
+rendimiento, una es la grande de verdad y la última depende de ella.
+
+### 7.1 Fase 5 — el cubo se identifica solo (esfuerzo BAJO, valor ALTO)
+
+`vendor`/`model` y el MAC de GAN **ya llegan** en el handshake BLE y no los lee
+nadie. Con eso: al conectar, la app sabe qué cubo físico es y puede ofrecer
+"este es mi GAN 12 — vincúlalo a ese objeto del Locker", que es exactamente el
+paso que hoy se hace a mano en la pieza del dock. El hardware pasa a ser la
+fuente de verdad de la atribución y la elección manual queda como respaldo
+(stackmat, solves tecleados, un cubo nuevo sin catalogar). Es la fase que más
+cierra el círculo "hardware → dato" y la que hace que la app se sienta una app
+de speedcubing y no un timer con extras. Riesgo real: hace falta un catálogo de
+modelos y un plan honesto para el cubo desconocido.
+
+### 7.2 Fase 7 — bitácora de setups (esfuerzo BAJO-MEDIO, valor ALTO)
+
+Por cubo: lubricante, tensión, fecha de cada cambio. Es lo genuinamente
+**no genérico** — ni Steam ni Discogs lo tienen — y se apoya en lo que acaba de
+aterrizar: con las stats por cubo ya calculadas por replay, "¿fue mejor después
+del cambio de muelle?" es comparar dos ventanas de solves que ya sabemos
+recorrer. Tabla hija de `gear_items`, una línea de tiempo en la ficha y, si
+apetece, un antes/después en la tabla de métricas. Mucho valor por poco código.
+
+### 7.3 Fase 6 — sincronizar el Locker (esfuerzo ALTO, valor MEDIO-ALTO)
+
+La grande: tabla espejo de categorías/tipos/ítems, RLS, mappers, tombstones y
+`sync_apply` (ADR-029), **más** las fotos. Decisión importante ya tomada en el
+diseño: las fotos van a **Supabase Storage**, no a una columna en base64 —
+columnas de blobs en un LWW son una trampa. Su valor es cambiar de dispositivo o
+reinstalar sin perder la colección, y compartir gear. Es la única fase donde un
+error se lleva por delante una colección entera, así que merece el mismo trato
+riguroso que la Fase 2 (esquema compatible, fotos referenciadas, tests contra
+SQLite real). Hoy el Locker es local por dispositivo y las **dos personas** que
+usan la app pueden vivir así una temporada sin dolor.
+
+### 7.4 Fase 8 — estante público compartible (esfuerzo BAJO técnicamente, valor MEDIO, y DEPENDE de la 6)
+
+Un enlace público de solo lectura con tu colección (y quizá tus PBs por cubo).
+El trabajo no es la UI, es el producto y el permiso: ruta sin sesión, token de
+compartir, opt-in explícito y decidir qué es público. El detalle que la coloca
+la última: **necesita la Fase 6**, porque el servidor no tiene la colección —
+sin espejo en la nube no hay nada que servir. Se puede tener una maqueta con
+datos locales, pero no es la fase.
+
+**Orden recomendado:** 5 y 7 (pequeñas, alto rendimiento, y ninguna toca datos
+delicados) → 6 (la que requiere diseño y cuidado) → 8.

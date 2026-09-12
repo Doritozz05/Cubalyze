@@ -32,6 +32,7 @@ function makeStats(
     heatmapCounts: [],
     streakDays: 0,
     overall: base,
+    totalSolveTimeMs: 0,
   };
 }
 

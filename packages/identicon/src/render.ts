@@ -24,6 +24,17 @@ export interface CubeMarkRenderOptions {
   /** Tile background: theme-aware `--surface-2`, its solid (non-glass)
    *  counterpart `--surface-2-solid`, or transparent (default). */
   tile?: 'transparent' | 'surface-2' | 'surface-2-solid';
+  /**
+   * Corner radius of the tile, in viewBox units. Defaults to `size * 0.16`,
+   * which is right for a STANDALONE mark (a data URI, a bare inline SVG) that
+   * owns its own corners.
+   *
+   * Pass 0 when the mark is drawn inside a frame that already has a radius and
+   * clips it (`overflow-hidden`): two radii can only ever disagree, and the
+   * visible symptom is a tile whose corners do not reach the frame's — the
+   * frame's corner shows the page behind it.
+   */
+  tileRadius?: number;
 }
 
 /** Round to 2 decimals to keep the SVG markup small. */
@@ -77,7 +88,7 @@ export function renderCubeMark(
         ? 'var(--surface-2-solid)'
         : 'none';
   const pad = size * 0.055;
-  const tileRadius = size * 0.16;
+  const tileRadius = options.tileRadius ?? size * 0.16;
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"` +

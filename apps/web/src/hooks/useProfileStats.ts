@@ -40,6 +40,16 @@ export interface ProfileStats {
   streakDays: number;
   /** Overall stats across all puzzles. */
   overall: SessionStats;
+  /**
+   * Total time spent solving, whole history: every session and every puzzle
+   * (smart, virtual and manual included), with +2 applied and DNFs left out.
+   *
+   * It comes from ONE aggregate query over the `solves` table rather than from
+   * summing `solves` here, so the number can neither double count nor miss a
+   * row — and it stays right even if the in-memory list is ever trimmed for
+   * memory reasons.
+   */
+  totalSolveTimeMs: number;
 }
 
 export interface UseProfileStatsResult {
@@ -180,6 +190,7 @@ export function useProfileStats(): UseProfileStatsResult {
       const overall = computeStats(
         uiSolves.map((s) => ({ time: s.time, penalty: s.penalty })),
       );
+      const totalSolveTimeMs = await solvesRepo.totalEffectiveTimeMs();
 
       setStats({
         solves: uiSolves,
@@ -187,6 +198,7 @@ export function useProfileStats(): UseProfileStatsResult {
         heatmapCounts: counts,
         streakDays: computeStreak(dayCounts),
         overall,
+        totalSolveTimeMs,
       });
       setError(null);
     } catch (err) {

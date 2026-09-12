@@ -451,6 +451,41 @@ export class SolvesRepository {
   }
 
   /**
+   * Total time spent solving across the WHOLE history — every session, every
+   * puzzle, smart / virtual / manual alike — in ONE aggregate query.
+   *
+   * Deliberate choices, because a total is easy to make quietly wrong:
+   *
+   *   • It sums the TABLE, not a loop over sessions. Per-session iteration can
+   *     never double count (a solve belongs to exactly one session) but it CAN
+   *     miss a row whose session is gone; an aggregate can do neither.
+   *   • DNFs are left out: a failed attempt has no time to add.
+   *   • +2 adds its two seconds, mirroring `effectiveTime` / `normalizePenalty`
+   *     in the app — a total that disagreed with the times shown next to it
+   *     would be worse than no total at all.
+   *   • Penalties are compared case-insensitively and trimmed, so the legacy
+   *     lowercase 'dnf' that the schema CHECK still admits is not miscounted as
+   *     a finished solve. The '+2' branch also accepts 'PLUS2' / 'PLUS_TWO' for
+   *     exact parity with `normalizePenalty`, even though the CHECK constraint
+   *     makes those two unreachable today.
+   *   • Demo solves are excluded, like every other profile statistic.
+   */
+  async totalEffectiveTimeMs(): Promise<number> {
+    const rows = await this.db(
+      `SELECT COALESCE(SUM(
+         time_ms + CASE
+           WHEN UPPER(TRIM(COALESCE(penalty, ''))) IN ('+2', 'PLUS2', 'PLUS_TWO') THEN 2000
+           ELSE 0
+         END
+       ), 0) AS total
+       FROM solves
+       WHERE is_demo = 0
+         AND UPPER(TRIM(COALESCE(penalty, ''))) <> 'DNF'`,
+    );
+    return Number((rows[0] as { total: number | string | null } | undefined)?.total ?? 0);
+  }
+
+  /**
    * Delete every demo solve (is_demo = 1). Returns how many rows were removed.
    * Used by window.clearDemoData() so seeded data never lingers in the DB.
    */

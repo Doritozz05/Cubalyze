@@ -3808,6 +3808,8 @@
       "streak": "Streak",
       "bestIn": "best in {{puzzle}}",
       "total": "{{count}} total",
+      "totalTime": "Total solve time",
+      "totalTimeSub": "all sessions & puzzles",
       "day_one": "day",
       "day_other": "days"
     },
@@ -3819,8 +3821,8 @@
     "list": {
       "errorLoad": "Failed to load reconstructions",
       "subtitle": "Reconstructed solves from reco.nz and CubeRoot — browse solver profiles, cases and techniques.",
-      "solvesCount_one": "{{count}} solve",
-      "solvesCount_other": "{{count}} solves",
+      "solvesLabel_one": "solve",
+      "solvesLabel_other": "solves",
       "searchPlaceholder": "Search solver, competition, technique…",
       "allSources": "All sources",
       "allPuzzles": "All puzzles",

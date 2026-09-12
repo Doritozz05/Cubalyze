@@ -65,6 +65,57 @@ export function formatDuration(ms: number): string {
   return `${seconds}s`;
 }
 
+/**
+ * How much wall-clock time a whole history adds up to, e.g. "3 h 42 min" (es)
+ * or "3h 42m" (en).
+ *
+ * Unit abbreviations come from `Intl.NumberFormat` instead of a hand-written
+ * table: "h"/"min"/"s" are not universal (and change with the locale), so the
+ * platform owns them and every locale the app ships — or adds later — is right
+ * for free. Below an hour the seconds are kept, because "0 min" would be a lie
+ * for a real session; above it they are dropped as noise.
+ *
+ * Falls back to the plain `formatDuration` if the engine lacks unit formatting,
+ * rather than throwing on a profile screen.
+ */
+export function formatTotalSolveTime(ms: number, locale?: string): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "—";
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  try {
+    const part = (unit: "hour" | "minute" | "second", value: number) =>
+      unitFormatter(locale, unit).format(value);
+    if (hours > 0) return `${part("hour", hours)} ${part("minute", minutes)}`;
+    if (minutes > 0) return `${part("minute", minutes)} ${part("second", seconds)}`;
+    return part("second", seconds);
+  } catch {
+    return formatDuration(ms);
+  }
+}
+
+/** Cache of `Intl.NumberFormat` per locale+unit (construction is not free). */
+const unitFormatters = new Map<string, Intl.NumberFormat>();
+
+function unitFormatter(
+  locale: string | undefined,
+  unit: "hour" | "minute" | "second",
+): Intl.NumberFormat {
+  const key = `${locale ?? ""}|${unit}`;
+  const cached = unitFormatters.get(key);
+  if (cached) return cached;
+  const formatter = new Intl.NumberFormat(locale, {
+    style: "unit",
+    unit,
+    unitDisplay: "narrow",
+    maximumFractionDigits: 0,
+  });
+  unitFormatters.set(key, formatter);
+  return formatter;
+}
+
 /** Short label for a stat value, handling DNF/null gracefully. */
 export function statLabel(value: number | null): string {
   if (value === null) return "—";

@@ -320,7 +320,15 @@ export const SolveListPanel = memo(function SolveListPanel({
       ) : (
         <ScrollArea viewportRef={viewportRef} className="min-h-0 flex-1">
           {selectionMode && (
-            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-(--glass-bg-dense) px-3 py-1.5">
+            /* Sticky header INSIDE the glass panel, so it must use the panel
+               token family and let the liquid-glass engine repaint it: a
+               `bg-surface-2` div with a `border-b` is one of the engine's own
+               panel selectors, so it picks up the themed `--glass-bg` plus a
+               real backdrop-blur (which is what hides the rows scrolling
+               under it). `--glass-bg-dense` was wrong here: it is a
+               near-opaque literal the theme presets never set, so every
+               custom palette got a raw white/black strip. */
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface-2 px-3 py-1.5">
               <button
                 onClick={onExitSelection}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
