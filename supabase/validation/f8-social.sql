@@ -10,6 +10,21 @@ select set_config('test.uid_b', (
   order by user_id limit 1
 ), true);
 
+-- Las cuentas son REALES (la FK a `auth.users` lo exige) y alguien probando la
+-- UI puede haberles dejado rastro: una fila de `profile_visibility` con stats
+-- compartidos hacía fallar la sección (6) aunque el código estuviera bien, y
+-- una amistad o un bloqueo harían fallar la (5). Se borra el residuo de AMBAS
+-- cuentas al empezar; todo va dentro del `rollback` del corredor, no se pierde
+-- nada.
+delete from public.friendships
+ where user_low in (current_setting('test.uid_a')::uuid, current_setting('test.uid_b')::uuid)
+    or user_high in (current_setting('test.uid_a')::uuid, current_setting('test.uid_b')::uuid);
+delete from public.friend_blocks
+ where blocker in (current_setting('test.uid_a')::uuid, current_setting('test.uid_b')::uuid)
+    or blocked in (current_setting('test.uid_a')::uuid, current_setting('test.uid_b')::uuid);
+delete from public.profile_visibility
+ where user_id in (current_setting('test.uid_a')::uuid, current_setting('test.uid_b')::uuid);
+
 -- ═══ (1) La superficie: qué alcanza `authenticated` y qué no ═════════════
 do $$
 declare t text;
@@ -274,6 +289,144 @@ begin
     raise exception 'FAIL D3: desbloquear restauro la amistad';
   end if;
   if jsonb_array_length(res -> 'list' -> 'blocked') <> 0 then raise exception 'FAIL desbloquear: sigue bloqueado'; end if;
+end $$;
+
+-- ═══ (9.bis) `share_profile` es una puerta de verdad ════════════════════
+-- La auditoría (A2/N1) encontró que el consentimiento se ignoraba en todas las
+-- proyecciones menos `friend_profile`: una solicitud pendiente y hasta la lista
+-- de amigos entregaban bio, avatar en base64, país y métodos con el interruptor
+-- apagado. Aquí se apaga y se persiguen señuelos por cada camino.
+
+-- Señuelos en el perfil de B. Son datos de PERFIL, no de visibilidad: se
+-- escriben directos para que la prueba sea sobre qué sale, no sobre qué se
+-- guarda.
+reset role;
+update public.profiles
+   set bio = 'BIO-SECRETA',
+       country = 'ES',
+       avatar_kind = 'photo',
+       avatar_data = 'data:image/png;base64,AAA',
+       declared_methods = '["CFOP"]',
+       main_puzzle = '222'
+ where user_id = current_setting('test.uid_b')::uuid;
+set local role authenticated;
+
+-- B cierra su perfil pero deja solicitudes y stats abiertas: el caso exacto
+-- que se filtraba.
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('test.uid_b'))::text, true);
+do $$
+declare res jsonb;
+begin
+  res := public.privacy_set(false, true, true, true);
+  if (res ->> 'share_profile')::boolean is not false then
+    raise exception 'FAIL (9.bis): no se pudo cerrar el perfil: %', res;
+  end if;
+end $$;
+
+-- A pide amistad: la respuesta lleva identidad mínima, nunca el perfil.
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('test.uid_a'))::text, true);
+do $$
+declare
+  b uuid := current_setting('test.uid_b')::uuid;
+  res jsonb;
+  target jsonb;
+  txt text;
+begin
+  res := public.friend_request_send('f8_test_b');
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) solicitud: %', res; end if;
+  target := res -> 'target';
+  if target ->> 'handle' <> 'f8_test_b' then raise exception 'FAIL (9.bis): sin identidad %', res; end if;
+  if target ->> 'user_id' <> b::text then raise exception 'FAIL (9.bis): sin user_id %', res; end if;
+
+  txt := target::text;
+  if position('BIO-SECRETA' in txt) > 0 then raise exception 'FAIL (9.bis): bio en la solicitud'; end if;
+  if position('data:image/png' in txt) > 0 then raise exception 'FAIL (9.bis): avatar en la solicitud'; end if;
+  if position('CFOP' in txt) > 0 then raise exception 'FAIL (9.bis): metodos en la solicitud'; end if;
+  if target ? 'bio' or target ? 'avatar_data' or target ? 'declared_methods'
+     or target ? 'country' or target ? 'main_puzzle' or target ? 'created_at' then
+    raise exception 'FAIL (9.bis): la solicitud lleva claves de perfil %', target;
+  end if;
+
+  -- Y lo mismo en la lista de salientes.
+  res := public.friend_list();
+  txt := (res -> 'list' -> 'outgoing')::text;
+  if position('BIO-SECRETA' in txt) > 0 or position('data:image/png' in txt) > 0
+     or position('CFOP' in txt) > 0 then
+    raise exception 'FAIL (9.bis): fuga en la lista de salientes';
+  end if;
+end $$;
+
+-- B acepta: sigue con el perfil cerrado, así que A ve identidad y nada más.
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('test.uid_b'))::text, true);
+do $$
+declare a uuid := current_setting('test.uid_a')::uuid; res jsonb; txt text;
+begin
+  res := public.friend_list();
+  txt := (res -> 'list' -> 'incoming')::text;
+  if position('BIO-SECRETA' in txt) > 0 or position('data:image/png' in txt) > 0 then
+    raise exception 'FAIL (9.bis): fuga en la lista de entrantes';
+  end if;
+
+  res := public.friend_request_accept(a);
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) aceptar: %', res; end if;
+end $$;
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('test.uid_a'))::text, true);
+do $$
+declare
+  b uuid := current_setting('test.uid_b')::uuid;
+  res jsonb;
+  txt text;
+begin
+  -- Amigo con el perfil cerrado: la tarjeta sigue viva (identidad), el perfil
+  -- extendido no sale.
+  res := public.friend_list();
+  txt := (res -> 'list' -> 'friends')::text;
+  if position('f8_test_b' in txt) = 0 then raise exception 'FAIL (9.bis): falta la identidad del amigo'; end if;
+  if position('BIO-SECRETA' in txt) > 0 then raise exception 'FAIL (9.bis): bio del amigo cerrado'; end if;
+  if position('data:image/png' in txt) > 0 then raise exception 'FAIL (9.bis): avatar del amigo cerrado'; end if;
+  if position('CFOP' in txt) > 0 then raise exception 'FAIL (9.bis): metodos del amigo cerrado'; end if;
+
+  -- La página de perfil dice el motivo, en vez de devolver la mitad.
+  res := public.friend_profile(b);
+  if res ->> 'reason' <> 'not_shared' then raise exception 'FAIL (9.bis) perfil cerrado: %', res; end if;
+
+  -- `friend_stats` comparte stats, NO perfil: antes colaba el perfil entero por
+  -- su campo `owner`.
+  res := public.friend_stats(b);
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) stats: %', res; end if;
+  if res ? 'owner' then raise exception 'FAIL (9.bis): stats sigue llevando owner'; end if;
+  txt := res::text;
+  if position('BIO-SECRETA' in txt) > 0 or position('data:image/png' in txt) > 0
+     or position('CFOP' in txt) > 0 then
+    raise exception 'FAIL (9.bis): el perfil cerrado sale por las estadisticas';
+  end if;
+
+  -- Y el armario sigue funcionando sin arrastrar perfil.
+  res := public.friend_locker(b);
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) armario: %', res; end if;
+  if res ? 'owner' then raise exception 'FAIL (9.bis): el armario lleva owner'; end if;
+
+  -- Un uuid que no es de nadie responde `not_found`, no un 500 de FK.
+  res := public.friend_block('ffffffff-0000-4000-8000-000000000000'::uuid);
+  if res ->> 'reason' <> 'not_found' then raise exception 'FAIL (9.bis) bloqueo inexistente: %', res; end if;
+
+  -- Y bloquear no puede ser un lector de perfiles: la lista de bloqueados
+  -- proyecta identidad mínima.
+  res := public.friend_block(b);
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) bloquear: %', res; end if;
+  res := public.friend_list();
+  txt := (res -> 'list' -> 'blocked')::text;
+  if position('BIO-SECRETA' in txt) > 0 or position('data:image/png' in txt) > 0 then
+    raise exception 'FAIL (9.bis): la lista de bloqueados filtra el perfil';
+  end if;
+
+  res := public.friend_unblock(b);
+  if (res ->> 'ok')::boolean is not true then raise exception 'FAIL (9.bis) desbloquear: %', res; end if;
 end $$;
 
 -- ═══ (10) Límite de ritmo ════════════════════════════════════════════════

@@ -44,6 +44,13 @@
 -- Efecto buscado: pase lo que pase, **un handle pertenece a un titular y solo
 -- se libera desde `handle_claim`** (que es también la vía de reclamo). Y ningún
 -- camino puede convertir un conflicto de identidad en un sync atascado.
+--
+-- ¿Dónde está `handle_claim`? En `20260912000018_friends_rpc.sql`, con el resto
+-- de la superficie pública. No es cosmético: el RPC necesita `friend_rate_check`
+-- (el freno de intentos de la capa social), y llamar desde aquí a un objeto
+-- definido dos migraciones más adelante sería una referencia hacia delante —
+-- funciona en un `db push` completo, pero revienta en cuanto alguien aplica este
+-- fichero por separado. La 18 sí puede usarlo todo (16 → 17 → 18).
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── Formato canónico ──────────────────────────────────────────────────────
@@ -179,92 +186,5 @@ create trigger profiles_protect_handle
   for each row execute procedure public.profiles_protect_handle();
 
 revoke all on function public.profiles_protect_handle() from public, anon, authenticated;
-
--- ── Reserva ───────────────────────────────────────────────────────────────
--- Única vía de la UI para fijar un handle: comprueba y escribe en la MISMA
--- transacción (sin "check-then-set"), y devuelve el sello de servidor que el
--- cliente debe adoptar localmente para que el pull no lo traiga de vuelta.
---
--- El error `taken` revela que un handle existe — es inherente a "añadir por
--- handle" (residual aceptado y documentado en el plan, §6.4). Lo que sí se
--- evita: prefijos, listas y adivinación masiva (formato exacto + rate limit en
--- la capa de amigos).
-create or replace function public.handle_claim(p_handle text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  uid uuid := auth.uid();
-  clean text;
-  now_ms bigint := (extract(epoch from now()) * 1000)::bigint;
-  stamped bigint;
-begin
-  if uid is null then
-    raise exception 'not authenticated';
-  end if;
-
-  clean := public.normalize_handle(p_handle);
-  if clean is null then
-    return jsonb_build_object('ok', false, 'reason', 'invalid');
-  end if;
-
-  -- Ya es tuyo: idempotente (reintentos, doble clic, dos dispositivos).
-  if exists (
-    select 1 from public.profiles where user_id = uid and lower(handle) = clean
-  ) then
-    return jsonb_build_object('ok', true, 'handle', clean, 'unchanged', true);
-  end if;
-
-  -- Disponibilidad explícita. El trigger `profiles_protect_handle` NO lanza
-  -- cuando el handle es de otro: reescribe `NEW.handle` y deja pasar la fila
-  -- con el handle anterior. Eso es lo que mantiene el lote de sync a salvo,
-  -- pero significa que un `insert … on conflict` aquí podría "tener éxito" sin
-  -- haber escrito nada — y devolver `ok` mientras el handle sigue siendo otro.
-  -- Por eso hay tres capas y no una:
-  --   1. esta comprobación (da el motivo y la sugerencia),
-  --   2. el índice único (carrera real entre dos transacciones concurrentes,
-  --      que atrapa el `exception` de abajo),
-  --   3. la relectura posterior (cubre cualquier veto silencioso del trigger).
-  if exists (
-    select 1 from public.profiles p
-    where p.user_id <> uid and lower(p.handle) = clean
-  ) then
-    return jsonb_build_object(
-      'ok', false, 'reason', 'taken', 'suggestion', public.handle_suggestion(clean)
-    );
-  end if;
-
-  insert into public.profiles (user_id, handle, created_at, updated_at)
-  values (uid, clean, now_ms, now_ms)
-  on conflict (user_id) do update
-    -- Sello de servidor, estrictamente creciente: el pull del propio
-    -- dispositivo tiene que ver este cambio como nuevo.
-    set handle = clean,
-        updated_at = greatest(public.profiles.updated_at + 1, now_ms)
-  returning updated_at into stamped;
-
-  -- Capa 3: se verifica lo que quedó escrito, no lo que se pretendía escribir.
-  if (select lower(handle) from public.profiles where user_id = uid) <> clean then
-    return jsonb_build_object(
-      'ok', false, 'reason', 'taken', 'suggestion', public.handle_suggestion(clean)
-    );
-  end if;
-
-  return jsonb_build_object('ok', true, 'handle', clean, 'updated_at', stamped);
-
-exception
-  when unique_violation then
-    -- Carrera perdida entre dos claims concurrentes: el índice único decide.
-    return jsonb_build_object(
-      'ok', false,
-      'reason', 'taken',
-      'suggestion', public.handle_suggestion(clean)
-    );
-end $$;
-
-revoke all on function public.handle_claim(text) from public, anon;
-grant execute on function public.handle_claim(text) to authenticated;
 
 notify pgrst, 'reload schema';

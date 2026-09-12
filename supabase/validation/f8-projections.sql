@@ -232,7 +232,10 @@ begin
   if jsonb_array_length(res -> 'heatmap') <> 365 then
     raise exception 'FAIL stats: heatmap de % dias', jsonb_array_length(res -> 'heatmap');
   end if;
-  if res -> 'owner' ->> 'handle' <> 'f8_test_b' then raise exception 'FAIL stats: owner'; end if;
+  -- `owner` YA NO EXISTE en la respuesta: la identidad viaja en el directorio y
+  -- en el perfil, y repetirla aquí era una segunda puerta al perfil extendido
+  -- que `share_stats` no protege (auditoría A2/N1).
+  if res ? 'owner' then raise exception 'FAIL stats: la respuesta lleva owner'; end if;
 
   -- Los números del 3x3, calculados a mano sobre las solves de arriba
   -- (10000, 12000+2000, DNF, 8000, 7000): efectivas 10000/14000/-/8000/7000.

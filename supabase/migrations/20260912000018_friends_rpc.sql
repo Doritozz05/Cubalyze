@@ -18,6 +18,16 @@
 --   5. Respuesta ENVOLVENTE (`{ok, reason, …}`) y nunca una excepción por un
 --      estado de producto esperable (ya no me quiere, no existe, está cerrado).
 --      Excepción solo para lo anómalo: sin sesión.
+--   6. `share_profile` es una puerta de verdad: el perfil extendido (bio, país,
+--      métodos, rompecabezas principal, avatar en base64) solo sale por
+--      `friend_profile_json`, y solo cuando el dueño lo comparte. Todo lo demás
+--      — solicitudes pendientes, bloqueos, la lista de amigos de alguien que lo
+--      cerró — proyecta `friend_profile_min_json` (identidad y nada más).
+--
+-- También vive aquí `handle_claim`, aunque sea identidad y no amigos: es la
+-- única función pública que necesita el freno de intentos, y el freno es de
+-- esta capa. La alternativa era una llamada hacia delante desde la migración
+-- 16 (aplicable solo si el juego completo va junto), y no compensa.
 --
 -- Sobre privacidad y enumeración: `friend_request_send` a un handle que no
 -- existe y a uno que te ha bloqueado devuelven LO MISMO (`not_found`), para no
@@ -47,6 +57,12 @@ $$;
  * Ventana fija: simple, barata y suficiente para frenar a un cliente que
  * automatiza. El conteo se incrementa SIEMPRE (también cuando ya se pasó), así
  * que insistir no reinicia nada.
+ *
+ * La retención vive aquí, no en un cron: `pg_cron` es un cambio pendiente
+ * (auditoría P5) y una tabla de cuotas sin limpieza crece una fila por
+ * actor/acción/ventana para siempre. El `delete` usa el prefijo `actor` de la
+ * clave primaria, así que es un escaneo de índice corto, y solo conserva las
+ * ventanas de los últimos 7 días — nadie mira más atrás.
  */
 create or replace function public.friend_rate_check(
   p_action text,
@@ -65,6 +81,11 @@ begin
   if uid is null then
     return false;
   end if;
+
+  delete from public.friend_rate_limits
+  where actor = uid
+    and window_start < public.friend_window_start(p_window_ms) - 7 * 86400000;
+
   insert into public.friend_rate_limits (actor, action, window_start, count)
   values (uid, p_action, public.friend_window_start(p_window_ms), 1)
   on conflict (actor, action, window_start)
@@ -91,12 +112,52 @@ begin
   end;
 end $$;
 
-/**
- * La proyección de un perfil: el ÚNICO sitio del sistema donde un perfil ajeno
- * se convierte en JSON. `share_profile` no se comprueba aquí (lo hace quien
- * llama, que además tiene que haber pasado la puerta de amistad); así la misma
- * forma sirve para la lista, para el perfil y para las solicitudes.
- */
+-- ── Proyecciones de perfil ───────────────────────────────────────────────
+-- Hay DOS formas de ver a una persona, y la diferencia no es cosmética:
+--
+--   • `friend_profile_min_json` — la IDENTIDAD, y solo la identidad: lo
+--     imprescindible para pintar una tarjeta (nombre, handle, tipo de avatar y
+--     el `user_id`, que es la semilla del CubeMark). Es lo que ve cualquier
+--     relación activa — una solicitud enviada o recibida, un bloqueo — y
+--     también un amigo que ha cerrado su perfil.
+--
+--     Deliberadamente NO incluye `avatar_data` (puede ser una foto en base64:
+--     bytes privados a los que una solicitud pendiente no da derecho; la
+--     tarjeta pinta el identicon derivado de `user_id`), ni bio, país,
+--     métodos, `main_puzzle` o `created_at`.
+--
+--   • `friend_profile_json` — la identidad MÁS el perfil extendido (bio, país,
+--     métodos, rompecabezas principal, alta). Es lo que ve un amigo cuando su
+--     dueño comparte perfil.
+--
+-- Y una sola puerta que decide entre las dos:
+--
+--   • `friend_visible_profile_json` — completa si el dueño comparte perfil,
+--     mínima si lo cerró. Es la que usan las listas de amigos: así
+--     `share_profile` significa algo (antes se ignoraba en `friend_list` y
+--     `avatar_data`, país y métodos salían igual, con el interruptor apagado).
+--     `friend_profile` NO la usa: ahí "cerrado" tiene que ser `not_shared`
+--     explícito, porque la página de perfil muestra un estado, no una tarjeta.
+
+/** Identidad mínima: tarjeta de cualquier relación activa. */
+create or replace function public.friend_profile_min_json(p_user uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'user_id', p.user_id,
+    'display_name', p.display_name,
+    'handle', p.handle,
+    'avatar_kind', p.avatar_kind
+  )
+  from public.profiles p
+  where p.user_id = p_user;
+$$;
+
+/** Perfil extendido: se construye aquí y en ningún otro sitio. */
 create or replace function public.friend_profile_json(p_user uuid)
 returns jsonb
 language sql
@@ -120,16 +181,151 @@ as $$
   where p.user_id = p_user;
 $$;
 
+/** La proyección de un AMIGO: extendida si comparte perfil, mínima si no. */
+create or replace function public.friend_visible_profile_json(p_owner uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when coalesce(
+      (select v.share_profile from public.profile_visibility v where v.user_id = p_owner),
+      true
+    ) then public.friend_profile_json(p_owner)
+    else public.friend_profile_min_json(p_owner)
+  end;
+$$;
+
 -- Sin EXECUTE para nadie: son maquinaria interna de las funciones de abajo.
 revoke all on function public.friend_window_start(bigint) from public, anon, authenticated;
 revoke all on function public.friend_rate_check(text, int, bigint) from public, anon, authenticated;
 revoke all on function public.jsonb_or_empty(text) from public, anon, authenticated;
+revoke all on function public.friend_profile_min_json(uuid) from public, anon, authenticated;
 revoke all on function public.friend_profile_json(uuid) from public, anon, authenticated;
+revoke all on function public.friend_visible_profile_json(uuid) from public, anon, authenticated;
+
+-- ── Identidad ─────────────────────────────────────────────────────────────
+-- `handle_claim` vivía en la migración 16 (formato canónico, unicidad,
+-- trigger). Se movió aquí por una razón de orden: necesita `friend_rate_check`,
+-- y un `create function` que llame a algo definido dos migraciones más adelante
+-- es una referencia hacia delante (funciona en un `db push` completo, revienta
+-- si alguien aplica la 16 sola). Aquí ya existe todo lo anterior.
+--
+-- Única vía de la UI para fijar un handle: comprueba y escribe en la MISMA
+-- transacción (sin "check-then-set"), y devuelve el sello de servidor que el
+-- cliente debe adoptar localmente para que el pull no lo traiga de vuelta.
+--
+-- El error `taken` revela que un handle existe — es inherente a "añadir por
+-- handle" (residual aceptado y documentado en el plan, §6.4). Lo que NO se
+-- acepta es la adivinación masiva: el formato exacto acota el espacio, y el
+-- freno de intentos (dos ventanas: ráfaga horaria y techo diario) acota el
+-- ritmo. Sin él, `taken` era un oráculo ilimitado: se podía barrer el
+-- diccionario de handles a la velocidad de la red y, de paso, dejar la tabla
+-- de intentos como residuo de escrituras.
+--
+-- Residual aceptado (auditoría B4): dos claims concurrentes de la MISMA cuenta
+-- con handles distintos pueden devolver `ok` los dos — el índice serializa las
+-- transacciones y gana la última que escribe. El "perdedor" no miente sobre el
+-- estado de SU transacción (en ese instante el handle era suyo), y su cliente
+-- converge al handle vigente en el siguiente pull, porque el sello es de
+-- servidor y estrictamente creciente. Bloquear la fila antes de responder no
+-- cambiaría quién gana, solo añadiría una espera.
+create or replace function public.handle_claim(p_handle text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  clean text;
+  now_ms bigint := (extract(epoch from now()) * 1000)::bigint;
+  stamped bigint;
+begin
+  if uid is null then
+    raise exception 'not authenticated';
+  end if;
+
+  -- Freno ANTES de tocar nada: una comprobación de disponibilidad y un intento
+  -- de reserva cuestan lo mismo. La ventana horaria frena el barrido; la diaria
+  -- pone un techo que sobrevive a cambiar de hora.
+  if not public.friend_rate_check('claim_hour', 30, 3600000)
+     or not public.friend_rate_check('claim_day', 200, 86400000) then
+    return jsonb_build_object('ok', false, 'reason', 'rate_limited');
+  end if;
+
+  clean := public.normalize_handle(p_handle);
+  if clean is null then
+    return jsonb_build_object('ok', false, 'reason', 'invalid');
+  end if;
+
+  -- Ya es tuyo: idempotente (reintentos, doble clic, dos dispositivos).
+  if exists (
+    select 1 from public.profiles where user_id = uid and lower(handle) = clean
+  ) then
+    return jsonb_build_object('ok', true, 'handle', clean, 'unchanged', true);
+  end if;
+
+  -- Disponibilidad explícita. El trigger `profiles_protect_handle` NO lanza
+  -- cuando el handle es de otro: reescribe `NEW.handle` y deja pasar la fila
+  -- con el handle anterior. Eso es lo que mantiene el lote de sync a salvo,
+  -- pero significa que un `insert … on conflict` aquí podría "tener éxito" sin
+  -- haber escrito nada — y devolver `ok` mientras el handle sigue siendo otro.
+  -- Por eso hay tres capas y no una:
+  --   1. esta comprobación (da el motivo y la sugerencia),
+  --   2. el índice único (carrera real entre dos transacciones concurrentes,
+  --      que atrapa el `exception` de abajo),
+  --   3. la relectura posterior (cubre cualquier veto silencioso del trigger).
+  if exists (
+    select 1 from public.profiles p
+    where p.user_id <> uid and lower(p.handle) = clean
+  ) then
+    return jsonb_build_object(
+      'ok', false, 'reason', 'taken', 'suggestion', public.handle_suggestion(clean)
+    );
+  end if;
+
+  insert into public.profiles (user_id, handle, created_at, updated_at)
+  values (uid, clean, now_ms, now_ms)
+  on conflict (user_id) do update
+    -- Sello de servidor, estrictamente creciente: el pull del propio
+    -- dispositivo tiene que ver este cambio como nuevo.
+    set handle = clean,
+        updated_at = greatest(public.profiles.updated_at + 1, now_ms)
+  returning updated_at into stamped;
+
+  -- Capa 3: se verifica lo que quedó escrito, no lo que se pretendía escribir.
+  if (select lower(handle) from public.profiles where user_id = uid) <> clean then
+    return jsonb_build_object(
+      'ok', false, 'reason', 'taken', 'suggestion', public.handle_suggestion(clean)
+    );
+  end if;
+
+  return jsonb_build_object('ok', true, 'handle', clean, 'updated_at', stamped);
+
+exception
+  when unique_violation then
+    -- Carrera perdida entre dos claims concurrentes: el índice único decide.
+    return jsonb_build_object(
+      'ok', false,
+      'reason', 'taken',
+      'suggestion', public.handle_suggestion(clean)
+    );
+end $$;
+
+-- Permisos: en el bloque central de la superficie pública, al final del
+-- fichero. Un solo sitio donde auditar qué alcanza `authenticated`.
 
 -- ── Solicitudes ───────────────────────────────────────────────────────────
 
 /**
  * Enviar una solicitud por handle exacto.
+ *
+ * La respuesta lleva la IDENTIDAD MÍNIMA del destino (`friend_profile_min_json`),
+ * nunca su perfil: quien pregunta aún no es amigo, y su `share_profile` no
+ * puede decidir nada sobre la puerta que él ya eligió abrir (`allow_requests`).
  *
  * Auto-aceptación (decisión D1, 2026-09-12): si la otra persona YA te había
  * solicitado, la intención es mutua y la fila pasa a `accepted` en la misma
@@ -152,6 +348,7 @@ declare
   low uuid;
   high uuid;
   existing public.friendships%rowtype;
+  raced_status text;
   now_ms bigint := (extract(epoch from now()) * 1000)::bigint;
   msg text := left(coalesce(p_message, ''), 200);
 begin
@@ -219,18 +416,46 @@ begin
     return jsonb_build_object(
       'ok', true,
       'accepted', true,
-      'target', public.friend_profile_json(target)
+      'target', public.friend_profile_min_json(target)
     );
   end if;
 
+  -- Carrera real: dos solicitudes cruzadas pueden no verse entre sí (READ
+  -- COMMITTED: cada statement tiene su propia foto) y las dos llegan hasta
+  -- aquí. Antes, la segunda moría con un `unique_violation` sin capturar → 500
+  -- → el cliente lo contaba como "sin conexión" por algo que era, literalmente,
+  -- una amistad naciendo. El `on conflict` convierte el único conflicto posible
+  -- (la PK del par) en lo que la intención cruzada significa: aceptar. Si la
+  -- fila con la que choca es mi propia solicitud pendiente, el `where` la deja
+  -- intacta y la respuesta es `pending` (idempotente), no un error.
   insert into public.friendships
     (user_low, user_high, requested_by, status, message, created_at, updated_at)
-  values (low, high, uid, 'pending', msg, now_ms, now_ms);
+  values (low, high, uid, 'pending', msg, now_ms, now_ms)
+  on conflict (user_low, user_high) do update
+    set status = 'accepted',
+        responded_at = now_ms,
+        updated_at = greatest(public.friendships.updated_at + 1, now_ms)
+    where public.friendships.status = 'pending'
+      and public.friendships.requested_by <> uid
+  returning status into raced_status;
+
+  if raced_status is null then
+    -- Chocamos con una fila que no era aceptable: mi propia solicitud pendiente,
+    -- o una amistad que otra transacción acaba de aceptar. Releer y decir la
+    -- verdad en vez de suponer.
+    select status into raced_status from public.friendships
+     where user_low = low and user_high = high;
+
+    if raced_status = 'accepted' then
+      return jsonb_build_object('ok', false, 'reason', 'already_friends');
+    end if;
+    return jsonb_build_object('ok', false, 'reason', 'pending');
+  end if;
 
   return jsonb_build_object(
     'ok', true,
-    'accepted', false,
-    'target', public.friend_profile_json(target)
+    'accepted', raced_status = 'accepted',
+    'target', public.friend_profile_min_json(target)
   );
 end $$;
 
@@ -367,6 +592,13 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'self');
   end if;
 
+  -- Un uuid que no es de nadie responde como cualquier otro "no existe" de la
+  -- fase. Antes, el INSERT chocaba con la FK y lanzaba: un 500 que además
+  -- delataba la existencia del uuid por el tipo de error.
+  if not exists (select 1 from public.profiles where user_id = p_other) then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+
   insert into public.friend_blocks (blocker, blocked, created_at)
   values (uid, p_other, now_ms)
   on conflict (blocker, blocked) do nothing;
@@ -465,7 +697,15 @@ end $$;
 
 -- ── Proyecciones ──────────────────────────────────────────────────────────
 
-/** Quién hay a cada lado, con su estado. Todo en una llamada (badge incluido). */
+/**
+ * Quién hay a cada lado, con su estado. Todo en una llamada (badge incluido).
+ *
+ * Cada cubo lleva la proyección que le corresponde, y no la misma para todos:
+ * un amigo ve el perfil si su dueño lo comparte; una solicitud pendiente o un
+ * bloqueo ven solo la identidad mínima. `share_profile` sale del `jsonb` en el
+ * mismo sitio en el que se decide, así que no hay forma de colar el perfil
+ * extendido por descuido.
+ */
 create or replace function public.friend_list()
 returns jsonb
 language plpgsql
@@ -501,7 +741,12 @@ begin
       p.requested_by = uid as outgoing,
       p.message,
       p.created_at,
-      public.friend_profile_json(p.other) as profile,
+      -- Amigos: perfil extendido si lo comparte, identidad mínima si lo cerró.
+      public.friend_visible_profile_json(p.other) as profile,
+      -- Pendientes: SIEMPRE identidad mínima. Una solicitud no da derecho al
+      -- perfil (ni a la foto de avatar en base64) de quien todavía no te ha
+      -- aceptado, y menos si tiene `share_profile` apagado.
+      public.friend_profile_min_json(p.other) as min_profile,
       -- Ámbitos compartidos: se muestran como distintivos en la tarjeta, sin
       -- necesidad de traer ni un dato más.
       coalesce((select v.share_stats from public.profile_visibility v where v.user_id = p.other), false) as shares_stats,
@@ -518,18 +763,22 @@ begin
     ), '[]'::jsonb),
     'incoming', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'profile', s.profile, 'message', s.message, 'created_at', s.created_at
+        'profile', s.min_profile, 'message', s.message, 'created_at', s.created_at
       ) order by s.created_at desc)
       from shaped s where s.status = 'pending' and s.outgoing = false
     ), '[]'::jsonb),
     'outgoing', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'profile', s.profile, 'message', s.message, 'created_at', s.created_at
+        'profile', s.min_profile, 'message', s.message, 'created_at', s.created_at
       ) order by s.created_at desc)
       from shaped s where s.status = 'pending' and s.outgoing = true
     ), '[]'::jsonb),
     'blocked', coalesce((
-      select jsonb_agg(public.friend_profile_json(b.blocked) order by b.created_at desc)
+      -- Bloquear es una defensa, no una puerta trasera al perfil: la lista de
+      -- bloqueados proyecta la MISMA identidad mínima que una solicitud. Antes
+      -- devolvía el perfil extendido, así que `friend_block` + `friend_list`
+      -- era un lector de perfiles para cualquier `user_id` conocido.
+      select jsonb_agg(public.friend_profile_min_json(b.blocked) order by b.created_at desc)
       from public.friend_blocks b where b.blocker = uid
     ), '[]'::jsonb)
   ) into result;
@@ -864,9 +1113,12 @@ begin
     end if;
   end loop;
 
+  -- Sin `owner`: la identidad ya viaja en `friend_list`/`friend_profile`, y
+  -- repetir aquí el perfil extendido era una segunda puerta sin puerta —
+  -- `friend_stats` exige `share_stats`, no `share_profile`, así que un amigo
+  -- con el perfil cerrado lo recibía igual por esta vía.
   return jsonb_build_object(
     'ok', true,
-    'owner', public.friend_profile_json(p_other),
     'overall', overall,
     'by_puzzle', by_puzzle,
     'streak_days', streak,
@@ -958,6 +1210,9 @@ end $$;
 revoke all on function public.puzzle_average(uuid, text, int) from public, anon, authenticated;
 
 -- ── Permisos de la superficie pública ─────────────────────────────────────
+-- Un único sitio donde auditar todo lo que alcanza `authenticated`. Cada
+-- entrada tiene su `revoke` (PUBLIC trae EXECUTE por defecto) y su `grant`.
+revoke all on function public.handle_claim(text) from public, anon;
 revoke all on function public.friend_request_send(text, text) from public, anon;
 revoke all on function public.friend_request_accept(uuid) from public, anon;
 revoke all on function public.friend_request_decline(uuid) from public, anon;
@@ -972,6 +1227,7 @@ revoke all on function public.friend_profile(uuid) from public, anon;
 revoke all on function public.friend_locker(uuid, text, text, int) from public, anon;
 revoke all on function public.friend_stats(uuid, int) from public, anon;
 
+grant execute on function public.handle_claim(text) to authenticated;
 grant execute on function public.friend_request_send(text, text) to authenticated;
 grant execute on function public.friend_request_accept(uuid) to authenticated;
 grant execute on function public.friend_request_decline(uuid) to authenticated;

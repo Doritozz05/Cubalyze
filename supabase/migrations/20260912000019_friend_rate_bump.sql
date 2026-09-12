@@ -39,6 +39,13 @@ begin
     return false;
   end if;
 
+  -- Misma retención que `friend_rate_check` (migración 18): 7 días de ventanas,
+  -- usando el prefijo `actor` de la PK. La cuota de la Edge Function no puede
+  -- dejar la tabla creciendo sin fin por el hecho de no pasar por el RPC.
+  delete from public.friend_rate_limits
+  where actor = p_actor
+    and window_start < public.friend_window_start(p_window_ms) - 7 * 86400000;
+
   insert into public.friend_rate_limits (actor, action, window_start, count)
   values (p_actor, p_action, public.friend_window_start(p_window_ms), 1)
   on conflict (actor, action, window_start)

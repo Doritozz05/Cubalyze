@@ -166,6 +166,33 @@ begin
   end;
 end $$;
 
+-- ── (4.bis) El freno de intentos del claim ────────────────────────────────
+-- `handle_claim` es un oráculo de existencia (`taken`) y sin límite se podía
+-- barrer el diccionario de handles a la velocidad de la red. La ventana
+-- horaria es 30, así que 40 intentos de la MISMA cuenta tienen que frenarse.
+--
+-- Se barre con B, no con A: A tiene que conservar su handle para la sección
+-- (5), y cada intento con éxito CAMBIA el handle del titular.
+select set_config('request.jwt.claims',
+  json_build_object('sub', current_setting('test.uid_b'))::text, true);
+do $$
+declare
+  res jsonb;
+  limited boolean := false;
+  i int;
+begin
+  for i in 1..40 loop
+    res := public.handle_claim('f8_sweep_' || i);
+    if res ->> 'reason' = 'rate_limited' then
+      limited := true;
+      exit;
+    end if;
+  end loop;
+  if not limited then
+    raise exception 'FAIL freno de claim: 40 intentos sin frenar';
+  end if;
+end $$;
+
 -- ── (5) sync_apply no puede borrar el handle reclamado ────────────────────
 select set_config('request.jwt.claims',
   json_build_object('sub', current_setting('test.uid_a'))::text, true);

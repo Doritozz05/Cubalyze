@@ -93,8 +93,11 @@ create table if not exists public.friend_rate_limits (
   primary key (actor, action, window_start)
 );
 
--- Limpieza de ventanas viejas: se apoya en el mismo criterio que la retención
--- de tombstones (pendiente de mover a `pg_cron`, auditoría P5).
+-- Limpieza de ventanas viejas: la hace cada consumo (`friend_rate_check` en la
+-- 18, `friend_rate_bump` en la 19) borrando sus ventanas de más de 7 días por
+-- el prefijo `actor` de la PK. Ese borrado es determinista y no necesita
+-- `pg_cron`; el índice por `window_start` queda para la limpieza masiva futura
+-- (auditoría P5) y para consultas de diagnóstico.
 create index if not exists idx_friend_rate_limits_window
   on public.friend_rate_limits (window_start);
 
