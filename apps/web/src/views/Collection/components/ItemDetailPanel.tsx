@@ -3,30 +3,24 @@
 /**
  * ItemDetailPanel.tsx — the product page for the selected item.
  *
- * IKEA grammar on purpose: identity, then a plain spec table with right-aligned
- * values, then media, notes and links. It stays legible with ten items or a
- * thousand and never competes with the glyph for attention.
+ * IKEA grammar on purpose: identity and badges first, then the picture, then a
+ * plain spec table with right-aligned values, then photos, notes and links. It
+ * stays legible with ten items or a thousand and never competes with the media
+ * for attention.
  *
- * "Set as main" only exists for cube categories — that is the one piece of
- * state the rest of the app will eventually consume (the cube your solves
- * default to).
+ * The "Main" flag lives in the header as a chip — one short control, always in
+ * the same place, instead of a full-width button shouting from the footer. It
+ * only exists for cube categories: that is the one piece of state the rest of
+ * the app consumes (the cube a solve defaults to).
  */
 
 import { useTranslation } from "react-i18next";
-import {
-  Camera,
-  ExternalLink,
-  Heart,
-  Pencil,
-  Star,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Camera, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
-import { GearGlyph } from "../GearGlyph";
+import { ItemMedia } from "./ItemMedia";
 import {
   CONDITION_I18N_KEY,
   STATUS_I18N_KEY,
@@ -44,6 +38,8 @@ interface SpecRow {
 export interface ItemDetailPanelProps {
   item: GearItem;
   isCube: boolean;
+  cubeOrder?: number;
+  categoryIconId?: string;
   typeName?: string;
   categoryName?: string;
   locale: string;
@@ -57,6 +53,8 @@ export interface ItemDetailPanelProps {
 export function ItemDetailPanel({
   item,
   isCube,
+  cubeOrder,
+  categoryIconId,
   typeName,
   categoryName,
   locale,
@@ -74,9 +72,6 @@ export function ItemDetailPanel({
   if (item.brand) rows.push({ key: "brand", label: t("spec.brand"), value: item.brand });
   if (item.model) rows.push({ key: "model", label: t("spec.model"), value: item.model });
   if (item.finish) rows.push({ key: "finish", label: t("spec.finish"), value: item.finish });
-  if (item.status !== "owned") {
-    rows.push({ key: "status", label: t("spec.status"), value: t(STATUS_I18N_KEY[item.status]) });
-  }
   if (item.condition) {
     rows.push({
       key: "condition",
@@ -96,28 +91,41 @@ export function ItemDetailPanel({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {isCube && item.primary ? (
-              <Badge className="gap-1 rounded-full text-[0.6rem] uppercase tracking-wide">
-                <Star className="size-2.5" />
-                {t("primary")}
-              </Badge>
-            ) : null}
-            {item.favorite ? (
-              <Badge variant="outline" className="gap-1 rounded-full text-[0.6rem]">
-                <Heart className="size-2.5 fill-current" />
-                {t("editor.favorite")}
-              </Badge>
-            ) : null}
-          </div>
-          <h2 className="mt-1.5 truncate text-base font-semibold tracking-tight text-ink">
-            {item.name}
-          </h2>
+          <h2 className="truncate text-base font-semibold tracking-tight text-ink">{item.name}</h2>
           {item.brand || item.model ? (
             <p className="mt-0.5 truncate text-[0.72rem] text-ink-3">
               {[item.brand, item.model].filter(Boolean).join(" · ")}
             </p>
           ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {isCube ? (
+              <button
+                type="button"
+                aria-pressed={item.primary}
+                onClick={onTogglePrimary}
+                title={item.primary ? t("unsetPrimary") : t("setPrimary")}
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition-colors",
+                  item.primary
+                    ? "bg-ink text-canvas"
+                    : "border border-dashed border-line-2 text-ink-3 hover:text-ink",
+                )}
+              >
+                {t("primary")}
+              </button>
+            ) : null}
+            {item.favorite ? (
+              <Badge variant="outline" className="gap-1 rounded-full text-[0.6rem] font-normal">
+                <Heart className="size-2.5 fill-current" />
+                {t("editor.favorite")}
+              </Badge>
+            ) : null}
+            {item.status !== "owned" ? (
+              <Badge variant="secondary" className="rounded-full text-[0.6rem] font-normal">
+                {t(STATUS_I18N_KEY[item.status])}
+              </Badge>
+            ) : null}
+          </div>
         </div>
         {onClose ? (
           <button
@@ -132,8 +140,16 @@ export function ItemDetailPanel({
       </header>
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
-        <div className="flex items-center justify-center rounded-lg border border-line bg-surface-2/40 py-4">
-          <GearGlyph item={item} isCube={isCube} size={124} />
+        <div className="flex aspect-[5/4] items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-2/30">
+          <ItemMedia
+            photo={item.photos[0]}
+            palette={item.palette}
+            alt={item.name}
+            isCube={isCube}
+            order={cubeOrder}
+            categoryIconId={categoryIconId}
+            variant="hero"
+          />
         </div>
 
         {item.tags.length > 0 ? (
@@ -160,8 +176,12 @@ export function ItemDetailPanel({
         </dl>
 
         <section>
-          <h3 className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+          <h3 className="flex items-center gap-1.5 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-ink-3">
+            <Camera className="size-3" />
             {t("photos")}
+            {item.photos.length > 1 ? (
+              <span className="tabular-nums opacity-70">{item.photos.length}</span>
+            ) : null}
           </h3>
           {item.photos.length > 0 ? (
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -175,10 +195,7 @@ export function ItemDetailPanel({
               ))}
             </div>
           ) : (
-            <div className="mt-2 flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line-2 py-6 text-center">
-              <Camera className="size-4 text-ink-3" />
-              <span className="text-[0.68rem] text-ink-3">{t("noPhotos")}</span>
-            </div>
+            <p className="mt-2 text-[0.7rem] text-ink-3">{t("noPhotos")}</p>
           )}
         </section>
 
@@ -205,42 +222,30 @@ export function ItemDetailPanel({
         ) : null}
       </div>
 
-      <footer className="shrink-0 space-y-2 border-t border-line px-4 py-3">
-        {isCube ? (
-          <Button
-            variant={item.primary ? "secondary" : "default"}
-            size="sm"
-            className="w-full justify-center gap-2"
-            onClick={onTogglePrimary}
-          >
-            <Star className={cn("size-3.5", item.primary && "fill-current")} />
-            {item.primary ? t("unsetPrimary") : t("setPrimary")}
-          </Button>
-        ) : null}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            aria-pressed={item.favorite}
-            aria-label={t("editor.favorite")}
-            onClick={onToggleFavorite}
-          >
-            <Heart className={cn("size-3.5", item.favorite && "fill-current")} />
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 justify-center gap-2" onClick={onEdit}>
-            <Pencil className="size-3.5" />
-            {t("edit")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-center gap-2 text-destructive hover:text-destructive"
-            onClick={onDelete}
-          >
-            <Trash2 className="size-3.5" />
-            {i18n.t("common:delete")}
-          </Button>
-        </div>
+      <footer className="flex shrink-0 items-center gap-2 border-t border-line px-4 py-3">
+        <Button
+          variant="outline"
+          size="icon"
+          aria-pressed={item.favorite}
+          aria-label={t("editor.favorite")}
+          onClick={onToggleFavorite}
+        >
+          <Heart className={cn("size-3.5", item.favorite && "fill-current")} />
+        </Button>
+        <Button variant="outline" size="sm" className="flex-1 justify-center gap-2" onClick={onEdit}>
+          <Pencil className="size-3.5" />
+          {t("edit")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={i18n.t("common:delete")}
+          title={i18n.t("common:delete")}
+          className="text-destructive hover:text-destructive"
+          onClick={onDelete}
+        >
+          <Trash2 className="size-3.5" />
+        </Button>
       </footer>
     </div>
   );

@@ -231,7 +231,9 @@ export function ColorPicker({ value, onChange, label, defaultColor, onResetToDef
         aria-label={label}
         className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-xs overflow-y-auto overscroll-contain p-4 sm:max-w-xl sm:p-5"
       >
-        <DialogTitle className="flex items-center gap-2 text-xs font-semibold text-ink">
+        {/* `pr-8` keeps the trailing hex clear of the dialog's built-in close
+            button, which is absolutely positioned in this corner. */}
+        <DialogTitle className="flex items-center gap-2 pr-8 text-xs font-semibold text-ink">
           <span
             aria-hidden="true"
             className="size-5 shrink-0 rounded-md border border-line"

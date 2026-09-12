@@ -3,21 +3,26 @@
  *
  * The Locker is organised as a **two-level taxonomy**:
  *
- *   Categoría (outer)          Tipo (inner)            Item
- *   ────────────────           ────────────            ────
- *   Cubos (kind: cube)         3×3, 2×2, Pyraminx…     GAN 12, Valk 2…
- *   Lubes (kind: gear)         (no defaults)           Weight 5…
- *   Gear  (kind: gear)         (no defaults)           Timer, mat…
+ *   Category (outer)          Type (inner)            Item
+ *   ────────────────          ────────────            ────
+ *   Cubes (kind: cube)        3×3, 2×2, Pyraminx…     GAN 12, Valk 2…
+ *   Lubes (kind: gear)        (no defaults)           Weight 5…
+ *   Gear  (kind: gear)        (no defaults)           Timer, mat…
+ *
+ * The three built-in categories keep their English names as literal data —
+ * they are product nouns (the same words the rest of the app uses in every
+ * locale), not UI copy, so they are deliberately not translated.
  *
  * Categories and types are both user-created and fully editable. The default
- * "Cubos" category seeds its types from the app's **global puzzle categories**
+ * "Cubes" category seeds its types from the app's **global puzzle categories**
  * (`@/utils/puzzleUtils`), minus the exclusions the user keeps (OH out of the
  * box). That bridge lives in `collectionStore.ts`, never here: this module is
  * pure data + pure functions, with no React and no I/O, so it is fully
  * unit-testable.
  *
- * "Main" (the cube your solves default to) is only meaningful for cube-kind
- * categories; {@link togglePrimary} enforces one main per cube category.
+ * "Main" marks the cube a solve would default to. It is only meaningful for
+ * cube-kind categories, and several items of the same type may all be main
+ * (a 3×3 main for OH *and* one for two-handed is a normal setup).
  */
 
 import type { ParseKeys } from 'i18next';
@@ -63,8 +68,20 @@ export interface CollectionType {
 
 // ─── Items ───────────────────────────────────────────────────────────────────
 
-/** Sticker palette per face, in U D F B R L order (math-core face order). */
-export type GearPalette = readonly [string, string, string, string, string, string];
+/**
+ * Sticker colours of an item, in face order. The six standard faces come first
+ * (U D F B R L, math-core face order); anything beyond them are extra faces the
+ * user added for machinery with more (a Pyraminx has 4, a Megaminx 12).
+ */
+export type GearPalette = readonly string[];
+
+/** The six standard faces, in the order the palette stores them. */
+export const PALETTE_FACES = ['U', 'D', 'F', 'B', 'R', 'L'] as const;
+
+export type PaletteFace = (typeof PALETTE_FACES)[number];
+
+/** How many standard faces map onto the sides of a rendered cube. */
+export const CUBE_FACE_COUNT = PALETTE_FACES.length;
 
 /** Where an item stands in its lifecycle. */
 export type ItemStatus = 'owned' | 'wishlist' | 'sold' | 'lent';
@@ -117,7 +134,7 @@ export interface GearItem {
   photos: readonly string[];
   tags: readonly string[];
   status: ItemStatus;
-  /** The main item of its cube category. Ignored for gear categories. */
+  /** Marked as "main". Only honoured for cube categories. */
   primary: boolean;
   favorite: boolean;
   /** 0–5, rounds to whole stars. */
@@ -145,6 +162,13 @@ export const COLLECTION_VERSION = 1;
 
 /** Global categories left out of the cube types on first run. */
 export const DEFAULT_EXCLUDED_CATEGORIES: readonly PuzzleCategory[] = ['3x3 OH'];
+
+/**
+ * First-run category names that were shipped in Spanish before the Locker
+ * settled on English product nouns. Used once, on restore, and only when the
+ * stored name still matches exactly.
+ */
+export const LEGACY_SEED_NAMES: Record<string, string> = { Cubos: 'Cubes' };
 
 /**
  * One global puzzle category offered by the app selector, resolved by the
@@ -207,8 +231,7 @@ export function newId(prefix: string): string {
 }
 
 /** Trim, drop empties and de-duplicate case-insensitively, keeping first case. */
-export function normalizeTags(tags: readonly string[]): string[] {
-  const seen = new Set<string>();
+export function normalizeTags(tags: readonly string[]): string[] {  const seen = new Set<string>();
   const result: string[] = [];
   for (const raw of tags) {
     const tag = raw.trim();
@@ -219,6 +242,16 @@ export function normalizeTags(tags: readonly string[]): string[] {
     result.push(tag);
   }
   return result;
+}
+
+/**
+ * Normalise a palette: always at least the six standard faces, every entry a
+ * non-empty colour, extras kept in order.
+ */
+export function normalizePalette(palette: readonly string[] | undefined): string[] {
+  const source =
+    Array.isArray(palette) && palette.length >= CUBE_FACE_COUNT ? palette : DEFAULT_PALETTE;
+  return source.map((colour, index) => colour || DEFAULT_PALETTE[index % CUBE_FACE_COUNT]);
 }
 
 // ─── Seeding ─────────────────────────────────────────────────────────────────
@@ -252,8 +285,8 @@ export function seedCollectionState(
     }));
 
   const categories: CollectionCategory[] = [
-    { id: SEED_CATEGORY_IDS.cubes, name: 'Cubos', kind: 'cube', icon: 'Box', createdAt: now },
-    { id: SEED_CATEGORY_IDS.lubes, name: 'Lubes', kind: 'gear', icon: 'Droplet', createdAt: now },
+    { id: SEED_CATEGORY_IDS.cubes, name: 'Cubes', kind: 'cube', icon: 'Box', createdAt: now },
+    { id: SEED_CATEGORY_IDS.lubes, name: 'Lubes', kind: 'gear', icon: 'Droplets', createdAt: now },
     { id: SEED_CATEGORY_IDS.gear, name: 'Gear', kind: 'gear', icon: 'Package', createdAt: now },
   ];
 
@@ -432,6 +465,8 @@ export interface ItemInput {
   tags?: readonly string[];
   status?: ItemStatus;
   favorite?: boolean;
+  /** "Main" flag. Silently dropped for non-cube categories. */
+  primary?: boolean;
   rating?: number;
   quantity?: number;
   condition?: ItemCondition;
@@ -458,7 +493,7 @@ export function upsertItem(
       brand: input.brand?.trim() || undefined,
       model: input.model?.trim() || undefined,
       finish: input.finish?.trim() || undefined,
-      palette: input.palette ?? existing.palette,
+      palette: normalizePalette(input.palette ?? existing.palette),
       acquiredAt: input.acquiredAt || undefined,
       price: input.price,
       notes: input.notes?.trim() || undefined,
@@ -467,6 +502,9 @@ export function upsertItem(
       tags: normalizeTags(input.tags ?? existing.tags),
       status: input.status ?? existing.status,
       favorite: input.favorite ?? existing.favorite,
+      primary: isCubeCategory(state, input.categoryId)
+        ? (input.primary ?? existing.primary)
+        : false,
       rating: clampRating(input.rating ?? existing.rating),
       quantity: Math.max(1, Math.round(input.quantity ?? existing.quantity)),
       condition: input.condition,
@@ -484,7 +522,7 @@ export function upsertItem(
     brand: input.brand?.trim() || undefined,
     model: input.model?.trim() || undefined,
     finish: input.finish?.trim() || undefined,
-    palette: input.palette ?? DEFAULT_PALETTE,
+    palette: normalizePalette(input.palette),
     acquiredAt: input.acquiredAt || undefined,
     price: input.price,
     notes: input.notes?.trim() || undefined,
@@ -492,7 +530,7 @@ export function upsertItem(
     photos: input.photos ?? [],
     tags: normalizeTags(input.tags ?? []),
     status: input.status ?? 'owned',
-    primary: false,
+    primary: isCubeCategory(state, input.categoryId) ? (input.primary ?? false) : false,
     favorite: input.favorite ?? false,
     rating: clampRating(input.rating),
     quantity: Math.max(1, Math.round(input.quantity ?? 1)),
@@ -527,24 +565,48 @@ export function clampRating(rating: number | undefined): number | undefined {
 }
 
 /**
- * Toggle the "main" flag. Only cube categories can carry a main, and only one
- * item per cube category may hold it.
+ * Toggle the "main" flag. Only cube categories can carry a main, and the flag
+ * is per item — a type may legitimately hold several mains (one for OH, one for
+ * two-handed), so this never clears the flag on anything else.
  */
 export function togglePrimary(state: CollectionState, itemId: string): CollectionState {
   const item = state.items.find((i) => i.id === itemId);
   if (!item || !isCubeCategory(state, item.categoryId)) return state;
+  return updateItem(state, itemId, { primary: !item.primary });
+}
 
-  const next = !item.primary;
-  return {
-    ...state,
-    items: state.items.map((candidate) => {
-      if (candidate.id === item.id) return { ...candidate, primary: next, updatedAt: Date.now() };
-      if (next && candidate.categoryId === item.categoryId && candidate.primary) {
-        return { ...candidate, primary: false, updatedAt: Date.now() };
-      }
-      return candidate;
-    }),
-  };
+/** Every main of one type (the grid badge, the category indicator). */
+export function mainsOfType(state: CollectionState, typeId: string | null): GearItem[] {
+  if (!typeId) return [];
+  return state.items.filter((item) => item.typeId === typeId && item.primary);
+}
+
+/** Every main inside one category, in name order. */
+export function mainsOfCategory(state: CollectionState, categoryId: string): GearItem[] {
+  return state.items
+    .filter((item) => item.categoryId === categoryId && item.primary)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * 3D cube order for a type: 2×2 renders 2×2×2, everything else 3×3×3. Types
+ * without a linked app category (a hand-made "4×4", a "Megaminx") simply get
+ * the standard cube render.
+ */
+export function cubeOrderFor(puzzleCategory: PuzzleCategory | null | undefined): 2 | 3 {
+  return puzzleCategory === '2x2' ? 2 : 3;
+}
+
+/**
+ * Face → colour map for the 3D renderer: the six standard faces of the palette,
+ * with the default scheme filling any gaps.
+ */
+export function cubeFaceColors(palette: GearPalette): Record<PaletteFace, string> {
+  const result = {} as Record<PaletteFace, string>;
+  PALETTE_FACES.forEach((face, index) => {
+    result[face] = palette[index] || DEFAULT_PALETTE[index];
+  });
+  return result;
 }
 
 export function toggleFavorite(state: CollectionState, itemId: string): CollectionState {
@@ -734,7 +796,7 @@ export interface CategoryNode {
   count: number;
 }
 
-/** The sidebar tree: categories with their types and item counts. */
+/** The taxonomy, flattened: categories with their types and item counts. */
 export function buildCategoryTree(state: CollectionState): CategoryNode[] {
   return state.categories.map((category) => ({
     category,
@@ -748,72 +810,6 @@ export function countByStatus(state: CollectionState): Record<ItemStatus, number
   const counts: Record<ItemStatus, number> = { owned: 0, wishlist: 0, sold: 0, lent: 0 };
   for (const item of state.items) counts[item.status] += 1;
   return counts;
-}
-
-// ─── Deterministic sticker state ─────────────────────────────────────────────
-
-/** cyrb53-style string hash → 32-bit unsigned. Fast and good enough for seeds. */
-export function hashString(input: string): number {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < input.length; i++) {
-    const ch = input.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (h2 >>> 0) % 4294967296;
-}
-
-/** mulberry32 — tiny, deterministic PRNG. Same seed ⇒ same cube pattern. */
-export function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** 6 faces × 9 stickers (row-major), U D F B R L order. */
-export type StickerState = readonly (readonly string[])[];
-
-/** A sticker that never moves: the centre defines the face. */
-const CENTRE = 4;
-
-/**
- * Build the cube pattern an item renders with.
- *
- * Every face starts monochrome, then a seeded number of stickers are swapped
- * between **different** faces — leaving the six centres alone so the cube still
- * reads as "this cube, in its own colour scheme, mid-solve". Purely cosmetic:
- * this is a picture, not a legal cube state.
- */
-export function stickerStateFor(item: GearItem, swaps = 5): StickerState {
-  const rng = mulberry32(hashString(item.id));
-  const faces: string[][] = item.palette.map((colour) => new Array<string>(9).fill(colour));
-
-  let done = 0;
-  let guard = 0;
-  while (done < swaps && guard < swaps * 20) {
-    guard += 1;
-    const fromFace = Math.floor(rng() * 6);
-    const toFace = Math.floor(rng() * 6);
-    const fromCell = Math.floor(rng() * 9);
-    const toCell = Math.floor(rng() * 9);
-    if (fromFace === toFace) continue;
-    if (fromCell === CENTRE || toCell === CENTRE) continue;
-
-    const tmp = faces[fromFace][fromCell];
-    faces[fromFace][fromCell] = faces[toFace][toCell];
-    faces[toFace][toCell] = tmp;
-    done += 1;
-  }
-
-  return faces;
 }
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
@@ -860,23 +856,30 @@ export function normalizeState(raw: unknown): CollectionState | null {
     version: COLLECTION_VERSION,
     categories: data.categories.map((category) => ({
       id: category.id || newId('cat'),
-      name: category.name || 'Categoría',
+      // Only the untouched default names are migrated — a category the user
+      // renamed stays exactly as they typed it.
+      name: (LEGACY_SEED_NAMES[category.name ?? ''] ?? category.name) || 'Category',
       kind: category.kind === 'cube' ? 'cube' : 'gear',
-      icon: category.icon || 'Package',
+      // `Droplet` was never a real icon id — the Lubricant default pointed at
+      // a component that does not exist, so it silently fell back to Package.
+      icon: category.icon === 'Droplet' ? 'Droplets' : category.icon || 'Package',
       accent: category.accent,
       createdAt: category.createdAt ?? now,
     })),
     types: data.types.map((type) => ({
       id: type.id || newId('type'),
       categoryId: type.categoryId,
-      name: type.name || 'Tipo',
+      name: type.name || 'Type',
       puzzleCategory: type.puzzleCategory ?? null,
       createdAt: type.createdAt ?? now,
     })),
     items: data.items.map((item) => ({
       ...item,
       id: item.id || newId('item'),
-      palette: Array.isArray(item.palette) && item.palette.length === 6 ? item.palette : DEFAULT_PALETTE,
+      palette:
+        Array.isArray(item.palette) && item.palette.length >= CUBE_FACE_COUNT
+          ? normalizePalette(item.palette)
+          : [...DEFAULT_PALETTE],
       links: Array.isArray(item.links) ? item.links : [],
       photos: Array.isArray(item.photos) ? item.photos : [],
       tags: normalizeTags(Array.isArray(item.tags) ? item.tags : []),

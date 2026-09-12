@@ -3,13 +3,19 @@
 /**
  * ItemGrid.tsx — the locker wall.
  *
- * A single responsive grid (`auto-fill`, 168px min) that scrolls vertically
- * inside its own box. No camera motion, no depth: the products are the reward,
- * not the transition between them.
+ * A single responsive grid (`auto-fill`) that scrolls vertically inside its own
+ * box. No camera motion, no depth: the gear is the reward, not the transition
+ * between it.
  */
 
 import { ItemCard } from "./ItemCard";
-import { categoryOf, typeOf, type CollectionState, type GearItem } from "../collectionModel";
+import {
+  categoryOf,
+  cubeOrderFor,
+  typeOf,
+  type CollectionState,
+  type GearItem,
+} from "../collectionModel";
 
 export interface ItemGridProps {
   items: readonly GearItem[];
@@ -37,21 +43,25 @@ export function ItemGrid({
   return (
     <div
       className="grid gap-3"
-      style={{ gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))" }}
+      style={{ gridTemplateColumns: "repeat(auto-fill, minmax(176px, 1fr))" }}
     >
-      {items.map((item) => (
-        <ItemCard
-          key={item.id}
-          item={item}
-          isCube={categoryOf(state, item.categoryId)?.kind === "cube"}
-          typeName={typeOf(state, item.typeId)?.name}
-          selected={item.id === selectedId}
-          locale={locale}
-          onSelect={() => onSelect(item)}
-          onTogglePrimary={() => onTogglePrimary(item)}
-          onToggleFavorite={() => onToggleFavorite(item)}
-        />
-      ))}
+      {items.map((item) => {
+        const type = typeOf(state, item.typeId);
+        return (
+          <ItemCard
+            key={item.id}
+            item={item}
+            category={categoryOf(state, item.categoryId)}
+            typeName={type?.name}
+            cubeOrder={cubeOrderFor(type?.puzzleCategory)}
+            selected={item.id === selectedId}
+            locale={locale}
+            onSelect={() => onSelect(item)}
+            onTogglePrimary={() => onTogglePrimary(item)}
+            onToggleFavorite={() => onToggleFavorite(item)}
+          />
+        );
+      })}
     </div>
   );
 }

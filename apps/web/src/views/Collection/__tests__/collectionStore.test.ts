@@ -58,7 +58,7 @@ describe("collection store", () => {
 
     const state = useCollectionStore.getState();
     expect(state.hydrated).toBe(true);
-    expect(state.data.categories.map((c) => c.name)).toEqual(["Cubos", "Lubes", "Gear"]);
+    expect(state.data.categories.map((c) => c.name)).toEqual(["Cubes", "Lubes", "Gear"]);
 
     const cubeTypeNames = state.data.types.map((t) => t.name);
     const playable = GLOBAL_CATEGORY_OPTIONS.filter((o) => o.playable && o.category !== "3x3 OH").map(
@@ -124,6 +124,6 @@ describe("collection store", () => {
     const store = () => useCollectionStore.getState();
     store().addCategory({ name: "Temp", kind: "gear", icon: "Box" });
     store().reset();
-    expect(store().data.categories.map((c) => c.name)).toEqual(["Cubos", "Lubes", "Gear"]);
+    expect(store().data.categories.map((c) => c.name)).toEqual(["Cubes", "Lubes", "Gear"]);
   });
 });

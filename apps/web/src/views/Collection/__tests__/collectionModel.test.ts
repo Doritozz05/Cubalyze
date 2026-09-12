@@ -8,11 +8,14 @@ import {
   countByStatus,
   countItemsInCategory,
   countItemsInType,
+  cubeFaceColors,
+  cubeOrderFor,
   formatAcquired,
   formatPrice,
-  hashString,
   isCubeCategory,
-  mulberry32,
+  mainsOfCategory,
+  mainsOfType,
+  normalizePalette,
   normalizeState,
   normalizeTags,
   queryItems,
@@ -21,7 +24,6 @@ import {
   seedCollectionState,
   setExcludedCategories,
   sortItems,
-  stickerStateFor,
   syncCubeCategory,
   tagFacets,
   toggleFavorite,
@@ -34,6 +36,7 @@ import {
   type GearItem,
   type GlobalCategoryOption,
 } from "../collectionModel";
+import { CATEGORY_ICON_IDS } from "../collectionIcons";
 
 /** The app's puzzle selector, narrowed to the shape the seed consumes. */
 const OPTIONS: GlobalCategoryOption[] = [
@@ -78,9 +81,14 @@ describe("collection — taxonomy", () => {
 
   it("creates the three built-in categories and starts with no items", () => {
     const state = seeded();
-    expect(state.categories.map((c) => c.name)).toEqual(["Cubos", "Lubes", "Gear"]);
+    expect(state.categories.map((c) => c.name)).toEqual(["Cubes", "Lubes", "Gear"]);
     expect(state.items).toHaveLength(0);
     expect(state.version).toBe(COLLECTION_VERSION);
+  });
+
+  it("points the built-in categories at icons that exist", () => {
+    const state = seeded();
+    for (const category of state.categories) expect(CATEGORY_ICON_IDS).toContain(category.icon);
   });
 
   it("keeps non-cube categories free of default types", () => {
@@ -172,7 +180,7 @@ describe("collection — items", () => {
     const item = state.items[0];
     expect(item.name).toBe("GAN 12");
     expect(item.status).toBe("owned");
-    expect(item.palette).toEqual(DEFAULT_PALETTE);
+    expect(item.palette).toEqual([...DEFAULT_PALETTE]);
     expect(item.quantity).toBe(1);
     expect(item.links).toEqual([]);
     expect(item.photos).toEqual([]);
@@ -245,19 +253,40 @@ describe("collection — main selection", () => {
     expect(toggled.items[0].primary).toBe(false);
   });
 
-  it("keeps exactly one main per cube category", () => {
+  it("lets several cubes be main at once — a type can hold more than one", () => {
     let state = seeded();
     const type = firstType(state, "3×3");
     state = upsertItem(state, { categoryId: SEED_CATEGORY_IDS.cubes, typeId: type.id, name: "A" });
     state = upsertItem(state, { categoryId: SEED_CATEGORY_IDS.cubes, typeId: type.id, name: "B" });
 
     state = togglePrimary(state, state.items[0].id);
-    expect(state.items[0].primary).toBe(true);
-    expect(state.items[1].primary).toBe(false);
-
     state = togglePrimary(state, state.items[1].id);
-    expect(state.items[0].primary).toBe(false);
-    expect(state.items[1].primary).toBe(true);
+    expect(state.items.map((item) => item.primary)).toEqual([true, true]);
+    expect(mainsOfType(state, type.id).map((item) => item.name)).toEqual(["A", "B"]);
+    expect(mainsOfCategory(state, SEED_CATEGORY_IDS.cubes)).toHaveLength(2);
+
+    state = togglePrimary(state, state.items[0].id);
+    expect(state.items.map((item) => item.primary)).toEqual([false, true]);
+    expect(mainsOfType(state, null)).toEqual([]);
+  });
+
+  it("accepts the main flag on create, and never on a gear category", () => {
+    const base = seeded();
+    const type = firstType(base, "3×3");
+    const cube = upsertItem(base, {
+      categoryId: SEED_CATEGORY_IDS.cubes,
+      typeId: type.id,
+      name: "Main cube",
+      primary: true,
+    });
+    expect(cube.items[0].primary).toBe(true);
+
+    const gear = upsertItem(base, {
+      categoryId: SEED_CATEGORY_IDS.gear,
+      name: "Timer",
+      primary: true,
+    });
+    expect(gear.items[0].primary).toBe(false);
   });
 });
 
@@ -331,31 +360,34 @@ describe("collection — queries", () => {
 });
 
 describe("collection — primitives", () => {
-  it("hashes stably and spreads different inputs", () => {
-    expect(hashString("abc")).toBe(hashString("abc"));
-    expect(hashString("abc")).not.toBe(hashString("abd"));
+  it("normalises palettes: at least six faces, no empty slots, extras kept", () => {
+    expect(normalizePalette(undefined)).toEqual(DEFAULT_PALETTE);
+    expect(normalizePalette(["#fff", "#000"])).toEqual(DEFAULT_PALETTE);
+    const extras = normalizePalette([...DEFAULT_PALETTE, "#123456", ""]);
+    expect(extras).toHaveLength(8);
+    expect(extras[6]).toBe("#123456");
+    expect(extras[7]).toBe(DEFAULT_PALETTE[1]);
   });
 
-  it("mulberry32 is reproducible and stays in [0, 1)", () => {
-    const a = mulberry32(42);
-    const b = mulberry32(42);
-    for (let i = 0; i < 50; i++) {
-      const value = a();
-      expect(value).toBe(b());
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThan(1);
-    }
+  it("maps a palette onto the six cube faces, falling back to the default scheme", () => {
+    expect(cubeFaceColors(DEFAULT_PALETTE)).toEqual({
+      U: DEFAULT_PALETTE[0],
+      D: DEFAULT_PALETTE[1],
+      F: DEFAULT_PALETTE[2],
+      B: DEFAULT_PALETTE[3],
+      R: DEFAULT_PALETTE[4],
+      L: DEFAULT_PALETTE[5],
+    });
+    expect(cubeFaceColors(["#111111"] as string[]).U).toBe("#111111");
+    expect(cubeFaceColors(["#111111"] as string[]).L).toBe(DEFAULT_PALETTE[5]);
   });
 
-  it("renders a stable, palette-only sticker state that leaves centres alone", () => {
-    const item = upsertItem(seeded(), { categoryId: SEED_CATEGORY_IDS.gear, name: "x" }).items[0];
-    expect(stickerStateFor(item)).toEqual(stickerStateFor(item));
-    const faces = stickerStateFor(item, 6);
-    expect(faces).toHaveLength(6);
-    for (const [faceIndex, face] of faces.entries()) {
-      expect(face).toHaveLength(9);
-      expect(face[4]).toBe(item.palette[faceIndex]);
-    }
+  it("picks the 3D order from the linked app category", () => {
+    expect(cubeOrderFor("2x2")).toBe(2);
+    expect(cubeOrderFor("3x3")).toBe(3);
+    expect(cubeOrderFor("Megaminx")).toBe(3);
+    expect(cubeOrderFor(null)).toBe(3);
+    expect(cubeOrderFor(undefined)).toBe(3);
   });
 
   it("formats dates in UTC and prices with fallbacks", () => {
@@ -385,7 +417,7 @@ describe("collection — persistence hygiene", () => {
   it("fills missing item arrays and flags on restore", () => {
     const restored = normalizeState({
       data: {
-        categories: [{ id: "c1", name: "Cubos", kind: "cube", icon: "Box" }],
+        categories: [{ id: "c1", name: "Cubos", kind: "cube", icon: "Droplet" }],
         types: [],
         items: [{ id: "i1", name: "Old cube", palette: "#fff" }],
       },
@@ -397,5 +429,29 @@ describe("collection — persistence hygiene", () => {
     expect(item.status).toBe("owned");
     expect(item.palette).toEqual(DEFAULT_PALETTE);
     expect(restored.version).toBe(COLLECTION_VERSION);
+    // The pre-English default name and the bogus icon id are both migrated.
+    expect(restored.categories[0]).toMatchObject({ name: "Cubes", icon: "Droplets" });
+  });
+
+  it("never rewrites a category the user named themselves", () => {
+    const restored = normalizeState({
+      data: {
+        categories: [{ id: "c1", name: "Mis cubos", kind: "cube", icon: "Box" }],
+        types: [],
+        items: [],
+      },
+    })!;
+    expect(restored.categories[0].name).toBe("Mis cubos");
+  });
+
+  it("keeps extra palette faces across a round-trip", () => {
+    const restored = normalizeState({
+      data: {
+        categories: [{ id: "c1", name: "Cubes", kind: "cube", icon: "Box" }],
+        types: [],
+        items: [{ id: "i1", name: "Mega", palette: [...DEFAULT_PALETTE, "#123456"] }],
+      },
+    })!;
+    expect(restored.items[0].palette).toHaveLength(7);
   });
 });

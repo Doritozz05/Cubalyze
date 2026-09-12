@@ -4,9 +4,20 @@
  * ItemEditorDialog.tsx — create/edit one piece of gear.
  *
  * Every field the model carries is editable here: identity (name, brand, model,
- * finish, serial), taxonomy (category + type), sticker palette, purchase data
- * (acquired, price), organisation (status, favourite, rating, quantity,
- * condition, tags), media (photos) and references (links, notes).
+ * finish, serial), taxonomy (category + type), appearance (the sticker palette
+ * — cubes only), purchase data (acquired, price), organisation (status, main,
+ * favourite, rating, quantity, condition, tags), media (photos) and references
+ * (links, notes).
+ *
+ * Two rules shape the layout:
+ *
+ *   • **Appearance is a cube concern.** The palette section only exists for
+ *     cube-kind categories — whichever types you invent inside them. Lubes and
+ *     gear never ask for sticker colours; their picture is a photo.
+ *   • **No render in here.** The palette is edited as plain colours: the 3D
+ *     cube belongs to the locker wall and the detail panel, where you are
+ *     actually looking at gear. A photo, if you add one, wins over the render
+ *     everywhere.
  *
  * Photos are downscaled client-side (`compressImageFile`) before they become
  * data URLs — the collection lives in localStorage, so a raw phone photo would
@@ -18,7 +29,6 @@ import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
 import { toast } from "sonner";
 import { Heart, ImagePlus, Plus, Star, Trash2, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,30 +45,34 @@ import { ColorPicker } from "@/components/Settings/components/ColorPicker";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { FormDialog } from "./FormDialog";
+import { TagInput } from "./TagInput";
 import { compressImageFile } from "../imageUtils";
 import {
   CONDITION_I18N_KEY,
+  CUBE_FACE_COUNT,
   DEFAULT_PALETTE,
+  PALETTE_FACES,
   PALETTE_PRESETS,
   STATUS_I18N_KEY,
+  normalizePalette,
   type CollectionCategory,
   type CollectionType,
   type GearItem,
   type GearLink,
-  type GearPalette,
   type ItemCondition,
   type ItemInput,
   type ItemStatus,
+  type PaletteFace,
 } from "../collectionModel";
 
 const STATUSES: readonly ItemStatus[] = ["owned", "wishlist", "sold", "lent"];
 const CONDITIONS: readonly ItemCondition[] = ["mint", "good", "used", "broken"];
 
-/** U D F B R L — the math-core face order. */
-const PALETTE_FACES = ["U", "D", "F", "B", "R", "L"] as const;
+/** Colour an extra face starts on — neutral, so it reads as "not set yet". */
+const EXTRA_FACE_COLOR = "#8f949c";
 
 /** Face letter → human label, so each picker says which sticker it edits. */
-const FACE_LABEL_KEY: Record<(typeof PALETTE_FACES)[number], ParseKeys<"collection">> = {
+const FACE_LABEL_KEY: Record<PaletteFace, ParseKeys<"collection">> = {
   U: "editor.faces.u",
   D: "editor.faces.d",
   F: "editor.faces.f",
@@ -75,7 +89,7 @@ interface FormState {
   model: string;
   finish: string;
   serial: string;
-  palette: GearPalette;
+  palette: string[];
   acquiredAt: string;
   priceAmount: string;
   priceCurrency: string;
@@ -84,6 +98,7 @@ interface FormState {
   photos: string[];
   tags: string[];
   status: ItemStatus;
+  primary: boolean;
   favorite: boolean;
   rating: number;
   quantity: string;
@@ -99,7 +114,7 @@ function emptyForm(categoryId: string, typeId: string): FormState {
     model: "",
     finish: "",
     serial: "",
-    palette: DEFAULT_PALETTE,
+    palette: [...DEFAULT_PALETTE],
     acquiredAt: "",
     priceAmount: "",
     priceCurrency: "EUR",
@@ -108,6 +123,7 @@ function emptyForm(categoryId: string, typeId: string): FormState {
     photos: [],
     tags: [],
     status: "owned",
+    primary: false,
     favorite: false,
     rating: 0,
     quantity: "1",
@@ -124,7 +140,7 @@ function formFromItem(item: GearItem): FormState {
     model: item.model ?? "",
     finish: item.finish ?? "",
     serial: item.serial ?? "",
-    palette: item.palette,
+    palette: normalizePalette(item.palette),
     acquiredAt: item.acquiredAt ?? "",
     priceAmount: item.price ? String(item.price.amount) : "",
     priceCurrency: item.price?.currency ?? "EUR",
@@ -133,6 +149,7 @@ function formFromItem(item: GearItem): FormState {
     photos: [...item.photos],
     tags: [...item.tags],
     status: item.status,
+    primary: item.primary,
     favorite: item.favorite,
     rating: item.rating ?? 0,
     quantity: String(item.quantity),
@@ -147,6 +164,8 @@ export interface ItemEditorDialogProps {
   item?: GearItem | null;
   categories: readonly CollectionCategory[];
   types: readonly CollectionType[];
+  /** Every tag in use, for the recommendations in the tag field. */
+  tagSuggestions?: readonly string[];
   defaultCategoryId?: string | null;
   defaultTypeId?: string | null;
   onSave: (input: ItemInput) => void;
@@ -158,6 +177,7 @@ export function ItemEditorDialog({
   item,
   categories,
   types,
+  tagSuggestions = [],
   defaultCategoryId,
   defaultTypeId,
   onSave,
@@ -183,12 +203,30 @@ export function ItemEditorDialog({
     [types, form.categoryId],
   );
 
+  const isCube = categories.find((category) => category.id === form.categoryId)?.kind === "cube";
+
   const patch = (values: Partial<FormState>) => setForm((current) => ({ ...current, ...values }));
 
   const setCategory = (categoryId: string) => {
     const stillValid = types.some((type) => type.id === form.typeId && type.categoryId === categoryId);
-    patch({ categoryId, typeId: stillValid ? form.typeId : "" });
+    const cubeNext = categories.find((category) => category.id === categoryId)?.kind === "cube";
+    patch({
+      categoryId,
+      typeId: stillValid ? form.typeId : "",
+      // A category change can make "main" meaningless — never carry a stale flag.
+      primary: cubeNext ? form.primary : false,
+    });
   };
+
+  const setFaceColor = (index: number, color: string) => {
+    const next = [...form.palette];
+    next[index] = color;
+    patch({ palette: next });
+  };
+
+  const addFace = () => patch({ palette: [...form.palette, EXTRA_FACE_COLOR] });
+  const removeFace = (index: number) =>
+    patch({ palette: form.palette.filter((_, i) => i !== index) });
 
   const addTag = (raw: string) => {
     const tag = raw.trim().replace(/,+$/, "");
@@ -229,6 +267,7 @@ export function ItemEditorDialog({
       tags: form.tags,
       status: form.status,
       favorite: form.favorite,
+      primary: isCube ? form.primary : false,
       rating: form.rating || undefined,
       quantity: Number.parseInt(form.quantity, 10) || 1,
       condition: form.condition || undefined,
@@ -238,6 +277,8 @@ export function ItemEditorDialog({
   };
 
   const canSubmit = form.name.trim().length > 0 && !!form.categoryId;
+  const absoluteFaces = form.palette.slice(0, CUBE_FACE_COUNT);
+  const extraFaces = form.palette.slice(CUBE_FACE_COUNT);
 
   return (
     <FormDialog
@@ -316,6 +357,86 @@ export function ItemEditorDialog({
         </div>
       </Section>
 
+      {/* ── Appearance (cubes only) ───────────────────────────────────── */}
+      {isCube ? (
+        <Section title={t("editor.palette")}>
+          <div className="flex flex-wrap gap-1.5">
+            {PALETTE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                // Presets only own the six standard faces — a puzzle with
+                // extra colours keeps them.
+                onClick={() => patch({ palette: [...preset.palette, ...extraFaces] })}
+                className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[0.7rem] text-ink-3 transition-colors hover:text-ink"
+              >
+                <span className="flex gap-0.5">
+                  {preset.palette.slice(0, 3).map((colour, index) => (
+                    <span
+                      key={index}
+                      className="size-2.5 rounded-full border border-black/10"
+                      style={{ background: colour }}
+                    />
+                  ))}
+                </span>
+                {t(preset.labelKey)}
+              </button>
+            ))}
+          </div>
+          <p className="text-[0.68rem] leading-relaxed text-ink-3">
+            {form.photos.length > 0 ? t("editor.palettePhotoHint") : t("editor.paletteHint")}
+          </p>
+
+          {/* The app's own ColorPicker — same one Theme Studio and the cube
+              sticker editor use, so favourites/presets/hex/native all come free. */}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+            {PALETTE_FACES.map((face, index) => (
+              <ColorPicker
+                key={face}
+                label={`${face} · ${t(FACE_LABEL_KEY[face])}`}
+                value={absoluteFaces[index]}
+                defaultColor={DEFAULT_PALETTE[index]}
+                onChange={(color) => setFaceColor(index, color)}
+              />
+            ))}
+          </div>
+
+          {extraFaces.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-[0.68rem] text-ink-3">{t("editor.faces.extraHint")}</p>
+              {extraFaces.map((color, offset) => {
+                const index = CUBE_FACE_COUNT + offset;
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <ColorPicker
+                        label={t("editor.faces.extra", { index: index + 1 })}
+                        value={color}
+                        onChange={(next) => setFaceColor(index, next)}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t("editor.faces.removeFace", { index: index + 1 })}
+                      onClick={() => removeFace(index)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addFace}>
+            <Plus className="size-3.5" />
+            {t("editor.faces.addFace")}
+          </Button>
+        </Section>
+      ) : null}
+
       {/* ── Organisation ─────────────────────────────────────────────── */}
       <Section title={t("editor.organisation")}>
         <div className="flex flex-wrap gap-1.5">
@@ -379,51 +500,22 @@ export function ItemEditorDialog({
             <Heart className={cn("size-3.5", form.favorite && "fill-current text-ink")} />
             {t("editor.favorite")}
           </label>
-        </div>
-      </Section>
-
-      {/* ── Palette ──────────────────────────────────────────────────── */}
-      <Section title={t("editor.palette")}>
-        <div className="flex flex-wrap gap-1.5">
-          {PALETTE_PRESETS.map((preset) => (
+          {isCube ? (
             <button
-              key={preset.id}
               type="button"
-              onClick={() => patch({ palette: preset.palette })}
+              aria-pressed={form.primary}
+              title={t("editor.mainHint")}
+              onClick={() => patch({ primary: !form.primary })}
               className={cn(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.7rem] transition-colors",
-                "border-line text-ink-3 hover:text-ink",
+                "rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em] transition-colors",
+                form.primary
+                  ? "bg-ink text-canvas"
+                  : "border border-dashed border-line-2 text-ink-3 hover:text-ink",
               )}
             >
-              <span className="flex gap-0.5">
-                {preset.palette.slice(0, 3).map((colour, index) => (
-                  <span
-                    key={index}
-                    className="size-2.5 rounded-full border border-black/10"
-                    style={{ background: colour }}
-                  />
-                ))}
-              </span>
-              {t(preset.labelKey)}
+              {t("primary")}
             </button>
-          ))}
-        </div>
-        {/* The app's own ColorPicker — same one Theme Studio and the cube
-            sticker editor use, so favourites/presets/hex/native all come free. */}
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {PALETTE_FACES.map((face, index) => (
-            <ColorPicker
-              key={face}
-              label={`${face} · ${t(FACE_LABEL_KEY[face])}`}
-              value={form.palette[index]}
-              defaultColor={DEFAULT_PALETTE[index]}
-              onChange={(color) => {
-                const next = [...form.palette] as unknown as string[];
-                next[index] = color;
-                patch({ palette: next as unknown as GearPalette });
-              }}
-            />
-          ))}
+          ) : null}
         </div>
       </Section>
 
@@ -462,6 +554,7 @@ export function ItemEditorDialog({
       <Section title={t("editor.tags")}>
         <TagInput
           tags={form.tags}
+          suggestions={tagSuggestions}
           placeholder={t("editor.tagsPlaceholder")}
           onAdd={addTag}
           onRemove={(tag) => patch({ tags: form.tags.filter((existing) => existing !== tag) })}
@@ -508,7 +601,9 @@ export function ItemEditorDialog({
             event.target.value = "";
           }}
         />
-        <p className="text-[0.68rem] text-ink-3">{t("editor.photoHint")}</p>
+        <p className="text-[0.68rem] text-ink-3">
+          {isCube ? t("editor.photoHintCube") : t("editor.photoHint")}
+        </p>
       </Section>
 
       {/* ── Links + notes ────────────────────────────────────────────── */}
@@ -567,53 +662,6 @@ function StarRating({ value, onChange }: { value: number; onChange: (value: numb
           <Star className={cn("size-4", star <= value && "fill-current text-ink")} />
         </button>
       ))}
-    </div>
-  );
-}
-
-function TagInput({
-  tags,
-  placeholder,
-  onAdd,
-  onRemove,
-}: {
-  tags: readonly string[];
-  placeholder: string;
-  onAdd: (tag: string) => void;
-  onRemove: (tag: string) => void;
-}) {
-  const [value, setValue] = useState("");
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-line px-2 py-1.5">
-      {tags.map((tag) => (
-        <Badge key={tag} variant="secondary" className="gap-1 rounded-full text-[0.68rem] font-normal">
-          {tag}
-          <button type="button" aria-label={tag} onClick={() => onRemove(tag)}>
-            <X className="size-3" />
-          </button>
-        </Badge>
-      ))}
-      <input
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => setValue(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === ",") {
-            event.preventDefault();
-            onAdd(value);
-            setValue("");
-          } else if (event.key === "Backspace" && !value && tags.length > 0) {
-            onRemove(tags[tags.length - 1]);
-          }
-        }}
-        onBlur={() => {
-          if (value.trim()) {
-            onAdd(value);
-            setValue("");
-          }
-        }}
-        className="min-w-[8rem] flex-1 bg-transparent text-[0.8rem] text-ink outline-none placeholder:text-ink-3"
-      />
     </div>
   );
 }

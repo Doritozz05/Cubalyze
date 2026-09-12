@@ -3,25 +3,29 @@
 /**
  * ItemCard.tsx — one card in the locker grid.
  *
- * Deliberately flat: a hairline, the procedural glyph, name and a small meta
- * row. Selection is contrast (border + ring), never depth or scale, so a wall
- * of cards scans as a catalogue rather than a carousel.
+ * Product-card grammar, not a carousel slide: a fixed-ratio media area flush
+ * with the card's top corners, then a body with the identity, the tags and a
+ * hairline footer that pins the price to the bottom-right. Everything that can
+ * be a corner detail *is* one (badges top-left, actions top-right), so a wall
+ * of cards scans as one aligned catalogue no matter how tall the content is.
+ *
+ * The camera slot at the bottom of the wall is the "Main" flag; it is a theme
+ * chip, not a star icon, so it reads at a glance and still belongs to the
+ * product instead of floating over it.
  */
 
 import { useTranslation } from "react-i18next";
 import { Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { GearGlyph } from "../GearGlyph";
-import {
-  STATUS_I18N_KEY,
-  formatPrice,
-  type GearItem,
-} from "../collectionModel";
+import { ItemMedia } from "./ItemMedia";
+import { STATUS_I18N_KEY, formatPrice, type CollectionCategory, type GearItem } from "../collectionModel";
 
 export interface ItemCardProps {
   item: GearItem;
-  isCube: boolean;
+  category: CollectionCategory | undefined;
   typeName?: string;
+  /** 3D order for cube renders (2×2 vs 3×3). */
+  cubeOrder?: number;
   selected: boolean;
   onSelect: () => void;
   onTogglePrimary: () => void;
@@ -31,8 +35,9 @@ export interface ItemCardProps {
 
 export function ItemCard({
   item,
-  isCube,
+  category,
   typeName,
+  cubeOrder,
   selected,
   onSelect,
   onTogglePrimary,
@@ -40,12 +45,14 @@ export function ItemCard({
   locale,
 }: ItemCardProps) {
   const { t } = useTranslation("collection");
+  const isCube = category?.kind === "cube";
   const price = formatPrice(item.price, locale);
-  const isWishlist = item.status === "wishlist";
-  const meta = [item.brand, item.finish].filter(Boolean).join(" · ");
+  const meta = [typeName ?? t("nav.uncategorised"), item.brand].filter(Boolean).join(" · ");
+  const visibleTags = item.tags.slice(0, 2);
+  const extraTags = item.tags.length - visibleTags.length;
 
   return (
-    <div
+    <article
       role="button"
       tabIndex={0}
       aria-pressed={selected}
@@ -59,119 +66,138 @@ export function ItemCard({
         }
       }}
       className={cn(
-        "group relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left transition-colors",
+        "group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border text-left transition-colors",
         selected
           ? "border-line-2 bg-surface ring-1 ring-ink/20"
           : "border-line bg-surface/70 hover:border-line-2 hover:bg-surface",
       )}
     >
-      {/* Top-right actions — only on hover / focus / when active. */}
-      <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
-        {isCube ? (
-          // The main button is always visible on cube cards (never hover-only):
-          // it is the one piece of state the rest of the app will consume, so
-          // it has to be discoverable at a glance.
-          <IconToggle
-            active={item.primary}
-            alwaysVisible
-            label={item.primary ? t("unsetPrimary") : t("setPrimary")}
+      {/* Media — flush with the card's top corners, fixed ratio for an even wall. */}
+      <div className="relative aspect-[5/4] w-full overflow-hidden border-b border-line bg-surface-2/30">
+        <ItemMedia
+          photo={item.photos[0]}
+          palette={item.palette}
+          alt={item.name}
+          isCube={isCube}
+          order={cubeOrder}
+          categoryIconId={category?.icon}
+          variant="card"
+        />
+
+        <div className="pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1">
+            {isCube ? (
+              <MainChip
+                active={item.primary}
+                label={item.primary ? t("unsetPrimary") : t("setPrimary")}
+                onToggle={onTogglePrimary}
+              />
+            ) : null}
+            {item.status !== "owned" ? (
+              <span className="pointer-events-none rounded-full border border-line bg-surface/90 px-2 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.08em] text-ink-2 backdrop-blur-sm">
+                {t(STATUS_I18N_KEY[item.status])}
+              </span>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            aria-label={t("editor.favorite")}
+            title={t("editor.favorite")}
+            aria-pressed={item.favorite}
             onClick={(event) => {
               event.stopPropagation();
-              onTogglePrimary();
+              onToggleFavorite();
             }}
-            icon={<Star className={cn("size-3.5", item.primary && "fill-current")} />}
-          />
-        ) : null}
-        <IconToggle
-          active={item.favorite}
-          label={t("editor.favorite")}
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleFavorite();
-          }}
-          icon={<Heart className={cn("size-3.5", item.favorite && "fill-current")} />}
-        />
-      </div>
-
-      <div className="flex h-[92px] items-center justify-center">
-        <GearGlyph item={item} isCube={isCube} size={78} />
-      </div>
-
-      <div className="min-w-0">
-        <div className="truncate text-[0.8rem] font-medium text-ink">{item.name}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[0.66rem] text-ink-3">
-          <span className="truncate">{typeName ?? t("nav.uncategorised")}</span>
-          {meta ? <span className="truncate">· {meta}</span> : null}
-        </div>
-      </div>
-
-      {item.tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1">
-          {item.tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[0.62rem] text-ink-3"
-            >
-              {tag}
-            </span>
-          ))}
-          {item.tags.length > 2 ? (
-            <span className="text-[0.62rem] text-ink-3">+{item.tags.length - 2}</span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-        {item.status !== "owned" ? (
-          <span
             className={cn(
-              "rounded-full px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide",
-              isWishlist ? "bg-surface-2 text-ink-2" : "text-ink-3",
+              "pointer-events-auto flex size-6 shrink-0 items-center justify-center rounded-full border backdrop-blur-sm transition",
+              item.favorite
+                ? "border-line-2 bg-surface/95 text-ink"
+                : "border-transparent bg-surface/85 text-ink-3 opacity-0 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100",
             )}
           >
-            {t(STATUS_I18N_KEY[item.status])}
-          </span>
-        ) : (
-          <span className="text-[0.66rem] tabular-nums text-ink-3">
-            {item.quantity > 1 ? `×${item.quantity}` : ""}
-          </span>
-        )}
-        {price ? <span className="text-[0.66rem] tabular-nums text-ink-2">{price}</span> : null}
+            <Heart className={cn("size-3.5", item.favorite && "fill-current")} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-[0.82rem] font-medium leading-tight text-ink">{item.name}</h3>
+          <p className="mt-0.5 truncate text-[0.68rem] text-ink-3">{meta}</p>
+        </div>
+
+        {visibleTags.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag}
+                className="max-w-[7rem] truncate rounded-full bg-surface-2 px-1.5 py-0.5 text-[0.62rem] text-ink-3"
+              >
+                {tag}
+              </span>
+            ))}
+            {extraTags > 0 ? <span className="text-[0.62rem] text-ink-3">+{extraTags}</span> : null}
+          </div>
+        ) : null}
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {item.rating ? (
+              <span className="flex items-center gap-0.5 text-[0.66rem] tabular-nums text-ink-2">
+                <Star className="size-3 fill-current" />
+                {item.rating}
+              </span>
+            ) : null}
+            {item.quantity > 1 ? (
+              <span className="text-[0.66rem] tabular-nums text-ink-3">×{item.quantity}</span>
+            ) : null}
+          </div>
+          {price ? (
+            <span className="shrink-0 text-[0.68rem] font-medium tabular-nums text-ink-2">
+              {price}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </article>
   );
 }
 
-function IconToggle({
+/**
+ * The "Main" flag as a chip — always on screen, in the same corner of every
+ * cube card. Active it is a filled theme chip; inactive it is a dashed outline,
+ * so the state is readable at a glance without having to hunt for it.
+ */
+function MainChip({
   active,
-  alwaysVisible,
   label,
-  icon,
-  onClick,
+  onToggle,
 }: {
   active: boolean;
-  alwaysVisible?: boolean;
   label: string;
-  icon: React.ReactNode;
-  onClick: (event: React.MouseEvent) => void;
+  onToggle: () => void;
 }) {
+  const { t } = useTranslation("collection");
   return (
     <button
       type="button"
+      aria-pressed={active}
       aria-label={label}
       title={label}
-      aria-pressed={active}
-      onClick={onClick}
+      onClick={(event) => {
+        event.stopPropagation();
+        onToggle();
+      }}
       className={cn(
-        "flex size-6 items-center justify-center rounded-full border transition-colors",
+        "pointer-events-auto rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition",
         active
-          ? "border-line-2 bg-surface text-ink"
-          : alwaysVisible
-            ? "border-line/70 bg-surface/80 text-ink-3 hover:bg-surface hover:text-ink"
-            : "border-transparent bg-surface/80 text-ink-3 opacity-0 hover:text-ink focus:opacity-100 group-hover:opacity-100",
+          ? "border border-transparent bg-ink text-canvas"
+          : "border border-dashed border-line-2 bg-surface/85 text-ink-3 backdrop-blur-sm hover:border-ink/40 hover:text-ink",
       )}
     >
-      {icon}
+      {t("primary")}
     </button>
   );
 }

@@ -10,12 +10,14 @@
  * what fixes the "cramped" feel of creating types.
  *
  * Deliberate choices:
- *   • No carousel / 3D camera. Selection is contrast; the wall scrolls.
+ *   • No carousel, no camera choreography. Selection is contrast; the wall
+ *     scrolls. Cubes get a real render from the app's 3D engine (see
+ *     `cubeSnapshotService`), everything else gets a photo or a skeleton.
  *   • Background-aware: the view paints no canvas fill, so the theme's custom
  *     background image shows through, like every other view. Panels use
  *     `bg-surface`, which liquid glass already owns.
- *   • Cube categories expose a "main" flag (always-visible star on the card);
- *     gear categories never do.
+ *   • Cube categories expose the "main" chip; gear categories never do. A type
+ *     may hold several mains, so the toolbar summarises instead of picking one.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +32,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  Star,
   Tag,
   Upload,
   X,
@@ -52,12 +53,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { useCollectionStore } from "./collectionStore";
+import { lockerCubeSnapshotService } from "./cubeSnapshotService";
 import {
+  categoryOf,
   countByStatus,
+  cubeOrderFor,
+  mainsOfCategory,
   queryItems,
   sortItems,
   tagFacets,
+  typeOf,
   type CollectionCategory,
   type CollectionSelection,
   type CollectionState,
@@ -195,11 +203,18 @@ export function CollectionView() {
     [data.items, selectedItemId],
   );
 
-  /** The main item of the cube category currently in view (if any). */
-  const primaryInView = useMemo(() => {
-    if (selectedCategory?.kind !== "cube") return null;
-    return data.items.find((item) => item.categoryId === selectedCategory.id && item.primary) ?? null;
-  }, [data.items, selectedCategory]);
+  /** Every main of the cube category in view — a type may hold more than one. */
+  const mainsInView = useMemo(
+    () => (selectedCategory?.kind === "cube" ? mainsOfCategory(data, selectedCategory.id) : []),
+    [data, selectedCategory],
+  );
+
+  // The offscreen cube renders depend on the user's 3D skin: changing it in
+  // Appearance must repaint the whole wall, not just the next card.
+  const appearance3d = useStore(preferencesStore, (state) => state.appearance3d);
+  useEffect(() => {
+    lockerCubeSnapshotService.clear();
+  }, [appearance3d]);
 
   // Drop a selection that points at a deleted node.
   useEffect(() => {
@@ -487,20 +502,26 @@ export function CollectionView() {
               <span className="shrink-0 tabular-nums text-[0.7rem] text-ink-3">
                 {t("results", { count: filtered.length })}
               </span>
-              {primaryInView ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedItemId(primaryInView.id)}
-                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[0.68rem] text-ink-2 transition-colors hover:text-ink"
-                >
-                  <Star className="size-3 fill-current" />
-                  <span className="hidden max-w-[10rem] truncate sm:inline">{primaryInView.name}</span>
-                  <span className="sm:hidden">{t("primary")}</span>
-                </button>
-              ) : isCubeSelection ? (
-                <span className="hidden shrink-0 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[0.68rem] text-ink-3 sm:inline">
-                  {t("noPrimary")}
-                </span>
+              {isCubeSelection ? (
+                mainsInView.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItemId(mainsInView[0].id)}
+                    className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-full bg-ink px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-canvas transition-opacity hover:opacity-90"
+                  >
+                    {t("primary")}
+                    <span className="hidden max-w-[9rem] truncate font-medium normal-case tracking-normal opacity-80 sm:inline">
+                      {mainsInView[0].name}
+                    </span>
+                    {mainsInView.length > 1 ? (
+                      <span className="tabular-nums opacity-70">+{mainsInView.length - 1}</span>
+                    ) : null}
+                  </button>
+                ) : (
+                  <span className="hidden shrink-0 rounded-full border border-dashed border-line-2 px-2.5 py-1 text-[0.68rem] text-ink-3 sm:inline">
+                    {t("noPrimary")}
+                  </span>
+                )
               ) : null}
             </div>
 
@@ -628,8 +649,10 @@ export function CollectionView() {
               <ItemDetailPanel
                 item={selectedItem}
                 isCube={data.categories.find((c) => c.id === selectedItem.categoryId)?.kind === "cube"}
-                typeName={data.types.find((tp) => tp.id === selectedItem.typeId)?.name}
-                categoryName={data.categories.find((c) => c.id === selectedItem.categoryId)?.name}
+                cubeOrder={cubeOrderFor(typeOf(data, selectedItem.typeId)?.puzzleCategory)}
+                categoryIconId={categoryOf(data, selectedItem.categoryId)?.icon}
+                typeName={typeOf(data, selectedItem.typeId)?.name}
+                categoryName={categoryOf(data, selectedItem.categoryId)?.name}
                 locale={i18n.language}
                 onEdit={() => setItemEditor({ open: true, item: selectedItem })}
                 onDelete={() => setConfirm({ kind: "item", item: selectedItem })}
@@ -659,8 +682,10 @@ export function CollectionView() {
             <ItemDetailPanel
               item={selectedItem}
               isCube={data.categories.find((c) => c.id === selectedItem.categoryId)?.kind === "cube"}
-              typeName={data.types.find((tp) => tp.id === selectedItem.typeId)?.name}
-              categoryName={data.categories.find((c) => c.id === selectedItem.categoryId)?.name}
+              cubeOrder={cubeOrderFor(typeOf(data, selectedItem.typeId)?.puzzleCategory)}
+              categoryIconId={categoryOf(data, selectedItem.categoryId)?.icon}
+              typeName={typeOf(data, selectedItem.typeId)?.name}
+              categoryName={categoryOf(data, selectedItem.categoryId)?.name}
               locale={i18n.language}
               onEdit={() => setItemEditor({ open: true, item: selectedItem })}
               onDelete={() => setConfirm({ kind: "item", item: selectedItem })}
@@ -679,6 +704,7 @@ export function CollectionView() {
         item={itemEditor.item}
         categories={data.categories}
         types={data.types}
+        tagSuggestions={tagOptions.map((facet) => facet.tag)}
         defaultCategoryId={selection.categoryId}
         defaultTypeId={selection.typeId}
         onSave={handleSaveItem}
