@@ -7,6 +7,7 @@ import {
   clampRating,
   countByStatus,
   countItemsInCategory,
+  countActiveFilters,
   countItemsInType,
   cubeFaceColors,
   cubeOrderFor,
@@ -26,6 +27,7 @@ import {
   sortItems,
   syncCubeCategory,
   tagFacets,
+  taxonomyPath,
   toggleFavorite,
   togglePrimary,
   typeOf,
@@ -349,6 +351,32 @@ describe("collection — queries", () => {
   it("builds tag facets with counts, most used first", () => {
     const facets = tagFacets(populated());
     expect(facets[0]).toEqual({ tag: "ballcore", count: 2 });
+  });
+
+  it("renders the selection as a breadcrumb", () => {
+    const state = populated();
+    const three = firstType(state, "3×3");
+
+    expect(taxonomyPath(state, { categoryId: null, typeId: null })).toEqual([]);
+    expect(taxonomyPath(state, { categoryId: SEED_CATEGORY_IDS.cubes, typeId: null })).toEqual([
+      { id: SEED_CATEGORY_IDS.cubes, label: "Cubes" },
+    ]);
+    expect(taxonomyPath(state, { categoryId: SEED_CATEGORY_IDS.cubes, typeId: three.id })).toEqual([
+      { id: SEED_CATEGORY_IDS.cubes, label: "Cubes" },
+      { id: three.id, label: "3×3" },
+    ]);
+
+    // A stale type id (or one from another category) never leaks into the path.
+    expect(taxonomyPath(state, { categoryId: SEED_CATEGORY_IDS.cubes, typeId: "gone" })).toHaveLength(1);
+    expect(taxonomyPath(state, { categoryId: "gone", typeId: three.id })).toEqual([]);
+  });
+
+  it("counts only the filters that actually narrow the grid", () => {
+    expect(countActiveFilters({})).toBe(0);
+    expect(countActiveFilters({ status: "all" })).toBe(0);
+    expect(countActiveFilters({ tags: [] })).toBe(0);
+    expect(countActiveFilters({ status: "wishlist" })).toBe(1);
+    expect(countActiveFilters({ status: "sold", tags: ["ballcore"], favoritesOnly: true })).toBe(3);
   });
 
   it("builds the category tree with types and counts", () => {

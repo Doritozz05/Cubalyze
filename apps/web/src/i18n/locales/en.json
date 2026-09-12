@@ -3951,6 +3951,13 @@
       "pastel": "Pastel",
       "carbon": "Carbon"
     },
+    "mobile": {
+      "back": "Back",
+      "navTitle": "Browse",
+      "filters": "Filters",
+      "sortBy": "Sort by",
+      "closeSearch": "Close search"
+    },
     "nav": {
       "everything": "Everything",
       "allTypes": "All types",
@@ -4014,6 +4021,8 @@
       "typesTitle": "Types in {{category}}",
       "typesDescription": "Types are the inner level: 3×3, 2×2, a lube brand — whatever fits.",
       "addType": "Add a type",
+      "typeCount_one": "{{count}} type",
+      "typeCount_other": "{{count}} types",
       "typeNamePlaceholder": "Type name, e.g. 3×3",
       "linkNone": "No linked category",
       "linkHint": "Linking a type to an app category keeps it in sync with the timer's puzzle list.",

@@ -9,6 +9,15 @@
  * and editing categories/types lives in dedicated manager dialogs, which is
  * what fixes the "cramped" feel of creating types.
  *
+ * This file owns the **state**: the selection, the filters, the taxonomy CRUD
+ * and every dialog. The chrome is chosen by regime, and both shells compose the
+ * very same dialogs:
+ *
+ *   • touch (<768px) → `CollectionTouchLayout`: one path bar, a status row and
+ *     a floating add button, with the product page as a full-screen overlay.
+ *   • pointer (≥768px) → the two-row taxonomy and the side spec sheet, exactly
+ *     as before.
+ *
  * Deliberate choices:
  *   • No carousel, no camera choreography. Selection is contrast; the wall
  *     scrolls. Cubes get a real render from the app's 3D engine (see
@@ -22,7 +31,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ParseKeys } from "i18next";
 import { toast } from "sonner";
 import {
   Download,
@@ -57,8 +65,14 @@ import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { useCollectionStore } from "./collectionStore";
 import { lockerCubeSnapshotService } from "./cubeSnapshotService";
+import { useIsTouch } from "@/hooks/use-mobile";
 import {
+  ITEM_SORTS,
+  ITEM_STATUS_FILTERS,
+  SORT_I18N_KEY,
+  STATUS_FILTER_I18N_KEY,
   categoryOf,
+  countActiveFilters,
   countByStatus,
   cubeOrderFor,
   mainsOfCategory,
@@ -82,26 +96,7 @@ import { TypesManagerDialog } from "./components/TypesManagerDialog";
 import { ItemEditorDialog } from "./components/ItemEditorDialog";
 import { ItemGrid } from "./components/ItemGrid";
 import { ItemDetailPanel } from "./components/ItemDetailPanel";
-
-const STATUS_FILTERS: readonly (ItemStatus | "all")[] = ["all", "owned", "wishlist", "sold", "lent"];
-
-/** Status → translation key, including the "all" pseudo-filter. */
-const STATUS_LABEL_KEY: Record<ItemStatus | "all", ParseKeys<"collection">> = {
-  all: "status.all",
-  owned: "status.owned",
-  wishlist: "status.wishlist",
-  sold: "status.sold",
-  lent: "status.lent",
-};
-
-const SORTS: readonly { id: ItemSort; labelKey: ParseKeys<"collection"> }[] = [
-  { id: "name", labelKey: "sort.name" },
-  { id: "recent", labelKey: "sort.recent" },
-  { id: "oldest", labelKey: "sort.oldest" },
-  { id: "price", labelKey: "sort.price" },
-  { id: "rating", labelKey: "sort.rating" },
-  { id: "brand", labelKey: "sort.brand" },
-];
+import { CollectionTouchLayout } from "./components/CollectionTouchLayout";
 
 /** Media-query hook (synchronous first paint, mirrors `use-mobile`). */
 function useMediaQuery(query: string): boolean {
@@ -139,6 +134,12 @@ export function CollectionView() {
   const replaceState = useCollectionStore((s) => s.replaceState);
   const reset = useCollectionStore((s) => s.reset);
 
+  // Deferred to post-mount (same pattern as MainLayout / AlgorithmDashboard) so
+  // the first paint never flashes the wrong shell.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const rawIsTouch = useIsTouch();
+  const isTouch = mounted && rawIsTouch;
   const isWide = useMediaQuery("(min-width: 1280px)");
 
   // ── View state ──────────────────────────────────────────────────────────
@@ -373,16 +374,139 @@ export function CollectionView() {
     setConfirm(null);
   }, [confirm, removeCategory, removeType, removeItem, reset, t]);
 
-  const filterCount = (status !== "all" ? 1 : 0) + tags.length + (favoritesOnly ? 1 : 0);
-  const clearFilters = () => {
+  const filterCount = countActiveFilters({ status, tags, favoritesOnly });
+
+  const clearFilters = useCallback(() => {
     setStatus("all");
     setTags([]);
     setFavoritesOnly(false);
-  };
+  }, []);
+
+  /** Toggle one tag in the filter set (case-insensitive, keeps the first spelling). */
+  const toggleTag = useCallback((tag: string) => {
+    setTags((current) =>
+      current.some((entry) => entry.toLowerCase() === tag.toLowerCase())
+        ? current.filter((entry) => entry.toLowerCase() !== tag.toLowerCase())
+        : [...current, tag],
+    );
+  }, []);
 
   const isCubeSelection = selectedCategory?.kind === "cube";
 
   // ── Render ──────────────────────────────────────────────────────────────
+
+  /**
+   * Every editor, manager and confirmation. Hoisted out of the shell so both
+   * layouts (pointer and touch) share the exact same dialog surface — a phone
+   * never gets a second, divergent editor.
+   */
+  const dialogs = (
+    <>
+      <ItemEditorDialog
+        open={itemEditor.open}
+        onOpenChange={(open) => setItemEditor((current) => ({ ...current, open }))}
+        item={itemEditor.item}
+        categories={data.categories}
+        types={data.types}
+        tagSuggestions={tagOptions.map((facet) => facet.tag)}
+        defaultCategoryId={selection.categoryId}
+        defaultTypeId={selection.typeId}
+        onSave={handleSaveItem}
+      />
+
+      <CategoryDialog
+        open={categoryDialog.open}
+        onOpenChange={(open) => setCategoryDialog((current) => ({ ...current, open }))}
+        category={categoryDialog.category}
+        onSave={handleSaveCategory}
+      />
+
+      <CategoriesManagerDialog
+        open={categoriesManagerOpen}
+        onOpenChange={setCategoriesManagerOpen}
+        state={data}
+        onAdd={() => {
+          setCategoriesManagerOpen(false);
+          setCategoryDialog({ open: true, category: null });
+        }}
+        onEdit={(category) => {
+          setCategoriesManagerOpen(false);
+          setCategoryDialog({ open: true, category });
+        }}
+        onDelete={(category) => {
+          setCategoriesManagerOpen(false);
+          setConfirm({ kind: "category", category });
+        }}
+      />
+
+      <TypesManagerDialog
+        open={typesManagerOpen}
+        onOpenChange={setTypesManagerOpen}
+        state={data}
+        category={selectedCategory}
+        onAdd={handleAddType}
+        onUpdate={handleUpdateType}
+        onDelete={(type) => setConfirm({ kind: "type", type })}
+        onToggleExclusion={handleToggleExclusion}
+        onSync={() => {
+          if (selection.categoryId) syncCategory(selection.categoryId);
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirm !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirm(null);
+        }}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+        onConfirm={handleConfirm}
+      />
+    </>
+  );
+
+  // ── Touch shell: phones and small tablets get a different composition of
+  //    the same pieces (see CollectionTouchLayout).
+  if (isTouch) {
+    return (
+      <div className="relative flex h-full min-h-0 flex-col">
+        <CollectionTouchLayout
+          state={data}
+          items={filtered}
+          hydrated={hydrated}
+          locale={i18n.language}
+          selection={selection}
+          onSelectionChange={setSelection}
+          selectedItem={selectedItem}
+          onSelectItem={(item) => setSelectedItemId(item.id)}
+          onCloseItem={() => setSelectedItemId(null)}
+          query={query}
+          onQueryChange={setQuery}
+          status={status}
+          onStatusChange={setStatus}
+          sort={sort}
+          onSortChange={setSort}
+          tagFacets={tagOptions}
+          activeTags={tags}
+          onToggleTag={toggleTag}
+          favoritesOnly={favoritesOnly}
+          onToggleFavorites={() => setFavoritesOnly((value) => !value)}
+          onClearFilters={clearFilters}
+          onNewCategory={() => setCategoryDialog({ open: true, category: null })}
+          onManageCategories={() => setCategoriesManagerOpen(true)}
+          onManageTypes={() => setTypesManagerOpen(true)}
+          onAddItem={() => setItemEditor({ open: true, item: null })}
+          onEditItem={(item) => setItemEditor({ open: true, item })}
+          onDeleteItem={(item) => setConfirm({ kind: "item", item })}
+          onTogglePrimary={(item) => togglePrimary(item.id)}
+          onToggleFavorite={(item) => toggleFavorite(item.id)}
+        />
+        {dialogs}
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -527,7 +651,7 @@ export function CollectionView() {
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1 rounded-full border border-line bg-surface/70 p-0.5">
-                {STATUS_FILTERS.map((entry) => (
+                {ITEM_STATUS_FILTERS.map((entry) => (
                   <button
                     key={entry}
                     type="button"
@@ -538,7 +662,7 @@ export function CollectionView() {
                       status === entry ? "bg-surface-2 font-medium text-ink" : "text-ink-3 hover:text-ink",
                     )}
                   >
-                    {t(STATUS_LABEL_KEY[entry])}
+                    {t(STATUS_FILTER_I18N_KEY[entry])}
                   </button>
                 ))}
               </div>
@@ -565,9 +689,9 @@ export function CollectionView() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SORTS.map((entry) => (
-                    <SelectItem key={entry.id} value={entry.id}>
-                      {t(entry.labelKey)}
+                  {ITEM_SORTS.map((entry) => (
+                    <SelectItem key={entry} value={entry}>
+                      {t(SORT_I18N_KEY[entry])}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -586,13 +710,7 @@ export function CollectionView() {
                     key={tag}
                     type="button"
                     aria-pressed={active}
-                    onClick={() =>
-                      setTags((current) =>
-                        active
-                          ? current.filter((entry) => entry.toLowerCase() !== tag.toLowerCase())
-                          : [...current, tag],
-                      )
-                    }
+                    onClick={() => toggleTag(tag)}
                     className={cn(
                       "rounded-full border px-2 py-0.5 text-[0.68rem] transition-colors",
                       active
@@ -697,68 +815,8 @@ export function CollectionView() {
         </div>
       ) : null}
 
-      {/* ── Dialogs ────────────────────────────────────────────────────── */}
-      <ItemEditorDialog
-        open={itemEditor.open}
-        onOpenChange={(open) => setItemEditor((current) => ({ ...current, open }))}
-        item={itemEditor.item}
-        categories={data.categories}
-        types={data.types}
-        tagSuggestions={tagOptions.map((facet) => facet.tag)}
-        defaultCategoryId={selection.categoryId}
-        defaultTypeId={selection.typeId}
-        onSave={handleSaveItem}
-      />
-
-      <CategoryDialog
-        open={categoryDialog.open}
-        onOpenChange={(open) => setCategoryDialog((current) => ({ ...current, open }))}
-        category={categoryDialog.category}
-        onSave={handleSaveCategory}
-      />
-
-      <CategoriesManagerDialog
-        open={categoriesManagerOpen}
-        onOpenChange={setCategoriesManagerOpen}
-        state={data}
-        onAdd={() => {
-          setCategoriesManagerOpen(false);
-          setCategoryDialog({ open: true, category: null });
-        }}
-        onEdit={(category) => {
-          setCategoriesManagerOpen(false);
-          setCategoryDialog({ open: true, category });
-        }}
-        onDelete={(category) => {
-          setCategoriesManagerOpen(false);
-          setConfirm({ kind: "category", category });
-        }}
-      />
-
-      <TypesManagerDialog
-        open={typesManagerOpen}
-        onOpenChange={setTypesManagerOpen}
-        state={data}
-        category={selectedCategory}
-        onAdd={handleAddType}
-        onUpdate={handleUpdateType}
-        onDelete={(type) => setConfirm({ kind: "type", type })}
-        onToggleExclusion={handleToggleExclusion}
-        onSync={() => {
-          if (selection.categoryId) syncCategory(selection.categoryId);
-        }}
-      />
-
-      <ConfirmDialog
-        open={confirm !== null}
-        onOpenChange={(open) => {
-          if (!open) setConfirm(null);
-        }}
-        title={confirmCopy.title}
-        description={confirmCopy.description}
-        confirmLabel={confirmCopy.confirmLabel}
-        onConfirm={handleConfirm}
-      />
+      {/* ── Dialogs (hoisted above — shared by both shells) ──────────── */}
+      {dialogs}
     </div>
   );
 }

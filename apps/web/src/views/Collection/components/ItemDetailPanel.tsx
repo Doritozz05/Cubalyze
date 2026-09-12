@@ -8,6 +8,14 @@
  * stays legible with ten items or a thousand and never competes with the media
  * for attention.
  *
+ * Two variants, one component:
+ *
+ *   • `panel` — the desktop side column (and the narrow-window overlay): a
+ *     close X in the header, the footer inside the panel.
+ *   • `overlay` — the touch full-screen sheet: a back bar above the title
+ *     (safe-area aware) instead of the X, and a sticky footer padded for the
+ *     home indicator. Same content, so a phone shows the same product page.
+ *
  * The "Main" flag lives in the header as a chip — one short control, always in
  * the same place, instead of a full-width button shouting from the footer. It
  * only exists for cube categories: that is the one piece of state the rest of
@@ -15,7 +23,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Camera, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
+import { Camera, ChevronLeft, ExternalLink, Heart, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -43,6 +51,8 @@ export interface ItemDetailPanelProps {
   typeName?: string;
   categoryName?: string;
   locale: string;
+  /** `panel` (default) or the touch full-screen `overlay`. */
+  variant?: "panel" | "overlay";
   onEdit: () => void;
   onDelete: () => void;
   onTogglePrimary: () => void;
@@ -58,6 +68,7 @@ export function ItemDetailPanel({
   typeName,
   categoryName,
   locale,
+  variant = "panel",
   onEdit,
   onDelete,
   onTogglePrimary,
@@ -65,6 +76,7 @@ export function ItemDetailPanel({
   onClose,
 }: ItemDetailPanelProps) {
   const { t } = useTranslation("collection");
+  const overlay = variant === "overlay";
 
   const rows: SpecRow[] = [];
   if (categoryName) rows.push({ key: "category", label: t("spec.category"), value: categoryName });
@@ -88,7 +100,24 @@ export function ItemDetailPanel({
   if (price) rows.push({ key: "price", label: t("spec.price"), value: price });
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-surface">
+      {/* Touch: a proper back bar, above the product title. */}
+      {overlay ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-line bg-surface px-3 pt-safe pb-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="-ml-1 flex h-11 items-center gap-1 rounded-lg pl-1 pr-2.5 text-[0.8rem] font-medium text-ink-2 transition-colors active:bg-surface-2 touch-manipulation"
+          >
+            <ChevronLeft className="size-5" />
+            {t("mobile.back")}
+          </button>
+          <span className="min-w-0 flex-1 truncate text-right text-[0.68rem] text-ink-3">
+            {[categoryName, typeName].filter(Boolean).join(" · ")}
+          </span>
+        </div>
+      ) : null}
+
       <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
         <div className="min-w-0">
           <h2 className="truncate text-base font-semibold tracking-tight text-ink">{item.name}</h2>
@@ -105,10 +134,10 @@ export function ItemDetailPanel({
                 onClick={onTogglePrimary}
                 title={item.primary ? t("unsetPrimary") : t("setPrimary")}
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition-colors",
+                  "rounded-full px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition-colors touch-manipulation",
                   item.primary
                     ? "bg-ink text-canvas"
-                    : "border border-dashed border-line-2 text-ink-3 hover:text-ink",
+                    : "border border-dashed border-line-2 text-ink-3 active:text-ink",
                 )}
               >
                 {t("primary")}
@@ -127,7 +156,7 @@ export function ItemDetailPanel({
             ) : null}
           </div>
         </div>
-        {onClose ? (
+        {onClose && !overlay ? (
           <button
             type="button"
             onClick={onClose}
@@ -139,7 +168,7 @@ export function ItemDetailPanel({
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4">
         <div className="flex aspect-[5/4] items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-2/30">
           <ItemMedia
             photo={item.photos[0]}
@@ -211,7 +240,7 @@ export function ItemDetailPanel({
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.72rem] text-ink-2 transition-colors hover:bg-surface-2"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[0.72rem] text-ink-2 transition-colors active:bg-surface-2"
                 >
                   {link.label || link.url}
                   <ExternalLink className="size-3" />
@@ -222,7 +251,12 @@ export function ItemDetailPanel({
         ) : null}
       </div>
 
-      <footer className="flex shrink-0 items-center gap-2 border-t border-line px-4 py-3">
+      <footer
+        className={cn(
+          "flex shrink-0 items-center gap-2 border-t border-line bg-surface px-4 pt-3",
+          overlay ? "pb-3 pb-safe" : "pb-3",
+        )}
+      >
         <Button
           variant="outline"
           size="icon"

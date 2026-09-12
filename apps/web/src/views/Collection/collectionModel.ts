@@ -93,6 +93,12 @@ export const STATUS_I18N_KEY: Record<ItemStatus, ParseKeys<'collection'>> = {
   lent: 'status.lent',
 };
 
+/** Status labels plus the "all" pseudo-filter used by the filter rows. */
+export const STATUS_FILTER_I18N_KEY: Record<ItemStatus | 'all', ParseKeys<'collection'>> = {
+  all: 'status.all',
+  ...STATUS_I18N_KEY,
+};
+
 /** Optional physical condition. */
 export type ItemCondition = 'mint' | 'good' | 'used' | 'broken';
 
@@ -700,10 +706,65 @@ export function setExcludedCategories(
 
 export type ItemSort = 'name' | 'recent' | 'oldest' | 'price' | 'brand' | 'rating';
 
+/** Sort options in menu order, and their labels. Shared by both shells. */
+export const ITEM_SORTS: readonly ItemSort[] = [
+  'name',
+  'recent',
+  'oldest',
+  'price',
+  'rating',
+  'brand',
+];
+
+export const SORT_I18N_KEY: Record<ItemSort, ParseKeys<'collection'>> = {
+  name: 'sort.name',
+  recent: 'sort.recent',
+  oldest: 'sort.oldest',
+  price: 'sort.price',
+  rating: 'sort.rating',
+  brand: 'sort.brand',
+};
+
+/** Status filters in row order, including the "all" pseudo-filter. */
+export const ITEM_STATUS_FILTERS: readonly (ItemStatus | 'all')[] = [
+  'all',
+  'owned',
+  'wishlist',
+  'sold',
+  'lent',
+];
+
 /** Which taxonomy node the grid is showing: `null`/`null` means "everything". */
 export interface CollectionSelection {
   categoryId: string | null;
   typeId: string | null;
+}
+
+/**
+ * The selection as a breadcrumb: `[]` for "everything", `[category]` for a
+ * category, `[category, type]` when a type is narrowed in. The touch shell
+ * renders this as one compact path bar, so both levels stay reachable without
+ * a two-row tab bar.
+ */
+export function taxonomyPath(
+  state: CollectionState,
+  selection: CollectionSelection,
+): { id: string; label: string }[] {
+  const category = categoryOf(state, selection.categoryId);
+  if (!category) return [];
+  const trail = [{ id: category.id, label: category.name }];
+  const type = typeOf(state, selection.typeId);
+  if (type && type.categoryId === category.id) trail.push({ id: type.id, label: type.name });
+  return trail;
+}
+
+/** How many filters are narrowing the grid (0 = showing everything). */
+export function countActiveFilters(filter: ItemFilter): number {
+  let count = 0;
+  if (filter.status && filter.status !== 'all') count += 1;
+  if (filter.tags && filter.tags.length > 0) count += 1;
+  if (filter.favoritesOnly) count += 1;
+  return count;
 }
 
 export interface ItemFilter {

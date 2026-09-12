@@ -3951,6 +3951,13 @@
       "pastel": "Pastel",
       "carbon": "Carbono"
     },
+    "mobile": {
+      "back": "Atrás",
+      "navTitle": "Explorar",
+      "filters": "Filtros",
+      "sortBy": "Ordenar por",
+      "closeSearch": "Cerrar búsqueda"
+    },
     "nav": {
       "everything": "Todo",
       "allTypes": "Todos los tipos",
@@ -4014,6 +4021,8 @@
       "typesTitle": "Tipos en {{category}}",
       "typesDescription": "Los tipos son el segundo nivel: 3×3, 2×2, una marca de lubricante — lo que encaje.",
       "addType": "Añadir un tipo",
+      "typeCount_one": "{{count}} tipo",
+      "typeCount_other": "{{count}} tipos",
       "typeNamePlaceholder": "Nombre del tipo, p. ej. 3×3",
       "linkNone": "Sin categoría enlazada",
       "linkHint": "Enlazar un tipo con una categoría de la app lo mantiene sincronizado con la lista de puzzles del cronómetro.",
