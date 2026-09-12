@@ -11,6 +11,8 @@ import { refreshProfile } from "@/hooks/useProfile";
 import { startSyncService } from "@/services/sync";
 import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
+import { useCollectionStore } from "@/views/Collection/collectionStore";
+import { activeCubeStore } from "@/stores/activeCubeStore";
 import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
@@ -117,6 +119,15 @@ export default function App() {
   // Background sync: dirty-flag poller + online/visibility listeners.
   useEffect(() => {
     startSyncService();
+  }, []);
+
+  // The Locker is no longer a view-only concern: the dock's cube piece and the
+  // per-solve attribution read it, whether or not the user ever opens the view.
+  // Both reads are tiny (three SELECTs, one key/value scan) and idempotent —
+  // the Locker's own `hydrate()` then finds them already done.
+  useEffect(() => {
+    void useCollectionStore.getState().hydrate();
+    void activeCubeStore.getState().hydrate();
   }, []);
 
   // After the claim remaps the identity to the account, re-read the profile
@@ -311,6 +322,7 @@ export default function App() {
     currentScramble,
     puzzle,
     resetScramble,
+    solves,
   });
 
   // ── Focus mode (chrome collapses while solving) ────────────────────────
@@ -483,6 +495,7 @@ export default function App() {
       onExportAllJSON={handleExportAllJSON}
       onNavigate={handleNavigate}
       onOpenProfile={() => handleNavigate("profile")}
+      onOpenLocker={() => handleNavigate("collection")}
       isFocused={isFocused}
       session$={session$}
       timerStateRef={timerStateRef}

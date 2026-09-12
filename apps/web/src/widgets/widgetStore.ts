@@ -8,6 +8,7 @@ import { BUILT_IN_WIDGETS, getWidget } from "./registry";
 import {
   DOCK_AREAS,
   DEFAULT_DOCK_AREA_ORDER,
+  addAreasIntroducedAfter,
   areaBaseId,
 } from "./dock/dockAreasRegistry";
 
@@ -222,7 +223,11 @@ export function migratePersistedWidgetState(
   const rawDockAreaOrder = Array.isArray(raw.dockAreaOrder)
     ? (raw.dockAreaOrder as string[])
     : DEFAULT_DOCK_AREA_ORDER;
-  const dockAreaOrder = uniquifyDockAreas(rawDockAreaOrder);
+  const dockAreaOrder = uniquifyDockAreas(
+    oldVersion >= CURRENT_WIDGET_STORE_VERSION
+      ? rawDockAreaOrder
+      : addAreasIntroducedAfter(rawDockAreaOrder, oldVersion),
+  );
   return {
     ...rest,
     instances: cleanedInstances,
@@ -266,6 +271,13 @@ function uniquifyDockAreas(order: string[]): string[] {
 }
 
 // ── Store ────────────────────────────────────────────────────────────────
+
+/**
+ * The persist version. Bump it whenever a NEW dock area must reach existing
+ * layouts: the migration only appends what was introduced after the version
+ * the user last persisted, so it happens exactly once.
+ */
+export const CURRENT_WIDGET_STORE_VERSION = 9;
 
 export const widgetStore = createStore<WidgetStore>()(
   persist(
@@ -571,7 +583,9 @@ export const widgetStore = createStore<WidgetStore>()(
       // instances so existing users get them cleaned on next load.
       // v8: repeatable dock areas (spacer/separator) get unique instance ids
       // ("separator-0", …) so framer can reorder several of them smoothly.
-      version: 8,
+      // v9: the cube piece ("which of my cubes am I using?") reaches layouts
+      // that predate it, exactly once, anchored after the puzzle selector.
+      version: CURRENT_WIDGET_STORE_VERSION,
       migrate: (persisted, oldVersion) =>
         migratePersistedWidgetState(persisted, oldVersion),
       partialize: (state) => ({

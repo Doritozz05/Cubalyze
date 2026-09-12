@@ -84,6 +84,23 @@ export class AppMetaRepository {
   }
 
   /**
+   * Every key/value pair under a prefix, as a plain object keyed WITHOUT the
+   * prefix. Used by the small per-device tables that live in `app_meta` and are
+   * read as a group (one row per puzzle event, one row per dock setting…).
+   */
+  async getByPrefix(prefix: string): Promise<Record<string, string>> {
+    const rows = await this.db('SELECT key, value FROM app_meta WHERE key LIKE ?', [`${prefix}%`]);
+    const result: Record<string, string> = {};
+    for (const row of rows) {
+      const entry = row as unknown as AppMetaRow;
+      if (entry.key.startsWith(prefix)) {
+        result[entry.key.slice(prefix.length)] = entry.value;
+      }
+    }
+    return result;
+  }
+
+  /**
    * Returns the stable anonymous local user id, generating and persisting one
    * on first launch. Idempotent and race-safe: concurrent calls converge on a
    * single stored id thanks to INSERT OR IGNORE + re-read.

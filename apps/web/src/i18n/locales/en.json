@@ -4384,6 +4384,7 @@
     "manualSolve": "Add solve",
     "sessionArea": "Session",
     "puzzleArea": "Puzzle",
+    "cubeArea": "Cube",
     "editDock": "Edit dock…",
     "addPiece": "Add piece",
     "doneEditing": "Done",
@@ -4428,7 +4429,17 @@
       "widgetsArea": "The widget zone — shows docked widget pills.",
       "manualSolve": "Quick-add button for manual solve entry.",
       "sessionArea": "Session switcher with name and solve count.",
-      "puzzleArea": "Puzzle category selector (3x3, 2x2, etc.)"
+      "puzzleArea": "Puzzle category selector (3x3, 2x2, etc.)",
+      "cubeArea": "Which of your Locker cubes this event is being solved with."
+    },
+    "cube": {
+      "title": "Cube for {{event}}",
+      "empty": "No {{event}} cubes in your Locker yet",
+      "add": "Add cube",
+      "main": "Main",
+      "none": "No cube",
+      "unavailable": "The chosen cube is no longer available for this event.",
+      "openLocker": "Open Locker"
     }
   },
   "contextMenu": {

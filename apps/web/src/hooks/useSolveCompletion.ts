@@ -17,6 +17,13 @@ import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection"
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { runAnalysis } from "@/hooks/useSolveSession";
 import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { useCollectionStore } from "@/views/Collection/collectionStore";
+import { activeCubeStore } from "@/stores/activeCubeStore";
+import {
+  cubeAttribution,
+  latestCubeIdForEvent,
+  resolveActiveCube,
+} from "@/views/Collection/activeCube";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { hapticCelebrate } from "@/utils/haptics";
 import { isDev } from "@/utils/env";
@@ -130,6 +137,23 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         overrides?.source ??
         (smartCubeConnectedRef.current ? "smart" : "manual");
 
+      // Which of the user's cubes this solve belongs to. A virtual solve has no
+      // physical cube, and `resolveActiveCube` only ever answers with a cube of
+      // THIS event that is still owned — an event with nothing registered in
+      // the Locker stores no attribution rather than a guess. Read imperatively
+      // so a Locker edit never re-renders the timer.
+      const capturedCube =
+        capturedSource === "virtual"
+          ? {} // no physical cube — the simulator is not in your hand
+          : cubeAttribution(
+              resolveActiveCube(
+                useCollectionStore.getState().data,
+                capturedPuzzleType,
+                activeCubeStore.getState().byEvent[capturedPuzzleType],
+                latestCubeIdForEvent(solvesRef.current, capturedPuzzleType),
+              ),
+            );
+
       const pbResult = detectPbMilestones(
         solvesRef.current,
         time,
@@ -161,6 +185,7 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
         scramble: scrambleDisplay ? capturedScramble : "",
         penalty,
         method: capturedPersistedMethod,
+        ...capturedCube,
         source: capturedSource,
         moves: rawMoves,
         orientationTimeline: rawOrientationTimeline,

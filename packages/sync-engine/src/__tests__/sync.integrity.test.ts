@@ -1020,3 +1020,148 @@ describe("K) tombstone clock floor (031)", () => {
     expect(cloud.solves.get(`${UID}:x1`)?.time_ms).toBe(9999);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// L) Solve attribution (M13) — the cube you solved with travels with the solve.
+//
+// Phase 3 let a solve name the Locker item it was done with. Two halves must
+// both hold or the feature is a silent no-op:
+//   • the client must PUT cube_id/cube_label in the payload (solveToCloudRow);
+//   • the cloud's sync_apply must DECLARE and WRITE them — a key that is not
+//     in the function's `jsonb_to_recordset(...) as x(<column list>)` is
+//     dropped without an error, so the push looks successful while the
+//     attribution never leaves the device.
+// The second half is SQL that no runtime test can reach without a live
+// Postgres, so it is asserted against the migration source itself.
+// ────────────────────────────────────────────────────────────────────────────
+describe("L) solve attribution travels between devices (M13)", () => {
+  it("pushes the attribution and pulls it on another device", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "s1-solve",
+      sessionId: "s1",
+      timeMs: 8888,
+      timestamp: 1000,
+      scramble: "R U R'",
+      penalty: "none",
+      source: "smart",
+      moves: [],
+      puzzleType: "333",
+      cubeId: "item_gan12",
+      cubeLabel: "GAN 12",
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+
+    await pushChanges(a.ctx, UID);
+    const cloudRow = cloud.solves.get(`${UID}:s1-solve`);
+    expect(cloudRow?.cube_id).toBe("item_gan12");
+    expect(cloudRow?.cube_label).toBe("GAN 12");
+
+    await pullChanges(b.ctx, UID);
+    const pulled = await b.ctx.solves.findById("s1-solve");
+    expect(pulled?.cubeId).toBe("item_gan12");
+    expect(pulled?.cubeLabel).toBe("GAN 12");
+  });
+
+  it("leaves a deliberate no-cube solve NULL on the cloud", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "no-cube",
+      sessionId: "s1",
+      timeMs: 1000,
+      timestamp: 1000,
+      scramble: "R",
+      penalty: "none",
+      source: "manual",
+      moves: [],
+      puzzleType: "222",
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+
+    await pushChanges(a.ctx, UID);
+    const cloudRow = cloud.solves.get(`${UID}:no-cube`);
+    expect(cloudRow?.cube_id).toBeNull();
+    expect(cloudRow?.cube_label).toBeNull();
+  });
+
+  it("sync_apply declares AND writes both columns (no silent drop)", async () => {
+    const url = new URL(
+      "../../../../supabase/migrations/20260912000010_sync_apply_solve_cube.sql",
+      import.meta.url,
+    );
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync(url, "utf8");
+
+    // The recordset declares the columns the client sends…
+    const declaration = sql.slice(
+      sql.indexOf("jsonb_to_recordset(payload -> 'solves')"),
+      sql.indexOf("loop"),
+    );
+    expect(declaration).toContain("cube_id text");
+    expect(declaration).toContain("cube_label text");
+
+    // …the insert writes them…
+    const insertSolves = sql.slice(
+      sql.indexOf("insert into public.solves ("),
+      sql.indexOf("on conflict (user_id, id) do update set"),
+    );
+    expect(insertSolves.match(/cube_id/g)?.length ?? 0).toBeGreaterThanOrEqual(2); // column list + values
+    expect(insertSolves.match(/cube_label/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+
+    // …and the LWW update carries them, so an edit that changes the cube wins.
+    const upsert = sql.slice(
+      sql.indexOf("on conflict (user_id, id) do update set"),
+      sql.indexOf("where excluded.updated_at >= public.solves.updated_at"),
+    );
+    expect(upsert).toContain("cube_id = excluded.cube_id");
+    expect(upsert).toContain("cube_label = excluded.cube_label");
+  });
+
+  it("keeps the other synced tables byte-identical (only solves changed)", async () => {
+    // The recreated function must not drift: everything after the solves block
+    // is a verbatim copy of 20260902000007's sync_apply.
+    const { readFileSync } = await import("node:fs");
+    const read = (name: string) =>
+      readFileSync(new URL(`../../../../supabase/migrations/${name}`, import.meta.url), "utf8");
+    const body = (sql: string) => {
+      const from = sql.indexOf("create or replace function public.sync_apply");
+      return sql.slice(from, sql.indexOf("$$;", from) + 3);
+    };
+    const previous = body(read("20260902000007_drop_sessions_puzzle_type.sql"));
+    const next = body(read("20260912000010_sync_apply_solve_cube.sql"));
+
+    const solvesBlock = (sql: string) => {
+      const from = sql.indexOf("payload -> 'solves'");
+      const to = sql.indexOf("payload -> 'sessions'");
+      return sql.slice(from, to);
+    };
+
+    // Whitespace (line endings and where the SQL wraps) carries no meaning, so
+    // both sides are normalised before comparing.
+    const norm = (sql: string) => sql.replace(/\s+/g, " ").trim();
+
+    // Removing exactly the four cube additions (with the comma they were
+    // spliced next to) must reproduce the previous function verbatim — proof
+    // that nothing else was rewritten while recreating it.
+    const withoutCubeColumns = norm(solvesBlock(next))
+      .replaceAll("cube_id text, cube_label text, ", "")
+      .replaceAll("rec.cube_id, rec.cube_label, ", "")
+      .replaceAll("cube_id = excluded.cube_id, cube_label = excluded.cube_label, ", "")
+      .replaceAll("cube_id, cube_label, ", "");
+
+    expect(withoutCubeColumns).toBe(norm(solvesBlock(previous)));
+    // Everything outside the solves block is untouched.
+    expect(norm(next.replace(solvesBlock(next), ""))).toBe(
+      norm(previous.replace(solvesBlock(previous), "")),
+    );
+  });
+});

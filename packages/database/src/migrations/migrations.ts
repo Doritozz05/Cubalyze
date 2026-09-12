@@ -1376,4 +1376,14 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_gear_items_updated ON gear_items(updated_at);
     `,
   },
+  {
+    id: '035_solve_cube',
+    description:
+      'A solve can say WHICH cube it was done with: solves.cube_id (a gear_items.id, no FK on purpose — deleting a cube from the Locker must never rewrite solve history) plus cube_label, the denormalised name shown in the history, the exports and the per-cube stats (so a renamed or deleted item does not turn past solves into "unknown"). Indexed by cube_id for the per-cube queries of the stats phase. Both columns are nullable: virtual solves have no physical cube, and a manual or imported solve may predate the field. The cloud table gets the same two columns (supabase migration 20260912000009) so the attribution travels with the solve instead of being a local-only detail.',
+    sql: `
+      ALTER TABLE solves ADD COLUMN cube_id TEXT;
+      ALTER TABLE solves ADD COLUMN cube_label TEXT;
+      CREATE INDEX IF NOT EXISTS idx_solves_cube ON solves(cube_id);
+    `,
+  },
 ];

@@ -12,6 +12,8 @@ export interface SolveRow {
   scramble: string;
   penalty: string;
   method: string | null;
+  cube_id: string | null;
+  cube_label: string | null;
   source: string;
   note: string | null;
   moves: string;
@@ -87,6 +89,8 @@ function rowToSolve(row: SolveRow): Solve {
     scramble: row.scramble,
     penalty: row.penalty as Solve['penalty'],
     method: row.method ?? undefined,
+    cubeId: row.cube_id ?? undefined,
+    cubeLabel: row.cube_label ?? undefined,
     source: (row.source as Solve['source']) ?? 'manual',
     note: row.note ?? undefined,
     moves: safeParseMoves(row.moves),
@@ -122,6 +126,8 @@ function solveToRow(solve: Solve): SolveRow {
     scramble: solve.scramble,
     penalty: solve.penalty,
     method: solve.method ?? null,
+    cube_id: solve.cubeId ?? null,
+    cube_label: solve.cubeLabel ?? null,
     source: solve.source ?? 'manual',
     note: solve.note ?? null,
     moves: JSON.stringify(solve.moves || []),
@@ -241,8 +247,8 @@ export class SolvesRepository {
         : solve;
     const row = solveToRow(stamped);
     await this.db(
-      'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
+      'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, cube_id, cube_label, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [row.id, row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.cube_id, row.cube_label, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, options?.isDemo ? 1 : 0, row.created_at, row.updated_at]
     );
   }
 
@@ -256,8 +262,8 @@ export class SolvesRepository {
    * Performance: solves are grouped into multi-row INSERT statements instead
    * of one round-trip per solve. Every `execute()` crosses the worker bridge
    * (Comlink postMessage → WASM → postMessage), so a 5000-solve import used to
-   * cost 5000+ round-trips; batching cuts that to a handful. 500 rows × 17
-   * columns = 8500 bound variables, well under SQLite's MAX_VARIABLE_NUMBER
+   * cost 5000+ round-trips; batching cuts that to a handful. 500 rows × 19
+   * columns = 9500 bound variables, well under SQLite's MAX_VARIABLE_NUMBER
    * (32766) and SQL length limits.
    */
   async insertMany(solves: Solve[]): Promise<number> {
@@ -283,9 +289,9 @@ export class SolvesRepository {
     return withTransaction(this.db, async (exec) => {
       for (let start = 0; start < solves.length; start += ROWS_PER_STATEMENT) {
         const chunk = solves.slice(start, start + ROWS_PER_STATEMENT);
-        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
         const sql =
-          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ' +
+          'INSERT INTO solves (id, session_id, time_ms, timestamp, scramble, penalty, method, cube_id, cube_label, source, note, moves, orientation_timeline, analysis_engine_version, analysis, puzzle_type, is_demo, created_at, updated_at) VALUES ' +
           placeholders;
         const bind: unknown[] = [];
         for (const solve of chunk) {
@@ -296,7 +302,8 @@ export class SolvesRepository {
           const row = solveToRow(stamped);
           bind.push(
             row.id, row.session_id, row.time_ms, row.timestamp, row.scramble,
-            row.penalty, row.method, row.source, row.note, row.moves,
+            row.penalty, row.method, row.cube_id, row.cube_label, row.source,
+            row.note, row.moves,
             row.orientation_timeline, row.analysis_engine_version, row.analysis,
             row.puzzle_type, 0, row.created_at, row.updated_at
           );
@@ -342,8 +349,8 @@ export class SolvesRepository {
     const row = solveToRow(stamped);
     const updatedAt = row.updated_at > 0 ? row.updated_at : Date.now();
     await this.db(
-      'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
-      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, updatedAt, row.id]
+      'UPDATE solves SET session_id = ?, time_ms = ?, timestamp = ?, scramble = ?, penalty = ?, method = ?, cube_id = ?, cube_label = ?, source = ?, note = ?, moves = ?, orientation_timeline = ?, analysis_engine_version = ?, analysis = ?, puzzle_type = ?, updated_at = ? WHERE id = ?',
+      [row.session_id, row.time_ms, row.timestamp, row.scramble, row.penalty, row.method, row.cube_id, row.cube_label, row.source, row.note, row.moves, row.orientation_timeline, row.analysis_engine_version, row.analysis, row.puzzle_type, updatedAt, row.id]
     );
   }
 

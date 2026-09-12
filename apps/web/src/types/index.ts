@@ -32,6 +32,13 @@ export interface Solve {
   note?: string;
   /** Solving method used for this solve. */
   method?: SolveMethod;
+  /**
+   * The Locker item this solve was done with (a `gear_items.id`), when the
+   * active cube belonged to the event. `label` is the name at solve time, kept
+   * on the row so history and exports survive a rename or a deletion.
+   */
+  cubeId?: string;
+  cubeLabel?: string;
   /** How the solve was recorded: "smart" (cube hardware) or "manual". */
   source?: SolveSource;
   /** Raw moves captured from Smart Cube during the solve. */

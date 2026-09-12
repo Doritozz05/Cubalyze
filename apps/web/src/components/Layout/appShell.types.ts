@@ -61,6 +61,8 @@ export interface AppShellProps {
   onExportAllJSON: () => Promise<void>;
   onNavigate: (view: ViewId) => void;
   onOpenProfile: () => void;
+  /** Open the Locker stage (the cube dock piece's empty state action). */
+  onOpenLocker: () => void;
   isFocused: boolean;
   session$: ReturnType<typeof useSolveSession>;
   timerStateRef: React.MutableRefObject<TimerState>;

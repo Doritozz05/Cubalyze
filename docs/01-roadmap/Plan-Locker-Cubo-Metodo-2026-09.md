@@ -1,6 +1,7 @@
 # Plan — Método por evento, Locker en la BD, cubo por solve y pieza del dock
 
-> Estado: **en ejecución** (2026-09-12). Rama: `exp/cube-collection`.
+> Estado: **fases 1–3 hechas y verificadas** (2026-09-12); la **fase 4 está
+> diseñada y pendiente de ejecutar**. Rama: `exp/cube-collection`.
 > Alcance de este documento: **fases 1–4**. Las fases 5–8 (identificación
 > automática del smart cube, sincronización del Locker, bitácora de setups y
 > estante público) quedan **fuera** y no bloquean nada: el diseño deja los
@@ -275,6 +276,11 @@ todo subiria el `updated_at` de cada fila y, cuando el Locker sincronice, empuja
 
 ## 4. Fase 3 — `cube_id`, cubo activo y la pieza del dock
 
+> Estado: **hecha** (2026-09-12). `pnpm typecheck` 33/33, suite completa
+> **3092 pasan / 0 fallan** (12 saltados), lint sin errores en `apps/web`,
+> `packages/database` y `packages/sync-engine`, y build de producción OK.
+> Sin commit hasta que el usuario lo pida (se hizo al cerrar la fase).
+
 ### 4.1 Datos
 
 Migración local: `solves.cube_id TEXT` + `solves.cube_label TEXT` + índice en
@@ -300,9 +306,90 @@ primera cosa que **consume de verdad** el flag Main.
 deja de estar en propiedad, cae al último válido con aviso discreto. Estado
 vacío por evento con acceso al Locker. Desktop: `Select` como el puzzle. Táctil:
 chip en la cabecera + hoja (`TouchPanel`), como la navegación del Locker.
-Y el detalle que casi se olvida: **inyectar el área solo si el orden del dock
-persistido es exactamente el default antiguo**; si se personalizó, aparece en el
-explorador y no reordena el workspace (regla que el repo ya documenta).
+
+**Cómo llega el área a quien ya tenía un dock personalizado.** El orden del dock
+persistido solo se sanea, nunca se amplía: añadir `cube` en cada arranque
+resucitaría la pieza que alguien quitó a propósito. Así que la llegada es
+versionada de una sola vez — `CURRENT_WIDGET_STORE_VERSION = 9`, y
+`addAreasIntroducedAfter(order, oldVersion)` coloca `cube` justo después de
+`puzzle` **solo cuando el layout persistido es anterior a la v9**. Si el ancla
+(`puzzle`) ya no está, cae al final; si el área ya está, no se toca. Es una
+función pura y con tests propios (incluida la no-mutación del array de entrada).
+
+**Icono.** La pieza usa `Cuboid` (un cubo limpio) tanto en el trigger como en la
+variante icono y en el explorador de piezas; la fila "Abrir Locker" de la hoja
+usa `ArrowUpRight` (es una acción, no un cubo). Se descartó `Boxes` (los tres
+cubos apilados) porque ensuciaba la barra.
+
+### 4.4 Qué pasa si NO eliges cubo (el comportamiento por defecto)
+
+Es la pregunta importante, así que va explícita. El orden de decisión, en
+`resolveActiveCube`:
+
+1. **Elección explícita** en este dispositivo (`app_meta.active_cube_<evento>`),
+   si ese item sigue siendo candidato. La elección **no se sincroniza**: el móvil
+y el escritorio pueden estar delante de cubos distintos, y se atribuye en el
+momento del solve.
+2. Si no hay elección (o el elegido ya no vale): el primer item con
+   **`primary` (Main) de ese evento**.
+3. Si no hay ningún Main: el **último cubo** de ese evento visto en un solve
+   anterior.
+4. Si no hay nada de lo anterior: **`null`**, es decir el solve se guarda con
+   `cube_id`/`cube_label` **NULL**. Nunca se inventa un cubo.
+
+Los tres estados posibles son distintos a propósito:
+
+- **Nunca elegido** → se resuelve por 2/3/4 y la pieza muestra lo que tocaría.
+- **"Sin cubo" elegido a mano** (`NO_CUBE`) → manda sobre los fallbacks: los
+   solves de ese evento se registran sin atribución y la pieza lo dice. Es una
+decisión, no un olvido.
+- **El elegido desapareció** (vendido, borrado, movido a otro evento) → la pieza
+   cae al fallback y avisa (`cube.unavailable`); nunca se sigue atribuyendo a un
+   cubo que no está en tu mano.
+
+Un solve **virtual** no lleva cubo nunca (el simulador no es tu cubo físico) y un
+evento sin cubos registrados (p. ej. Pyraminx) guarda los solves sin atribución:
+no hay nada que elegir y la pieza es una puerta al Locker. Los solves
+**importados** tampoco llevan cubo: no había attribution cuando se registraron.
+
+### 4.5 Tests de la fase
+
+- `views/Collection/__tests__/activeCube.test.ts` (17): candidatos por evento,
+  OH nunca mezclado con 333, vendidos fuera, item directo bajo categoría sin
+  evento, tipo sin `puzzleCategory`, categoría no-cubo, prioridad elegido →
+  Main → reciente, `NO_CUBE`, y `cubeAttribution` vacío cuando no hay cubo.
+- `stores/__tests__/activeCubeStore.test.ts` (5): hidratación desde el prefijo de
+  `app_meta`, valores vacíos descartados, set/clear persistido (fila en blanco,
+  no borrada), degradación sin BD y `hydrate` idempotente.
+- `widgets/dock/dockAreasRegistry.test.ts` (10): registro coherente, `cube` tras
+  `puzzle` en el default, llegada en la v9, idempotencia, ancla ausente, layout
+  ya actual, no-mutación y la migración completa del store.
+- `packages/database/src/__tests__/solve-cube-attribution.test.ts` (8): columnas
+  nullable + índice contra sqlite-wasm real, ida y vuelta en `insert`,
+  `insertMany` y `update` (incluido **vaciar** el cubo), y —lo importante— que
+  **no hay FK** a `gear_items`: borrar el cubo del Locker no toca el histórico y
+  un solve de un item que no existe localmente se escribe igual.
+- `packages/sync-engine`: 2 casos nuevos en `mappers.test.ts` (ida y vuelta de
+  `cube_id`/`cube_label`, NULL en vez de `"undefined"`, y fila anterior a las
+  columnas) y el bloque `L)` de `sync.integrity.test.ts` (4): el push lleva la
+  atribución, el pull la devuelve en otro dispositivo, un solve sin cubo queda
+  NULL en la nube, y —el que evita el fallo silencioso— el `sync_apply` de
+  `20260912000010` **declara y escribe** ambas columnas, con la comprobación de
+  que el resto de la función es idéntico al de `20260902000007`.
+
+Además, tres tests que leían los binds por índice (`db.test.ts`,
+`db.demo.test.ts`, `db.edgeCases.test.ts`, `pull.test.ts`) pasaron a **derivar el
+índice de la propia sentencia SQL**: al añadir dos columnas quedaron apuntando a
+otro valor, que es exactamente el fallo silencioso que había que evitar en el
+futuro.
+
+### 4.6 Deuda saldada de paso
+
+`AppShell.tsx` tenía un `view as any` en el menú contextual que dejaba el lint de
+`apps/web` en rojo (1 error preexistente). Ahora es `view as ViewId` con un
+comentario que explica por qué el resolver sigue desacoplado del union.
+
+---
 
 ---
 

@@ -8,12 +8,21 @@ import { preferencesStore } from "@cubeforge/state";
 import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { Penalty, PuzzleCategory, SolveMethod } from "@/types";
 import type { UsePersistentSessionResult } from "@/hooks/usePersistentSession";
+import { useCollectionStore } from "@/views/Collection/collectionStore";
+import { activeCubeStore } from "@/stores/activeCubeStore";
+import {
+  cubeAttribution,
+  latestCubeIdForEvent,
+  resolveActiveCube,
+} from "@/views/Collection/activeCube";
 
 export interface ManualSolvesDeps {
   addSolve: UsePersistentSessionResult["addSolve"];
   currentScramble: string;
   puzzle: PuzzleCategory;
   resetScramble: () => void;
+  /** Current solves, newest first — the "last used cube" fallback. */
+  solves: readonly UsePersistentSessionResult["solves"][number][];
 }
 
 /**
@@ -23,9 +32,26 @@ export interface ManualSolvesDeps {
  * Reads the display preferences (method / scramble display) from the store.
  */
 export function useManualSolves(deps: ManualSolvesDeps) {
-  const { addSolve, currentScramble, puzzle, resetScramble } = deps;
+  const { addSolve, currentScramble, puzzle, resetScramble, solves } = deps;
   const methodPref = useStore(preferencesStore, (s) => s.method);
   const scrambleDisplay = useStore(preferencesStore, (s) => s.scrambleDisplay);
+  // Every manual solve is timestamped and attributed to the event being solved,
+  // exactly like a timed one. Read imperatively so a Locker edit does not
+  // re-render the timer stage.
+  const cubeForEvent = useCallback(
+    (eventCode: string) => {
+      const chosen = activeCubeStore.getState().byEvent[eventCode];
+      return cubeAttribution(
+        resolveActiveCube(
+          useCollectionStore.getState().data,
+          eventCode,
+          chosen,
+          latestCubeIdForEvent(solves, eventCode),
+        ),
+      );
+    },
+    [solves],
+  );
 
   const handleManualSubmit = useCallback(
     async (time: number, penalty: Penalty, note?: string | null) => {
@@ -35,6 +61,7 @@ export function useManualSolves(deps: ManualSolvesDeps) {
         scramble: scrambleDisplay ? currentScramble : "",
         // Only events that declare methods (3×3, 3×3 OH) store one.
         method: methodForEvent(puzzleCategoryToType(puzzle), methodPref),
+        ...cubeForEvent(puzzleCategoryToType(puzzle)),
         note: note ? note.trim() || undefined : undefined,
         source: "manual",
         puzzleType: puzzleCategoryToType(puzzle),
@@ -48,7 +75,7 @@ export function useManualSolves(deps: ManualSolvesDeps) {
       toast.success(i18n.t("toast:solveLogged", { label }));
       resetScramble();
     },
-    [addSolve, currentScramble, puzzle, resetScramble, methodPref, scrambleDisplay],
+    [addSolve, currentScramble, puzzle, resetScramble, methodPref, scrambleDisplay, cubeForEvent],
   );
 
   const handleAddManual = useCallback(
@@ -68,13 +95,14 @@ export function useManualSolves(deps: ManualSolvesDeps) {
         // `undefined` there; the rule is re-applied anyway so no caller can
         // smuggle a method into an event that does not hold one.
         method: methodForEvent(puzzleCategoryToType(puzzle), input.method ?? methodPref),
+        ...cubeForEvent(puzzleCategoryToType(puzzle)),
         // Persist the manual-sheet notes — the sheet sends `notes.trim()`.
         note: input.notes.trim() ? input.notes.trim() : undefined,
         source: "manual",
         puzzleType: puzzleCategoryToType(puzzle),
       });
     },
-    [addSolve, puzzle, methodPref],
+    [addSolve, puzzle, methodPref, cubeForEvent],
   );
 
   return { handleManualSubmit, handleAddManual };

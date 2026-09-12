@@ -48,6 +48,8 @@ export interface MainLayoutProps {
   onAddManual?: () => void;
   /** Open the user's profile view (dock profile pill). */
   onOpenProfile?: () => void;
+  /** Open the Locker stage (the cube dock piece's empty state action). */
+  onOpenLocker?: () => void;
   /** Open the mobile "More" sheet (top-left header button, touch regime). */
   onOpenMore?: () => void;
   /** 3D cube view (rendered in the right aside when cube3DActive). */
@@ -106,6 +108,7 @@ export function MainLayout({
   onDeleteSession,
   activeView,
   onOpenProfile,
+  onOpenLocker,
   onOpenMore,
   isFocused,
   hideHeader,
@@ -357,6 +360,7 @@ export function MainLayout({
               onDeleteSession={onDeleteSession}
               onAddManual={onAddManual}
               onOpenProfile={onOpenProfile}
+              onOpenLocker={onOpenLocker}
               onOpenMore={onOpenMore}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}

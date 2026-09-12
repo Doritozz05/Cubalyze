@@ -10,6 +10,19 @@ function mockDb(rows: Record<string, unknown>[] = []) {
   return vi.fn<(...args: unknown[]) => Promise<Record<string, unknown>[]>>().mockResolvedValue(rows);
 }
 
+/**
+ * Position of a column in an `INSERT INTO <table> (a, b, …) VALUES (…, …)`
+ * statement — i.e. the index of the matching bound value. Derived from the
+ * statement so adding a column can never silently shift an assertion onto
+ * another value (which is exactly what happened when `cube_id` landed).
+ */
+function insertColumnIndex(sql: string, column: string): number {
+  const list = sql.slice(sql.indexOf('(') + 1, sql.indexOf(')'));
+  const index = list.split(',').map((c) => c.trim()).indexOf(column);
+  if (index < 0) throw new Error(`column ${column} not in: ${list}`);
+  return index;
+}
+
 // ────────────────────────────────────────────────────────────────────────
 //  Helper: create a full SolveRow with all fields
 // ────────────────────────────────────────────────────────────────────────
@@ -250,8 +263,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
         scramble: '', penalty: 'none', source: 'manual', moves: [], puzzleType: '222', updatedAt: 1767225600000,
       });
       const bind = db.mock.calls[0][1] as unknown[];
-      // puzzle_type is at index 13 in the INSERT
-      expect(bind[13]).toBe('222');
+      expect(bind[insertColumnIndex(db.mock.calls[0][0] as string, 'puzzle_type')]).toBe('222');
     });
 
     it('insert rejects an unknown puzzle_type (A2 — registry validation)', async () => {
@@ -370,7 +382,7 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
 
       // Verify moves was JSON stringified
       const bind = db.mock.calls[0][1] as unknown[];
-      const movesJson = bind[9] as string; // moves is at index 9
+      const movesJson = bind[insertColumnIndex(db.mock.calls[0][0] as string, 'moves')] as string;
       const parsed = JSON.parse(movesJson);
       expect(parsed).toEqual([{ face: 'U', direction: 1, cubeTimestamp: 123, hostTimestamp: 456 }]);
     });
@@ -394,7 +406,9 @@ describe('SolvesRepository — Level 2 Edge Cases', () => {
 
       // Verify it was stored as a JSON array of tuples
       const bind = db.mock.calls[0][1] as unknown[];
-      const timelineJson = bind[10] as string; // orientation_timeline is at index 10
+      const timelineJson = bind[
+        insertColumnIndex(db.mock.calls[0][0] as string, 'orientation_timeline')
+      ] as string;
       expect(JSON.parse(timelineJson)).toEqual([[0, 2], [3, 5], [7, 0]]);
 
       // Simulate a reload: the stored JSON comes back through findAll

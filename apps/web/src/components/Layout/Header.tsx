@@ -24,10 +24,12 @@ import {
   SessionStatsPiece,
   SessionChartPiece,
   RandomPuzzlePiece,
+  CubePiece,
 } from "@/widgets/dock/pieces";
 import { useWidgetStore } from "@/widgets/widgetStore";
 import { areaBaseId } from "@/widgets/dock/dockAreasRegistry";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
+import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { MobileSessionSheet } from "./MobileSessionSheet";
 import type { PuzzleCategory, Solve } from "@/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
@@ -115,6 +117,8 @@ export interface HeaderProps {
   onAddManual?: () => void;
   /** Open the user's profile view (dock profile pill). */
   onOpenProfile?: () => void;
+  /** Open the Locker (the cube piece's "no cubes yet" action). */
+  onOpenLocker?: () => void;
   /** Open the mobile "More" sheet (same as the bottom tab bar's More tab). */
   onOpenMore?: () => void;
   /** Currently selected puzzle category. */
@@ -148,6 +152,7 @@ export function Header({
   onDeleteSession,
   onAddManual,
   onOpenProfile,
+  onOpenLocker,
   onOpenMore,
   puzzle: puzzleProp = "3x3",
   onPuzzleChange,
@@ -409,6 +414,16 @@ export function Header({
         variant="tray"
       />
     );
+    // Which of YOUR cubes this event is being solved with. The candidates are
+    // the Locker's owned cubes of this event, so the piece is honest in every
+    // state (see views/Collection/activeCube.ts).
+    all["cube"] = (
+      <CubePiece
+        event={puzzleCategoryToType(puzzle)}
+        eventLabel={puzzle}
+        onOpenLocker={onOpenLocker}
+      />
+    );
     // Phase 4: system/layout pieces
     all["clock"] = <ClockPiece />;
     all["battery"] = <BatteryPiece />;
@@ -427,7 +442,7 @@ export function Header({
     all["spacer"] = <SpacerPiece />;
     all["separator"] = <SeparatorPiece />;
     return all;
-  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, puzzle, onPuzzleChange, solves]);
+  }, [sessions, activeSessionId, sessionCount, onSwitchSession, onNewSession, onRenameSession, onDeleteSession, onAddManual, onOpenProfile, onOpenLocker, puzzle, onPuzzleChange, solves]);
 
   // Filter to only areas that exist in dockAreaOrder (so removed areas don't
   // render). Repeatable instances are suffixed ("separator-0"), so look up
@@ -574,6 +589,14 @@ export function Header({
             stranded with no session switcher if the DB init was slow
             or failed. */}
         <div className="flex min-w-0 items-center justify-end">
+          {/* Which cube am I using? — the same Locker-backed choice as the
+              desktop dock piece, as a sheet-only icon button. */}
+          <CubePiece
+            event={puzzleCategoryToType(puzzle)}
+            eventLabel={puzzle}
+            variant="icon"
+            onOpenLocker={onOpenLocker}
+          />
           <button
             type="button"
             onClick={() => setSessionDrawerOpen(true)}

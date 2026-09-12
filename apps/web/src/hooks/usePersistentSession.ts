@@ -56,6 +56,9 @@ export interface UsePersistentSessionResult {
     penalty?: Penalty;
     scramble: string;
     method?: string;
+    /** Locker item this solve was done with (see `views/Collection/activeCube`). */
+    cubeId?: string;
+    cubeLabel?: string;
     source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
@@ -122,6 +125,8 @@ function toUISolve(dbSolve: DBSolve): UISolve {
     timestamp: dbSolve.timestamp,
     note: dbSolve.note ?? undefined,
     method: dbSolve.method as UISolve['method'],
+    cubeId: dbSolve.cubeId,
+    cubeLabel: dbSolve.cubeLabel,
     source: (dbSolve.source as SolveSource) ?? "manual",
     moves: dbSolve.moves as UISolve['moves'],
     analysis,
@@ -300,6 +305,9 @@ export function usePersistentSession(): UsePersistentSessionResult {
     penalty?: Penalty;
     scramble: string;
     method?: string;
+    /** Locker item this solve was done with (see `views/Collection/activeCube`). */
+    cubeId?: string;
+    cubeLabel?: string;
     source?: SolveSource;
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
@@ -329,6 +337,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
       scramble: input.scramble,
       penalty: normalizePenalty(input.penalty) as DBSolve['penalty'],
       method: input.method,
+      cubeId: input.cubeId,
+      cubeLabel: input.cubeLabel,
       source: input.source ?? "manual",
       moves: input.moves || [],
       note: input.note ?? undefined,
@@ -357,6 +367,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
     const uiSolve: UISolve = {
       ...toUISolve(dbSolve),
       method: (input.method as UISolve['method']) || undefined,
+      cubeId: input.cubeId,
+      cubeLabel: input.cubeLabel,
       source: input.source ?? "manual",
       // Only override when explicitly provided — preserves defaults from toUISolve.
       // moves defaults to `[]` from the DB row; analysis stays undefined until

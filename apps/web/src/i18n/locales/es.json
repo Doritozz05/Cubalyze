@@ -4384,6 +4384,7 @@
     "manualSolve": "Añadir solve",
     "sessionArea": "Sesión",
     "puzzleArea": "Puzzle",
+    "cubeArea": "Cubo",
     "editDock": "Editar dock…",
     "addPiece": "Añadir pieza",
     "doneEditing": "Listo",
@@ -4428,7 +4429,17 @@
       "widgetsArea": "Zona de widgets — muestra las pills de los widgets acoplados.",
       "manualSolve": "Botón de acceso rápido para añadir solve manual.",
       "sessionArea": "Cambiador de sesión con nombre y contador.",
-      "puzzleArea": "Selector de categoría de puzzle (3x3, 2x2, etc.)"
+      "puzzleArea": "Selector de categoría de puzzle (3x3, 2x2, etc.)",
+      "cubeArea": "Qué cubo del Locker estás usando para esta categoría."
+    },
+    "cube": {
+      "title": "Cubo para {{event}}",
+      "empty": "Todavía no tienes cubos de {{event}} en tu Locker",
+      "add": "Añadir cubo",
+      "main": "Main",
+      "none": "Sin cubo",
+      "unavailable": "El cubo elegido ya no está disponible para esta categoría.",
+      "openLocker": "Abrir Locker"
     }
   },
   "contextMenu": {
