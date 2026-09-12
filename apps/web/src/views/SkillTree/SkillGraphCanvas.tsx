@@ -154,6 +154,30 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
 
   const NodeIcon = (node.iconName && ICON_MAP[node.iconName]) || Sparkles;
 
+  /**
+   * Hover look, from `isHovered` (React state) instead of CSS `:hover`.
+   *
+   * Measured: a pan that started on a node produced 32–79 ms stalls while the
+   * same pan from the bare canvas never passed 21 ms. The difference was the
+   * highlight changing at `mousedown` — a full canvas re-render plus a 200 ms
+   * `transition-all` animating a ring and a shadow inside the transformed
+   * layer. Driving the look from state removes the re-render, and it also keeps
+   * the grabbed node looking untouched while the pan makes the subtree
+   * hit-transparent (a CSS `:hover` silently drops the moment an element stops
+   * being a hit target). One source of truth: the same value drives the ring
+   * and the connector glow.
+   *
+   * The shadow is exclusive rather than stacked on purpose — two utilities for
+   * the same property resolve by stylesheet order, not by the order they appear
+   * in the class list, so `shadow-md shadow-lg` is a coin flip.
+   */
+  const restShadow = isCompleted ? "shadow-lg" : "shadow-md";
+  const hoverLook = isHovered
+    ? isLocked
+      ? cn("border-ink scale-105", restShadow)
+      : "scale-110 shadow-lg"
+    : restShadow;
+
   const handleMouseEnter = useCallback(() => onMouseEnter(node.id), [onMouseEnter, node.id]);
   const handleSelect = useCallback(() => onSelectNode(node), [onSelectNode, node]);
   const handleToggle = useCallback(
@@ -182,10 +206,11 @@ const SkillNodeItem = React.memo(function SkillNodeItem({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={onMouseLeave}
         className={cn(
-          "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-200 shadow-md pointer-events-auto cursor-pointer",
-          isUnlocked && "bg-surface text-ink border-2 border-ink hover:border-ink hover:scale-110 hover:shadow-lg",
-          isCompleted && "bg-ink text-surface font-bold border-2 border-ink shadow-lg hover:scale-110",
-          isLocked && "bg-surface-2 border-2 border-line text-ink-3 hover:border-ink hover:scale-105",
+          "relative w-17 h-17 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto cursor-pointer",
+          isUnlocked && "bg-surface text-ink border-2 border-ink",
+          isCompleted && "bg-ink text-surface font-bold border-2 border-ink",
+          isLocked && "bg-surface-2 border-2 border-line text-ink-3",
+          hoverLook,
           isHovered && "z-10 ring-4 ring-ink",
         )}
       >
@@ -468,10 +493,13 @@ export function SkillGraphCanvas({
     // Suppress the text-selection / native-drag that a mousedown would
     // otherwise start, so the pointer is free to pan without artefacts.
     e.preventDefault();
+    // Deliberately NOT clearing the hover here. Doing it fired a canvas-wide
+    // re-render plus a 200 ms transition on the pressed node — measured as
+    // 32–79 ms stalls at the start of every pan that began over a node, with
+    // the same pan from the bare canvas clean. The highlight is frozen instead:
+    // `handleMouseEnterNode`/`handleMouseLeaveNode` ignore the drag, and the
+    // node keeps its look (see `hoverLook`), so nothing re-styles mid-pan.
     beginPan();
-    // Drop any hover highlight: meaningless while panning, and clearing it at
-    // the start means nothing re-styles during the drag.
-    setHoveredNodeId((prev) => (prev === null ? prev : null));
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
