@@ -64,15 +64,17 @@ export function MobileSessionSheet({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] p-0 pb-safe focus:outline-none">
-          <DrawerHeader className="border-b border-line px-5 py-3.5 text-left">
+        <DrawerContent className="bg-surface text-ink border-line rounded-t-2xl max-h-[85vh] flex flex-col p-0 pb-safe focus:outline-none">
+          <DrawerHeader className="shrink-0 border-b border-line px-5 py-3.5 text-left">
             <DrawerTitle className="text-sm font-semibold text-ink flex items-center gap-2">
               <History className="size-4 text-ink-3" />
               <span>{t("sessions")}</span>
             </DrawerTitle>
           </DrawerHeader>
 
-          <div className="flex flex-col p-4 gap-2 overflow-y-auto max-h-[65vh]">
+          {/* The list grows with the user's sessions, so it must own the
+              remaining height and scroll inside the 85vh sheet. */}
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain p-4">
             {sessions.map((s) => (
               <div
                 key={s.id}
