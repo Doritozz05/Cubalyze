@@ -64,8 +64,13 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
   /** The value the control displays: an explicit "none" stays "none". */
   const value = chosen === NO_CUBE ? NO_CUBE : (resolved?.id ?? NO_CUBE);
 
-  const setActive = (itemId: string | null) => {
-    activeCubeStore.getState().setActive(event, itemId);
+  /**
+   * Only ever called with a candidate's id or `NO_CUBE`. Passing `null` would
+   * CLEAR the choice instead of storing "no cube", which would silently let the
+   * Main fallback take over while the sheet still showed "No cube" selected.
+   */
+  const setActive = (value: string) => {
+    activeCubeStore.getState().setActive(event, value);
   };
 
   // Nothing registered for this event: there is no list to choose from, so the
@@ -123,7 +128,7 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
   return (
     <Select
       value={value}
-      onValueChange={(next) => setActive(next === NO_CUBE ? NO_CUBE : next)}
+      onValueChange={setActive}
     >
       <SelectTrigger
         data-piece="cube"
@@ -195,7 +200,8 @@ function CubeSheet({
   chosen: string | undefined;
   resolvedId: string | null;
   storedIsGone: boolean;
-  onChoose: (itemId: string | null) => void;
+  /** A candidate's item id, or `NO_CUBE` for the explicit "no cube" choice. */
+  onChoose: (value: string) => void;
   onOpenLocker: () => void;
 }) {
   const { t } = useTranslation("dock");
@@ -234,7 +240,8 @@ function CubeSheet({
 
         <button
           type="button"
-          onClick={() => onChoose(null)}
+          onClick={() => onChoose(NO_CUBE)}
+          aria-current={chosen === NO_CUBE}
           className={cn(
             "flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors touch-manipulation active:bg-surface-2",
             chosen === NO_CUBE ? "bg-surface-2" : "hover:bg-surface-2",
