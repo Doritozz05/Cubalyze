@@ -3,14 +3,18 @@
 /**
  * ItemMedia.tsx — the picture slot of a locker item.
  *
- * Three honest states, in priority order:
+ * Four honest states, in priority order:
  *
  *   1. **A photo**, when the item has one. A real picture of *your* cube always
- *      beats any render.
- *   2. **The 3D cube**, for cube categories, drawn by the app's own 3D engine
+ *      beats any render. The bytes live in IndexedDB, so the caller resolves the
+ *      reference into a URL first and passes it as `photo`.
+ *   2. **A photo still loading** (`hasPhoto` without a URL yet) — a neutral
+ *      shimmer, NOT the cube render: showing the render first and swapping it for
+ *      the picture a frame later makes the whole wall jump.
+ *   3. **The 3D cube**, for cube categories, drawn by the app's own 3D engine
  *      from the sticker palette (`cubeSnapshotService`). Same model, skins and
  *      camera the 3D panels use, so the locker shows the cube you actually own.
- *   3. **A skeleton**, for everything else (gear, lubes): a quiet surface with
+ *   4. **A skeleton**, for everything else (gear, lubes): a quiet surface with
  *      the category icon, so a photo-less card still reads as a product card
  *      instead of a hole in the grid.
  *
@@ -58,8 +62,13 @@ export function useLockerCubeImage(request: LockerCubeRequest | null): string | 
 }
 
 export interface ItemMediaProps {
-  /** First photo, if the item has one. */
-  photo?: string;
+  /** Resolved URL of the first photo, if the item has one. */
+  photo?: string | null;
+  /**
+   * True when the item HAS a photo (its URL may still be loading). Keeps the
+   * cube render from flashing before the real picture arrives.
+   */
+  hasPhoto?: boolean;
   /** Sticker colours in U D F B R L order (extras are ignored by the render). */
   palette: readonly string[];
   /** Accessible name of the item. */
@@ -76,6 +85,7 @@ export interface ItemMediaProps {
 
 export function ItemMedia({
   photo,
+  hasPhoto = false,
   palette,
   alt,
   isCube,
@@ -100,6 +110,8 @@ export function ItemMedia({
       />
     );
   }
+
+  if (hasPhoto) return <MediaSkeleton className={className} />;
 
   if (isCube) {
     return cubeUrl ? (
@@ -130,6 +142,19 @@ export function ItemMedia({
     >
       <Icon className="size-6 animate-pulse text-ink-3/50" />
     </div>
+  );
+}
+
+/** Neutral shimmer for a photo whose bytes have not arrived yet. */
+function MediaSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "h-full w-full animate-pulse bg-[linear-gradient(140deg,var(--surface-2),transparent)]",
+        className,
+      )}
+    />
   );
 }
 

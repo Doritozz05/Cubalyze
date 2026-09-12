@@ -209,6 +209,68 @@ queda como red de seguridad. El export/import JSON sigue llevando las fotos en
 base64 **solo dentro del fichero** (nunca en almacenamiento). Las fotos **no
 viajan entre dispositivos** en esta fase y la UI lo dice.
 
+### 3.5 Estado: **hecha** (2026-09-12)
+
+> `pnpm typecheck` 33/33, suite completa en verde (274 ficheros / 3 058 tests),
+lint limpio en lo tocado y build de produccion OK.
+
+Lo construido, y lo que cambio respecto al plan de arriba:
+
+- **Migracion `034_gear_collection`** y `GearRepository` (con tests contra
+  sqlite-wasm real, incluida la cascada que sustituye a `removeCategory` y el
+  re-alojo de items al borrar un tipo). Los tipos de dominio del repo usan
+  arrays `readonly` para que el modelo web pase sus objetos tal cual, sin capa
+  de mapeo que se desincronice.
+- **`collectionModel.ts` SI se toco** (el plan decia que no): las fotos pasan de
+  ser cadenas base64 a ser referencias `{id, width, height, addedAt}`. Es el
+  cambio que hace posible la separacion blob/fila. La pureza se mantiene: cero
+  I/O en el modelo, y los helpers nuevos (`normalizePhotoRefs`,
+  `unwrapCollectionPayload`, `legacyPhotoStrings`, `formatBytes`) tienen tests
+  propios.
+- **El store sigue siendo zustand**, pero respaldado por SQLite en vez de
+  `localStorage`: `hydrate()` lee las filas, cada accion calcula el estado puro
+  siguiente y se persiste **solo el diff** (`collectionPersistence.ts`,
+  funcion pura con tests). Nada de `replaceAll` en el camino normal: reescribir
+todo subiria el `updated_at` de cada fila y, cuando el Locker sincronice, empujaria
+  la coleccion entera en cada tecla. El conector es inyectable
+  (`createCollectionStore(connect)`), que es lo que permite probar el
+  orquestado entero sin Worker ni OPFS.
+- **Las exclusiones no son filas**: viven en `app_meta`
+  (`locker_excluded_categories`), junto con la bandera `locker_initialized` que
+  evita re-sembrar un armario que el usuario ha vaciado a proposito.
+- **Las fotos legacy se convierten sin canvas**: un data URL base64 se decodifica
+  a mano y sus bytes se guardan tal cual (sin re-comprimir, sin perder calidad).
+  Solo un data URL no base64 cae al pipeline de canvas. El import es, por
+  tanto, testeable sin DOM y conserva el original.
+- **El fichero de backup** (`collectionTransfer.ts`) lleva un side-car
+  `photos` con las DOS rendiciones en base64, indexado por `itemId:photoId`, de
+  modo que reimportar reconstruye las mismas claves y ninguna tarjeta queda
+  apuntando a un blob que no existe. Acepta ademas las dos formas antiguas
+  (estado suelto y fotos como cadenas) y descarta las referencias cuyos bytes no
+  estan (mejor un backup sin la foto que un backup roto).
+- **`requestSync()` si se llama** tras cada escritura (el plan decia que no): no
+  es para subir el Locker — sus tablas no estan registradas en el motor todavia
+  — sino para bumpear `dataRevision`, que es lo que hace que la otra pestaña (o
+  el otro dispositivo, al terminar un ciclo) relea las filas. Sin eso, dos
+  pestañas abiertas se pisarian.
+- **UI**: `ItemMedia` gana el estado "hay foto pero los bytes aun no han
+  llegado" (shimmer, nunca el render 3D primero, que hacia saltar la rejilla);
+  `PhotoImage` resuelve una referencia a imagen y se usa en la ficha y la
+  galeria; el editor guarda las fotos al elegirlas bajo el id que el item va a
+  tener (para poder previsualizarlas antes de guardar) y el borrado de los
+  blobs que la edicion descarta ocurre despues del guardado, nunca dentro del
+  editor (cancelar no puede romper una foto guardada). Ademas: lectura de
+  almacenamiento en el menu y export/import tambien en la hoja de navegacion
+  tactil, que antes no tenia ninguna forma de sacar un backup.
+- **Sin cobertura honesta**: el reescalado por canvas (`processPhotoBlob`) no se
+  prueba en Node (no hay canvas); si su aritmetica pura (`fitWithin`,
+  `pickJpegQuality`, `fitsBudget`) y todo el resto del camino.
+- **Borrado de cuenta**: `wipeAccountLocalData` ahora vacia tambien las tablas
+  del Locker, los blobs de IndexedDB, la clave `locker_*` de `app_meta` y el
+  blob antiguo de `localStorage` (que guarda fotos en base64). Sin esto, el
+  armario del usuario borrado sobrevivia al borrado de cuenta y, al quedar
+  `locker_initialized` a cero, el blob antiguo se habria re-importado solo.
+
 ---
 
 ## 4. Fase 3 — `cube_id`, cubo activo y la pieza del dock

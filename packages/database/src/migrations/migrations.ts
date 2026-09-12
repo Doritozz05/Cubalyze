@@ -1310,4 +1310,70 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    id: '034_gear_collection',
+    description:
+      'The Locker (gear collection) becomes real database rows: gear_categories → gear_types → gear_items, matching the model in apps/web/src/views/Collection/collectionModel.ts (two levels, types optionally mirroring an app puzzle category, "main" per item). It replaces the single localStorage JSON blob (`cubeforge-locker`), which capped the whole collection at a handful of photos and could not be queried, backed up or synced. Photos are NOT stored here: the row keeps references (id + natural size) and the bytes live as blobs in IndexedDB — the same split the app already uses for background media — because base64 in a row costs ~2× and would travel to the cloud. Shape is sync-ready (id/updated_at/is_demo + dirty/tombstone triggers come with the sync step) so adding it to the engine later is a pull/push registration, not a rebuild. Cascades mirror the model exactly: deleting a category takes its types and items, deleting a type re-homes its items in the category (type_id ⇒ NULL).',
+    sql: `
+      CREATE TABLE IF NOT EXISTS gear_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'gear' CHECK (kind IN ('cube', 'gear')),
+        icon TEXT NOT NULL DEFAULT 'Box',
+        accent TEXT,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_categories_created ON gear_categories(created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_categories_updated ON gear_categories(updated_at);
+
+      CREATE TABLE IF NOT EXISTS gear_types (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        puzzle_category TEXT,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (category_id) REFERENCES gear_categories(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_types_category ON gear_types(category_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_types_updated ON gear_types(updated_at);
+
+      CREATE TABLE IF NOT EXISTS gear_items (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        type_id TEXT,
+        name TEXT NOT NULL,
+        brand TEXT,
+        model TEXT,
+        finish TEXT,
+        serial TEXT,
+        palette TEXT NOT NULL DEFAULT '[]',
+        acquired_at TEXT,
+        price_amount REAL,
+        price_currency TEXT,
+        notes TEXT,
+        links TEXT NOT NULL DEFAULT '[]',
+        photos TEXT NOT NULL DEFAULT '[]',
+        tags TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'owned' CHECK (status IN ('owned', 'wishlist', 'sold', 'lent')),
+        condition TEXT CHECK (condition IS NULL OR condition IN ('mint', 'good', 'used', 'broken')),
+        is_primary INTEGER NOT NULL DEFAULT 0,
+        is_favorite INTEGER NOT NULL DEFAULT 0,
+        rating REAL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        is_demo INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (category_id) REFERENCES gear_categories(id) ON DELETE CASCADE,
+        FOREIGN KEY (type_id) REFERENCES gear_types(id) ON DELETE SET NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_gear_items_category ON gear_items(category_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_type ON gear_items(type_id);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_status ON gear_items(status);
+      CREATE INDEX IF NOT EXISTS idx_gear_items_updated ON gear_items(updated_at);
+    `,
+  },
 ];

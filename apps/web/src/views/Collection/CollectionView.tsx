@@ -65,6 +65,8 @@ import { useStore } from "zustand";
 import { preferencesStore } from "@cubeforge/state";
 import { useCollectionStore } from "./collectionStore";
 import { lockerCubeSnapshotService } from "./cubeSnapshotService";
+import { deletePhoto, estimateCollectionStorage } from "./collectionPhotos";
+import { buildLockerFile, readLockerFile } from "./collectionTransfer";
 import { useIsTouch } from "@/hooks/use-mobile";
 import {
   ITEM_SORTS,
@@ -75,6 +77,7 @@ import {
   countActiveFilters,
   countByStatus,
   cubeOrderFor,
+  formatBytes,
   mainsOfCategory,
   queryItems,
   sortItems,
@@ -82,7 +85,6 @@ import {
   typeOf,
   type CollectionCategory,
   type CollectionSelection,
-  type CollectionState,
   type CollectionType,
   type GearItem,
   type ItemSort,
@@ -118,6 +120,7 @@ export function CollectionView() {
 
   const data = useCollectionStore((s) => s.data);
   const hydrated = useCollectionStore((s) => s.hydrated);
+  const hydrate = useCollectionStore((s) => s.hydrate);
   const addCategory = useCollectionStore((s) => s.addCategory);
   const updateCategory = useCollectionStore((s) => s.updateCategory);
   const removeCategory = useCollectionStore((s) => s.removeCategory);
@@ -133,6 +136,12 @@ export function CollectionView() {
   const syncCategory = useCollectionStore((s) => s.syncCategory);
   const replaceState = useCollectionStore((s) => s.replaceState);
   const reset = useCollectionStore((s) => s.reset);
+
+  // The collection lives in the local database: read it once on mount. Until it
+  // answers, the wall shows a skeleton instead of an empty locker.
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
 
   // Deferred to post-mount (same pattern as MainLayout / AlgorithmDashboard) so
   // the first paint never flashes the wrong shell.
@@ -165,6 +174,7 @@ export function CollectionView() {
   }>({ open: false, category: null });
   const [categoriesManagerOpen, setCategoriesManagerOpen] = useState(false);
   const [typesManagerOpen, setTypesManagerOpen] = useState(false);
+  const [storage, setStorage] = useState<{ photos: number; bytes: number } | null>(null);
   const [confirm, setConfirm] = useState<
     | { kind: "category"; category: CollectionCategory }
     | { kind: "type"; type: CollectionType }
@@ -217,6 +227,20 @@ export function CollectionView() {
     lockerCubeSnapshotService.clear();
   }, [appearance3d]);
 
+  // How much the photo store holds. Refreshed when the visible collection
+  // changes (an add, a delete, an import), which is exactly when it moves.
+  useEffect(() => {
+    let alive = true;
+    void estimateCollectionStorage()
+      .then((estimate) => {
+        if (alive) setStorage(estimate ? estimate.photos : null);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [data.items.length]);
+
   // Drop a selection that points at a deleted node.
   useEffect(() => {
     if (selection.categoryId && !data.categories.some((c) => c.id === selection.categoryId)) {
@@ -235,8 +259,17 @@ export function CollectionView() {
   // ── Actions ─────────────────────────────────────────────────────────────
   const handleSaveItem = useCallback(
     (input: Parameters<typeof addItem>[0]) => {
-      if (itemEditor.item) {
-        updateItem(itemEditor.item.id, input);
+      const editing = itemEditor.item;
+      if (editing) {
+        // A photo dropped while editing is unreferenced from now on. It is
+        // deleted AFTER the row is saved — the editor never deletes anything
+        // itself, so cancelling the dialog can not remove a photo the saved
+        // item still points at.
+        const kept = new Set((input.photos ?? []).map((photo) => photo.id));
+        updateItem(editing.id, input);
+        for (const photo of editing.photos) {
+          if (!kept.has(photo.id)) void deletePhoto(editing.id, photo.id);
+        }
       } else {
         setSelectedItemId(addItem(input));
       }
@@ -291,16 +324,27 @@ export function CollectionView() {
     [data.excludedCategories, data.categories, setExcluded, syncCategory],
   );
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     try {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      // Photos travel inside the file, so the export has to read them out of
+      // IndexedDB first — and it drops the ones whose bytes are already gone
+      // rather than shipping a backup full of broken images.
+      const { file, photoCount, missingPhotos } = await buildLockerFile(data);
+      const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `cubeforge-locker-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
-      toast.success(t("io.exported"));
+      if (photoCount > 0) {
+        toast.success(t("io.exportedWithPhotos", { count: photoCount, size: formatBytes(blob.size) }));
+      } else {
+        toast.success(t("io.exported"));
+      }
+      if (missingPhotos > 0) {
+        toast.warning(t("io.exportMissing", { count: missingPhotos }));
+      }
     } catch {
       toast.error(t("io.exportFailed"));
     }
@@ -310,9 +354,24 @@ export function CollectionView() {
     async (file: File | undefined) => {
       if (!file) return;
       try {
-        const parsed = JSON.parse(await file.text()) as CollectionState;
-        replaceState(parsed);
-        toast.success(t("io.imported"));
+        // Both formats are accepted: the current side-car file and every
+        // collection ever exported (photos as data URLs) or stored in
+        // localStorage before the Locker had a database.
+        const { state, importedPhotos, legacyPhotos, skippedPhotos } = await readLockerFile(
+          await file.text(),
+        );
+        replaceState(state);
+        setSelection({ categoryId: null, typeId: null });
+        setSelectedItemId(null);
+        const restoredPhotos = importedPhotos + legacyPhotos;
+        toast.success(
+          restoredPhotos > 0
+            ? t("io.importedWithPhotos", { count: restoredPhotos })
+            : t("io.imported"),
+        );
+        if (skippedPhotos > 0) {
+          toast.warning(t("io.importSkipped", { count: skippedPhotos }));
+        }
       } catch {
         toast.error(t("io.importFailed"));
       }
@@ -453,6 +512,20 @@ export function CollectionView() {
         }}
       />
 
+      {/* The import picker lives with the dialogs, not in a header: on touch the
+          touch shell is the only thing rendered, and the sheet has to be able to
+          open it too. */}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json"
+        hidden
+        onChange={(event) => {
+          void handleImportFile(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+
       <ConfirmDialog
         open={confirm !== null}
         onOpenChange={(open) => {
@@ -496,6 +569,8 @@ export function CollectionView() {
           onNewCategory={() => setCategoryDialog({ open: true, category: null })}
           onManageCategories={() => setCategoriesManagerOpen(true)}
           onManageTypes={() => setTypesManagerOpen(true)}
+          onExport={() => void handleExport()}
+          onImport={() => importInputRef.current?.click()}
           onAddItem={() => setItemEditor({ open: true, item: null })}
           onEditItem={(item) => setItemEditor({ open: true, item })}
           onDeleteItem={(item) => setConfirm({ kind: "item", item })}
@@ -572,18 +647,19 @@ export function CollectionView() {
                 <RotateCcw className="size-3.5" />
                 {t("io.reset")}
               </DropdownMenuItem>
+              {storage && storage.photos > 0 ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1 text-[0.68rem] text-ink-3">
+                    {t("io.storage", {
+                      count: storage.photos,
+                      size: formatBytes(storage.bytes),
+                    })}
+                  </div>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json"
-            hidden
-            onChange={(event) => {
-              void handleImportFile(event.target.files?.[0]);
-              event.target.value = "";
-            }}
-          />
         </div>
       </header>
 

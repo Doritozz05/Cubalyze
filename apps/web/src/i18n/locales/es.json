@@ -4080,8 +4080,8 @@
       "photos": "Fotos",
       "addPhoto": "Añadir foto",
       "removePhoto": "Quitar foto",
-      "photoHint": "Las fotos se reducen y se guardan localmente en tu navegador.",
-      "photoHintCube": "Las fotos se reducen y se guardan localmente en tu navegador. Una foto sustituye al cubo 3D.",
+      "photoHint": "Las fotos se reducen y se guardan en la base de datos local de este navegador.",
+      "photoHintCube": "Las fotos se reducen y se guardan en la base de datos local de este navegador. Una foto sustituye al cubo 3D.",
       "photoError": "No se pudo procesar esa imagen.",
       "links": "Enlaces",
       "addLink": "Añadir enlace",
@@ -4108,9 +4108,19 @@
       "import": "Importar JSON",
       "reset": "Reiniciar armario",
       "exported": "Armario exportado.",
+      "exportedWithPhotos_one": "Armario exportado · {{count}} foto · {{size}}",
+      "exportedWithPhotos_other": "Armario exportado · {{count}} fotos · {{size}}",
       "exportFailed": "No se pudo exportar el armario.",
       "imported": "Armario importado.",
-      "importFailed": "Ese archivo no es una exportación válida del armario."
+      "importedWithPhotos_one": "Armario importado · {{count}} foto restaurada.",
+      "importedWithPhotos_other": "Armario importado · {{count}} fotos restauradas.",
+      "importFailed": "Ese archivo no es una exportación válida del armario.",
+      "exportMissing_one": "No se encontró {{count}} foto y quedó fuera del archivo.",
+      "exportMissing_other": "No se encontraron {{count}} fotos y quedaron fuera del archivo.",
+      "importSkipped_one": "No se pudo restaurar {{count}} foto.",
+      "importSkipped_other": "No se pudieron restaurar {{count}} fotos.",
+      "storage_one": "{{count}} foto · {{size}}",
+      "storage_other": "{{count}} fotos · {{size}}"
     }
   },
   "widgets": {

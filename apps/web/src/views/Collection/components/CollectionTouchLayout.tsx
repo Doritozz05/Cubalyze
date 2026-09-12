@@ -85,6 +85,9 @@ export interface CollectionTouchProps {
   onNewCategory: () => void;
   onManageCategories: () => void;
   onManageTypes: () => void;
+  /** Backup and restore, one tap away — a phone has no other way in. */
+  onExport: () => void;
+  onImport: () => void;
 
   onAddItem: () => void;
   onEditItem: (item: GearItem) => void;
@@ -119,6 +122,8 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
     onNewCategory,
     onManageCategories,
     onManageTypes,
+    onExport,
+    onImport,
     onAddItem,
     onEditItem,
     onDeleteItem,
@@ -182,6 +187,8 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
             onNewCategory={onNewCategory}
             onManageCategories={onManageCategories}
             onManageTypes={onManageTypes}
+            onExport={onExport}
+            onImport={onImport}
           />
 
           <button

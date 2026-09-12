@@ -19,9 +19,11 @@
  *     actually looking at gear. A photo, if you add one, wins over the render
  *     everywhere.
  *
- * Photos are downscaled client-side (`compressImageFile`) before they become
- * data URLs — the collection lives in localStorage, so a raw phone photo would
- * blow the origin quota in one shot.
+ * Photos are downscaled client-side and stored as blobs in IndexedDB
+ * (`imageUtils` + `collectionPhotos`); the item only carries references. They
+ * are written as soon as you pick them — under the item's own id, which for a
+ * brand-new item is generated when the dialog opens — so every preview is the
+ * real stored rendition, and the same id identifies the item once you save.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -46,7 +48,8 @@ import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { FormDialog } from "./FormDialog";
 import { TagInput } from "./TagInput";
-import { compressImageFile } from "../imageUtils";
+import { PhotoImage } from "./PhotoImage";
+import { addPhotoFromFile } from "../collectionPhotos";
 import {
   CONDITION_I18N_KEY,
   CUBE_FACE_COUNT,
@@ -54,11 +57,13 @@ import {
   PALETTE_FACES,
   PALETTE_PRESETS,
   STATUS_I18N_KEY,
+  newId,
   normalizePalette,
   type CollectionCategory,
   type CollectionType,
   type GearItem,
   type GearLink,
+  type GearPhotoRef,
   type ItemCondition,
   type ItemInput,
   type ItemStatus,
@@ -95,7 +100,8 @@ interface FormState {
   priceCurrency: string;
   notes: string;
   links: GearLink[];
-  photos: string[];
+  /** Stored photo references, in display order (first = cover). */
+  photos: GearPhotoRef[];
   tags: string[];
   status: ItemStatus;
   primary: boolean;
@@ -168,7 +174,12 @@ export interface ItemEditorDialogProps {
   tagSuggestions?: readonly string[];
   defaultCategoryId?: string | null;
   defaultTypeId?: string | null;
-  onSave: (input: ItemInput) => void;
+  /**
+   * `id` is present for a NEW item: the dialog generated it when it opened, so
+   * the photos it stored are already filed under the item that is about to
+   * exist.
+   */
+  onSave: (input: ItemInput & { id?: string }) => void;
 }
 
 export function ItemEditorDialog({
@@ -187,10 +198,26 @@ export function ItemEditorDialog({
   const [form, setForm] = useState<FormState>(() =>
     emptyForm(initialCategory, defaultTypeId ?? ""),
   );
+  // Owner of this form's photos: the item being edited, or the id the new item
+  // will be created with (generated once per open, so photos picked before the
+  // first save are already filed under the right item).
+  const [ownerId, setOwnerId] = useState(() => newId("item"));
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** True once the form has been primed for the CURRENT open session. */
+  const primedRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      primedRef.current = false;
+      return;
+    }
+    // Primed once per open, not on every change of the collection: a store
+    // update while the dialog is up (another tab, a sync pull) must never wipe
+    // what is being typed — or, worse, re-home the photos already staged under
+    // the new item's id.
+    if (primedRef.current) return;
+    primedRef.current = true;
+    setOwnerId(item?.id ?? newId("item"));
     setForm(
       item
         ? formFromItem(item)
@@ -238,8 +265,13 @@ export function ItemEditorDialog({
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     try {
-      const encoded = await Promise.all([...files].map((file) => compressImageFile(file)));
-      patch({ photos: [...form.photos, ...encoded] });
+      // Stored one at a time on purpose: each photo that succeeds is kept, so a
+      // single unreadable file does not throw away the rest of the batch.
+      const added: GearPhotoRef[] = [];
+      for (const file of Array.from(files)) {
+        added.push(await addPhotoFromFile(ownerId, file));
+      }
+      patch({ photos: [...form.photos, ...added] });
     } catch {
       toast.error(t("editor.photoError"));
     }
@@ -272,7 +304,7 @@ export function ItemEditorDialog({
       quantity: Number.parseInt(form.quantity, 10) || 1,
       condition: form.condition || undefined,
     };
-    onSave(input);
+    onSave(item ? input : { ...input, id: ownerId });
     onOpenChange(false);
   };
 
@@ -564,18 +596,21 @@ export function ItemEditorDialog({
       {/* ── Photos ───────────────────────────────────────────────────── */}
       <Section title={t("editor.photos")}>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {form.photos.map((photo, index) => (
-            <div key={`${photo.slice(0, 24)}-${index}`} className="group relative">
-              <img
-                src={photo}
-                alt=""
+          {form.photos.map((photo) => (
+            <div key={photo.id} className="relative">
+              <PhotoImage
+                itemId={ownerId}
+                photo={photo}
+                size="thumb"
                 className="aspect-square w-full rounded-lg border border-line object-cover"
               />
               <button
                 type="button"
                 aria-label={t("editor.removePhoto")}
-                onClick={() => patch({ photos: form.photos.filter((_, i) => i !== index) })}
-                className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                onClick={() =>
+                  patch({ photos: form.photos.filter((existing) => existing.id !== photo.id) })
+                }
+                className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
               >
                 <X className="size-3" />
               </button>

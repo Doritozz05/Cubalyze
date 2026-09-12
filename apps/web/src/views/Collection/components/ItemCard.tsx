@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItemMedia } from "./ItemMedia";
+import { usePhotoUrl } from "../usePhotoUrl";
 import { STATUS_I18N_KEY, formatPrice, type CollectionCategory, type GearItem } from "../collectionModel";
 
 export interface ItemCardProps {
@@ -56,6 +57,10 @@ export function ItemCard({
 }: ItemCardProps) {
   const { t } = useTranslation("collection");
   const isCube = category?.kind === "cube";
+  // The cover photo lives in IndexedDB: resolve its reference to a URL, and let
+  // the media area keep a shimmer up until the bytes arrive.
+  const cover = item.photos[0];
+  const coverUrl = usePhotoUrl(item.id, cover?.id, "thumb");
   const price = formatPrice(item.price, locale);
   const meta = [typeName ?? t("nav.uncategorised"), item.brand].filter(Boolean).join(" · ");
   const visibleTags = item.tags.slice(0, compact ? 1 : 2);
@@ -90,7 +95,8 @@ export function ItemCard({
         )}
       >
         <ItemMedia
-          photo={item.photos[0]}
+          photo={coverUrl}
+          hasPhoto={Boolean(cover)}
           palette={item.palette}
           alt={item.name}
           isCube={isCube}

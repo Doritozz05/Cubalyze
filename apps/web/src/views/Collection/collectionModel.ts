@@ -26,7 +26,12 @@
  */
 
 import type { ParseKeys } from 'i18next';
+import type { GearPhotoRef } from '@cubeforge/database';
 import type { PuzzleCategory } from '@/types';
+
+// The photo reference shape is owned by the database layer (it is the row's
+// JSON column) and re-exported here so the view layer has one name for it.
+export type { GearPhotoRef };
 
 // ─── Taxonomy ────────────────────────────────────────────────────────────────
 
@@ -136,8 +141,12 @@ export interface GearItem {
   price?: GearPrice;
   notes?: string;
   links: readonly GearLink[];
-  /** Image URLs or small data URLs (localStorage-friendly). */
-  photos: readonly string[];
+  /**
+   * Photo REFERENCES, in display order (first = cover). The bytes live as blobs
+   * in IndexedDB (`collectionPhotos.ts`), addressed by `id`; the row only keeps
+   * the identity so nothing has to carry base64 through SQLite or the cloud.
+   */
+  photos: readonly GearPhotoRef[];
   tags: readonly string[];
   status: ItemStatus;
   /** Marked as "main". Only honoured for cube categories. */
@@ -467,7 +476,7 @@ export interface ItemInput {
   price?: GearPrice;
   notes?: string;
   links?: readonly GearLink[];
-  photos?: readonly string[];
+  photos?: readonly GearPhotoRef[];
   tags?: readonly string[];
   status?: ItemStatus;
   favorite?: boolean;
@@ -888,6 +897,19 @@ export function formatAcquired(iso: string | undefined, locale = 'en'): string |
   });
 }
 
+/**
+ * Human-readable byte size for the storage read-out ("1.4 MB"). Binary units,
+ * because that is what a browser's storage estimate is quoted in.
+ */
+export function formatBytes(bytes: number, fractionDigits = 1): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'] as const;
+  const exponent = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const value = bytes / 1024 ** exponent;
+  const digits = exponent === 0 ? 0 : fractionDigits;
+  return `${value.toFixed(digits)} ${units[exponent]}`;
+}
+
 export function formatPrice(price: GearPrice | undefined, locale = 'en'): string | null {
   if (!price) return null;
   try {
@@ -902,13 +924,88 @@ export function formatPrice(price: GearPrice | undefined, locale = 'en'): string
 
 // ─── Persistence hygiene ─────────────────────────────────────────────────────
 
-/** Read a persisted blob, rejecting anything that is not a collection. */
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+/**
+ * Find the collection payload inside whatever wrapper it arrived in:
+ *
+ *   • `{ state: { data } }` — the old zustand persist envelope,
+ *   • `{ data }`             — the old store's `partialize` shape,
+ *   • `{ categories, … }`    — a bare exported state.
+ *
+ * Returns the object that actually holds the arrays, or `null` when nothing
+ * usable is in there (a hand-edited or unrelated file).
+ */
+export function unwrapCollectionPayload(raw: unknown): Record<string, unknown> | null {
+  const top = asRecord(raw);
+  if (!top) return null;
+  for (const level of [top, asRecord(top.state), asRecord(top.data)]) {
+    if (!level) continue;
+    if (Array.isArray(level.categories)) return level;
+    const nested = asRecord(level.data);
+    if (nested && Array.isArray(nested.categories)) return nested;
+  }
+  return null;
+}
+
+/**
+ * Validate one photo reference. Anything that is not a full ref (a legacy data
+ * URL, a half-written row) is dropped rather than half-trusted: a reference
+ * without a usable id can only ever render a broken image.
+ */
+export function isPhotoRef(value: unknown): value is GearPhotoRef {
+  const ref = asRecord(value);
+  if (!ref) return false;
+  return (
+    typeof ref.id === 'string' &&
+    ref.id.length > 0 &&
+    typeof ref.width === 'number' &&
+    Number.isFinite(ref.width) &&
+    typeof ref.height === 'number' &&
+    Number.isFinite(ref.height) &&
+    typeof ref.addedAt === 'number' &&
+    Number.isFinite(ref.addedAt)
+  );
+}
+
+/** Only the valid references, in order. */
+export function normalizePhotoRefs(raw: unknown): GearPhotoRef[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isPhotoRef).map((ref) => ({
+    id: ref.id,
+    width: ref.width,
+    height: ref.height,
+    addedAt: ref.addedAt,
+  }));
+}
+
+/**
+ * The photo bytes as they were stored BEFORE the move to IndexedDB: an array of
+ * base64 data URLs on each item. Returns `itemId → dataUrls` so an import can
+ * convert them into blobs (never drop them, never keep them as strings).
+ */
+export function legacyPhotoStrings(raw: unknown): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  const data = unwrapCollectionPayload(raw);
+  if (!data || !Array.isArray(data.items)) return result;
+  for (const entry of data.items) {
+    const item = asRecord(entry);
+    if (!item || typeof item.id !== 'string' || !Array.isArray(item.photos)) continue;
+    const urls = item.photos.filter(
+      (photo): photo is string => typeof photo === 'string' && photo.startsWith('data:'),
+    );
+    if (urls.length > 0) result.set(item.id, urls);
+  }
+  return result;
+}
+
+/** Read a persisted/exported blob, rejecting anything that is not a collection. */
 export function normalizeState(raw: unknown): CollectionState | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const candidate = raw as Partial<CollectionState> & { state?: unknown; data?: unknown };
-  // Tolerate an outer envelope: zustand persist writes `{ state }`, the store's
-  // own `partialize` writes `{ data }`, and both must round-trip.
-  const data = (candidate.state ?? candidate.data ?? candidate) as Partial<CollectionState>;
+  const data = unwrapCollectionPayload(raw) as Partial<CollectionState> | null;
+  if (!data) return null;
   if (!Array.isArray(data.categories) || !Array.isArray(data.items) || !Array.isArray(data.types)) {
     return null;
   }
@@ -942,7 +1039,7 @@ export function normalizeState(raw: unknown): CollectionState | null {
           ? normalizePalette(item.palette)
           : [...DEFAULT_PALETTE],
       links: Array.isArray(item.links) ? item.links : [],
-      photos: Array.isArray(item.photos) ? item.photos : [],
+      photos: normalizePhotoRefs(item.photos),
       tags: normalizeTags(Array.isArray(item.tags) ? item.tags : []),
       status: item.status ?? 'owned',
       primary: !!item.primary,

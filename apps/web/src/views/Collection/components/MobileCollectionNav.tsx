@@ -20,7 +20,17 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronLeft, ChevronRight, Check, FolderTree, Plus, Settings2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FolderTree,
+  Plus,
+  Settings2,
+  Upload,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TouchPanel } from "@/components/TouchPanel";
 import { categoryIcon } from "../collectionIcons";
@@ -39,6 +49,9 @@ export interface MobileCollectionNavProps {
   onNewCategory: () => void;
   onManageCategories: () => void;
   onManageTypes: () => void;
+  /** Backup and restore. A phone has no other door into the file format. */
+  onExport: () => void;
+  onImport: () => void;
   className?: string;
 }
 
@@ -49,6 +62,8 @@ export function MobileCollectionNav({
   onNewCategory,
   onManageCategories,
   onManageTypes,
+  onExport,
+  onImport,
   className,
 }: MobileCollectionNavProps) {
   const { t } = useTranslation("collection");
@@ -205,6 +220,20 @@ export function MobileCollectionNav({
               />
             </>
           )}
+        </div>
+
+        {/* ── Your data: export a backup, restore one ─────────────────── */}
+        <div className="mt-3 flex flex-col gap-1.5 border-t border-line pt-3 pb-safe">
+          <Action
+            icon={<Download className="size-4" />}
+            label={t("io.export")}
+            onClick={() => closeThen(onExport)}
+          />
+          <Action
+            icon={<Upload className="size-4" />}
+            label={t("io.import")}
+            onClick={() => closeThen(onImport)}
+          />
         </div>
       </TouchPanel>
     </div>

@@ -12,8 +12,12 @@ import {
   cubeFaceColors,
   cubeOrderFor,
   formatAcquired,
+  formatBytes,
   formatPrice,
   isCubeCategory,
+  legacyPhotoStrings,
+  normalizePhotoRefs,
+  unwrapCollectionPayload,
   mainsOfCategory,
   mainsOfType,
   normalizePalette,
@@ -483,5 +487,70 @@ describe("collection — persistence hygiene", () => {
       },
     })!;
     expect(restored.items[0].palette).toHaveLength(7);
+  });
+});
+
+describe("collection — photos as references", () => {
+  const ref = { id: "p1", width: 640, height: 480, addedAt: 12 };
+
+  it("keeps valid references and drops anything that is not one", () => {
+    expect(normalizePhotoRefs([ref])).toEqual([ref]);
+    // Photos used to be base64 strings — those are the importer's business, not
+    // the model's: a half-trusted reference can only render a broken image.
+    expect(normalizePhotoRefs(["data:image/png;base64,AAAA"])).toEqual([]);
+    expect(normalizePhotoRefs([{ id: "p2" }])).toEqual([]);
+    expect(normalizePhotoRefs([{ ...ref, width: Number.NaN }])).toEqual([]);
+    expect(normalizePhotoRefs("nope")).toEqual([]);
+  });
+
+  it("normalises the stored references of an item", () => {
+    const restored = normalizeState({
+      data: {
+        categories: [{ id: "c1", name: "Cubes", kind: "cube", icon: "Box" }],
+        types: [],
+        items: [{ id: "i1", name: "GAN", photos: [ref, "data:image/png;base64,AAAA"] }],
+      },
+    })!;
+    expect(restored.items[0].photos).toEqual([ref]);
+  });
+
+  it("finds the payload inside every envelope the Locker ever wrote", () => {
+    const payload = { categories: [], types: [], items: [] };
+    expect(unwrapCollectionPayload({ state: { data: payload } })).toEqual(payload);
+    expect(unwrapCollectionPayload({ data: payload })).toEqual(payload);
+    expect(unwrapCollectionPayload(payload)).toEqual(payload);
+    expect(unwrapCollectionPayload({ state: payload })).toEqual(payload);
+    expect(unwrapCollectionPayload({ nope: true })).toBeNull();
+    expect(unwrapCollectionPayload([payload])).toBeNull();
+  });
+
+  it("lists the legacy base64 photos per item so an import can convert them", () => {
+    const found = legacyPhotoStrings({
+      state: {
+        data: {
+          categories: [],
+          types: [],
+          items: [
+            { id: "i1", photos: ["data:image/png;base64,AAAA", "https://example.com/a.jpg"] },
+            { id: "i2", photos: [] },
+          ],
+        },
+      },
+    });
+    // Only the base64 payloads: a remote URL was never a stored photo and a
+    // photo-less item has nothing to convert.
+    expect(found.get("i1")).toEqual(["data:image/png;base64,AAAA"]);
+    expect(found.has("i2")).toBe(false);
+  });
+});
+
+describe("collection — byte formatting", () => {
+  it("formats sizes for the storage read-out", () => {
+    expect(formatBytes(0)).toBe("0 B");
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(1024)).toBe("1.0 KB");
+    expect(formatBytes(1_572_864)).toBe("1.5 MB");
+    expect(formatBytes(-4)).toBe("0 B");
+    expect(formatBytes(Number.NaN)).toBe("0 B");
   });
 });

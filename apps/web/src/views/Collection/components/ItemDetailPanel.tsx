@@ -29,6 +29,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { ItemMedia } from "./ItemMedia";
+import { PhotoImage } from "./PhotoImage";
+import { usePhotoUrl } from "../usePhotoUrl";
 import {
   CONDITION_I18N_KEY,
   STATUS_I18N_KEY,
@@ -77,6 +79,9 @@ export function ItemDetailPanel({
 }: ItemDetailPanelProps) {
   const { t } = useTranslation("collection");
   const overlay = variant === "overlay";
+  // Product page shows the full rendition; the gallery below uses thumbnails.
+  const cover = item.photos[0];
+  const coverUrl = usePhotoUrl(item.id, cover?.id, "full");
 
   const rows: SpecRow[] = [];
   if (categoryName) rows.push({ key: "category", label: t("spec.category"), value: categoryName });
@@ -171,7 +176,8 @@ export function ItemDetailPanel({
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4">
         <div className="flex aspect-[5/4] items-center justify-center overflow-hidden rounded-lg border border-line bg-surface-2/30">
           <ItemMedia
-            photo={item.photos[0]}
+            photo={coverUrl}
+            hasPhoto={Boolean(cover)}
             palette={item.palette}
             alt={item.name}
             isCube={isCube}
@@ -214,11 +220,12 @@ export function ItemDetailPanel({
           </h3>
           {item.photos.length > 0 ? (
             <div className="mt-2 grid grid-cols-3 gap-2">
-              {item.photos.map((photo, index) => (
-                <img
-                  key={`${photo.slice(0, 20)}-${index}`}
-                  src={photo}
-                  alt=""
+              {item.photos.map((photo) => (
+                <PhotoImage
+                  key={photo.id}
+                  itemId={item.id}
+                  photo={photo}
+                  size="thumb"
                   className="aspect-square w-full rounded-lg border border-line object-cover"
                 />
               ))}

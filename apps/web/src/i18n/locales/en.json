@@ -4080,8 +4080,8 @@
       "photos": "Photos",
       "addPhoto": "Add photo",
       "removePhoto": "Remove photo",
-      "photoHint": "Photos are downscaled and kept locally in your browser.",
-      "photoHintCube": "Photos are downscaled and kept locally in your browser. A photo replaces the 3D cube.",
+      "photoHint": "Photos are downscaled and stored in this browser's local database.",
+      "photoHintCube": "Photos are downscaled and stored in this browser's local database. A photo replaces the 3D cube.",
       "photoError": "That image could not be processed.",
       "links": "Links",
       "addLink": "Add link",
@@ -4108,9 +4108,19 @@
       "import": "Import JSON",
       "reset": "Reset locker",
       "exported": "Locker exported.",
+      "exportedWithPhotos_one": "Locker exported · {{count}} photo · {{size}}",
+      "exportedWithPhotos_other": "Locker exported · {{count}} photos · {{size}}",
       "exportFailed": "Could not export the locker.",
       "imported": "Locker imported.",
-      "importFailed": "That file is not a valid locker export."
+      "importedWithPhotos_one": "Locker imported · {{count}} photo restored.",
+      "importedWithPhotos_other": "Locker imported · {{count}} photos restored.",
+      "importFailed": "That file is not a valid locker export.",
+      "exportMissing_one": "{{count}} photo could not be found and stayed out of the file.",
+      "exportMissing_other": "{{count}} photos could not be found and stayed out of the file.",
+      "importSkipped_one": "{{count}} photo could not be restored.",
+      "importSkipped_other": "{{count}} photos could not be restored.",
+      "storage_one": "{{count}} photo · {{size}}",
+      "storage_other": "{{count}} photos · {{size}}"
     }
   },
   "widgets": {
