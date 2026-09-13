@@ -1,17 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Timer,
-  BarChart3,
-  Target,
-  BookOpen,
-  Network,
-  CheckCircle2,
-  Activity,
-} from "lucide-react";
+import { BarChart3, Target, BookOpen, CheckCircle2, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { ParseKeys } from "i18next";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileStats, type PuzzleStats, type ProfileStats, bestEffectiveTime } from "@/hooks/useProfileStats";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
@@ -35,19 +26,7 @@ import { effectiveTime } from "@/types";
 import { ALL_SKILL_NODES, CATEGORY_KEY } from "@/views/SkillTree/skillTreeData";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Solve as UISolve } from "@/types";
-
-const QUICK_ACTIONS: Array<{
-  id: ViewId;
-  labelKey: ParseKeys<"nav">;
-  descriptionKey: ParseKeys<"profile">;
-  icon: React.ElementType;
-}> = [
-  { id: "timer", labelKey: "timer", descriptionKey: "quick.timer", icon: Timer },
-  { id: "insights", labelKey: "stats", descriptionKey: "quick.stats", icon: BarChart3 },
-  { id: "training", labelKey: "training", descriptionKey: "quick.training", icon: Target },
-  { id: "algorithms", labelKey: "algorithms", descriptionKey: "quick.algorithms", icon: BookOpen },
-  { id: "skill-tree", labelKey: "skills", descriptionKey: "quick.skills", icon: Network },
-];
+import { ProfileFriendsPanel } from "./components/ProfileFriendsPanel";
 
 function PuzzleRow({ p }: { p: PuzzleStats }) {
   return (
@@ -478,6 +457,11 @@ export interface ProfileViewProps {
   onNavigate?: (view: ViewId) => void;
   /** Opens the Profile editor (Settings → Profile). */
   onOpenSettings?: () => void;
+  /**
+   * Opens Settings pre-selected to *Privacidad y amigos*. Wired to the
+   * friends panel shortcut ("¿qué comparto?").
+   */
+  onOpenPrivacySettings?: () => void;
 }
 
 /**
@@ -486,7 +470,7 @@ export interface ProfileViewProps {
  * solves across all sessions (Stats), SRS review queue (Training), the
  * algorithm catalog (Algorithms) and skill-tree XP (Skills).
  */
-export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
+export function ProfileView({ onNavigate, onOpenSettings, onOpenPrivacySettings }: ProfileViewProps) {
   const { t, i18n } = useTranslation("profile");
   const { profile, identiconSeed, loading: profileLoading } = useProfile();
   const { stats, loading: statsLoading } = useProfileStats();
@@ -516,7 +500,7 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
         <StatStrip stats={stats} loading={statsLoading} />
       </div>
 
-      {/* ── Main content: Tabs (left 1fr) + Sidebar (Quick Actions & Account 320px) ── */}
+      {/* ── Main content: Tabs (left 1fr) + Sidebar (Friends & Account 320px) ── */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         {/* Primary column: Content tabs */}
         <div className="min-w-0">
@@ -562,36 +546,12 @@ export function ProfileView({ onNavigate, onOpenSettings }: ProfileViewProps) {
           </Tabs>
         </div>
 
-        {/* Secondary column: Quick actions & Account sync */}
-        <div className="space-y-6">
-          <section>
-            <h2 className="mb-3 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
-              {t("quick.title")}
-            </h2>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
-              {QUICK_ACTIONS.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
-                const label = i18n.t(`nav:${labelKey}` as never);
-                const description = t(descriptionKey);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => onNavigate?.(id)}
-                    aria-label={`${label} — ${description}`}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-3 text-left transition-all duration-150 hover:border-ink-2/40 hover:bg-surface-2 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
-                  >
-                    <div className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2/60 text-ink-2 transition-colors group-hover:text-ink">
-                      <Icon className="size-4" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="block text-xs font-semibold text-ink">{label}</span>
-                      <span className="block text-[0.6rem] leading-tight text-ink-3">{description}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+        {/* Secondary column: Friends & Account sync */}
+        <div className="min-w-0 space-y-6">
+          <ProfileFriendsPanel
+            onNavigate={onNavigate}
+            onOpenPrivacySettings={onOpenPrivacySettings}
+          />
 
           <section>
             <AccountCard />

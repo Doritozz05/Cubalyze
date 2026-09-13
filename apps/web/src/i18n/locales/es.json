@@ -4011,6 +4011,14 @@
       "algorithms": "Explora y practica algoritmos",
       "skills": "Progreso del árbol de habilidades"
     },
+    "friends": {
+      "title": "Amigos",
+      "viewAll": "Ver todos",
+      "empty": "Todavía no tienes amigos",
+      "emptyHint": "Añade amigos por su handle para verlos aquí.",
+      "signedOut": "Inicia sesión para ver a tus amigos.",
+      "openFriends": "Ir a Amigos"
+    },
     "strip": {
       "pbSingle": "PB single",
       "solves": "Resoluciones",

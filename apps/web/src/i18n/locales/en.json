@@ -4011,6 +4011,14 @@
       "algorithms": "Browse and practice algorithms",
       "skills": "Skill tree progression"
     },
+    "friends": {
+      "title": "Friends",
+      "viewAll": "View all",
+      "empty": "No friends yet",
+      "emptyHint": "Add friends by their handle to see them here.",
+      "signedOut": "Sign in to see your friends.",
+      "openFriends": "Go to Friends"
+    },
     "strip": {
       "pbSingle": "PB single",
       "solves": "Solves",

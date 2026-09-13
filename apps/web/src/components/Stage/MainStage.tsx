@@ -200,7 +200,11 @@ export function MainStage(props: MainStageProps) {
   if (activeView === "profile") {
     return (
       <Suspense fallback={<ViewFallback />}>
-        <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+        <ProfileView
+          onNavigate={onNavigate}
+          onOpenSettings={onOpenSettings}
+          onOpenPrivacySettings={onOpenPrivacySettings}
+        />
       </Suspense>
     );
   }

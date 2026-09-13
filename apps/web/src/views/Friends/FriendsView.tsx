@@ -17,7 +17,7 @@
  * unblocking does not bring the friendship back (D3/D6).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ban, Clock, UserPlus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ import { FriendAvatar } from "./components/FriendAvatar";
 import { HandleClaimCard } from "./components/HandleClaimCard";
 import { RequestsPanels } from "./components/RequestsPanels";
 import { FriendDetailView } from "./FriendDetailView";
+import { consumeFriendSelection } from "./friendSelection";
 import { displayNameOf, FRIEND_FAILURE_KEY } from "./friendsCopy";
 import type { FriendsResult } from "@/services/friends";
 import { cn } from "@/lib/utils";
@@ -73,6 +74,13 @@ export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Cross-view handoff (e.g. profile friends panel): open the staged friend
+  // once, then clear the slot so later visits start unselected.
+  useEffect(() => {
+    const pending = consumeFriendSelection();
+    if (pending) setSelected(pending);
+  }, []);
 
   const handle = profile?.handle ?? "";
   const friends = data?.friends ?? [];
