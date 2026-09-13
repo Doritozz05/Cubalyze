@@ -92,7 +92,7 @@ export function RequestsPanels({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                     <button
                       type="button"
                       disabled={busy}
@@ -150,7 +150,7 @@ export function RequestsPanels({
               return (
                 <li
                   key={req.profile.userId}
-                  className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3"
                 >
                   <FriendAvatar profile={req.profile} size={36} />
                   <div className="min-w-0 flex-1">
@@ -159,17 +159,19 @@ export function RequestsPanels({
                       {req.profile.handle ? `@${req.profile.handle}` : t("card.noHandle")}
                     </p>
                   </div>
-                  <span className="text-[0.65rem] uppercase tracking-wide text-ink-3">
-                    {t("requests.pending")}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => onCancel(req.profile.userId)}
-                    className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-line px-3 text-[0.72rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
-                  >
-                    {t("requests.cancel")}
-                  </button>
+                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                    <span className="text-[0.65rem] uppercase tracking-wide text-ink-3">
+                      {t("requests.pending")}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onCancel(req.profile.userId)}
+                      className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-line px-3 text-[0.72rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+                    >
+                      {t("requests.cancel")}
+                    </button>
+                  </div>
                 </li>
               );
             })}

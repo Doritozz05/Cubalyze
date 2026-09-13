@@ -44,8 +44,9 @@ function intensity(count: number, max: number): number {
  *
  * Data shape: `counts` is a flat array of daily solve counts (oldest first).
  * The component slices the last `weeks * 7` entries and arranges them into
- * a week-column / day-row grid. Columns stretch (flex-1) with aspect-square
- * cells so the grid always fills the full width of its container.
+ * a week-column / day-row grid. The grid scrolls horizontally inside its card
+ * (GitHub-style) so 52 weeks never break mobile layout; on desktop the
+ * columns stretch to fill the container.
  */
 export const ActivityHeatmap = memo(function ActivityHeatmap({
   counts,
@@ -67,35 +68,30 @@ export const ActivityHeatmap = memo(function ActivityHeatmap({
   }, [counts, weeks]);
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      {/* Touch: fixed-size cells centered in the card (GitHub-style)
-          instead of stretching full-width — full-width cells on a phone
-          are ~40px squares and turn the heatmap into a massive block. */}
-      <div className="flex w-full gap-[3px] max-lg:mx-auto max-lg:w-auto">
-        {grid.map((week, wi) => (
-          <div key={wi} className="flex flex-1 flex-col gap-[3px] max-lg:flex-none">
-            {week.map((count, di) => {
-              const lvl = intensity(count, max);
-              return (
-                <Tooltip key={di}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "aspect-square w-full rounded-[2px] max-lg:size-3.5",
-                        INTENSITY_BG[lvl],
-                      )}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-[0.55rem]">
-                    {count > 0
-                      ? t("common.solvesCount", { count })
-                      : t("common.noSolves")}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-        ))}
+    <div className={cn("flex min-w-0 max-w-full flex-col gap-2", className)}>
+      {/* GitHub-style horizontal scroll: 52 weeks never fit 360px, so the
+          viewport scrolls instead of breaking page layout. Desktop stretches
+          full width (min-w-full + flex-1 columns); touch uses fixed cells. */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
+        <div className="flex w-max min-w-full gap-[3px]">
+          {grid.map((week, wi) => (
+            <div key={wi} className="flex w-3 shrink-0 flex-col gap-[3px] sm:w-auto sm:flex-1">
+              {week.map((count, di) => {
+                const lvl = intensity(count, max);
+                return (
+                  <Tooltip key={di}>
+                    <TooltipTrigger asChild>
+                      <div className={cn("aspect-square w-full rounded-[2px]", INTENSITY_BG[lvl])} />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-[0.55rem]">
+                      {count > 0 ? t("common.solvesCount", { count }) : t("common.noSolves")}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="flex items-center justify-between text-[0.58rem] text-ink-3">
         <span>{t("analysis.activityLess")}</span>

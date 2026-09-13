@@ -15,7 +15,7 @@
  */
 
 import { useState } from "react";
-import { ArrowLeft, Ban, Package, Star, UserMinus } from "lucide-react";
+import { ArrowLeft, Ban, UserMinus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +25,7 @@ import { ShowcaseGrid } from "./components/ShowcaseGrid";
 import { displayNameOf, FRIEND_FAILURE_KEY } from "./friendsCopy";
 import { useFriendDetail } from "@/hooks/useFriends";
 import { CountryFlag } from "@/components/Identity/CountryFlag";
-import { cn } from "@/lib/utils";
+import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 
 export interface FriendDetailViewProps {
   userId: string;
@@ -52,7 +52,6 @@ export function FriendDetailView({
 
   const person = profile?.profile ?? null;
   const name = person ? displayNameOf(person) : (fallbackName ?? "");
-  const visibility = profile?.visibility;
 
   const memberSince =
     person && person.createdAt > 0
@@ -96,7 +95,7 @@ export function FriendDetailView({
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.68rem] text-ink-3">
               {memberSince && <span>{t("detail.memberSince", { date: memberSince })}</span>}
               {person && person.mainPuzzle && (
-                <span>{t("detail.mainPuzzle", { puzzle: person.mainPuzzle })}</span>
+                <span>{t("detail.mainPuzzle", { puzzle: puzzleTypeLabel(person.mainPuzzle) })}</span>
               )}
               {person && person.declaredMethods.length > 0 && (
                 <span>{t("detail.methods", { list: person.declaredMethods.join(", ") })}</span>
@@ -104,7 +103,7 @@ export function FriendDetailView({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               disabled={busy}
@@ -134,35 +133,22 @@ export function FriendDetailView({
             {t(FRIEND_FAILURE_KEY[errors.profile])}
           </p>
         )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <ScopeChip
-            icon={<Star className="size-3" aria-hidden="true" />}
-            label={t("scopes.stats")}
-            shared={visibility?.stats ?? false}
-          />
-          <ScopeChip
-            icon={<Package className="size-3" aria-hidden="true" />}
-            label={t("scopes.locker")}
-            shared={visibility?.locker ?? false}
-          />
-        </div>
       </section>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList
           aria-label={t("detail.tabsAria")}
-          className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
+          className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5 [scrollbar-width:thin]"
         >
           <TabsTrigger
             value="stats"
-            className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
+            className="h-8 shrink-0 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
           >
             {t("detail.statsTab")}
           </TabsTrigger>
           <TabsTrigger
             value="showcase"
-            className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
+            className="h-8 shrink-0 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
           >
             {t("detail.showcaseTab")}
           </TabsTrigger>
@@ -192,30 +178,5 @@ export function FriendDetailView({
         </div>
       )}
     </div>
-  );
-}
-
-function ScopeChip({
-  icon,
-  label,
-  shared,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  shared: boolean;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[0.65rem]",
-        shared
-          ? "border-line bg-surface-2/50 text-ink-2"
-          : "border-dashed border-line text-ink-3",
-      )}
-    >
-      {icon}
-      {label}
-      <span className="text-ink-3">{shared ? "✓" : "—"}</span>
-    </span>
   );
 }

@@ -239,18 +239,18 @@ export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
         <Tabs defaultValue="friends">
           <TabsList
             aria-label={t("tabsAria")}
-            className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5"
+            className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-1 py-1.5 [scrollbar-width:thin]"
           >
             <TabsTrigger
               value="friends"
-              className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
+              className="h-8 shrink-0 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
             >
               <Users className="mr-1.5 size-3.5" aria-hidden="true" />
               {t("tabs.friends", { count: friends.length })}
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
+              className="h-8 shrink-0 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
             >
               <Clock className="mr-1.5 size-3.5" aria-hidden="true" />
               {incoming.length > 0
@@ -259,7 +259,7 @@ export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
             </TabsTrigger>
             <TabsTrigger
               value="blocked"
-              className="h-8 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
+              className="h-8 shrink-0 rounded-lg border border-transparent px-3 text-xs font-medium transition-all data-[state=active]:border-line data-[state=active]:bg-surface data-[state=active]:shadow-sm"
             >
               <Ban className="mr-1.5 size-3.5" aria-hidden="true" />
               {t("tabs.blocked", { count: blocked.length })}
@@ -322,7 +322,7 @@ export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
                 {blocked.map((person) => (
                   <li
                     key={person.userId}
-                    className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
+                    className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3"
                   >
                     <FriendAvatar profile={person} size={36} />
                     <div className="min-w-0 flex-1">
@@ -343,7 +343,7 @@ export function FriendsView({ onOpenPrivacySettings }: FriendsViewProps) {
                           name: displayNameOf(person),
                         })
                       }
-                      className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-line px-3 text-[0.72rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+                      className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-line px-3 text-[0.72rem] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-50"
                     >
                       {t("blocked.unblock")}
                     </button>

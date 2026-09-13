@@ -189,7 +189,7 @@ export function ShowcaseGrid({
         <div
           role="tablist"
           aria-label={t("showcase.categories")}
-          className="flex flex-wrap items-center gap-1.5"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
         >
           <CategoryChip
             label={t("showcase.allCategories")}
@@ -205,7 +205,7 @@ export function ShowcaseGrid({
             />
           ))}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <span className="text-[0.68rem] text-ink-3">
             {t("showcase.itemCount", { count: visible.length })}
           </span>

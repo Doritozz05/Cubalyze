@@ -137,25 +137,29 @@ function StatsTab({ stats }: { stats: ProfileStats | null }) {
   const { t } = useTranslation("profile");
   return (
     <div className="rounded-xl border border-line bg-surface">
-      <div className="grid grid-cols-[1fr_72px_72px_72px_100px] sm:grid-cols-[1fr_80px_80px_80px_110px] items-center gap-x-3 px-4 pb-2 pt-3 text-[0.6rem] uppercase tracking-[0.14em] text-ink-3 font-semibold">
-        <span>{t("stats.puzzle")}</span>
-        <span className="text-right">{t("stats.pb")}</span>
-        <span className="text-right">{t("stats.ao5")}</span>
-        <span className="text-right">{t("stats.ao12")}</span>
-        <span className="text-right">{t("stats.solves")}</span>
-      </div>
-      <div className="divide-y divide-line/60">
-        {stats && stats.byPuzzle.length > 0 ? (
-          stats.byPuzzle.map((p) => <PuzzleRow key={p.puzzle} p={p} />)
-        ) : (
-          <div className="px-4 py-8">
-            <EmptyState
-              icon={<BarChart3 className="size-5" />}
-              title={t("stats.noStatsTitle")}
-              description={t("stats.noStatsDescription")}
-            />
+      <div className="-mx-px overflow-x-auto px-px [scrollbar-width:thin]">
+        <div className="min-w-[540px]">
+          <div className="grid grid-cols-[1fr_72px_72px_72px_100px] sm:grid-cols-[1fr_80px_80px_80px_110px] items-center gap-x-3 px-4 pb-2 pt-3 text-[0.6rem] uppercase tracking-[0.08em] text-ink-3 font-semibold">
+            <span className="truncate">{t("stats.puzzle")}</span>
+            <span className="truncate text-right">{t("stats.pb")}</span>
+            <span className="truncate text-right">{t("stats.ao5")}</span>
+            <span className="truncate text-right">{t("stats.ao12")}</span>
+            <span className="truncate text-right">{t("stats.solves")}</span>
           </div>
-        )}
+          <div className="divide-y divide-line/60">
+            {stats && stats.byPuzzle.length > 0 ? (
+              stats.byPuzzle.map((p) => <PuzzleRow key={p.puzzle} p={p} />)
+            ) : (
+              <div className="px-4 py-8">
+                <EmptyState
+                  icon={<BarChart3 className="size-5" />}
+                  title={t("stats.noStatsTitle")}
+                  description={t("stats.noStatsDescription")}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

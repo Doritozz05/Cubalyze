@@ -23,7 +23,7 @@ import { ActivityHeatmap } from "@/components/Insights/atoms/ActivityHeatmap";
 import { EmptyState } from "@/components/Insights/atoms/EmptyState";
 import { SectionHeader } from "@/components/Insights/atoms/SectionHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatTime, statLabel } from "@/utils/formatTime";
+import { formatTime, formatTotalSolveTime, statLabel } from "@/utils/formatTime";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { FRIEND_FAILURE_KEY } from "../friendsCopy";
 import type { AverageValue, FriendStats, FriendsFailure } from "@/services/friends";
@@ -107,7 +107,10 @@ export function FriendStatsPanel({ stats, error, loading }: FriendStatsPanelProp
                 label={t("stats.mean")}
                 value={stats.overall.mean == null ? "—" : formatTime(stats.overall.mean)}
               />
-              <Metric label={t("stats.totalTime")} value={formatTime(stats.overall.sessionTime)} />
+              <Metric
+                label={t("stats.totalTime")}
+                value={formatTotalSolveTime(stats.overall.sessionTime, i18n.language)}
+              />
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.7rem] text-ink-3">
               <span className="inline-flex items-center gap-1.5">
@@ -125,28 +128,32 @@ export function FriendStatsPanel({ stats, error, loading }: FriendStatsPanelProp
           <div className="px-4 pt-3">
             <SectionHeader title={t("stats.byPuzzle")} eyebrow={t("stats.aggregates")} />
           </div>
-          <div className="grid grid-cols-[1fr_70px_70px_70px_60px] items-center gap-x-2 px-4 pb-2 pt-3 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-ink-3">
-            <span>{t("stats.puzzle")}</span>
-            <span className="text-right">{t("stats.best")}</span>
-            <span className="text-right">Ao5</span>
-            <span className="text-right">Ao12</span>
-            <span className="text-right">{t("stats.count")}</span>
-          </div>
-          <div className="divide-y divide-line/60">
-            {stats.byPuzzle.map((p) => (
-              <div
-                key={p.puzzle}
-                className="grid grid-cols-[1fr_70px_70px_70px_60px] items-center gap-x-2 px-4 py-2.5 text-sm"
-              >
-                <span className="truncate text-xs font-semibold text-ink">
-                  {puzzleTypeLabel(p.puzzle)}
-                </span>
-                <span className="nums text-right text-ink">{statLabel(p.best)}</span>
-                <span className="nums text-right text-ink-2">{averageLabel(p.ao5)}</span>
-                <span className="nums text-right text-ink-2">{averageLabel(p.ao12)}</span>
-                <span className="nums text-right text-ink-3">{p.count}</span>
+          <div className="-mx-px overflow-x-auto px-px [scrollbar-width:thin]">
+            <div className="min-w-[520px]">
+              <div className="grid grid-cols-[1fr_70px_70px_70px_60px] items-center gap-x-2 px-4 pb-2 pt-3 text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-ink-3">
+                <span className="truncate">{t("stats.puzzle")}</span>
+                <span className="truncate text-right">{t("stats.best")}</span>
+                <span className="text-right">Ao5</span>
+                <span className="text-right">Ao12</span>
+                <span className="truncate text-right">{t("stats.count")}</span>
               </div>
-            ))}
+              <div className="divide-y divide-line/60">
+                {stats.byPuzzle.map((p) => (
+                  <div
+                    key={p.puzzle}
+                    className="grid grid-cols-[1fr_70px_70px_70px_60px] items-center gap-x-2 px-4 py-2.5 text-sm"
+                  >
+                    <span className="truncate text-xs font-semibold text-ink">
+                      {puzzleTypeLabel(p.puzzle)}
+                    </span>
+                    <span className="nums truncate text-right text-ink">{statLabel(p.best)}</span>
+                    <span className="nums truncate text-right text-ink-2">{averageLabel(p.ao5)}</span>
+                    <span className="nums truncate text-right text-ink-2">{averageLabel(p.ao12)}</span>
+                    <span className="nums truncate text-right text-ink-3">{p.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
