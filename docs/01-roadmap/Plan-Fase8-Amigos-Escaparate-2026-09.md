@@ -973,12 +973,46 @@ paridad con `averageOf` del cliente es exacta por construcción: mismo
 
 ### 14.7 Desplegado, y qué queda
 
-**Las migraciones 16–19 están aplicadas a la nube** (`supabase migration list
---linked` las muestra en Local y Remote) y la Edge Function `friend-photo-urls`
-está `ACTIVE` (versión 1). La prueba de que lo desplegado es lo probado: las
-cuatro suites se ejecutan también con `--deployed`, que **quita el prefijo de
-migraciones** y ejerce el esquema que realmente vive en Supabase. Las cuatro
-pasan.
+**Lo desplegado es lo probado (2026-09-13).** Las migraciones 16–19 están
+aplicadas en su revisión final, la Edge Function `friend-photo-urls` va por la
+**versión 2**, y su código desplegado es **idéntico** al del repositorio
+(`supabase functions download` + `diff` limpio sobre `index.ts` y `logic.ts`). La
+prueba que vale es `supabase/validation/run.sh --deployed`: las cuatro suites
+(F8.0, A, B, F8.5) pasan **contra el esquema vivo**, no contra los ficheros.
+
+Antes de eso, ese mismo comando fallaba las cuatro — y el motivo merece quedar
+escrito, porque volverá a pasar. `supabase migration list --linked` decía paridad
+**19/19**, pero solo compara *versiones*: en Postgres vivía la revisión anterior
+de esos cuatro ficheros (sin `friend_profile_min_json` ni
+`friend_visible_profile_json`, `handle_claim` sin `claim_hour`/`claim_day`,
+`friend_stats` devolviendo `owner`, `rate_check` sin purga), y la función
+desplegada conservaba el bug A1 (`Array.isArray(row.photos)` sobre una columna
+`text`, así que las fotos del escaparate no se firmaban en producción). Los
+ficheros se editaron *después* de aplicarse: el mismo antipatrón que la Fase 6
+ya señaló para la migración 15.
+
+```bash
+# el 2026-09-13, con el esquema ya reaplicado
+supabase/validation/run.sh --deployed   # 4 ✔ ; el día anterior: 4 ✖
+#  f8-identity    → FAIL freno de claim: 40 intentos sin frenar
+#  f8-social      → FAIL (9.bis): bio en la solicitud
+#  f8-projections → FAIL stats: la respuesta lleva owner
+#  f8-photos      → FAIL retencion: la ventana de 8 dias sigue ahi
+supabase/validation/run.sh              # los ficheros: 4 ✔ (15→19 + suite)
+```
+
+El cierre, reproducible para la próxima vez que se edite una migración ya
+aplicada (y por eso el PR debe mergearse **después** de esto: Vercel publica el
+cliente en cuanto entra en `main`):
+
+1. `supabase migration repair --status reverted --linked` con las cuatro
+   versiones (`20260912000016` … `20260912000019`).
+2. `supabase db push --linked --yes` — idempotentes a propósito (`if not
+exists`, `create or replace`, `drop policy if exists`), así que reaplicarlas no
+destruye filas ni políticas.
+3. `supabase functions deploy friend-photo-urls --project-ref <ref> --use-api`.
+4. Puerta de aceptación: `supabase/validation/run.sh --deployed` con las cuatro
+   suites en verde, y `diff` limpio entre lo desplegado y el repo.
 
 El pipeline completo queda verde de punta a punta: `lint:lines` (0 violaciones
 nuevas, 22 allowlisted), `lint` (0 errores), `typecheck` (27/27 paquetes),

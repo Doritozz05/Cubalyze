@@ -41,6 +41,23 @@ cualquier fallo aborta con la aserción concreta y el valor recibido.
 > test, para que la sección de visibilidad no dependa de lo que alguien dejó
 > apagado) confirmaría esas escrituras. Con el corredor no se guarda nada.
 
+## La puerta antes de mergear
+
+Antes de mergear a `main` (Vercel publica el cliente al entrar), lo desplegado
+tiene que ser lo probado:
+
+```bash
+supabase/validation/run.sh --deployed   # las 4 suites contra lo VIVO
+```
+
+**`supabase migration list --linked` no demuestra esto.** Solo compara
+*versiones*: una migración editada después de aplicarse aparece como aplicada y
+en paridad, con el contenido viejo viviendo en Postgres. El 2026-09-13 las cuatro
+suites fallaron contra lo desplegado exactamente por eso (migraciones 16–19
+registradas con su revisión anterior, y la Edge Function en su versión 1). El
+modo `--deployed` es el único que distingue "los ficheros son correctos" de "eso
+es lo que está corriendo".
+
 ## Qué cubre cada una
 
 | Suite | Contenido |
