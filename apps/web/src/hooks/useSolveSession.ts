@@ -46,6 +46,7 @@ import {
   FaceletStringConverter,
   MoveTransformer,
   SOLVED_FACELETS,
+  SOLVED_FACELETS_2X2,
 } from "@cubeforge/math-core";
 
 export interface UseSolveSessionOptions {
@@ -85,6 +86,14 @@ export interface UseSolveSessionOptions {
    * via Settings → Smart Cube. Defaults to false (legacy 3×3 behavior).
    */
   cornersOnly?: boolean;
+  /**
+   * Session/hardware gate: when false, the connected smart cube is ignored
+   * for THIS session — 2×2 session with a linked 3×3 connected and the
+   * "3×3 as 2×2" opt-in OFF. No validation, no auto-arm, no move/facelet
+   * intake, and `smartCubeConnected` reports false so the scramble display
+   * stays clean. Defaults to true (legacy behavior).
+   */
+  smartCubeAllowed?: boolean;
 }
 
 export interface UseSolveSessionResult {
@@ -300,9 +309,14 @@ export function useSolveSession(
     [inspectionPref, options.rules, spacebarHoldDelayPref],
   );
 
+  // Gated by the session/hardware gate too: with the connected cube declared
+  // foreign (2×2 + linked 3×3 + opt-in off), the validator short-circuits to
+  // EMPTY_VALIDATION — no moves$ subscription, no facelet requests, and
+  // `isScrambled` stays false so nothing hardware-driven can arm the timer.
+  // The scramble text itself is untouched (it still persists with solves).
   const validation = useScrambleValidator(
     scramble,
-    scrambleVerificationPref,
+    scrambleVerificationPref && options.smartCubeAllowed !== false,
     globalCubeAdapter,
     // "3×3 as 2×2" mode: the validator counts a corners-solved cube as
     // solved (edges ignored), mirroring the corners-based timer stop below.
@@ -313,7 +327,7 @@ export function useSolveSession(
   const [time, setTime] = useState(0);
   const [lastTime, setLastTime] = useState<number | null>(null);
   const [smartCubeConnected, setSmartCubeConnected] = useState(
-    () => !!globalCubeAdapter.isConnected,
+    () => options.smartCubeAllowed !== false && !!globalCubeAdapter.isConnected,
   );
 
   // ── Move collection buffer ────────────────────────────────────────────
@@ -389,6 +403,17 @@ export function useSolveSession(
   const cornersOnlyRef = useRef(options.cornersOnly === true);
   useEffect(() => {
     cornersOnlyRef.current = options.cornersOnly === true;
+  });
+
+  // Session/hardware gate — same ref pattern: the move/facelet subscribers
+  // (subscribed once per engine) read it live, so a Settings flip takes
+  // effect on the very next BLE event without re-subscribing. `false` means
+  // "the connected smart cube is not this session's hardware" (e.g. 2×2
+  // session with a linked 3×3 while the opt-in is off): every hardware-driven
+  // path below — tracker, collection, arming, stop detection — is skipped.
+  const smartCubeAllowedRef = useRef(options.smartCubeAllowed !== false);
+  useEffect(() => {
+    smartCubeAllowedRef.current = options.smartCubeAllowed !== false;
   });
 
   useEffect(() => {
@@ -522,15 +547,32 @@ export function useSolveSession(
     };
   }, [engine]);
 
-  // Smart Cube presence polling
+  // Smart Cube presence polling, gated by the session/hardware gate: a
+  // connected cube of another event reports as NOT connected here, so every
+  // consumer downstream (auto-arm, scramble display, focus mode, floating
+  // widgets, the smart/manual source attribution) sees the same gated truth.
+  // The gate is read via the ref (the subscription closure is created once,
+  // per-engine, and must honor a Settings flip on the next event).
   useEffect(() => {
-    const update = () => setSmartCubeConnected(!!globalCubeAdapter.isConnected);
+    const allowed = () => smartCubeAllowedRef.current;
+    const update = () => setSmartCubeConnected(allowed() && !!globalCubeAdapter.isConnected);
     update();
     const connSub = globalCubeAdapter.connectionStatus$?.subscribe((status) => {
-      setSmartCubeConnected(status === 'connected');
+      setSmartCubeConnected(allowed() && status === 'connected');
     });
     return () => connSub?.unsubscribe();
   }, []);
+
+  // The connection stream only emits on connect/disconnect, so a gate flip
+  // (Settings → Smart Cube) must recompute here: turning the "3×3 as 2×2"
+  // opt-in ON with the 3×3 already connected starts reporting it; turning it
+  // OFF stops reporting it immediately. Declared AFTER the ref effect above,
+  // so it sees the already-updated ref value.
+  useEffect(() => {
+    setSmartCubeConnected(
+      smartCubeAllowedRef.current && !!globalCubeAdapter.isConnected,
+    );
+  }, [options.smartCubeAllowed]);
 
   // ── Hardware timer (Stackmat / GAN Timer) integration ──────────────────
   // The adapter is created once and kept alive via a ref. On connect, it
@@ -600,6 +642,11 @@ export function useSolveSession(
     const justScrambled = validation.isScrambled && !wasScrambledRef.current;
     wasScrambledRef.current = validation.isScrambled;
 
+    // Gated presence: the state variable is already gated at set time, but
+    // the ref is authoritative inside the same render (a Settings flip is
+    // honored on this very effect run, not on the next connection event).
+    const effectiveSmart = smartCubeAllowedRef.current && smartCubeConnected;
+
     if (justScrambled) {
       // If the engine is STOPPED (post-solve), reset to IDLE
       // BEFORE checking shouldAutoArm so the user doesn't have to press
@@ -612,7 +659,7 @@ export function useSolveSession(
 
       if (
         shouldAutoArm({
-          smartCube: smartCubeConnected,
+          smartCube: effectiveSmart,
           scrambleVerif: scrambleVerificationPref,
           inspection: inspectionPref,
           stateIsIdle: engine.getState() === EngineState.IDLE,
@@ -629,7 +676,7 @@ export function useSolveSession(
         // Without this path, the engine stays in IDLE and the
         // scramble-leak guard in the move subscriber (IDLE + isScrambledRef)
         // drops ALL solve moves — the timer never starts.
-        smartCubeConnected &&
+        effectiveSmart &&
         scrambleVerificationPref &&
         inspectionPref &&
         engine.getState() === EngineState.IDLE
@@ -651,6 +698,15 @@ export function useSolveSession(
     if (!adapter.moves$) return;
 
     const moveSub = adapter.moves$.subscribe((move: CubeMoveEvent) => {
+      // ── Session/hardware gate: an inert cube for this session ──────────
+      // 2×2 session with a linked 3×3 connected and the "3×3 as 2×2" opt-in
+      // OFF: the physical cube is NOT this session's hardware. Nothing may
+      // happen — no tracker update (realCubeStateRef), no pending buffer, no
+      // collection, no arming/start, no corners stop — or a single idle turn
+      // of the 3×3 would arm/start/stop the 2×2 timer. Read via ref, so the
+      // once-subscribed stream honors a Settings flip immediately.
+      if (!smartCubeAllowedRef.current) return;
+
       // ── BLE DEDUPLICATION: drop hardware-level retransmits ────────────
       // The GAN BLE stack occasionally sends the exact same physical move
       // twice with identical cubeTimestamp (the hardware's internal move
@@ -788,6 +844,11 @@ export function useSolveSession(
     if (adapter.facelets$) {
       faceletSub = adapter.facelets$.subscribe(
         (f: string) => {
+          // Session/hardware gate: same rule as the move subscriber — a cube
+          // of another event must neither seed the tracker nor fire the
+          // solved/corners stop paths.
+          if (!smartCubeAllowedRef.current) return;
+
           // Self-healing tracker seed: every FACELETS event is an ABSOLUTE
           // snapshot of the physical cube, so re-seed the move-based tracker
           // from it (not just the first one). The GAN cube pushes periodic
@@ -800,7 +861,12 @@ export function useSolveSession(
             // Facelets string may be invalid — ignore and keep tracking
             // from moves only (starting from the previous snapshot).
           }
-          const isSolved = SOLVED_FACELETS.test(f);
+          // Two shapes arrive here: 54-char Kociemba (3×3, and the 3×3 used as
+          // a 2×2) and 24-char groups-of-four (a real 2×2 smart cube, whose
+          // facelets never match the 54-char regex — without this second test
+          // its timer had no hardware stop path at all). The two regexes are
+          // disjoint, so 3×3 behavior is byte-for-byte unchanged.
+          const isSolved = SOLVED_FACELETS.test(f) || SOLVED_FACELETS_2X2.test(f);
           if (isSolved && engine.getState() === EngineState.RUNNING) {
             engine.handleSmartCubeStop();
           }

@@ -10,8 +10,10 @@ import type { Penalty, PuzzleCategory, SolveMethod } from "@/types";
 import type { UsePersistentSessionResult } from "@/hooks/usePersistentSession";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import {
   cubeAttribution,
+  cubesForEventWithSmartFallback,
   latestCubeIdForEvent,
   resolveActiveCube,
 } from "@/views/Collection/activeCube";
@@ -41,12 +43,26 @@ export function useManualSolves(deps: ManualSolvesDeps) {
   const cubeForEvent = useCallback(
     (eventCode: string) => {
       const chosen = activeCubeStore.getState().byEvent[eventCode];
+      const collectionData = useCollectionStore.getState().data;
+      const includeLinked333 =
+        eventCode === "222" && preferencesStore.getState().use3x3As2x2;
+      const candidates = cubesForEventWithSmartFallback(
+        collectionData,
+        eventCode,
+        includeLinked333,
+      );
+      // Same rule as the timed path: the connected cube wins over the Locker
+      // fallbacks — in 2×2 with the opt-in on, the linked smart 3×3.
+      const linked = hardwareLinkStore.getState();
+      const hardwareItemId = linked.status === "linked" ? linked.itemId : null;
       return cubeAttribution(
         resolveActiveCube(
-          useCollectionStore.getState().data,
+          collectionData,
           eventCode,
           chosen,
           latestCubeIdForEvent(solves, eventCode),
+          candidates,
+          hardwareItemId,
         ),
       );
     },

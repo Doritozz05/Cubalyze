@@ -21,9 +21,17 @@ export interface Cube3DPanelProps {
   puzzle?: Puzzle3DSpec;
   /** Active scramble sequence to apply to 3D cube. */
   scramble?: string;
+  /**
+   * Whether this panel binds the live Smart Cube streams (move animation,
+   * gyro orientation, facelet sync). The shell gates it by the session/hardware
+   * rule: a connected cube foreign to the active event (2×2 session with a
+   * linked 3×3 while "3×3 as 2×2" is off) must not drive the model. Default
+   * true — the legacy always-connected behavior.
+   */
+  connectSmartCube?: boolean;
 }
 
-export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, puzzle, scramble }: Cube3DPanelProps) {
+export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order = 3, puzzle, scramble, connectSmartCube = true }: Cube3DPanelProps) {
   const { t } = useTranslation("timer");
   const {
     canvasRef,
@@ -39,7 +47,7 @@ export const Cube3DPanel = memo(function Cube3DPanel({ className, onClose, order
     setIsometricView,
     zoomCamera,
     engineRef,
-  } = useCube3D({ maxRecentMoves: 15, order, puzzle, scramble, connectSmartCube: true });
+  } = useCube3D({ maxRecentMoves: 15, order, puzzle, scramble, connectSmartCube });
 
   const [isDragging, setIsDragging] = useState(false);
   const lastPos = useRef({ x: 0, y: 0 });

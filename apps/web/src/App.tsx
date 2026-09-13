@@ -13,6 +13,8 @@ import { markAppDataReady } from "@/boot/appReady";
 import { usePersistentSession } from "@/hooks/usePersistentSession";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
+import { shouldIgnoreSmartCubeForSession } from "@/views/Collection/activeCube";
 import { useSolveSession, reanalyzeSolve } from "@/hooks/useSolveSession";
 import { useSolveCompletion } from "@/hooks/useSolveCompletion";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
@@ -265,13 +267,42 @@ export default function App() {
   // in via Settings → Smart Cube. The scramble is untouched (2×2 scrambles
   // already generate for puzzle 2×2); 3×3 behaves exactly as before.
   const use3x3As2x2 = useStore(preferencesStore, (s) => s.use3x3As2x2);
+  // ── Session/hardware gate ───────────────────────────────────────────────
+  // What the CONNECTED cube is, straight from the hardware link (the Locker
+  // item the address resolves to) — never from vendor/model strings, which
+  // cannot tell a linked 2×2 from a linked 3×3 reliably. `connected` comes from
+  // the store's status (idle = nothing plugged in), so a cube the Locker could
+  // NOT resolve (unlinked, no identity, conflict, sold) still counts as
+  // connected — that was the hole that let an unlinked 3×3 drive a 2×2.
+  const hardwareStatus = useStore(hardwareLinkStore, (s) => s.status);
+  const hardwareEvent = useStore(hardwareLinkStore, (s) =>
+    s.status === "linked" ? s.event : null,
+  );
+  const sessionEvent = puzzleCategoryToType(puzzle);
+  // The single gate rule (also unit-tested): in a 2×2 session, a connected
+  // smart cube that is NOT known to be this event's hardware is foreign — and
+  // therefore ignored — unless the "3×3 as 2×2" opt-in is on. That covers the
+  // linked 3×3, a 3×3 filed under another event, and a connection the Locker
+  // could not resolve. A 2×2 the Locker knows as 222 is never gated, and
+  // nothing connected never gates.
+  const smartCubeAllowed = !shouldIgnoreSmartCubeForSession(
+    sessionEvent,
+    { connected: hardwareStatus !== "idle", event: hardwareEvent },
+    use3x3As2x2,
+  );
   const session$ = useSolveSession(currentScramble, {
     onSolve: handleComplete,
     keyboardDisabledRef,
     // Phase A5: the timer consumes the active event's WCA rules profile
     // (inspection window, penalties) — not a single global 3×3 set.
     rules: getEventForCategory(puzzle)?.rules,
-    cornersOnly: puzzle === "2x2" && use3x3As2x2,
+    // "3×3 as 2×2" means solving a 2×2 with the CORNERS of a 3×3. A cube the
+    // Locker knows is a 2×2 must never enter corners-only mode, whatever the
+    // opt-in says — that is the "a real 2×2 is untouched" guarantee.
+    cornersOnly: sessionEvent === "222" && use3x3As2x2 && hardwareEvent !== "222",
+    // Gate the whole smart-cube surface (validator, auto-arm, move/facelet
+    // intake, presence) when the connected hardware cannot serve this event.
+    smartCubeAllowed,
   });
 
   // Stable member functions (memoized inside useSolveSession) — destructured

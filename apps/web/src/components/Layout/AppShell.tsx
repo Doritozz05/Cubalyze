@@ -388,6 +388,7 @@ export function AppShell(props: AppShellProps) {
                     : undefined
                 }
                 scramble={currentScramble}
+                connectSmartCube={session$.smartCubeConnected}
               />
             </Suspense>
           }

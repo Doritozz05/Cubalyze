@@ -12,10 +12,12 @@ import {
   cubeAttribution,
   cubeShortLabel,
   cubesForEvent,
+  cubesForEventWithSmartFallback,
   eventForItem,
   latestCubeIdForEvent,
   resolveActiveCube,
   resolveHardwareLink,
+  shouldIgnoreSmartCubeForSession,
 } from "../activeCube";
 
 const OPTIONS: GlobalCategoryOption[] = [
@@ -357,5 +359,236 @@ describe("labels and attribution", () => {
       updatedAt: 0,
     };
     expect(cubeAttribution(cube)).toEqual({ cubeId: "item_1", cubeLabel: "GAN 12" });
+  });
+});
+
+describe("cubesForEventWithSmartFallback", () => {
+  it("returns only the event's own cubes when the opt-in is off", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2");
+    state = addCube(state, "3x3", "GAN 12", { smartId: GAN_MAC });
+
+    expect(
+      cubesForEventWithSmartFallback(state, "222", false).map((i) => i.name),
+    ).toEqual(["Valk 2"]);
+  });
+
+  it("never widens a 3×3 session, even with the opt-in on", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2", { smartId: "112233445566" });
+    state = addCube(state, "3x3", "GAN 12");
+
+    expect(
+      cubesForEventWithSmartFallback(state, "333", true).map((i) => i.name),
+    ).toEqual(["GAN 12"]);
+  });
+
+  it("joins owned LINKED smart 3×3 cubes to a 2×2 when the opt-in is on", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2");
+    state = addCube(state, "3x3", "GAN 12", { smartId: GAN_MAC });
+
+    expect(
+      cubesForEventWithSmartFallback(state, "222", true).map((i) => i.name),
+    ).toEqual(["Valk 2", "GAN 12"]);
+  });
+
+  it("never leaks a NON-smart 3×3 into 2×2", () => {
+    let state = seeded();
+    state = addCube(state, "3x3", "GAN 12");
+
+    expect(cubesForEventWithSmartFallback(state, "222", true)).toEqual([]);
+  });
+
+  it("never leaks a sold or lent smart 3×3 into 2×2", () => {
+    let state = seeded();
+    state = addCube(state, "3x3", "Sold", { status: "sold", smartId: GAN_MAC });
+    state = addCube(state, "3x3", "Lent", { status: "lent", smartId: GAN_MAC });
+
+    expect(cubesForEventWithSmartFallback(state, "222", true)).toEqual([]);
+  });
+
+  it("keeps Locker order (native 2×2 first) and never duplicates", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2");
+    state = addCube(state, "3x3", "GAN 12", { smartId: GAN_MAC });
+    state = addCube(state, "3x3", "Second smart");
+    // A 2×2 that also carries a smart address stays a native candidate.
+    state = addCube(state, "2x2", "Smart 2x2", { smartId: "112233445566" });
+
+    expect(
+      cubesForEventWithSmartFallback(state, "222", true).map((i) => i.name),
+    ).toEqual(["Valk 2", "Smart 2x2", "GAN 12"]);
+  });
+});
+
+describe("shouldIgnoreSmartCubeForSession", () => {
+  it("ignores a linked 3×3 in a 2×2 session with the opt-in off", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: "333" }, false),
+    ).toBe(true);
+  });
+
+  it("ignores a connected cube resolved to ANOTHER event (a 3×3 filed as 3×3 OH)", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: "333oh" }, false),
+    ).toBe(true);
+  });
+
+  it("ignores connected hardware the Locker could not resolve (unlinked / no identity)", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: null }, false),
+    ).toBe(true);
+  });
+
+  it("allows a linked 3×3 in a 2×2 session with the opt-in on", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: "333" }, true),
+    ).toBe(false);
+  });
+
+  it("never ignores a cube the Locker knows is a 2×2, whatever the opt-in", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: "222" }, false),
+    ).toBe(false);
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: true, event: "222" }, true),
+    ).toBe(false);
+  });
+
+  it("never ignores when nothing is connected", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: false, event: null }, false),
+    ).toBe(false);
+    expect(
+      shouldIgnoreSmartCubeForSession("222", { connected: false, event: "333" }, false),
+    ).toBe(false);
+  });
+
+  it("never ignores for another event's session, whatever the hardware", () => {
+    expect(
+      shouldIgnoreSmartCubeForSession("333", { connected: true, event: "333" }, false),
+    ).toBe(false);
+    expect(
+      shouldIgnoreSmartCubeForSession("333", { connected: true, event: "222" }, false),
+    ).toBe(false);
+    // Pyraminx / 3×3 OH keep their legacy behavior untouched.
+    expect(
+      shouldIgnoreSmartCubeForSession("pyram", { connected: true, event: "333" }, false),
+    ).toBe(false);
+    expect(
+      shouldIgnoreSmartCubeForSession("333oh", { connected: true, event: "333" }, false),
+    ).toBe(false);
+  });
+});
+
+describe("resolveActiveCube with candidatesOverride", () => {
+  it("resolves the chosen cube from the override candidates", () => {
+    let state = seeded();
+    state = addCube(state, "3x3", "GAN 12", { smartId: GAN_MAC });
+    const gan = state.items.find((item) => item.name === "GAN 12")!;
+
+    // A linked smart 3×3 is not a native 222 candidate, so it only enters via
+    // the override — exactly what the dock and the attribution feed it.
+    expect(resolveActiveCube(state, "222", gan.id, undefined, [gan])?.id).toBe(gan.id);
+    expect(resolveActiveCube(state, "222")).toBeNull();
+  });
+
+  it("still rejects a chosen cube outside the override candidates", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2");
+    state = addCube(state, "3x3", "GAN 12", { smartId: GAN_MAC });
+    const valk = state.items.find((item) => item.name === "Valk 2")!;
+    const gan = state.items.find((item) => item.name === "GAN 12")!;
+
+    // Opt-in OFF: the 3×3 is not in the candidates, so a stale stored choice
+    // of it is ignored rather than trusted — it falls through Main (none
+    // marked) to the most recent native cube, never to the foreign one.
+    expect(resolveActiveCube(state, "222", gan.id, valk.id, [valk])?.id).toBe(valk.id);
+  });
+});
+
+describe("resolveActiveCube with preferredId (the connected cube)", () => {
+  function twoCubes(): CollectionState {
+    let state = seeded();
+    state = addCube(state, "2x2", "Valk 2", { primary: true });
+    state = addCube(state, "3x3", "GAN i3", { smartId: GAN_MAC });
+    return state;
+  }
+
+  it("prefers the connected cube over both Main and the most recent one", () => {
+    const state = twoCubes();
+    const valk = state.items.find((item) => item.name === "Valk 2")!;
+    const gan = state.items.find((item) => item.name === "GAN i3")!;
+    const candidates = cubesForEventWithSmartFallback(state, "222", true);
+
+    expect(
+      resolveActiveCube(state, "222", undefined, valk.id, candidates, gan.id)?.name,
+    ).toBe("GAN i3");
+  });
+
+  it("still lets an explicit choice win", () => {
+    const state = twoCubes();
+    const valk = state.items.find((item) => item.name === "Valk 2")!;
+    const gan = state.items.find((item) => item.name === "GAN i3")!;
+    const candidates = cubesForEventWithSmartFallback(state, "222", true);
+
+    expect(
+      resolveActiveCube(state, "222", valk.id, undefined, candidates, gan.id)?.name,
+    ).toBe("Valk 2");
+  });
+
+  it("still lets an explicit \"no cube\" win over the hardware", () => {
+    const state = twoCubes();
+    const gan = state.items.find((item) => item.name === "GAN i3")!;
+    const candidates = cubesForEventWithSmartFallback(state, "222", true);
+
+    expect(resolveActiveCube(state, "222", NO_CUBE, undefined, candidates, gan.id)).toBeNull();
+  });
+
+  it("ignores hardware that is not a candidate for this event (opt-in off)", () => {
+    const state = twoCubes();
+    const valk = state.items.find((item) => item.name === "Valk 2")!;
+    const gan = state.items.find((item) => item.name === "GAN i3")!;
+    // The gate, expressed through the candidate list: with the opt-in off the
+    // linked 3×3 is not a 2×2 candidate, so the preference finds nothing.
+    const candidates = cubesForEventWithSmartFallback(state, "222", false);
+
+    expect(resolveActiveCube(state, "222", undefined, valk.id, candidates, gan.id)?.name).toBe(
+      "Valk 2",
+    );
+  });
+});
+
+describe("regression: a 2×2 solve done on a connected smart 3×3", () => {
+  it("attributes the solve to the connected 3×3 with the opt-in on (used to be empty)", () => {
+    // The exact report: a 2×2 session, the only Locker cube is a linked smart
+    // 3×3, the opt-in is on. `activeCubeStore.byEvent["222"]` is untouched (the
+    // identity service auto-selects for the item's OWN event, 333), so without
+    // the hardware preference this stored no cube at all.
+    let state = seeded();
+    state = addCube(state, "3x3", "GAN i3", { smartId: GAN_MAC });
+    const gan = state.items[0]!;
+    const candidates = cubesForEventWithSmartFallback(state, "222", true);
+
+    const attribution = cubeAttribution(
+      resolveActiveCube(state, "222", undefined, undefined, candidates, gan.id),
+    );
+    expect(attribution).toEqual({ cubeId: gan.id, cubeLabel: "GAN i3" });
+  });
+
+  it("never attributes a 2×2 solve done on a real 2×2 smart cube to a 3×3", () => {
+    let state = seeded();
+    state = addCube(state, "2x2", "GAN 2x2", { smartId: GAN_MAC });
+    state = addCube(state, "3x3", "GAN i3", { smartId: "112233445566" });
+    const twoByTwo = state.items.find((item) => item.name === "GAN 2x2")!;
+    const threeByThree = state.items.find((item) => item.name === "GAN i3")!;
+    const candidates = cubesForEventWithSmartFallback(state, "222", true);
+
+    const attribution = cubeAttribution(
+      resolveActiveCube(state, "222", undefined, undefined, candidates, twoByTwo.id),
+    );
+    expect(attribution).toEqual({ cubeId: twoByTwo.id, cubeLabel: "GAN 2x2" });
+    expect(attribution.cubeId).not.toBe(threeByThree.id);
   });
 });

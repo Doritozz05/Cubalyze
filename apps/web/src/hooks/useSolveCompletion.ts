@@ -19,8 +19,10 @@ import { runAnalysis } from "@/hooks/useSolveSession";
 import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
+import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import {
   cubeAttribution,
+  cubesForEventWithSmartFallback,
   latestCubeIdForEvent,
   resolveActiveCube,
 } from "@/views/Collection/activeCube";
@@ -141,16 +143,33 @@ export function useSolveCompletion(deps: SolveCompletionDeps) {
       // physical cube, and `resolveActiveCube` only ever answers with a cube of
       // THIS event that is still owned — an event with nothing registered in
       // the Locker stores no attribution rather than a guess. Read imperatively
-      // so a Locker edit never re-renders the timer.
+      // so a Locker edit never re-renders the timer. In 2×2 with "3×3 as 2×2"
+      // on, a linked smart 3×3 is a valid candidate (same rule as the dock).
+      const use3x3As2x2 = preferencesStore.getState().use3x3As2x2;
+      const collectionData = useCollectionStore.getState().data;
+      const activeByEvent = activeCubeStore.getState().byEvent[capturedPuzzleType];
+      const cubeCandidates = cubesForEventWithSmartFallback(
+        collectionData,
+        capturedPuzzleType,
+        capturedPuzzleType === "222" && use3x3As2x2,
+      );
+      // The cube in your hand beats the Locker fallbacks (Main, most recent).
+      // In 2×2 with "3×3 as 2×2" on, that is the linked smart 3×3 — the exact
+      // case that used to store no attribution at all. Gated hardware is inert
+      // here: it is not in `cubeCandidates`, so the preference finds nothing.
+      const linked = hardwareLinkStore.getState();
+      const hardwareItemId = linked.status === "linked" ? linked.itemId : null;
       const capturedCube =
         capturedSource === "virtual"
           ? {} // no physical cube — the simulator is not in your hand
           : cubeAttribution(
               resolveActiveCube(
-                useCollectionStore.getState().data,
+                collectionData,
                 capturedPuzzleType,
-                activeCubeStore.getState().byEvent[capturedPuzzleType],
+                activeByEvent,
                 latestCubeIdForEvent(solvesRef.current, capturedPuzzleType),
+                cubeCandidates,
+                hardwareItemId,
               ),
             );
 

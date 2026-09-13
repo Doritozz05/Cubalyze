@@ -56,29 +56,121 @@ export function cubesForEvent(state: CollectionState, eventCode: string): GearIt
   );
 }
 
+/** True when the Locker item is a linked smart cube (SmarTube/BLE address set). */
+export function isLinkedSmartCube(item: GearItem): boolean {
+  return normalizeSmartId(item.smartId) !== null;
+}
+
+/**
+ * Owned cubes for one event, plus — only for `222` with the "3×3 as 2×2"
+ * opt-in — every owned LINKED smart 3×3 (SmarTube 3×3 used as 2×2).
+ *
+ * Non-smart 3×3 never leaks into 2×2, and 3×3 sessions never gain 2×2 cubes.
+ * Order is Locker order: native 2×2 first, then the linked 3×3 smart cubes.
+ */
+export function cubesForEventWithSmartFallback(
+  state: CollectionState,
+  eventCode: string,
+  includeLinked333: boolean,
+): GearItem[] {
+  const base = cubesForEvent(state, eventCode);
+  if (eventCode !== "222" || !includeLinked333) return base;
+
+  const seen = new Set(base.map((item) => item.id));
+  const extra = cubesForEvent(state, "333").filter(
+    (item) => !seen.has(item.id) && isLinkedSmartCube(item),
+  );
+  return [...base, ...extra];
+}
+
+/**
+ * The connected smart cube in session terms.
+ *
+ * `event: null` is not "no cube" — it means *connected but not something the
+ * app can name*: no Locker item carries the address, the address could not be
+ * read, two items claim it, or the item is sold / has no event. `connected` is
+ * what separates that from "nothing plugged in", and conflating the two was a
+ * real hole in the gate: an unlinked 3×3 kept driving a 2×2 session.
+ */
+export interface SessionHardware {
+  /** True when a smart cube is connected at the adapter level. */
+  connected: boolean;
+  /** Event of the Locker item it resolved to, or `null` when unresolved. */
+  event: string | null;
+}
+
+/**
+ * True when the connected smart cube must be IGNORED in the current session.
+ *
+ * The rule is deliberately one-sided: **in a 2×2 session, any connected smart
+ * cube that is not KNOWN to be this event's hardware is foreign** — unless the
+ * user opted into "3×3 as 2×2". That covers the three ways the connected cube
+ * can be wrong for the session, not just the tidy one:
+ *
+ *   • it resolved to 333 (a 3×3 — the only supported smart cube);
+ *   • it resolved to some OTHER event (a 3×3 filed under 3×3 OH, a custom
+ *     type): the physical cube is still a 3×3, so it is still foreign;
+ *   • it did not resolve at all (`event === null`). Every smart cube this app
+ *     knows is a 3×3, so "connected but unknown" is treated as foreign rather
+ *     than allowed to silently drive the 2×2 timer.
+ *
+ * A cube the Locker KNOWS is 222 (`event === "222"`) is never ignored, with the
+ * opt-in on or off, and nothing connected never gates — so a real 2×2 smart
+ * cube is untouched either way.
+ *
+ * Trade-off, stated plainly: a real 2×2 smart cube that is connected but not
+ * filed in the Locker is also foreign until it is linked (one tap in the
+ * Locker) or the opt-in is turned on. When a non-3×3 smart cube becomes
+ * supported, its catalog entry is where this rule learns to stop assuming 3×3.
+ */
+export function shouldIgnoreSmartCubeForSession(
+  sessionEvent: string,
+  hardware: SessionHardware,
+  use3x3As2x2: boolean,
+): boolean {
+  if (sessionEvent !== "222") return false;
+  if (!hardware.connected) return false;
+  // Known to be this session's hardware: never gate it.
+  if (hardware.event === "222") return false;
+  return !use3x3As2x2;
+}
+
 /**
  * The cube a solve of `eventCode` should be attributed to.
  *
  * `chosenId` is what the user picked on this device; `recentId` is the cube of
- * the most recent solve of that event (a fallback, not a preference). Anything
- * that is not a candidate is ignored rather than trusted — that is what keeps a
- * sold cube, or a cube swiped from another event, from silently mislabeling
- * solves.
+ * the most recent solve of that event (a fallback, not a preference);
+ * `preferredId` is the cube the CONNECTED hardware IS (`hardwareLinkStore`),
+ * which outranks both Locker fallbacks — the cube in your hand is a better
+ * answer than "the Main one" or "the last one used". It never outranks an
+ * explicit choice, and it only applies when it is a candidate for THIS event:
+ * that is what keeps a linked 3×3 from being preferred for a 2×2 session while
+ * the "3×3 as 2×2" opt-in is off (the widened candidate list already excludes
+ * it). Anything that is not a candidate is ignored rather than trusted — that
+ * is what keeps a sold cube, or a cube swiped from another event, from silently
+ * mislabeling solves.
  */
 export function resolveActiveCube(
   state: CollectionState,
   eventCode: string,
   chosenId?: string | null,
   recentId?: string | null,
+  candidatesOverride?: GearItem[],
+  preferredId?: string | null,
 ): GearItem | null {
   if (chosenId === NO_CUBE) return null;
 
-  const candidates = cubesForEvent(state, eventCode);
+  const candidates = candidatesOverride ?? cubesForEvent(state, eventCode);
   if (candidates.length === 0) return null;
 
   const byId = new Map(candidates.map((item) => [item.id, item]));
   const chosen = chosenId ? byId.get(chosenId) : undefined;
   if (chosen) return chosen;
+
+  // Hardware first, then the Locker fallbacks. Gated hardware never reaches
+  // here: the candidate list for a 2×2 with the opt-in off does not contain it.
+  const preferred = preferredId ? byId.get(preferredId) : undefined;
+  if (preferred) return preferred;
 
   const main = candidates.find((item) => item.primary);
   if (main) return main;

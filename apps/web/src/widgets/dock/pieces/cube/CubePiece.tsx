@@ -40,7 +40,9 @@ import { useStore } from "zustand";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
 import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
-import { cubeShortLabel, cubesForEvent, NO_CUBE, resolveActiveCube } from "@/views/Collection/activeCube";
+import { preferencesStore } from "@cubeforge/state";
+import { cubeShortLabel, cubesForEventWithSmartFallback, NO_CUBE, resolveActiveCube } from "@/views/Collection/activeCube";
+import type { GearItem } from "@/views/Collection/collectionModel";
 
 export interface CubePieceProps {
   /** App event code of the event being solved (`puzzleCategoryToType(...)`). */
@@ -64,9 +66,27 @@ export function CubePiece({ event, eventLabel, variant = "tray", onOpenLocker }:
     state.status === "linked" ? state.itemId : null,
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+  // "3×3 as 2×2" opt-in: linked smart 3×3 cubes join the 2×2 candidates.
+  const use3x3As2x2 = useStore(preferencesStore, (s) => s.use3x3As2x2);
 
-  const candidates = cubesForEvent(collection, event);
-  const resolved = resolveActiveCube(collection, event, chosen);
+  const candidates = cubesForEventWithSmartFallback(
+    collection,
+    event,
+    event === "222" && use3x3As2x2,
+  );
+  // The connected cube is the fallback ANSWER, not just a badge: with "3×3 as
+  // 2×2" on, the linked smart 3×3 is a candidate, so the selector settles on
+  // the cube in your hand instead of a Main/"none". An explicit choice (or an
+  // explicit "no cube") still wins, and when the opt-in is off the 3×3 is not a
+  // candidate at all — the gate keeps it out of this list.
+  const resolved = resolveActiveCube(
+    collection,
+    event,
+    chosen,
+    undefined,
+    candidates,
+    linkedId,
+  );
   const storedIsGone =
     !!chosen && chosen !== NO_CUBE && !candidates.some((cube) => cube.id === chosen);
 
@@ -209,7 +229,7 @@ function CubeSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  candidates: ReturnType<typeof cubesForEvent>;
+  candidates: GearItem[];
   chosen: string | undefined;
   resolvedId: string | null;
   /** Item the connected smart cube IS, so the sheet can name it. */

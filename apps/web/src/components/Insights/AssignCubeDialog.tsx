@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useIsTouch } from "@/hooks/use-mobile";
+import { useStore } from "zustand";
+import { preferencesStore } from "@cubeforge/state";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
-import { cubesForEvent, cubeShortLabel } from "@/views/Collection/activeCube";
+import { cubesForEventWithSmartFallback, cubeShortLabel } from "@/views/Collection/activeCube";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -53,8 +55,9 @@ const NONE_VALUE = "__none__";
 /**
  * Cube picker for "(re-)attribute solves to a Locker cube". Mirrors
  * MoveToSessionDialog (Dialog on desktop, Drawer on touch). Candidates come
- * from `cubesForEvent` — the same SSoT the dock and timer use — so a 2×2
- * solve can never be attributed to a 3×3. `None` clears the attribution.
+ * from `cubesForEventWithSmartFallback` — the same SSoT the dock and timer
+ * use — so a 2×2 solve can never be attributed to a 3×3, except linked smart
+ * 3×3 cubes when "3×3 as 2×2" is on. `None` clears the attribution.
  */
 export function AssignCubeDialog({
   open,
@@ -67,10 +70,11 @@ export function AssignCubeDialog({
   const { t } = useTranslation("insights");
   const isTouch = useIsTouch();
   const collection = useCollectionStore((s) => s.data);
+  const use3x3As2x2 = useStore(preferencesStore, (s) => s.use3x3As2x2);
 
   const candidates = useMemo(
-    () => cubesForEvent(collection, eventCode),
-    [collection, eventCode],
+    () => cubesForEventWithSmartFallback(collection, eventCode, eventCode === "222" && use3x3As2x2),
+    [collection, eventCode, use3x3As2x2],
   );
 
   const [selected, setSelected] = useState<string>("");

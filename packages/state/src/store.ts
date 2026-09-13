@@ -147,8 +147,9 @@ export interface PreferencesState {
 
   /**
    * Use a 3×3 Smart Cube as a 2×2 (corners-only): stop detection and timer
-   * look at corners only, moves are filtered on save. Effective only when the
-   * active puzzle is 2×2 and a Smart Cube is connected. Default false (legacy).
+   * look at corners only, moves are filtered on save. Effective only for a 2×2
+   * session whose connected hardware is NOT a Locker-linked 2×2 — a real 2×2
+   * smart cube is never put through the corners-only path. Default true.
    */
   use3x3As2x2: boolean;
   setUse3x3As2x2: (value: boolean) => void;
