@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, MessageSquare, Check, Pencil, X, RefreshCw, MoreHorizontal } from "lucide-react";
+import { Fragment, useState, useMemo, useRef, useCallback, type ReactNode } from "react";
+import { ArrowLeft, Bluetooth, Box, Clipboard, ClipboardCheck, Keyboard, MessageSquare, Check, Pencil, X, RefreshCw, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime, yearWhenNeeded } from "@/utils/formatTime";
 import {
@@ -284,61 +284,11 @@ export function SolveAnalysisPanel({
           <span className="nums text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
             {formatTimestampFull(solve.timestamp)}
           </span>
-          {/* Identity, not controls. Only the two chips that DO something —
-              the penalty (cycles on click) and the cube (re-attributes) —
-              keep the bordered button affordance. Method and source are
-              facts, so they read as metadata; the source keeps its colour as
-              a dot instead of a border. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={cyclePenalty}
-                  className={cn(
-                    "rounded border px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide transition-colors hover:opacity-80 cursor-pointer",
-                    solve.penalty === "DNF"
-                      ? "border-dnf/30 bg-dnf-soft text-dnf"
-                      : solve.penalty === "+2"
-                        ? "border-plus2/30 bg-plus2-soft text-plus2"
-                        : "border-ready/30 bg-ready-soft text-ready",
-                  )}
-                >
-                  {solve.penalty === "none" ? t("common.clean") : solve.penalty}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{t("analysis.cyclePenalty")}</TooltipContent>
-            </Tooltip>
-            {solve.method ? (
-              <span className="text-[0.6rem] font-medium uppercase tracking-wide text-ink-3">
-                {solve.method}
-              </span>
-            ) : null}
-            <span className="flex items-center gap-1 text-[0.6rem] font-medium uppercase tracking-wide text-ink-3">
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-1.5 shrink-0 rounded-full",
-                  solve.source === "smart"
-                    ? "bg-phase-emerald"
-                    : solve.source === "virtual"
-                      ? "bg-phase-violet"
-                      : "bg-ink-3/50",
-                )}
-              />
-              {solve.source === "smart"
-                ? t("analysis.smartCube")
-                : solve.source === "virtual"
-                  ? t("analysis.virtualCube")
-                  : t("analysis.manual")}
-            </span>
-            {/* Which physical cube this solve was done with. The detail is the
-                right home for it: on the row it would repeat the same name
-                down the whole column. Clicking re-attributes the solve. */}
-            <CubeBadge
-              label={solve.cubeLabel}
-              onClick={onAssignSolve ? () => onAssignSolve(solve.id) : undefined}
-            />
-          </div>
+          <SolveMetaRow
+            solve={solve}
+            onCyclePenalty={cyclePenalty}
+            onAssignCube={onAssignSolve ? () => onAssignSolve(solve.id) : undefined}
+          />
         </div>
         {/* Actions. Desktop shows exactly one of them — the one you reach for
             while READING the solve (re-solve this scramble); everything
@@ -742,6 +692,99 @@ export function SolveAnalysisPanel({
           {analysisSections}
         </>
       )}
+    </div>
+  );
+}
+
+// ─── Identity row ──────────────────────────────────────────────────────────
+
+/**
+ * What the solve IS — penalty · method · source · cube — not what you can do to
+ * it; the actions live in their own zone next to this row.
+ *
+ * The four read as ONE quiet rail of monochrome metadata in the theme's own ink
+ * tokens, separated by a hairline dot, because they are the same kind of thing:
+ * small facts printed under a large number. Two of them can be acted on without
+ * a permanent control (the penalty cycles on click, the cube re-attributes) and
+ * both announce themselves on hover — a bordered pill per fact is what made
+ * this row compete with the time it was describing.
+ *
+ * Colour is spent only where it carries information: `+2` and `DNF` tint their
+ * label, a clean solve stays neutral (a permanent green "OK" pill is
+ * decoration, not data). The source used to be a hue-coded dot — raw Tailwind
+ * 400 greens and violets, outside the theme's palette, so a custom theme could
+ * not reach them — that only repeated what the words already said; its icon
+ * says more and costs nothing.
+ *
+ * The cube keeps the row's one chip, because it is the only fact that names an
+ * object the app cannot infer, and the way back to re-attributing the solve.
+ */
+function SolveMetaRow({
+  solve,
+  onCyclePenalty,
+  onAssignCube,
+}: {
+  solve: Solve;
+  onCyclePenalty: () => void;
+  onAssignCube?: () => void;
+}) {
+  const { t } = useTranslation("insights");
+  const factClass = "text-[0.6rem] font-medium uppercase tracking-wide text-ink-3";
+
+  const SourceIcon =
+    solve.source === "smart" ? Bluetooth : solve.source === "virtual" ? Box : Keyboard;
+  const sourceLabel =
+    solve.source === "smart"
+      ? t("analysis.smartCube")
+      : solve.source === "virtual"
+        ? t("analysis.virtualCube")
+        : t("analysis.manual");
+
+  const facts: ReactNode[] = [
+    <Tooltip key="penalty">
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onCyclePenalty}
+          className={cn(
+            "-mx-1 cursor-pointer rounded px-1 transition-colors hover:bg-surface-2",
+            factClass,
+            solve.penalty === "DNF" ? "text-dnf" : solve.penalty === "+2" ? "text-plus2" : null,
+          )}
+        >
+          {solve.penalty === "none" ? t("common.clean") : solve.penalty}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{t("analysis.cyclePenalty")}</TooltipContent>
+    </Tooltip>,
+  ];
+  if (solve.method) {
+    facts.push(
+      <span key="method" className={factClass}>
+        {solve.method}
+      </span>,
+    );
+  }
+  facts.push(
+    <span key="source" className={cn(factClass, "flex items-center gap-1")}>
+      <SourceIcon aria-hidden="true" className="size-2.5 shrink-0" />
+      {sourceLabel}
+    </span>,
+  );
+
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      {facts.map((fact, index) => (
+        <Fragment key={index}>
+          {index > 0 ? (
+            <span aria-hidden="true" className="select-none text-ink-3/30">
+              ·
+            </span>
+          ) : null}
+          {fact}
+        </Fragment>
+      ))}
+      <CubeBadge label={solve.cubeLabel} onClick={onAssignCube} />
     </div>
   );
 }
