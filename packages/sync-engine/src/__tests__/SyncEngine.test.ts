@@ -15,7 +15,10 @@ function mockSupabase(
   error: unknown = null,
 ): unknown {
   const countChain = (table: string) => ({ count: counts[table] ?? 0, error });
-  const pullChain = { gt: () => ({ order: () => ({ data: [], error }) }) };
+  const pullChain = {
+    gt: () => ({ order: () => ({ data: [], error }) }),
+    order: () => ({ data: [], error }),
+  };
   return {
     from: (table: string) => ({
       select: (_cols: string, opts?: { head?: boolean }) => ({

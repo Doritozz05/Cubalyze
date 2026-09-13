@@ -382,6 +382,17 @@ class FakeCloud {
                   return { data: filtered, error: null };
                 },
               }),
+              // Sessions pull the full table (E13, watermark-independent), so
+              // the fake mirrors the `eq().order()` chain like pull.test.ts.
+              order: (col3: string, opts: { ascending?: boolean }) => {
+                const sorted = [...rows];
+                sorted.sort((a, b) =>
+                  opts?.ascending === false
+                    ? Number(b[col3]) - Number(a[col3])
+                    : Number(a[col3]) - Number(b[col3]),
+                );
+                return { data: sorted, error: null };
+              },
               data: rows,
               error: null,
             };
@@ -2313,5 +2324,127 @@ describe("T) el handle lo decide el servidor, no el dispositivo", () => {
     // handle" para una cuenta que sí lo tiene.
     await pullChanges(b.ctx, UID);
     expect((await b.ctx.profiles.findById(UID))?.handle).toBe("ana");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// E12) Merge claim drops seeded scaffolding instead of duplicating it: every
+// install seeds an empty "Main session" under a fresh uuid, so uploading it
+// on link duplicates the same-named session on every device forever.
+// ────────────────────────────────────────────────────────────────────────────
+describe("E12) merge claim does not duplicate empty seeded sessions", () => {
+  it("device B's empty Main is dropped when the cloud already holds sessions", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    // Device A: Main + second session with a solve, then creates the account.
+    await a.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await a.ctx.sessions.insert({ id: "main-A", name: "Main session", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.sessions.insert({ id: "sess-A", name: "Session", createdAt: 2000, updatedAt: 2000 });
+    await a.ctx.solves.insert({
+      id: "solve-A1", sessionId: "sess-A", timeMs: 12345, timestamp: 2100, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 2100, updatedAt: 2100,
+    });
+    const engineA = new SyncEngine(a.executor, cloud.client() as never, undefined);
+    engineA.setUser(UID, { schedule: false });
+    await engineA.claim("merge");
+    expect(cloud.sessions.size).toBe(2);
+
+    // Device B: fresh-install seed (empty Main under its own uuid), then login.
+    await b.ctx.meta.set(USER_ID_KEY, "anon-B");
+    await b.ctx.sessions.insert({ id: "main-B", name: "Main session", createdAt: 1500, updatedAt: 1500 });
+    const engineB = new SyncEngine(b.executor, cloud.client() as never, undefined);
+    engineB.setUser(UID, { schedule: false });
+    await engineB.claim("merge");
+
+    // The scaffolding Main never reached the cloud; B adopted the cloud set.
+    expect([...cloud.sessions.values()].some((r) => String(r.id) === "main-B")).toBe(false);
+    expect((await b.ctx.sessions.findAllNonDemo()).map((s) => s.id).sort()).toEqual(["main-A", "sess-A"]);
+    // No noise tombstone was announced for a row the cloud never saw.
+    const bTombs = await b.ctx.db("SELECT entity_id FROM sync_tombstones");
+    expect(bTombs.map((r) => String(r.entity_id))).not.toContain("main-B");
+  });
+
+  it("keeps the local Main when the cloud holds no sessions (new account)", async () => {
+    const cloud = new FakeCloud();
+    const dev = makeDevice(cloud);
+    await dev.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await dev.ctx.sessions.insert({ id: "main-A", name: "Main session", createdAt: 1000, updatedAt: 1000 });
+    const engine = new SyncEngine(dev.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+    await engine.claim("merge");
+    expect(cloud.sessions.has(`${UID}:main-A`)).toBe(true);
+    expect(await dev.ctx.sessions.findById("main-A")).not.toBeNull();
+  });
+
+  it("never drops user-named or non-empty sessions", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+    await a.ctx.meta.set(USER_ID_KEY, "anon-A");
+    await a.ctx.sessions.insert({ id: "main-A", name: "Main session", createdAt: 1000, updatedAt: 1000 });
+    const engineA = new SyncEngine(a.executor, cloud.client() as never, undefined);
+    engineA.setUser(UID, { schedule: false });
+    await engineA.claim("merge");
+
+    await b.ctx.meta.set(USER_ID_KEY, "anon-B");
+    await b.ctx.sessions.insert({ id: "mine", name: "Comp oficial", createdAt: 1500, updatedAt: 1500 });
+    await b.ctx.sessions.insert({ id: "busy", name: "Session", createdAt: 1600, updatedAt: 1600 });
+    await b.ctx.solves.insert({
+      id: "solve-B1", sessionId: "busy", timeMs: 9999, timestamp: 1700, scramble: "U",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1700, updatedAt: 1700,
+    });
+    const engineB = new SyncEngine(b.executor, cloud.client() as never, undefined);
+    engineB.setUser(UID, { schedule: false });
+    await engineB.claim("merge");
+
+    // "Comp oficial" (user-named, empty) merges; "Session" holding solves merges.
+    expect(cloud.sessions.has(`${UID}:mine`)).toBe(true);
+    expect(cloud.sessions.has(`${UID}:busy`)).toBe(true);
+    expect(cloud.solves.has(`${UID}:solve-B1`)).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// E13) Sessions pull converges regardless of watermark: a watermark cursor
+// permanently misses rows created offline with an older updated_at that reach
+// the cloud after the cursor advanced past them.
+// ────────────────────────────────────────────────────────────────────────────
+describe("E13) sessions pull is watermark-independent", () => {
+  it("an already-linked device receives a late-arriving older session", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+
+    // A links and advances its pull watermark with a newer row...
+    await a.ctx.sessions.insert({ id: "a-new", name: "A", createdAt: 5000, updatedAt: 5000 });
+    await runCycle(a.ctx);
+
+    // ...then B uploads a session stamped OLDER than A's watermark.
+    await b.ctx.sessions.insert({ id: "b-old", name: "Main session", createdAt: 1000, updatedAt: 1000 });
+    await pushChanges(b.ctx, UID);
+
+    await pullChanges(a.ctx, UID);
+    expect(await a.ctx.sessions.findById("b-old")).not.toBeNull();
+  });
+
+  it("a deleted session still disappears via tombstones (full pull does not resurrect)", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const b = makeDevice(cloud);
+    await a.ctx.sessions.insert({ id: "s1", name: "Main session", createdAt: 1000, updatedAt: 1000 });
+    await runCycle(a.ctx);
+    await runCycle(b.ctx);
+    expect(await b.ctx.sessions.findById("s1")).not.toBeNull();
+
+    await a.ctx.sessions.delete("s1");
+    await pushChanges(a.ctx, UID);
+    await pullChanges(b.ctx, UID);
+    expect(await b.ctx.sessions.findById("s1")).toBeNull();
+
+    // And a later full pull does not bring it back.
+    await pullChanges(b.ctx, UID);
+    expect(await b.ctx.sessions.findById("s1")).toBeNull();
   });
 });

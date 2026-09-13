@@ -124,12 +124,19 @@ export async function pullChanges(
   // ── Tables ─────────────────────────────────────────────────────────
   for (const [table, def] of Object.entries(TABLE_DEFS)) {
     const wm = await getWatermark(ctx.meta, pullWatermarkKey(table, uid));
-    const result = await ctx.supabase
-      .from(table)
-      .select("*")
-      .eq("user_id", uid)
-      .gt(def.watermarkColumn, wm)
-      .order(def.watermarkColumn, { ascending: true });
+    const query = ctx.supabase.from(table).select("*").eq("user_id", uid);
+    // Sessions converge by full-table LWW pull (E13): the table holds dozens
+    // of rows, and a watermark cursor permanently misses rows created offline
+    // with an older updated_at that reach the cloud after the cursor already
+    // advanced past them (a second device's seeded session duplicating one
+    // side forever). The per-row LWW apply below keeps the full pull
+    // idempotent, and deletes still travel through the tombstone channel.
+    const result =
+      table === "sessions"
+        ? await query.order(def.watermarkColumn, { ascending: true })
+        : await query
+            .gt(def.watermarkColumn, wm)
+            .order(def.watermarkColumn, { ascending: true });
     if (result.error) throw result.error;
     const rows = result.data as CloudRow[] | null;
     if (!rows || rows.length === 0) continue;

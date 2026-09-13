@@ -47,6 +47,16 @@ import type {
 import { SYNCABLE_TABLES } from "./types";
 
 /**
+ * Session names the app seeds on a fresh install (usePersistentSession:
+ * "Main session" on first boot, "Session" for later creations). An empty row
+ * under one of these names carries no user intent — it is scaffolding, and
+ * the merge claim must not upload it when the account already holds sessions
+ * (every seed carries a fresh uuid, so uploading it duplicates the
+ * same-named session on every device forever). See dropScaffoldingSessions.
+ */
+const SCAFFOLD_SESSION_NAMES = new Set(["Main session", "Session"]);
+
+/**
  * App-injected callbacks the engine cannot implement itself (it lives in a
  * package with no DOM/IndexedDB access).
  */
@@ -237,6 +247,52 @@ export class SyncEngine {
     };
   }
 
+  /**
+   * Merge-claim scaffolding drop (E12): every install seeds an empty session
+   * under a fresh uuid. Pushing it on link duplicates the same-named session
+   * on every device. When the account already holds sessions, empty rows
+   * under a seeded name are scaffolding — drop them locally so the claim's
+   * pull adopts the cloud set instead of merging in a lookalike.
+   *
+   * Only default-named EMPTY sessions are dropped (a user-named session, or
+   * one holding solves, is real data and always merges). Tombstones for ids
+   * the cloud never saw are purged: announcing the delete of a row that only
+   * ever existed on this device is pure tombstone-table noise. Ids the cloud
+   * already holds keep their tombstone so the delete propagates normally.
+   */
+  private async dropScaffoldingSessions(uid: string): Promise<void> {
+    const sessions = await this.ctx.sessions.findAllNonDemo();
+    if (sessions.length === 0) return;
+    const counts = await this.ctx.solves.countBySession();
+    const scaffolding = sessions.filter(
+      (s) =>
+        SCAFFOLD_SESSION_NAMES.has(s.name) && (counts.get(s.id) ?? 0) === 0,
+    );
+    if (scaffolding.length === 0) return;
+    const { data, error } = await this.ctx.supabase
+      .from("sessions")
+      .select("id")
+      .eq("user_id", uid);
+    if (error) throw error;
+    const cloudIds = new Set(
+      ((data ?? []) as unknown as Array<Record<string, unknown>>).map((r) =>
+        String(r.id),
+      ),
+    );
+    // No cloud sessions yet (new account): keep the local scaffolding — the
+    // claim's push seeds the account with it.
+    if (cloudIds.size === 0) return;
+    for (const s of scaffolding) {
+      await this.ctx.sessions.delete(s.id);
+      if (!cloudIds.has(s.id)) {
+        await this.ctx.db(
+          "DELETE FROM sync_tombstones WHERE entity = 'sessions' AND entity_id = ?",
+          [s.id],
+        );
+      }
+    }
+  }
+
   /** What this device holds locally (shown in the claim dialog). */
   async getCounts(): Promise<LocalDataCounts> {
     return {
@@ -369,6 +425,13 @@ export class SyncEngine {
       // instead of the parked anonymous id (which lives on as the CubeMark
       // seed under identicon_seed).
       await this.ctx.meta.set(USER_ID_KEY, uid);
+
+      // 1.5 Merge only: drop seeded scaffolding (empty "Main session" rows)
+      // when the account already holds sessions, so the push below does not
+      // upload a same-named lookalike and the pull adopts the cloud set.
+      if (mode === "merge") {
+        await this.dropScaffoldingSessions(uid);
+      }
 
       // 2. Full push + full pull + rebuild. Watermarks start at 0 for a new
       //    link, so merge pushes everything (in batches); fresh pushes
