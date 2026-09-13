@@ -167,8 +167,38 @@ describe("computeSubBadges — sub-X comes from a trimmed average", () => {
     expect(badges[0].nextThresholdLabel).toBe("17");
   });
 
-  it("returns no badge when the average is slower than the slowest milestone", () => {
-    const stats = makeStats([{ puzzle: "333", times: longHistory(45) }]);
+  it("hands a slow-but-improving history its FIRST badge", () => {
+    // The old ladder stopped at Sub 30, so a 34s ao100 earned nothing at all —
+    // the worst possible answer for someone who is actively getting faster.
+    const stats = makeStats([{ puzzle: "333", times: longHistory(34), ao100: 34_000 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0]).toMatchObject({
+      seconds: 35,
+      thresholdLabel: "35",
+      windowSize: SUB_BADGE_WINDOW,
+      nextThresholdLabel: "30",
+    });
+  });
+
+  it("claims a provisional ao12 badge when the ao100 crosses no rung", () => {
+    // 96 solves at 70s with a hot last session at 26s: the typical average is
+    // 66s (slower than the last rung, Sub 1:00), so the durable window says
+    // nothing — but the provisional one does, and the badge says it is
+    // provisional instead of hiding the improvement.
+    const times = [...repeat(26, 12), ...repeat(70, 96)];
+    const stats = makeStats([{ puzzle: "333", times, ao12: 26_000 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0]).toMatchObject({
+      seconds: 30,
+      windowSize: SUB_BADGE_FALLBACK_WINDOW,
+      averageMs: 26_000,
+      currentMs: 26_000,
+    });
+  });
+
+  it("returns no badge when BOTH windows are slower than the slowest rung", () => {
+    // 75s is past Sub 1:00, and the ao12 (same 75s) adds nothing: no claim.
+    const stats = makeStats([{ puzzle: "333", times: longHistory(75) }]);
     expect(computeSubBadges(stats)).toEqual([]);
   });
 

@@ -26,10 +26,21 @@ import { getBestRollingAverage } from "@/utils/pbDetection";
  * THE RULE
  * --------
  *   1. Compute the BEST trimmed average over the puzzle's whole history:
- *      ao100 when there are ≥ 100 solves, else ao12 when there are ≥ 12.
+ *      the ao100 (drop 5 + 5) when there are ≥ 100 solves, else the ao12
+ *      (drop 1 + 1) when there are ≥ 12.
  *   2. Below 12 solves there is no badge: a trimmed average is the smallest
  *      honest claim, and 5 solves cannot support one.
  *   3. The badge is the fastest ladder threshold strictly above that average.
+ *   4. Only if the ao100 crosses NO rung (a beginner whose typical 100 solves
+ *      are slower than the last rung, or a puzzle whose ladder stops early)
+ *      does the provisional ao12 get a turn — and `windowSize` says so, so the
+ *      UI never sells a hot session as a durable rank. When both cross, the
+ *      ao100 wins: the durable claim beats the flashier one.
+ *
+ * The ladders carry deliberately slow rungs (3×3 goes up to Sub 1:00). Rungs
+ * are what decide whether "sub-X" is a claim or a wall: with the old ladder
+ * ending at Sub 30, an improving solver with a 34s ao100 could not earn the
+ * FIRST badge no matter how much they practiced.
  *
  * "Best ever" rather than "current" on purpose: a badge is an achievement, and
  * an achievement you can lose by having a bad week is not one. `currentMs`
@@ -38,8 +49,9 @@ import { getBestRollingAverage } from "@/utils/pbDetection";
  *
  * Performance: the peak ao100 scans every 100-solve window over the history,
  * so cost grows with the number of solves (a few thousand solves is a few
- * milliseconds); the short-circuit below means puzzles without 100 solves never
- * pay for it.
+ * milliseconds). The windows are evaluated lazily and in order, so a history
+ * whose ao100 already crosses a rung never pays for the ao12 as well, and a
+ * puzzle with fewer than 12 solves pays for nothing.
  */
 
 /** Window that decides whether you are sub-X: the longest standard average. */
@@ -79,18 +91,24 @@ export interface SubBadge {
   nextThresholdLabel: string | null;
 }
 
-/** Milestones per puzzle (seconds, ascending). Keys are WCA codes (ADR-002). */
+/**
+ * Milestones per puzzle (seconds, ascending). Keys are WCA codes (ADR-002).
+ *
+ * Each ladder runs from "fast" to "first one you can actually reach". The slow
+ * tail is not padding: without it a new solver has no first badge to earn, and
+ * the badge only ever speaks to people who are already fast.
+ */
 const SUB_THRESHOLDS: Record<string, number[]> = {
-  "222": [1, 2, 3, 4, 5, 8, 10],
-  "333": [5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30],
-  "333oh": [10, 12, 15, 17, 20, 25, 30, 40],
-  "444": [30, 40, 45, 50, 60, 75, 90, 120],
-  "555": [60, 75, 90, 105, 120, 150, 180],
-  "666": [120, 150, 180, 210, 240, 300, 360],
-  "777": [180, 210, 240, 300, 360, 420, 480],
-  minx: [60, 75, 90, 120, 150, 180],
-  pyram: [3, 4, 5, 6, 8, 10, 12],
-  skewb: [3, 4, 5, 6, 8, 10, 12],
+  "222": [1, 2, 3, 4, 5, 8, 10, 15, 20, 30],
+  "333": [5, 6, 7, 8, 9, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 60],
+  "333oh": [10, 12, 15, 17, 20, 25, 30, 40, 50, 60, 90],
+  "444": [30, 40, 45, 50, 60, 75, 90, 120, 150, 180, 240],
+  "555": [60, 75, 90, 105, 120, 150, 180, 210, 240, 300, 360],
+  "666": [120, 150, 180, 210, 240, 300, 360, 420, 480, 600],
+  "777": [180, 210, 240, 300, 360, 420, 480, 600, 720, 900],
+  minx: [60, 75, 90, 120, 150, 180, 240, 300, 360],
+  pyram: [3, 4, 5, 6, 8, 10, 12, 15, 20, 30],
+  skewb: [3, 4, 5, 6, 8, 10, 12, 15, 20, 30],
 };
 
 /** Sensible default ladder for any puzzle without a curated list. */
@@ -160,14 +178,21 @@ export function formatThresholdLabel(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/**
- * The best trimmed average this puzzle ever held, and the window it came from.
- * `null` when there is not enough history to make the claim at all.
- */
-function peakAverage(puzzle: PuzzleStats): {
+/** One window's peak: the average and the window it was measured over. */
+interface PeakAverage {
   ms: number;
   window: typeof SUB_BADGE_WINDOW | typeof SUB_BADGE_FALLBACK_WINDOW;
-} | null {
+}
+
+/**
+ * The windows that could support a claim, in the order they get to speak:
+ * the durable ao100 first, the provisional ao12 second.
+ *
+ * A generator, not an array, so the caller can stop at the first window that
+ * crosses a rung without paying for the other one. Yields nothing when the
+ * history is too short for either.
+ */
+function* peakCandidates(puzzle: PuzzleStats): Generator<PeakAverage> {
   // The history is already newest-first (see aggregateByPuzzle), which is the
   // order every rolling average in the shared engine expects.
   const solves = puzzle.solves.map((solve) => ({
@@ -178,18 +203,16 @@ function peakAverage(puzzle: PuzzleStats): {
   if (solves.length >= SUB_BADGE_WINDOW) {
     const ao100 = getBestRollingAverage(solves, SUB_BADGE_WINDOW);
     if (ao100 !== null && Number.isFinite(ao100)) {
-      return { ms: ao100, window: SUB_BADGE_WINDOW };
+      yield { ms: ao100, window: SUB_BADGE_WINDOW };
     }
   }
 
   if (solves.length >= SUB_BADGE_FALLBACK_WINDOW) {
     const ao12 = getBestRollingAverage(solves, SUB_BADGE_FALLBACK_WINDOW);
     if (ao12 !== null && Number.isFinite(ao12)) {
-      return { ms: ao12, window: SUB_BADGE_FALLBACK_WINDOW };
+      yield { ms: ao12, window: SUB_BADGE_FALLBACK_WINDOW };
     }
   }
-
-  return null;
 }
 
 /**
@@ -208,18 +231,26 @@ export function computeSubBadges(
   let main: SubBadge | null = null;
 
   for (const p of stats.byPuzzle) {
-    const peak = peakAverage(p);
-    if (!peak) continue;
-
-    const peakSec = peak.ms / 1000;
     const thresholds = SUB_THRESHOLDS[p.puzzle] ?? FALLBACK_THRESHOLDS;
+
     // Fastest milestone crossed = smallest threshold strictly above the
-    // average. Only the average earns it; the single never enters here.
-    const milestone = thresholds.find((t) => peakSec < t);
-    if (milestone === undefined) continue;
+    // average. Only the average earns it; the single never enters here. The
+    // ao100 gets first refusal; the provisional ao12 only speaks when the
+    // durable window crosses nothing at all.
+    let peak: PeakAverage | null = null;
+    let milestone: number | undefined;
+    for (const candidate of peakCandidates(p)) {
+      const crossed = thresholds.find((t) => candidate.ms / 1000 < t);
+      if (crossed === undefined) continue;
+      peak = candidate;
+      milestone = crossed;
+      break;
+    }
+    if (peak === null || milestone === undefined) continue;
 
     // The next faster milestone is the fastest threshold still below the
     // average — the one you are currently chasing.
+    const peakSec = peak.ms / 1000;
     const faster = thresholds.filter((t) => t < peakSec);
 
     const current =
