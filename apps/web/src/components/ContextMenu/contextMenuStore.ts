@@ -5,11 +5,9 @@ import type { LucideIcon } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export interface ContextMenuItem {
+export interface ContextMenuItemBase {
   /** Unique key (also used as React key in the menu). */
   id: string;
-  /** i18n key for the label (resolved by the component using useTranslation). */
-  label: string;
   /** Optional icon component (lucide). */
   icon?: LucideIcon;
   /** Called when the item is clicked. */
@@ -20,7 +18,23 @@ export interface ContextMenuItem {
   disabled?: boolean;
   /** Red/destructive styling for danger actions like delete. */
   destructive?: boolean;
+  /**
+   * Why the action is off, as a second line under the label. A context menu has
+   * no hover, so this is the only place the reason can surface.
+   */
+  hint?: string;
 }
+
+/**
+ * A label is either a `contextMenu` i18n key (resolved by the component) or the
+ * caller's own already-resolved text — the escape hatch for callers whose
+ * strings live in another namespace (e.g. the Insights solve actions, which the
+ * detail panel and the row menu share so the same action reads the same way).
+ * Exactly one of the two is required: no item can end up with both or neither.
+ */
+export type ContextMenuItem =
+  | (ContextMenuItemBase & { /** i18n key in the `contextMenu` namespace. */ label: string; labelText?: undefined })
+  | (ContextMenuItemBase & { /** Final, already-localized text. */ labelText: string; label?: undefined });
 
 // ── Module-level state ─────────────────────────────────────────────────
 

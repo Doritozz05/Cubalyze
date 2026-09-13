@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw, Columns2, Rows2, Box } from "lucide-react";
+import { Fragment, useState, useMemo, useRef, useCallback } from "react";
+import { ArrowLeft, Clipboard, ClipboardCheck, MessageSquare, Check, Pencil, X, RefreshCw, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatTime } from "@/utils/formatTime";
+import { formatTime, yearWhenNeeded } from "@/utils/formatTime";
 import {
   deriveTimeline,
   derivePairSegments,
@@ -33,6 +33,21 @@ import {
 import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsTouch } from "@/hooks/use-mobile";
+import { hapticTap } from "@/utils/haptics";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
@@ -48,6 +63,12 @@ import {
   FACE_HEX,
 } from "./atoms";
 import { ReplaySection, type ReplaySectionHandle } from "./ReplaySection";
+import {
+  actionsForSurface,
+  buildSolveActionGroups,
+  canRetryScramble,
+  type SolveActionItem,
+} from "./solveActions";
 
 export interface SolveAnalysisPanelProps {
   solve: Solve;
@@ -57,11 +78,18 @@ export interface SolveAnalysisPanelProps {
   onUpdateSolve: (updates: { penalty?: Penalty; note?: string | null }) => void;
   /** Re-run the analysis pipeline on this solve (returns when finished). */
   onReanalyze?: () => Promise<void>;
-  onDeleteSolve: () => void;
+  /** Delete this solve (opens the confirmation first). */
+  onDeleteSolve: (id: string) => void;
   /** Open the "Move to another session" dialog for this solve. */
-  onMoveSolve?: () => void;
+  onMoveSolve?: (id: string) => void;
   /** Open the "Assign cube" dialog for this solve. */
-  onAssignSolve?: () => void;
+  onAssignSolve?: (id: string) => void;
+  /**
+   * Re-solve this solve's exact scramble in the timer. Omitted when there is
+   * nowhere to send it; disabled (with the reason in the tooltip) when the
+   * event has no scramble provider or the solve carries no scramble text.
+   */
+  onRetryScramble?: () => void;
   onBackToOverview: () => void;
   /** Reconstruction-style detail layout: replay pinned large on the left,
       content in a scrollable right column. */
@@ -111,6 +139,7 @@ export function SolveAnalysisPanel({
   onDeleteSolve,
   onMoveSolve,
   onAssignSolve,
+  onRetryScramble,
   onBackToOverview,
   detailMode,
   onToggleDetailMode,
@@ -160,16 +189,17 @@ export function SolveAnalysisPanel({
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState(solve.note ?? "");
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  // Touch regime (<768px) — the same gate the shell and every other touch
+  // surface uses. Drives which container the actions list opens in.
+  const isTouch = useIsTouch();
+  const [actionsOpen, setActionsOpen] = useState(false);
 
-  // Re-analysis is meaningful whenever per-move data exists and the initial
-  // analysis is not still pending (a pending live job would race with it).
-  // Deep analysis is 3×3-only: 2×2 solves keep moves for the replay but have
-  // no analysis pipeline, so re-running would feed 3×3 detection on a 2×2
-  // and persist meaningless metrics.
-  const canReanalyze =
-    (solve.moves?.length ?? 0) > 0 &&
-    !isLive &&
-    (solve.puzzleType ?? "333") === "333";
+  // Whether a re-analysis is meaningful (per-move data, 3×3, no live job to
+  // race) and whether the scramble can be re-solved are the shared rules in
+  // `solveActions` — the same ones the row menu and the App handler use. Only
+  // the retry's availability is needed here as well: the desktop button is the
+  // one action the panel shows outside the list.
+  const retryAvailable = Boolean(onRetryScramble) && canRetryScramble(solve);
   const handleReanalyze = useCallback(async () => {
     if (!onReanalyze || isReanalyzing) return;
     setIsReanalyzing(true);
@@ -179,6 +209,54 @@ export function SolveAnalysisPanel({
       setIsReanalyzing(false);
     }
   }, [onReanalyze, isReanalyzing]);
+
+  // Every action a solve offers, from the ONE declaration in `solveActions`
+  // (which the solve list's context menu renders too). Each surface then takes
+  // what belongs to it: the desktop overflow here, the bottom sheet on touch.
+  const actionGroups = useMemo(
+    () =>
+      buildSolveActionGroups({
+        t,
+        solve,
+        detailMode,
+        isReanalyzing,
+        // A pending live job must not be re-run over; only this panel knows
+        // whether the analysis it is showing is still the transient one.
+        liveSolveId: isLive ? solve.id : null,
+        handlers: {
+          onRetryScramble: onRetryScramble ? () => onRetryScramble() : undefined,
+          onReanalyze: onReanalyze ? handleReanalyze : undefined,
+          onToggleDetailMode,
+          onMoveSolve,
+          onAssignSolve,
+          onDeleteSolve,
+        },
+      }),
+    [
+      t,
+      solve,
+      detailMode,
+      isReanalyzing,
+      isLive,
+      onRetryScramble,
+      onReanalyze,
+      handleReanalyze,
+      onToggleDetailMode,
+      onMoveSolve,
+      onAssignSolve,
+      onDeleteSolve,
+    ],
+  );
+  const menuGroups = useMemo(() => actionsForSurface(actionGroups, "menu"), [actionGroups]);
+  const sheetGroups = useMemo(() => actionsForSurface(actionGroups, "sheet"), [actionGroups]);
+
+  // Touch: haptic, close the sheet, then run the action — the sheet must not
+  // stay open behind the dialog it just opened (same order as MobileMoreSheet).
+  const runAction = useCallback((item: SolveActionItem) => {
+    hapticTap();
+    setActionsOpen(false);
+    window.setTimeout(item.onSelect, 150);
+  }, []);
 
   // Stable solve object for the ReplaySection (avoids unnecessary re-creates).
   const replaySolve = useMemo(
@@ -206,7 +284,12 @@ export function SolveAnalysisPanel({
           <span className="nums text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
             {formatTimestampFull(solve.timestamp)}
           </span>
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* Identity, not controls. Only the two chips that DO something —
+              the penalty (cycles on click) and the cube (re-attributes) —
+              keep the bordered button affordance. Method and source are
+              facts, so they read as metadata; the source keeps its colour as
+              a dot instead of a border. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -226,20 +309,22 @@ export function SolveAnalysisPanel({
               <TooltipContent side="bottom">{t("analysis.cyclePenalty")}</TooltipContent>
             </Tooltip>
             {solve.method ? (
-              <span className="rounded border border-phase-indigo/30 bg-phase-indigo/10 px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide text-phase-indigo">
+              <span className="text-[0.6rem] font-medium uppercase tracking-wide text-ink-3">
                 {solve.method}
               </span>
             ) : null}
-            <span
-              className={cn(
-                "rounded border px-1.5 py-0.5 text-[0.58rem] font-medium uppercase tracking-wide",
-                solve.source === "smart"
-                  ? "border-phase-emerald/30 bg-phase-emerald/10 text-phase-emerald"
-                  : solve.source === "virtual"
-                    ? "border-phase-violet/30 bg-phase-violet/10 text-phase-violet"
-                    : "border-line bg-surface-2 text-ink-2",
-              )}
-            >
+            <span className="flex items-center gap-1 text-[0.6rem] font-medium uppercase tracking-wide text-ink-3">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "size-1.5 shrink-0 rounded-full",
+                  solve.source === "smart"
+                    ? "bg-phase-emerald"
+                    : solve.source === "virtual"
+                      ? "bg-phase-violet"
+                      : "bg-ink-3/50",
+                )}
+              />
               {solve.source === "smart"
                 ? t("analysis.smartCube")
                 : solve.source === "virtual"
@@ -249,66 +334,167 @@ export function SolveAnalysisPanel({
             {/* Which physical cube this solve was done with. The detail is the
                 right home for it: on the row it would repeat the same name
                 down the whole column. Clicking re-attributes the solve. */}
-            <CubeBadge label={solve.cubeLabel} onClick={onAssignSolve} />
+            <CubeBadge
+              label={solve.cubeLabel}
+              onClick={onAssignSolve ? () => onAssignSolve(solve.id) : undefined}
+            />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1">
-          {onToggleDetailMode && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleDetailMode}
-              className="h-7 gap-1 px-2 text-xs text-ink-2 hover:text-ink hidden lg:inline-flex"
-              title={detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
-            >
-              {detailMode ? <Rows2 className="size-3.5" /> : <Columns2 className="size-3.5" />}
-              {detailMode ? t("analysis.detailModeExit") : t("analysis.detailMode")}
-            </Button>
+        {/* Actions. Desktop shows exactly one of them — the one you reach for
+            while READING the solve (re-solve this scramble); everything
+            administrative lives in the overflow menu, the same three entries
+            the row's context menu already offers (move / assign / delete) plus
+            the analysis-only one. Touch (<768px) shows the ⋯ alone and the same
+            list — retry first — in the bottom sheet below. The rule that keeps
+            this header from re-saturating: a new action never joins the
+            identity row above; it belongs here. */}
+        <div className="flex items-center gap-1">
+          {!isTouch && onRetryScramble ? (
+            <Tooltip>
+              {/* The hover lives on the wrapper: a disabled <button> carries
+                  `pointer-events-none`, so its own `title` could never surface
+                  the reason the action is off. */}
+              <TooltipTrigger asChild>
+                <span className={cn("inline-flex", !retryAvailable && "cursor-not-allowed")}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onRetryScramble}
+                    disabled={!retryAvailable}
+                    className="h-7 gap-1 px-2.5 text-xs"
+                  >
+                    <RefreshCw className="size-3" />
+                    {t("analysis.retryScramble")}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {retryAvailable
+                  ? t("analysis.retryScrambleTooltip")
+                  : t("analysis.retryUnavailable")}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+          {isTouch ? (
+            <>
+              {/* Touch (<768px): the same list, opened as a BOTTOM SHEET — the
+                  app's own pattern for an action list (see MobileMoreSheet),
+                  with the haptic the rest of the touch UI gives. The desktop
+                  menu is an icon-anchored popup: on a phone it renders as a
+                  portaled sheet that has to fight the solve-detail overlay it
+                  opens from, which is exactly the class of bug the shell
+                  comments warn about (see MainLayout's z-60 notes). Following
+                  the touch convention removes the question. */}
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  setActionsOpen(true);
+                }}
+                aria-label={t("analysis.solveActions")}
+                className="flex size-7 cursor-pointer items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:size-10"
+              >
+                <MoreHorizontal className="size-4" />
+              </button>
+              <Drawer open={actionsOpen} onOpenChange={setActionsOpen}>
+                <DrawerContent className="flex max-h-[80vh] flex-col rounded-t-2xl border-line bg-surface p-0 pb-safe text-ink focus:outline-none">
+                  <DrawerHeader className="shrink-0 border-b border-line px-5 py-3.5 text-left">
+                    <DrawerTitle className="text-sm font-semibold text-ink">
+                      {t("analysis.solveActions")}
+                    </DrawerTitle>
+                  </DrawerHeader>
+                  {/* `min-h-0 flex-1 overflow-y-auto` is required: the sheet
+                      caps at 80vh and a non-scrolling flex child would be
+                      clipped instead of reachable. */}
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+                    {sheetGroups.map((group, groupIndex) => (
+                      <div
+                        key={group[0].id}
+                        className={cn(
+                          "flex flex-col",
+                          groupIndex > 0 && "mt-2 border-t border-line/60 pt-2",
+                        )}
+                      >
+                        {group.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            disabled={item.disabled}
+                            onClick={() => runAction(item)}
+                            className={cn(
+                              "flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors active:bg-surface-2",
+                              item.destructive ? "text-dnf" : "text-ink",
+                              item.disabled
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer",
+                            )}
+                          >
+                            <item.icon
+                              className={cn(
+                                "size-4 shrink-0",
+                                item.destructive ? "text-dnf" : "text-ink-3",
+                                item.busy && "animate-spin",
+                              )}
+                            />
+                            <span className="flex min-w-0 flex-1 flex-col">
+                              <span>{item.label}</span>
+                              {/* A disabled row states its reason here: a
+                                  sheet has no hover, so a tooltip cannot
+                                  explain the greying out. */}
+                              {item.hint ? (
+                                <span className="text-[0.65rem] leading-tight text-ink-3">
+                                  {item.hint}
+                                </span>
+                              ) : null}
+                            </span>
+                            {item.checked ? (
+                              <Check className="size-4 text-ink-3" />
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("analysis.solveActions")}
+                  title={t("analysis.solveActions")}
+                  className="flex size-7 cursor-pointer items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:size-10"
+                >
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">                    {menuGroups.map((group, groupIndex) => (
+                  <Fragment key={group[0].id}>
+                    {/* Detail mode is a view preference, so it travels with
+                        the other view-level controls and keeps its check. */}
+                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                    {group.map((item) => (
+                      <DropdownMenuItem
+                        key={item.id}
+                        variant={item.destructive ? "destructive" : "default"}
+                        disabled={item.disabled}
+                        className="text-xs"
+                        onClick={item.onSelect}
+                      >
+                        <item.icon className={cn("size-3.5", item.busy && "animate-spin")} />
+                        {item.label}
+                        {item.checked ? (
+                          <Check className="ml-auto size-3.5 text-ink-3" />
+                        ) : null}
+                      </DropdownMenuItem>
+                    ))}
+                  </Fragment>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          {canReanalyze && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReanalyze}
-              disabled={isReanalyzing}
-              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink disabled:opacity-50"
-              title={t("analysis.reanalyzeTooltip")}
-            >
-              <RotateCcw className={cn("size-3", isReanalyzing && "animate-spin")} />
-              {isReanalyzing ? t("analysis.reanalyzing") : t("analysis.reanalyze")}
-            </Button>
-          )}
-          {onMoveSolve && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMoveSolve}
-              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink"
-            >
-              <FolderInput className="size-3" />
-              {t("analysis.moveToSession")}
-            </Button>
-          )}
-          {onAssignSolve && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onAssignSolve}
-              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink"
-            >
-              <Box className="size-3" />
-              {t("analysis.assignCube")}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDeleteSolve}
-            className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-dnf"
-          >
-            <Trash2 className="size-3" />
-            {t("analysis.delete")}
-          </Button>
         </div>
       </div>
 
@@ -2266,10 +2452,13 @@ function ScrambleBlock({ solve }: { solve: Solve }) {
 
 function formatTimestampFull(ts: number): string {
   const d = new Date(ts);
+  // The year is shown only when the solve is not from the current one: imports
+  // reach back years, and "vie, 11 sept" would read as this September.
   return d.toLocaleString(undefined, {
     weekday: "short",
     day: "2-digit",
     month: "short",
+    ...yearWhenNeeded(ts),
     hour: "2-digit",
     minute: "2-digit",
   });

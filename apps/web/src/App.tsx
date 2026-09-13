@@ -30,6 +30,7 @@ import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { copyTextWithFallback } from "@/utils/clipboard";
 import { preloadSolvers, getEventForCategory, methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
+import { resolveRetryScramble } from "@/utils/retryScramble";
 // Side-effect: registers the 2×2/3×3 ScrambleProviders BEFORE the first
 // render, so useScrambleState's initial scramble generation finds them.
 import "@/utils/scrambleProviders";
@@ -167,8 +168,15 @@ export default function App() {
     if (!sessionLoading) markAppDataReady();
   }, [sessionLoading]);
 
-  const { puzzle, scrambleIndex, currentScramble, handlePuzzleChange, handleRegenerate, resetScramble } =
-    useScrambleState();
+  const {
+    puzzle,
+    scrambleIndex,
+    currentScramble,
+    handlePuzzleChange,
+    applyScramble,
+    handleRegenerate,
+    resetScramble,
+  } = useScrambleState();
 
   // Single source of truth for what the main stage shows. The URL is the
   // owner: activeView is derived from the pathname (/timer, /insights,
@@ -448,6 +456,28 @@ export default function App() {
     handleAnalyzeSolve(solve);
   }, [handleAnalyzeSolve]);
 
+  // "Retry scramble" on a solve: put that exact scramble back on the stage and
+  // return to the timer. Showing the scramble the solve was actually done with
+  // (instead of a fresh one) is the whole point — otherwise the retry is not
+  // comparable with the original attempt. The new attempt lands in whichever
+  // session is active now, and the event is switched when the solve belongs to
+  // another puzzle. Events with no scramble provider cannot be replayed: that
+  // is stated, not faked with a random scramble. The same resolver the solve
+  // panel uses to enable the action decides what happens here.
+  const handleRetryScramble = useCallback(
+    (solve: Solve) => {
+      const target = resolveRetryScramble(solve);
+      if (!target) {
+        toast.error(i18n.t("insights:analysis.retryUnavailable"));
+        return;
+      }
+      applyScramble(target.scramble, target.category);
+      handleNavigate("timer");
+      toast.success(i18n.t("insights:analysis.retryReady"));
+    },
+    [applyScramble, handleNavigate],
+  );
+
   // The orientation-adapted display policy — including "a 2×2 never follows the
   // cube" — lives in useOrientation; the timer only supplies the active puzzle.
   const { remapScramble } = useOrientation();
@@ -546,6 +576,7 @@ export default function App() {
       onDeleteSolve={handleDelete}
       onMoveSolves={handleMoveSolves}
       onAssignCube={handleAssignCube}
+      onRetryScramble={handleRetryScramble}
       onClear={handleClear}
       onAnalyze={handleAnalyzeSolve}
       onReplay={handleReplaySolve}

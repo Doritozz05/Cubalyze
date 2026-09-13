@@ -80,6 +80,8 @@ export interface AppShellProps {
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
   /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
   onAssignCube: (ids: string[], cube: { id: string; label: string } | null) => void;
+  /** Put that solve's exact scramble back on the timer as a new attempt. */
+  onRetryScramble: (solve: Solve) => void;
   onClear: () => void;
   onAnalyze: (solve: Solve) => void;
   onReplay: (solve: Solve) => void;

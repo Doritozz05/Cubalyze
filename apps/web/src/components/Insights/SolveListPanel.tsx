@@ -25,6 +25,7 @@ import { PenaltyBadge, Sparkline, EmptyState } from "./atoms";
 import { SolveFilters } from "./SolveFilters";
 import { countActiveFilters, type StatsFilters, type SortOrder } from "@/hooks/useStatsFilters";
 import { contextMenuStore, type ContextMenuItem } from "@/components/ContextMenu/contextMenuStore";
+import { actionsForSurface, buildSolveActionGroups } from "./solveActions";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -72,10 +73,20 @@ export interface SolveListPanelProps {
   onDeleteSelected: () => void;
   onMoveSelected: () => void;
   onAssignSelected: () => void;
-  /** Single-solve context menu actions */
+  /** Single-solve context menu actions.
+   *
+   *  The row menu renders the SAME action list as the solve detail panel
+   *  (`solveActions`), so a right-click offers re-analyze and retry too — not
+   *  just the three management entries it used to. */
   onMoveSolve?: (id: string) => void;
   onDeleteSolve?: (id: string) => void;
   onAssignSolve?: (id: string) => void;
+  /** Re-run the analysis pipeline on a stored solve. */
+  onReanalyze?: (solve: Solve) => void | Promise<void>;
+  /** Put that solve's exact scramble back on the timer. */
+  onRetryScramble?: (solve: Solve) => void;
+  /** Solve whose live analysis is still pending (re-running it would race). */
+  liveSolveId?: string | null;
   className?: string;
 }
 
@@ -111,6 +122,9 @@ export const SolveListPanel = memo(function SolveListPanel({
   onMoveSolve,
   onDeleteSolve,
   onAssignSolve,
+  onReanalyze,
+  onRetryScramble,
+  liveSolveId,
   className,
 }: SolveListPanelProps) {
   const { t } = useTranslation("insights");
@@ -546,36 +560,52 @@ export const SolveListPanel = memo(function SolveListPanel({
                     e.preventDefault();
                     e.stopPropagation();
                     const isMulti = selectionMode && selection.has(s.id) && selection.size > 1;
-                    const items: ContextMenuItem[] = [
-                      {
-                        id: "move-solve",
-                        label: "moveToSession",
-                        icon: FolderInput,
-                        onClick: () => {
-                          if (isMulti) onMoveSelected();
-                          else onMoveSolve?.(s.id);
+                    // One declaration, three surfaces: this menu asks for the
+                    // `context` set of the very list the detail panel renders,
+                    // so it can never offer fewer actions than the panel.
+                    const groups = actionsForSurface(
+                      buildSolveActionGroups({
+                        t,
+                        solve: s,
+                        liveSolveId,
+                        multi: isMulti,
+                        // With several rows ticked the same actions aim at the
+                        // SELECTION, and say so — the batch wording already
+                        // lives in the `contextMenu` namespace.
+                        labelOverrides: isMulti
+                          ? {
+                              move: i18n.t("contextMenu:moveToSession"),
+                              assign: i18n.t("contextMenu:assignCube"),
+                              delete: i18n.t("contextMenu:deleteSolves"),
+                            }
+                          : undefined,
+                        handlers: {
+                          onRetryScramble,
+                          onReanalyze,
+                          onMoveSolve,
+                          onAssignSolve,
+                          onDeleteSolve,
+                          onMoveSelected,
+                          onAssignSelected,
+                          onDeleteSelected,
                         },
-                      },
-                      {
-                        id: "assign-cube",
-                        label: "assignCube",
-                        icon: Box,
-                        onClick: () => {
-                          if (isMulti) onAssignSelected();
-                          else onAssignSolve?.(s.id);
-                        },
-                      },
-                      {
-                        id: "delete-solve",
-                        label: isMulti ? "deleteSolves" : "deleteSolve",
-                        icon: Trash2,
-                        destructive: true,
-                        onClick: () => {
-                          if (isMulti) onDeleteSelected();
-                          else onDeleteSolve?.(s.id);
-                        },
-                      },
-                    ];
+                      }),
+                      "context",
+                    );
+                    const items: ContextMenuItem[] = groups.flatMap((group, groupIndex) =>
+                      group.map((item, itemIndex) => ({
+                        id: item.id,
+                        // Labels come resolved from `solveActions` (insights
+                        // namespace) — the same string the panel shows.
+                        labelText: item.label,
+                        icon: item.icon,
+                        disabled: item.disabled,
+                        destructive: item.destructive,
+                        hint: item.hint,
+                        separatorBefore: groupIndex > 0 && itemIndex === 0,
+                        onClick: item.onSelect,
+                      })),
+                    );
                     contextMenuStore.open(e.clientX, e.clientY, items);
                   }}
                   aria-label={`${t("common.solveAria", {

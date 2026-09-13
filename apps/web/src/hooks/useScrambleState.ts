@@ -12,6 +12,16 @@ import { generateScrambleFor, SELECTABLE_PUZZLE_CATEGORIES } from "@/utils/puzzl
  * mutation funnels through here so the stage and the completion pipeline
  * always see the same scramble.
  */
+
+/** The puzzle choice is a preference, so it survives a reload. */
+function persistPuzzle(category: PuzzleCategory) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("cubeforge_puzzle", category);
+  } catch (e) {
+    console.warn("[App] Failed to save puzzle to localStorage", e);
+  }
+}
 export function useScrambleState() {
   const [puzzle, setPuzzle] = useState<PuzzleCategory>(() => {
     if (typeof window !== "undefined") {
@@ -31,16 +41,25 @@ export function useScrambleState() {
 
   const handlePuzzleChange = useCallback((newPuzzle: PuzzleCategory) => {
     setPuzzle(newPuzzle);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("cubeforge_puzzle", newPuzzle);
-      } catch (e) {
-        console.warn("[App] Failed to save puzzle to localStorage", e);
-      }
-    }
+    persistPuzzle(newPuzzle);
     setCurrentScramble(generateScrambleFor(newPuzzle));
     setScrambleIndex(0);
     toast.success(i18n.t("toast:puzzleSwitched", { puzzle: newPuzzle }));
+  }, []);
+
+  /**
+   * Put an EXACT scramble on the stage, for its own puzzle, without generating
+   * anything and without the "new scramble" toast. Used by the solve panel's
+   * "Retry scramble": the timer must show the very scramble that was solved,
+   * not a fresh one, so the retry is comparable with the original attempt.
+   */
+  const applyScramble = useCallback((scramble: string, category: PuzzleCategory) => {
+    setPuzzle(category);
+    persistPuzzle(category);
+    setCurrentScramble(scramble);
+    // Bump the counter so the scramble display re-animates: the text changed
+    // even when the puzzle did not.
+    setScrambleIndex((i) => i + 1);
   }, []);
 
   const handleRegenerate = useCallback(() => {
@@ -63,6 +82,7 @@ export function useScrambleState() {
     scrambleIndex,
     currentScramble,
     handlePuzzleChange,
+    applyScramble,
     handleRegenerate,
     resetScramble,
   };

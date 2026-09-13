@@ -77,6 +77,8 @@ export interface MainStageProps {
   onDeleteSolve: (id: string) => void;
   /** Move solves to another session (batch). */
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
+  /** Put that solve's exact scramble back on the timer as a new attempt. */
+  onRetryScramble: (solve: Solve) => void;
   /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
   onAssignCube: (ids: string[], cube: { id: string; label: string } | null) => void;
   puzzle: PuzzleCategory;
@@ -114,6 +116,7 @@ export function MainStage(props: MainStageProps) {
     onReanalyze,
     onDeleteSolve,
     onMoveSolves,
+    onRetryScramble,
     onAssignCube,
     puzzle,
     onPuzzleChange,
@@ -161,6 +164,7 @@ export function MainStage(props: MainStageProps) {
           onReanalyze={onReanalyze}
           onDeleteSolve={onDeleteSolve}
           onMoveSolves={onMoveSolves}
+          onRetryScramble={onRetryScramble}
           onAssignCube={onAssignCube}
         />
       </Suspense>

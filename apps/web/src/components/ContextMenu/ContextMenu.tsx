@@ -139,8 +139,14 @@ export function ContextMenu() {
                       )}
                     />
                   )}
-                  <span className="truncate">
-                    {t(item.label as ParseKeys<"contextMenu">, { defaultValue: item.label })}
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">
+                      {item.labelText ??
+                        t(item.label as ParseKeys<"contextMenu">, { defaultValue: item.label })}
+                    </span>
+                    {item.hint ? (
+                      <span className="text-[0.65rem] leading-tight text-ink-3">{item.hint}</span>
+                    ) : null}
                   </span>
                 </button>
               </div>

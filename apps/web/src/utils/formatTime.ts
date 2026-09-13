@@ -121,3 +121,28 @@ export function statLabel(value: number | null): string {
   if (value === null) return "—";
   return formatTime(value);
 }
+
+/**
+ * `{ year: "numeric" }` for a timestamp outside the current calendar year, and
+ * nothing for one inside it.
+ *
+ * Spread into any `toLocaleDateString`/`toLocaleString` options object:
+ *
+ * ```ts
+ * d.toLocaleDateString(locale, { month: "short", day: "numeric", ...yearWhenNeeded(ts) })
+ * ```
+ *
+ * Why it exists: imports (csTimer, Twisty Timer) bring solves from previous
+ * years, and the app stores their real timestamp — so a solve from January
+ * 2025 must never be able to render exactly like one from today. Inside the
+ * current year the year is noise (every solve of the session you are looking at
+ * is from this year), outside it its absence is a lie about when you solved.
+ */
+export function yearWhenNeeded(
+  ts: number,
+  now: Date = new Date(),
+): { year: "numeric" } | Record<string, never> {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return {};
+  return date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" };
+}

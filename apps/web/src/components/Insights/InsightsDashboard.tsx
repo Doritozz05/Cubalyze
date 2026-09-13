@@ -49,6 +49,8 @@ export interface InsightsDashboardProps {
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
   /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
   onAssignCube: (ids: string[], cube: AssignedCube | null) => void;
+  /** Put that solve's exact scramble back on the timer as a new attempt. */
+  onRetryScramble: (solve: Solve) => void;
   className?: string;
 }
 
@@ -82,6 +84,7 @@ export function InsightsDashboard({
   onDeleteSolve,
   onMoveSolves,
   onAssignCube,
+  onRetryScramble,
   className,
 }: InsightsDashboardProps) {
   const { t } = useTranslation("insights");
@@ -272,11 +275,9 @@ export function InsightsDashboard({
     [onDeleteSolve, selectedId],
   );
 
-  const handleDeleteRequest = useCallback(() => {
-    setDeleteTargetId(null);
-    setConfirmDeleteOpen(true);
-  }, []);
-
+  // Every "delete this solve" path (row menu, detail panel, touch overlay)
+  // names its target explicitly — the confirmation then never has to guess
+  // which solve was meant.
   const handleDeleteSolveRow = useCallback((id: string) => {
     setDeleteTargetId(id);
     setConfirmDeleteOpen(true);
@@ -582,6 +583,12 @@ export function InsightsDashboard({
           onMoveSolve={handleMoveSolveRow}
           onDeleteSolve={handleDeleteSolveRow}
           onAssignSolve={handleAssignSolveRow}
+          // The row menu offers the same actions as the detail panel, so the
+          // pending live analysis has to be named here too: re-analyzing the
+          // solve whose first analysis is still running would race with it.
+          onReanalyze={onReanalyze}
+          onRetryScramble={onRetryScramble}
+          liveSolveId={pendingAnalysis ? latestSolveId : null}
           className={cn(
             "lg:w-85 lg:shrink-0",
             // Detail mode hides the list so the replay gets the full width.
@@ -605,9 +612,10 @@ export function InsightsDashboard({
                 isLive={isLive}
                 onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                 onReanalyze={() => onReanalyze(selected)}
-                onDeleteSolve={handleDeleteRequest}
-                onMoveSolve={() => handleMoveRequest([selected.id])}
-                onAssignSolve={() => handleAssignRequest([selected.id])}
+                onDeleteSolve={handleDeleteSolveRow}
+                onMoveSolve={handleMoveSolveRow}
+                onAssignSolve={handleAssignSolveRow}
+                onRetryScramble={() => onRetryScramble(selected)}
                 onBackToOverview={handleBackToOverview}
                 detailMode={detailMode}
                 onToggleDetailMode={toggleDetailMode}
@@ -653,9 +661,10 @@ export function InsightsDashboard({
                   isLive={isLive}
                    onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
                    onReanalyze={() => onReanalyze(selected)}
-                   onDeleteSolve={handleDeleteRequest}
-                   onMoveSolve={() => handleMoveRequest([selected.id])}
-                   onAssignSolve={() => handleAssignRequest([selected.id])}
+                   onDeleteSolve={handleDeleteSolveRow}
+                   onMoveSolve={handleMoveSolveRow}
+                   onAssignSolve={handleAssignSolveRow}
+                   onRetryScramble={() => onRetryScramble(selected)}
                    onBackToOverview={handleBackToOverview}
                   className="px-3"
                 />

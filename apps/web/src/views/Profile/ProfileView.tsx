@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { formatTime, statLabel } from "@/utils/formatTime";
+import { formatTime, statLabel, yearWhenNeeded } from "@/utils/formatTime";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { effectiveTime } from "@/types";
 import { ALL_SKILL_NODES, CATEGORY_KEY } from "@/views/SkillTree/skillTreeData";
@@ -68,6 +68,7 @@ function LastSolves({ solves, locale }: { solves: UISolve[]; locale: string }) {
                 {new Date(solve.timestamp).toLocaleDateString(locale, {
                   month: "short",
                   day: "numeric",
+                  ...yearWhenNeeded(solve.timestamp),
                 })}
               </span>
             </div>
