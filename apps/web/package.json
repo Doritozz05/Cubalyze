@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:clean": "vite --force",
-    "build": "tsc -b && vite build && node scripts/verify-worker-build.mjs",
+    "build": "node scripts/gen-version-json.mjs && tsc -b && vite build && node scripts/verify-worker-build.mjs",
     "analyze": "vite build --mode analyze",
     "typecheck": "tsc -b --pretty",
     "typecheck:watch": "tsc -b --watch",

@@ -21,6 +21,7 @@
     "updateAvailable": "Update available",
     "updateAvailableBody": "A new version of CubeForge is ready. Reload when convenient.",
     "reload": "Reload",
+    "later": "Later",
     "noCube": "No cube",
     "assignCube": "Assign cube",
     "undo": "Undo"

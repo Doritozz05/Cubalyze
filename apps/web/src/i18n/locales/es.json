@@ -21,6 +21,7 @@
     "updateAvailable": "Actualización disponible",
     "updateAvailableBody": "Hay una nueva versión de CubeForge lista. Recarga cuando te venga bien.",
     "reload": "Recargar",
+    "later": "Más tarde",
     "noCube": "Sin cubo",
     "assignCube": "Asignar cubo",
     "undo": "Deshacer"
