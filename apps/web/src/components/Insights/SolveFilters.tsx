@@ -155,11 +155,19 @@ export function SolveFilters({
                     )}
                   />
                 ) : null}
-                {option.label}
-                <span
-                  className={cn("nums text-[0.55rem] tabular-nums", active ? "opacity-70" : "opacity-50")}
-                >
-                  {option.count}
+                {/* Label + count sit on ONE baseline. They used to be direct
+                    children of a centered row: the smaller mono digits were
+                    centered by line box, so they floated above the label's
+                    baseline instead of resting on it. `items-baseline` inside
+                    a wrapper fixes the pair while the dot keeps `items-center`
+                    (a dot has no baseline to align to). */}
+                <span className="flex items-baseline gap-1">
+                  {option.label}
+                  <span
+                    className={cn("nums text-[0.55rem] tabular-nums", active ? "opacity-70" : "opacity-50")}
+                  >
+                    {option.count}
+                  </span>
                 </span>
               </button>
             );
@@ -334,9 +342,14 @@ function OptionChip({
           : "border-line text-ink-2 hover:border-ink-3/50 hover:text-ink",
       )}
     >
-      {children}
-      <span className={cn("nums text-[0.55rem] tabular-nums", active ? "opacity-70" : "opacity-50")}>
-        {count}
+      {/* Same one-baseline rule as the result segment: the digits share the
+          label's baseline instead of being centered by line box (which made
+          the number look like it was floating above the text). */}
+      <span className="flex items-baseline gap-1">
+        {children}
+        <span className={cn("nums text-[0.55rem] tabular-nums", active ? "opacity-70" : "opacity-50")}>
+          {count}
+        </span>
       </span>
     </button>
   );
