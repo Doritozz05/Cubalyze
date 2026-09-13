@@ -4,6 +4,24 @@ import { Component, type CSSProperties, type ErrorInfo, type ReactNode } from "r
 
 interface CrashState {
   error: Error | null;
+  chunkStale: boolean;
+}
+
+/**
+ * A new deploy replaces every hashed /assets/* file while old tabs keep
+ * pointing at the previous hashes: the next lazy() navigation then 404s with
+ * "Failed to fetch dynamically imported module". The fix is a fresh index,
+ * so the boundary reloads automatically ONCE (timestamp-guarded in
+ * sessionStorage to never loop, e.g. when offline) instead of parking the
+ * user on the crash overlay.
+ */
+const CHUNK_RELOAD_KEY = "cubeforge:chunk-reload-ts";
+const CHUNK_RELOAD_COOLDOWN_MS = 60_000;
+
+function isChunkLoadError(error: Error): boolean {
+  return /failed to fetch dynamically imported module|importing a module script failed|chunkloaderror|loading chunk \d+ failed/i.test(
+    error.message,
+  );
 }
 
 /**
@@ -13,10 +31,10 @@ interface CrashState {
  * design system may be the thing that broke, so we must not depend on it.
  */
 export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashState> {
-  state: CrashState = { error: null };
+  state: CrashState = { error: null, chunkStale: false };
 
   static getDerivedStateFromError(error: Error): CrashState {
-    return { error };
+    return { error, chunkStale: isChunkLoadError(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
@@ -26,6 +44,15 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
     if (info.componentStack) {
       console.error("[ErrorBoundary] Component stack:\n" + info.componentStack);
     }
+    if (!isChunkLoadError(error)) return;
+    try {
+      const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) ?? 0);
+      if (Number.isFinite(last) && Date.now() - last < CHUNK_RELOAD_COOLDOWN_MS) return;
+      sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+    } catch {
+      return;
+    }
+    window.location.reload();
   }
 
   private handleReload = (): void => {
@@ -39,7 +66,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
 
-    const { error } = this.state;
+    const { error, chunkStale } = this.state;
     const stack = (error.stack ?? "").slice(0, 900);
     const isTranslationCrash = error.message.includes("removeChild");
 
@@ -59,6 +86,12 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
               (Chrome/Safari), eso puede romper la interfaz. Añade este sitio a la lista
               «Nunca traducir» o cambia el idioma del navegador al de la página, y vuelve
               a cargar.
+            </p>
+          )}
+          {chunkStale && (
+            <p style={{ ...DESCRIPTION, color: "#7dd3fc" }}>
+              🔄 Esto suele pasar cuando hay una <strong>versión nueva</strong> y esta
+              pestaña cargó archivos antiguos. Recarga para traer los actuales.
             </p>
           )}
           <pre style={STACK}>{error.message + (stack ? `\n\n${stack}` : "")}</pre>
