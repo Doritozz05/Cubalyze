@@ -1,14 +1,51 @@
 import { describe, it, expect } from "vitest";
-import type { SessionStats } from "@cubeforge/statistics";
+import type { SessionStats, Penalty } from "@cubeforge/statistics";
 import type { ProfileStats } from "@/hooks/useProfileStats";
+import type { Solve as UISolve } from "@/types";
 import {
   computeSubBadges,
   formatThresholdLabel,
   puzzleShortLabel,
+  SUB_BADGE_FALLBACK_WINDOW,
+  SUB_BADGE_WINDOW,
 } from "./subBadges";
 
+// ─── Fixtures ───────────────────────────────────────────────────────────────
+
+let nextId = 0;
+
+/** A solve in a fixture history: seconds, or `[seconds, penalty]`. */
+type SolveSpec = number | [number, Penalty];
+
+/** Build a newest-first solve history from times in seconds. */
+function solvesFrom(specs: SolveSpec[]): UISolve[] {
+  return specs.map((spec, i) => {
+    const [sec, penalty]: [number, Penalty] =
+      typeof spec === "number" ? [spec, "none"] : spec;
+    return {
+      id: `solve-${nextId++}`,
+      time: Math.round(sec * 1000),
+      penalty,
+      scramble: "",
+      timestamp: 1_700_000_000_000 - i * 1000,
+      source: "manual" as const,
+    };
+  });
+}
+
+/** `n` solves, all at the same time. */
+function repeat(seconds: number, n: number): number[] {
+  return Array.from({ length: n }, () => seconds);
+}
+
 function makeStats(
-  puzzles: Array<{ puzzle: string; best: number | null; count: number }>,
+  puzzles: Array<{
+    puzzle: string;
+    times: SolveSpec[];
+    /** Current rolling averages as the statistics engine would report them. */
+    ao12?: number | null;
+    ao100?: number | null;
+  }>,
 ): ProfileStats {
   const base: SessionStats = {
     count: 0,
@@ -25,9 +62,15 @@ function makeStats(
     solves: [],
     byPuzzle: puzzles.map((p) => ({
       puzzle: p.puzzle,
-      count: p.count,
-      stats: { ...base, best: p.best, count: p.count, total: p.count },
-      solves: [],
+      count: p.times.length,
+      stats: {
+        ...base,
+        count: p.times.length,
+        total: p.times.length,
+        ao12: p.ao12 ?? null,
+        ao100: p.ao100 ?? null,
+      },
+      solves: solvesFrom(p.times),
     })),
     heatmapCounts: [],
     streakDays: 0,
@@ -36,7 +79,14 @@ function makeStats(
   };
 }
 
-describe("computeSubBadges", () => {
+/** 120 solves at `seconds`, which is ≥ 100 so the ao100 yardstick applies. */
+function longHistory(seconds: number): number[] {
+  return repeat(seconds, SUB_BADGE_WINDOW + 20);
+}
+
+// ─── The consensus rule ─────────────────────────────────────────────────────
+
+describe("computeSubBadges — sub-X comes from a trimmed average", () => {
   it("returns [] for null stats", () => {
     expect(computeSubBadges(null)).toEqual([]);
   });
@@ -45,32 +95,105 @@ describe("computeSubBadges", () => {
     expect(computeSubBadges(makeStats([]))).toEqual([]);
   });
 
-  it("ignores puzzles without a finite best (no solves / all DNF)", () => {
-    const stats = makeStats([
-      { puzzle: "333", best: null, count: 0 },
-      { puzzle: "222", best: Number.POSITIVE_INFINITY, count: 3 },
-    ]);
-    expect(computeSubBadges(stats)).toEqual([]);
-  });
-
-  it("derives the fastest milestone strictly above the PB", () => {
-    // PB 4.32s → beats Sub 5 (and everything slower), so Sub 5.
-    const stats = makeStats([{ puzzle: "333", best: 4320, count: 10 }]);
+  it("earns the badge from the ao100, not from the best single", () => {
+    // 120 solves at 19.5 → the best 100-window average is 19.5 → Sub 20.
+    const stats = makeStats([{ puzzle: "333", times: longHistory(19.5), ao100: 19_500 }]);
     const badges = computeSubBadges(stats);
     expect(badges).toHaveLength(1);
     expect(badges[0]).toMatchObject({
       puzzle: "333",
       puzzleLabel: "3×3",
-      seconds: 5,
-      thresholdLabel: "5",
+      seconds: 20,
+      thresholdLabel: "20",
+      windowSize: SUB_BADGE_WINDOW,
+      solveCount: 120,
+      averageMs: 19_500,
       mainPuzzle: false,
     });
   });
 
+  it("does NOT hand out a badge for one lucky single (the old bug)", () => {
+    // A 19.4 single in a sea of 28s. The old PB-based rule said "Sub 20"
+    // forever; the community would call that a fluke, not a rank.
+    const times = [19.4, ...repeat(28, 119)];
+    const stats = makeStats([{ puzzle: "333", times, ao100: 28_000 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0].seconds).toBe(30);
+    expect(badges[0].averageMs).toBeGreaterThan(27_000);
+  });
+
+  it("refuses to claim anything below 12 solves", () => {
+    // Fast singles, but not enough history to support a trimmed average.
+    const stats = makeStats([{ puzzle: "333", times: [19.5, 19.8, 20.1, 19.9] }]);
+    expect(computeSubBadges(stats)).toEqual([]);
+  });
+
+  it("falls back to the ao12 between 12 and 99 solves, and says so", () => {
+    const times = repeat(19.5, 40);
+    const stats = makeStats([{ puzzle: "333", times, ao12: 19_500 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0]).toMatchObject({
+      seconds: 20,
+      windowSize: SUB_BADGE_FALLBACK_WINDOW,
+      solveCount: 40,
+    });
+  });
+
+  it("prefers the durable ao100 over a flashier ao12", () => {
+    // 12 recent blitz solves at 14s inside a 20.5s history: the ao12 would
+    // claim Sub 15, but the typical average — the real rank — is 19.6.
+    const times = [...repeat(14, 12), ...repeat(20.5, 88)];
+    const stats = makeStats([{ puzzle: "333", times, ao12: 14_000 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0].windowSize).toBe(SUB_BADGE_WINDOW);
+    expect(badges[0].seconds).toBe(20);
+  });
+
+  it("keeps the peak you earned, and reports today's average separately", () => {
+    // Newest 100 solves at 25s, an older 100-solve stretch at 18s: the badge
+    // is the achievement, `currentMs` is the current form.
+    const times = [...repeat(25, 100), ...repeat(18, 100)];
+    const stats = makeStats([{ puzzle: "333", times, ao100: 25_000 }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0].averageMs).toBe(18_000);
+    expect(badges[0].seconds).toBe(20);
+    expect(badges[0].currentMs).toBe(25_000);
+  });
+
+  it("names the next faster milestone", () => {
+    const stats = makeStats([{ puzzle: "333", times: longHistory(19.5) }]);
+    const badges = computeSubBadges(stats);
+    expect(badges[0].nextSeconds).toBe(17);
+    expect(badges[0].nextThresholdLabel).toBe("17");
+  });
+
+  it("returns no badge when the average is slower than the slowest milestone", () => {
+    const stats = makeStats([{ puzzle: "333", times: longHistory(45) }]);
+    expect(computeSubBadges(stats)).toEqual([]);
+  });
+
+  it("tolerates DNFs inside the ao100 trim", () => {
+    // The ao100 drops 5 from each end, so 5 DNFs (the worst solves) fall
+    // inside the trim and the average still stands.
+    const dnfs: SolveSpec[] = Array.from({ length: 5 }, () => [0, "DNF"] as [number, Penalty]);
+    const stats = makeStats([
+      { puzzle: "333", times: [...dnfs, ...repeat(19.5, 100)] },
+    ]);
+    expect(computeSubBadges(stats)[0]?.seconds).toBe(20);
+  });
+
+  it("returns [] for a puzzle with no usable history", () => {
+    expect(computeSubBadges(makeStats([{ puzzle: "333", times: [] }]))).toEqual([]);
+  });
+});
+
+// ─── Presentation helpers ───────────────────────────────────────────────────
+
+describe("computeSubBadges — presentation", () => {
   it("assigns a stable rainbow phase token per puzzle", () => {
     const stats = makeStats([
-      { puzzle: "333", best: 8200, count: 4 },
-      { puzzle: "222", best: 1900, count: 20 },
+      { puzzle: "333", times: repeat(8.2, 20) },
+      { puzzle: "222", times: repeat(1.9, 20) },
     ]);
     const badges = computeSubBadges(stats, "222");
     expect(badges.find((b) => b.puzzle === "333")?.color).toBe("phase-emerald");
@@ -78,38 +201,26 @@ describe("computeSubBadges", () => {
   });
 
   it("falls back deterministically for unknown puzzles", () => {
-    const a = computeSubBadges(
-      makeStats([{ puzzle: "mystery", best: 40_000, count: 2 }]),
-    );
-    const b = computeSubBadges(
-      makeStats([{ puzzle: "mystery", best: 40_000, count: 2 }]),
-    );
+    const puzzle = { puzzle: "mystery", times: repeat(40, 13) };
+    const a = computeSubBadges(makeStats([puzzle]));
+    const b = computeSubBadges(makeStats([puzzle]));
     expect(a[0].color).toBe(b[0].color);
     expect(a[0].color).toMatch(/^phase-/);
   });
 
   it("uses the 2x2 ladder (Sub 1 / Sub 2 / Sub 3)", () => {
-    const sub3 = computeSubBadges(
-      makeStats([{ puzzle: "222", best: 2900, count: 5 }]),
-    );
+    const sub3 = computeSubBadges(makeStats([{ puzzle: "222", times: repeat(2.9, 20) }]));
     expect(sub3[0].seconds).toBe(3);
     expect(sub3[0].puzzleLabel).toBe("2×2");
 
-    const sub1 = computeSubBadges(
-      makeStats([{ puzzle: "222", best: 990, count: 5 }]),
-    );
+    const sub1 = computeSubBadges(makeStats([{ puzzle: "222", times: repeat(0.99, 20) }]));
     expect(sub1[0].seconds).toBe(1);
-  });
-
-  it("returns no badge when the PB is slower than the slowest milestone", () => {
-    const stats = makeStats([{ puzzle: "333", best: 45_000, count: 5 }]); // 45s
-    expect(computeSubBadges(stats)).toEqual([]);
   });
 
   it("ranks the declared main puzzle first, then most-solved", () => {
     const stats = makeStats([
-      { puzzle: "333", best: 8200, count: 4 }, // Sub 10
-      { puzzle: "222", best: 1900, count: 20 }, // Sub 2
+      { puzzle: "333", times: repeat(8.2, 20) },
+      { puzzle: "222", times: repeat(1.9, 40) },
     ]);
     const badges = computeSubBadges(stats, "222");
     expect(badges.map((b) => b.puzzle)).toEqual(["222", "333"]);
@@ -118,10 +229,8 @@ describe("computeSubBadges", () => {
   });
 
   it("formats one-minute thresholds as m:ss", () => {
-    const stats = makeStats([{ puzzle: "4x4x4", best: 55_000, count: 5 }]);
-    expect(stats.byPuzzle[0].stats.best).toBe(55_000);
+    const stats = makeStats([{ puzzle: "444", times: repeat(55, 20) }]);
     const badges = computeSubBadges(stats);
-    // 55s < 60s → Sub 60 ("1:00").
     expect(badges[0].thresholdLabel).toBe("1:00");
   });
 });

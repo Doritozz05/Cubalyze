@@ -3974,7 +3974,10 @@
       "memberSince": "Miembro desde {{date}}",
       "edit": "Editar",
       "avatarAlt": "Avatar del perfil",
-      "pbTitle": "PB {{puzzle}} es Sub {{threshold}}"
+      "badgeTitle": "Sub {{threshold}} en {{puzzle}}",
+      "badgeFromAo100": "Mejor ao100: {{average}}",
+      "badgeFromAo12": "Provisional — mejor ao12: {{average}}",
+      "badgeNow": "Ahora: {{average}}"
     },
     "tabs": {
       "overview": "Resumen",

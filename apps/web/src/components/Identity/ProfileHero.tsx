@@ -10,7 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
 import type { SubBadge } from "@/utils/subBadges";
+import { SUB_BADGE_WINDOW } from "@/utils/subBadges";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";
+import { formatTime } from "@/utils/formatTime";
 
 /**
  * Rainbow badge styles per phase token for 3D sticker badges.
@@ -39,7 +41,11 @@ export interface ProfileHeroProps {
   loading?: boolean;
   /** Opens the Profile editor (Settings → Profile). */
   onEdit?: () => void;
-  /** Sub-X milestone badges derived from the PB per puzzle (e.g. "Sub 5 · 3×3"). */
+  /**
+   * Sub-X milestone badges, earned by a trimmed average per puzzle (best ao100,
+   * ao12 while there is no ao100 yet) — never by a lucky single. See
+   * utils/subBadges.ts for the rule.
+   */
   badges?: SubBadge[];
   /**
    * CubeMark seed — the ORIGINAL anonymous id even after an account links
@@ -203,11 +209,32 @@ export function ProfileHero({
                           </span>
                         </span>
                       </TooltipTrigger>
+                      {/* The claim in full: which average earned the badge and
+                          what today's form is, so it is never read as "right
+                          now" when it is a peak. */}
                       <TooltipContent side="top">
-                        {t("hero.pbTitle", {
-                          puzzle: badge.puzzleLabel,
-                          threshold: badge.thresholdLabel,
-                        })}
+                        <div>
+                          {t("hero.badgeTitle", {
+                            puzzle: badge.puzzleLabel,
+                            threshold: badge.thresholdLabel,
+                          })}
+                        </div>
+                        <div className="mt-0.5 opacity-70">
+                          {badge.windowSize === SUB_BADGE_WINDOW
+                            ? t("hero.badgeFromAo100", {
+                                average: formatTime(badge.averageMs),
+                              })
+                            : t("hero.badgeFromAo12", {
+                                average: formatTime(badge.averageMs),
+                              })}
+                        </div>
+                        {badge.currentMs !== null ? (
+                          <div className="opacity-70">
+                            {t("hero.badgeNow", {
+                              average: formatTime(badge.currentMs),
+                            })}
+                          </div>
+                        ) : null}
                       </TooltipContent>
                     </Tooltip>
                   );
