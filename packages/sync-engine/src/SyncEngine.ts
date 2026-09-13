@@ -31,7 +31,8 @@ import {
 } from "@cubeforge/database";
 import type { Profile } from "@cubeforge/models";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pullChanges } from "./pull";
+import { claimHandle, type HandleClaimResult } from "./handle";
+import { profileHasContent, pullChanges } from "./pull";
 import { pushChanges } from "./push";
 import { rebuildAggregates } from "./rebuild";
 import { purgeLocalTombstones } from "./tombstones";
@@ -74,23 +75,6 @@ function parseMethods(raw: string): string[] {
   } catch {
     return [];
   }
-}
-
-/**
- * M11 — true only when the profile carries real user content (as opposed to
- * the empty installation default). Used to decide whether a claim's local
- * profile may seed the cloud (first device) or must yield to an already
- * edited cloud profile.
- */
-function profileHasContent(profile: Profile): boolean {
-  return Boolean(
-    (profile.displayName ?? "").trim() ||
-      (profile.handle ?? "").trim() ||
-      (profile.bio ?? "").trim() ||
-      (profile.country ?? "").trim() ||
-      (profile.avatarKind === "photo" && profile.avatarData) ||
-      (profile.declaredMethods?.length ?? 0) > 0,
-  );
 }
 
 export class SyncEngine {
@@ -337,10 +321,16 @@ export class SyncEngine {
           // the cloud already holds an edited profile, we park the local
           // seed and let the claim's pull bring the cloud profile down.
           const cloudProfile = await this.readCloudProfile(uid);
-          if (
-            !cloudProfile ||
-            !profileHasContent(profile)
-          ) {
+          // "The cloud row is the empty default" se pregunta por CONTENIDO, no
+          // por existencia: `handle_new_user` inserta una fila vacía en cada
+          // alta, así que `!cloudProfile` es prácticamente siempre falso. Con
+          // la comprobación por existencia, el primer inicio de sesión de una
+          // cuenta nueva descartaba el perfil que el usuario hubiese editado
+          // en local y dejaba la cuenta (y el dispositivo) vacíos.
+          const cloudHasContent = cloudProfile
+            ? profileHasContent(cloudProfile)
+            : false;
+          if (!cloudHasContent || !profileHasContent(profile)) {
             // No edited cloud profile yet: the local identity seeds the
             // account (first device / first edit). Park the CubeMark seed
             // and remap the local profile to the account so it is pushed.
@@ -363,7 +353,15 @@ export class SyncEngine {
             await this.ctx.profiles.delete(profile.userId);
           }
         } else if (!profile) {
-          await this.ctx.profiles.getOrCreate(uid);
+          // Sin identidad local ninguna (primer arranque en este dispositivo).
+          // NO se siembra un perfil por defecto si la cuenta ya tiene uno con
+          // contenido: esa fila nace con `Date.now()` y el LWW la haría ganar,
+          // que es exactamente el perfil vacío que pisa al de la cuenta. Se
+          // deja que lo traiga el pull.
+          const cloudProfile = await this.readCloudProfile(uid);
+          if (!cloudProfile || !profileHasContent(cloudProfile)) {
+            await this.ctx.profiles.getOrCreate(uid);
+          }
         }
       }
       // The local identity now follows the account: useProfile re-reads
@@ -403,6 +401,23 @@ export class SyncEngine {
       this.setStatus("error");
       throw err;
     }
+  }
+
+  /**
+   * Fase 8 — claim this account's public handle (`@name`).
+   *
+   * Thin wrapper on purpose: the identity work lives in `handle.ts` (one RPC
+   * plus adopting the server's stamp locally) and the UI owns the copy. The
+   * engine is only here because it already holds the context, so no view has
+   * to reach into the database or build its own Supabase client.
+   *
+   * No sync is scheduled: `handle_claim` already wrote the cloud row, so the
+   * other devices get it on their next pull; this device's local row is
+   * written by the claim itself.
+   */
+  async claimHandle(raw: string): Promise<HandleClaimResult> {
+    if (!this.uid) throw new Error("claimHandle requires a signed-in account");
+    return claimHandle(this.ctx, this.uid, raw);
   }
 
   /** One full sync cycle. Serialized: concurrent callers share the promise. */

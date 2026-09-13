@@ -80,6 +80,7 @@ const VIEW_PATH: Record<ViewId, string> = {
   training: "/training",
   "skill-tree": "/skill-tree",
   profile: "/profile",
+  friends: "/friends",
   reconstructions: "/reconstructions",
   collection: "/collection",
   cube: "/cube",

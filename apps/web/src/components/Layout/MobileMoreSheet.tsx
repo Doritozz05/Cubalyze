@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package } from "lucide-react";
+import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package, Users } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -103,6 +103,15 @@ export function MobileMoreSheet({
       title: tNav("locker"),
       subtitle: t("more.collectionSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("collection")),
+    },
+    {
+      // Fase 8 — the same entry the desktop rail has, so the section is
+      // reachable on a phone (the sheet is the mobile "everything else").
+      key: "friends",
+      icon: Users,
+      title: tNav("friends"),
+      subtitle: t("more.friendsSubtitle"),
+      onClick: () => handleAction(() => onNavigate?.("friends")),
     },
     {
       key: "virtual-cube",

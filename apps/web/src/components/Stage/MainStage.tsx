@@ -41,6 +41,9 @@ const UltraSkillTreeView = lazy(() =>
 const ProfileView = lazy(() =>
   import("@/views/Profile/ProfileView").then((m) => ({ default: withReady(m.ProfileView) })),
 );
+const FriendsView = lazy(() =>
+  import("@/views/Friends/FriendsView").then((m) => ({ default: withReady(m.FriendsView) })),
+);
 const ReconstructionsView = lazy(() =>
   import("@/views/Reconstructions/ReconstructionsView").then((m) => ({ default: withReady(m.ReconstructionsView) })),
 );
@@ -81,6 +84,12 @@ export interface MainStageProps {
   onNavigate: (view: ViewId) => void;
   /** Opens Settings pre-selected to the profile section. */
   onOpenSettings: () => void;
+  /**
+   * Opens Settings pre-selected to *Privacidad y amigos*. A different
+   * destination on purpose: the Friends screen's "¿qué comparto?" shortcut
+   * asks about the consent switches, not about the profile editor.
+   */
+  onOpenPrivacySettings?: () => void;
   /** Rendered when `activeView === "timer"`. */
   timerStage: React.ReactNode;
 }
@@ -108,6 +117,7 @@ export function MainStage(props: MainStageProps) {
     onVirtualSolveComplete,
     onNavigate,
     onOpenSettings,
+    onOpenPrivacySettings,
     timerStage,
   } = props;
 
@@ -191,6 +201,14 @@ export function MainStage(props: MainStageProps) {
     return (
       <Suspense fallback={<ViewFallback />}>
         <ProfileView onNavigate={onNavigate} onOpenSettings={onOpenSettings} />
+      </Suspense>
+    );
+  }
+
+  if (activeView === "friends") {
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <FriendsView onOpenPrivacySettings={onOpenPrivacySettings} />
       </Suspense>
     );
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -26,7 +26,8 @@ import {
 import { SettingsSidebar } from './SettingsSidebar';
 import { TOUCH_FULL_BLEED } from '@/lib/touch';
 import { keyboardState } from '@/lib/keyboardState';
-import { SETTINGS_SECTIONS, SETTINGS_DIALOG_WIDTH } from './settings.constants';
+import { SETTINGS_DIALOG_WIDTH, visibleSettingsSections } from './settings.constants';
+import { useAccount } from '@/hooks/useAccount';
 import { GeneralSection } from './sections/GeneralSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { TimerSection } from './sections/TimerSection';
@@ -38,6 +39,7 @@ import { ScrambleSection } from './sections/ScrambleSection';
 import { ShortcutsSection } from './sections/ShortcutsSection';
 import { DataSection } from './sections/DataSection';
 import { ProfileSection } from './sections/ProfileSection';
+import { PrivacySection } from './sections/PrivacySection';
 import { AccountSection } from './sections/AccountSection';
 import { NotificationsSection } from './sections/NotificationsSection';
 import { AdvancedSection } from './sections/AdvancedSection';
@@ -87,6 +89,9 @@ const sectionVariants = {
 export function SettingsDialog({ open, onOpenChange, initialSection, solves, sessionName, onImportSolves, onExportAllJSON }: SettingsDialogProps) {
   const isTouch = useIsTouch();
   const { t } = useTranslation('settings');
+  // The account-gated sections (today: `privacy`) only exist for a session.
+  const { user } = useAccount();
+  const sections = useMemo(() => visibleSettingsSections(Boolean(user)), [user]);
   const [activeSection, setActiveSection] = useState('general');
   const prevSection = useRef('general');
   // Keep a ref to avoid recreating callbacks on every section change
@@ -96,13 +101,13 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
   // Reset to the requested section (or the default) on open
   useEffect(() => {
     if (open) {
-      const start = initialSection && SETTINGS_SECTIONS.some((s) => s.id === initialSection)
+      const start = initialSection && sections.some((s) => s.id === initialSection)
         ? initialSection
         : 'general';
       setActiveSection(start);
       prevSection.current = start;
     }
-  }, [open, initialSection]);
+  }, [open, initialSection, sections]);
 
   // While the Settings dialog is open it owns the keyboard: the global
   // timer/shortcut handlers yield (see keyboardState) so e.g. pressing Space
@@ -114,8 +119,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
     };
   }, [open]);
 
-  const activeIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === activeSection);
-  const prevIndex = SETTINGS_SECTIONS.findIndex((s) => s.id === prevSection.current);
+  const activeIndex = sections.findIndex((s) => s.id === activeSection);
+  const prevIndex = sections.findIndex((s) => s.id === prevSection.current);
   const direction = activeIndex >= prevIndex ? 1 : -1;
 
   const handleSelectSection = useCallback((id: string) => {
@@ -123,7 +128,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
     setActiveSection(id);
   }, []);
 
-  const activeMeta = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
+  const activeMeta = sections.find((s) => s.id === activeSection);
 
   const renderContent = useCallback(() => {
     switch (activeSection) {
@@ -131,6 +136,8 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
         return <AccountSection />;
       case 'profile':
         return <ProfileSection />;
+      case 'privacy':
+        return <PrivacySection />;
       case 'general':
         return <GeneralSection />;
       case 'appearance':
@@ -158,20 +165,21 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
       case 'credits':
         return <CreditsSection />;
       default: {
-        const section = SETTINGS_SECTIONS.find((s) => s.id === activeSection);
+        const section = sections.find((s) => s.id === activeSection);
         if (section) {
           return <PlaceholderSection section={section} />;
         }
         return null;
       }
     }
-  }, [activeSection, solves, sessionName, onImportSolves, onExportAllJSON]);
+  }, [activeSection, solves, sessionName, onImportSolves, onExportAllJSON, sections]);
 
   const innerContent = (
     <div className="flex h-full min-h-0">
       <SettingsSidebar
         activeSection={activeSection}
         onSelectSection={handleSelectSection}
+        sections={sections}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -182,7 +190,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, solves, ses
               <SelectValue placeholder={t('selectSection')} />
             </SelectTrigger>
             <SelectContent side="bottom" align="start" className="max-h-[60vh] overflow-y-auto z-100">
-              {SETTINGS_SECTIONS.map((section) => {
+              {sections.map((section) => {
                 const Icon = section.icon;
                 return (
                   <SelectItem key={section.id} value={section.id} className="py-2.5 text-xs">

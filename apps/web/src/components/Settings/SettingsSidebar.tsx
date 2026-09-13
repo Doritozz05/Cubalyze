@@ -3,11 +3,17 @@
 import { motion, LayoutGroup } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { SETTINGS_SECTIONS, type SettingsSection, SIDEBAR_WIDTH } from './settings.constants';
+import { type SettingsSection, SIDEBAR_WIDTH } from './settings.constants';
 
 export interface SettingsSidebarProps {
   activeSection: string;
   onSelectSection: (id: string) => void;
+  /**
+   * The sections this session may use (see `visibleSettingsSections`). Passed
+   * in rather than imported so the sidebar, the index math and the content of
+   * the dialog can never disagree about which sections exist.
+   */
+  sections: SettingsSection[];
 }
 
 /**
@@ -19,6 +25,7 @@ export interface SettingsSidebarProps {
 export function SettingsSidebar({
   activeSection,
   onSelectSection,
+  sections,
 }: SettingsSidebarProps) {
   const { t } = useTranslation('settings');
   return (
@@ -32,7 +39,7 @@ export function SettingsSidebar({
       </p>
 
       <LayoutGroup>
-        {SETTINGS_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <SettingsSidebarItem
             key={section.id}
             section={section}

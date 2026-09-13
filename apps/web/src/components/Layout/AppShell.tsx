@@ -293,6 +293,17 @@ export function AppShell(props: AppShellProps) {
     setSettingsOpen(true);
   }, []);
 
+  /**
+   * The Friends screen's "¿qué comparto?" shortcut. It is a SEPARATE entry
+   * point from `handleOpenSettingsProfile`: the profile editor and the consent
+   * switches are different sections, and pointing both at "profile" sent the
+   * shortcut to a screen that does not answer the question it asks.
+   */
+  const handleOpenSettingsPrivacy = useCallback(() => {
+    setSettingsInitialSection("privacy");
+    setSettingsOpen(true);
+  }, []);
+
   const handleSettingsOpenChange = useCallback((open: boolean) => {
     setSettingsOpen(open);
     if (!open) setSettingsInitialSection(undefined);
@@ -427,6 +438,7 @@ export function AppShell(props: AppShellProps) {
               onVirtualSolveComplete={onVirtualSolveComplete}
               onNavigate={onNavigate}
               onOpenSettings={handleOpenSettingsProfile}
+              onOpenPrivacySettings={handleOpenSettingsPrivacy}
               fetchSessionSolves={fetchSessionSolves}
               timerStage={timerStage}
             />

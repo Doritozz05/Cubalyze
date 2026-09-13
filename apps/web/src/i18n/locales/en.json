@@ -57,7 +57,185 @@
     "widgets": "Widgets",
     "more": "More",
     "moreOptions": "More options",
-    "primary": "Primary"
+    "primary": "Primary",
+    "friends": "Friends",
+    "friendsPending": "{{count}} pending friend requests"
+  },
+  "friends": {
+    "title": "Friends",
+    "tabsAria": "Friends sections",
+    "tabs": {
+      "friends": "Friends ({{count}})",
+      "requests": "Requests",
+      "requestsWithCount": "Requests ({{count}})",
+      "blocked": "Blocked ({{count}})"
+    },
+    "loading": "Loading your friends…",
+    "signedOut": {
+      "title": "Friends live in your account",
+      "description": "Sign in to add friends, see their progress and visit their showroom. Everything stays local until you do.",
+      "continueWithGoogle": "Continue with Google",
+      "authError": "Sign-in failed. Close the window and try again.",
+      "notConfigured": "Sign-in is not available in this build."
+    },
+    "empty": {
+      "title": "No friends yet",
+      "description": "Add someone by their exact handle. Requests are only visible to the two of you, and nothing is public."
+    },
+    "handle": {
+      "title": "Your handle",
+      "description": "Friends find you by this name. It is unique, it is public, and it is the only way to be added — nobody can search for you.",
+      "placeholder": "yourname",
+      "claim": "Claim",
+      "trySuggestion": "Try @{{handle}}",
+      "rules": "3–20 characters: letters, numbers and underscore.",
+      "error": {
+        "taken": "That handle is taken. Try another one.",
+        "invalid": "That handle can't be used — check the format.",
+        "offline": "We couldn't check it: you appear to be offline. Nothing was changed.",
+        "unauthorized": "Sign in to claim your handle.",
+        "rate_limited": "Too many attempts just now. Wait a moment and try again."
+      }
+    },
+    "add": {
+      "title": "Add a friend",
+      "description": "Type the exact handle of the person you want to add.",
+      "needsHandle": "You need a handle before you can add anyone.",
+      "claimFirst": "Claim your handle above and this will unlock.",
+      "placeholder": "theirname",
+      "label": "Handle of the person to add",
+      "submit": "Send request",
+      "sent": "Request sent. You'll see it under Requests until they answer.",
+      "accepted": "They had already asked you — you are friends now."
+    },
+    "card": {
+      "unnamed": "No name",
+      "noHandle": "no handle",
+      "actions": "Actions for {{name}}",
+      "remove": "Remove friend",
+      "block": "Block"
+    },
+    "requests": {
+      "incoming": "Received",
+      "outgoing": "Sent",
+      "noIncoming": "No pending requests.",
+      "noOutgoing": "You haven't sent any requests.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel",
+      "pending": "Waiting"
+    },
+    "scopes": {
+      "stats": "Stats",
+      "locker": "Locker"
+    },
+    "detail": {
+      "back": "Back to friends",
+      "loading": "Opening profile…",
+      "tabsAria": "Friend profile sections",
+      "statsTab": "Progress",
+      "showcaseTab": "Showcase",
+      "memberSince": "Member since {{date}}",
+      "mainPuzzle": "Main puzzle: {{puzzle}}",
+      "methods": "Methods: {{list}}"
+    },
+    "stats": {
+      "summary": "Summary",
+      "allTime": "All time",
+      "solves": "Solves",
+      "best": "Best",
+      "mean": "Mean",
+      "totalTime": "Total time",
+      "count": "Valid",
+      "streak": "{{count}}-day streak",
+      "lastActive": "Last solve: {{date}}",
+      "byPuzzle": "By puzzle",
+      "aggregates": "Aggregates",
+      "puzzle": "Puzzle",
+      "activity": "Activity",
+      "lastYear": "Last 52 weeks",
+      "privacyNote": "These are totals calculated on the server. Your solves — scrambles, notes, moves — never leave your account.",
+      "emptyTitle": "No solves yet",
+      "emptyDescription": "Nothing to show from sessions yet.",
+      "notSharedTitle": "Progress not shared",
+      "unavailableTitle": "Progress unavailable"
+    },
+    "showcase": {
+      "openItem": "Open {{name}}",
+      "quantity": "×{{count}}",
+      "categories": "Categories",
+      "allCategories": "All",
+      "itemCount": "{{count}} items",
+      "refresh": "Refresh showcase",
+      "loadMore": "Load more",
+      "emptyTitle": "Empty Locker",
+      "emptyDescription": "There is nothing to see here yet.",
+      "emptyCategory": "No items in this category.",
+      "notSharedTitle": "Locker not shared",
+      "unavailableTitle": "Locker unavailable",
+      "photo": "Photo {{index}}",
+      "acquired": "Acquired",
+      "quantityLabel": "Quantity",
+      "tags": "Tags",
+      "readOnlyNote": "Read-only view. Serial numbers, prices, notes and links are never shared.",
+      "status": {
+        "wishlist": "Wishlist",
+        "sold": "Sold",
+        "lent": "Lent"
+      }
+    },
+    "blocked": {
+      "empty": "You haven't blocked anyone.",
+      "unblock": "Unblock"
+    },
+    "confirm": {
+      "removeTitle": "Remove {{name}}?",
+      "removeBody": "They will stop seeing your Locker and your stats. They are not told, and you can send a new request later.",
+      "remove": "Remove",
+      "blockTitle": "Block {{name}}?",
+      "blockBody": "You lose the friendship and any pending request between you, and they can't add you again. Unblocking does not restore the friendship.",
+      "block": "Block",
+      "unblockTitle": "Unblock {{name}}?",
+      "unblockBody": "They will be able to send you a request again. You are not friends until one of you asks and the other accepts.",
+      "cancel": "Cancel"
+    },
+    "privacy": {
+      "shareProfile": "Share my profile",
+      "shareProfileHint": "Name, handle, photo avatar, bio, country and declared methods. Turned off, others only see your name, handle and CubeMark.",
+      "shareStats": "Share my progress",
+      "shareStatsHint": "Aggregated stats per puzzle plus a daily activity map of the last year. The map reveals when you practise.",
+      "shareLocker": "Share my Locker",
+      "shareLockerHint": "Your cubes and gear, read-only. Serial numbers, prices, notes and links are never included.",
+      "allowRequests": "Allow friend requests",
+      "allowRequestsHint": "When off, nobody can send you a request. People who already are your friends are unaffected.",
+      "saving": "Saving…",
+      "unavailable": "Sharing settings unavailable",
+      "retry": "Retry"
+    },
+    "sharing": {
+      "shortcut": "What do I share?"
+    },
+    "toast": {
+      "removed": "Friend removed.",
+      "blocked": "User blocked.",
+      "unblocked": "User unblocked."
+    },
+    "failure": {
+      "offline": "No connection. Check your network and try again.",
+      "unauthorized": "Sign in to use friends.",
+      "not_friends": "You are not friends with this person.",
+      "not_shared": "They don't share this.",
+      "invalid": "That value isn't valid.",
+      "taken": "That handle is already taken.",
+      "not_found": "No account with that handle.",
+      "self": "That's you.",
+      "closed": "This person isn't accepting requests.",
+      "already_friends": "You are already friends.",
+      "pending": "There is already a pending request.",
+      "not_pending": "There is no pending request to answer.",
+      "rate_limited": "Too many requests today. Try again later.",
+      "unknown": "Something went wrong. Please try again."
+    }
   },
   "cube": {
     "timerAria": "Solve time",
@@ -110,6 +288,10 @@
       "profile": {
         "label": "Profile",
         "description": "Your identity, avatar, and declared solving methods."
+      },
+      "privacy": {
+        "label": "Privacy & friends",
+        "description": "Your handle and exactly what your friends can see."
       },
       "general": {
         "label": "General",
@@ -1137,6 +1319,7 @@
       "skillsSubtitle": "Interactive skill tree graph",
       "reconstructionsSubtitle": "Solve database & replays",
       "collectionSubtitle": "Your cubes and gear",
+    "friendsSubtitle": "Add friends and see their Locker",
       "virtualSubtitle": "3D cube simulator",
       "smartCubeSubtitle": "Connect bluetooth cube",
       "themeSubtitle": "Customize themes and colors",

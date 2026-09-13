@@ -26,6 +26,32 @@ import {
 } from "./tombstones";
 import type { SyncContext, SyncTotals } from "./types";
 import { getWatermark, pullWatermarkKey, setWatermark } from "./watermarks";
+import type { Profile } from "@cubeforge/models";
+
+/**
+ * True only when the profile carries real user content, as opposed to the
+ * installation default every device writes on first launch.
+ *
+ * It exists because LWW cannot tell "edited" from "never touched": both are a
+ * row with an `updated_at`. The handle is the only field the SERVER arbitrates
+ * (`profiles_protect_handle`), so every other field needs this distinction —
+ * otherwise a default row with a fresh `Date.now()` beats an account whose
+ * profile was edited weeks ago, in both directions (pull: the cloud profile
+ * never lands; push: the default row overwrites it).
+ *
+ * `mainPuzzle` is deliberately NOT content: it defaults to `333` on every
+ * device, so counting it would make every default row look edited.
+ */
+export function profileHasContent(profile: Profile): boolean {
+  return Boolean(
+    (profile.displayName ?? "").trim() ||
+      (profile.handle ?? "").trim() ||
+      (profile.bio ?? "").trim() ||
+      (profile.country ?? "").trim() ||
+      (profile.avatarKind === "photo" && profile.avatarData) ||
+      (profile.declaredMethods?.length ?? 0) > 0,
+  );
+}
 
 interface TableDef {
   watermarkColumn: string;
@@ -192,8 +218,49 @@ async function applyRows(
           row.identicon_seed == null ? undefined : String(row.identicon_seed);
         if (seed) await ctx.meta.setIdenticonSeed(seed);
         const local = await ctx.profiles.findById(profile.userId);
-        if (!local || (local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
+        if (!local) {
           await ctx.profiles.upsert(profile);
+          break;
+        }
+        if ((local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
+          await ctx.profiles.upsert(profile);
+          break;
+        }
+        // El contenido gana al vacío, sin mirar los sellos.
+        //
+        // LWW compara SELLOS, y un sello no distingue una EDICIÓN de un
+        // VALOR POR DEFECTO: el primer arranque de cualquier dispositivo
+        // escribe una fila de perfil por defecto con `updated_at =
+        // Date.now()`, así que un dispositivo que se vincula más tarde tiene
+        // una fila MÁS NUEVA que una cuenta cuyo perfil se editó hace
+        // semanas. Aplicando el LWW al pie de la letra, ese dispositivo se
+        // queda con el perfil vacío para siempre (su fila gana, así que la
+        // del servidor no llega a aterrizar) y —antes de la guarda del push—
+        // además borraba el perfil de la cuenta. El vacío no lleva intención
+        // del usuario; el contenido sí.
+        if (!profileHasContent(local) && profileHasContent(profile)) {
+          await ctx.profiles.upsert(profile);
+          break;
+        }
+        // F8.0 — el handle NO se rige por LWW: lo decide el servidor.
+        //
+        // Un segundo dispositivo no llega con el handle de la cuenta: llega
+        // con un perfil local por defecto sellado con su propio `Date.now()`,
+        // que suele ser más nuevo que el sello de la reclamación del primero.
+        // Con LWW estricto esa fila nunca se aplica, así que la UI mostraría
+        // "sin handle" para una cuenta que sí lo tiene — y no se arreglaría
+        // sola: los sellos ya han convergido y el cursor no vuelve a mirarla.
+        //
+        // Que el servidor mande aquí no es una excepción al LWW, es su misma
+        // regla aplicada a la única columna que el servidor SÍ arbitra: el
+        // trigger `profiles_protect_handle` decide titularidad y unicidad, y
+        // un handle local sin reclamar no es una edición, es una petición.
+        //
+        // Se adopta SOLO el handle: los demás campos y el sello local se
+        // conservan, así que no se pisa ninguna edición pendiente (display
+        // name, bio, país) ni se reabre el ciclo de sync.
+        if (profile.handle !== "" && local.handle !== profile.handle) {
+          await ctx.profiles.upsert({ ...local, handle: profile.handle });
         }
       }
       break;

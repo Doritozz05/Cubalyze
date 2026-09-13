@@ -17,6 +17,7 @@ import {
   History,
   AudioLines,
   Cloud,
+  ShieldCheck,
 } from 'lucide-react';
 
 /**
@@ -43,6 +44,14 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     labelKey: 'sections.profile.label',
     icon: UserRound,
     descriptionKey: 'sections.profile.description',
+  },
+  {
+    // Fase 8 — the handle plus the four consent switches. Sits right after
+    // Profile: it is the same subject (your identity), one step more public.
+    id: 'privacy',
+    labelKey: 'sections.privacy.label',
+    icon: ShieldCheck,
+    descriptionKey: 'sections.privacy.description',
   },
   {
     id: 'general',
@@ -129,6 +138,22 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     descriptionKey: 'sections.credits.description',
   },
 ];
+
+/**
+ * The sections a given session can actually use.
+ *
+ * `privacy` is the handle and the four sharing switches, all of which live on
+ * the SERVER behind an account — signed out it can only render "not available",
+ * so it is not offered at all. Filtering is preferable to a disabled entry:
+ * a section that cannot work is noise, and the signed-out Friends screen is the
+ * place that explains (and starts) the Google sign-in.
+ *
+ * Every consumer in the dialog must use this list rather than the raw constant,
+ * so the sidebar, the index math and the content all agree on what exists.
+ */
+export function visibleSettingsSections(hasAccount: boolean): SettingsSection[] {
+  return hasAccount ? SETTINGS_SECTIONS : SETTINGS_SECTIONS.filter((s) => s.id !== 'privacy');
+}
 
 export const SETTINGS_DIALOG_WIDTH = 'sm:max-w-[960px]';
 export const SIDEBAR_WIDTH = 220;

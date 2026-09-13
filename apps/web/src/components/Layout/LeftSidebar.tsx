@@ -14,6 +14,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsTouch } from "@/hooks/use-mobile";
+import { useAccount } from "@/hooks/useAccount";
+import { useFriendDirectory } from "@/hooks/useFriends";
 import {
   COLLAPSED_WIDTH,
   EXPANDED_WIDTH,
@@ -102,6 +104,13 @@ export function LeftSidebar({
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
+  // Fase 8 — the incoming-request count behind the Amigos badge. It reads the
+  // SAME directory store the Friends screen renders (`friend_list` already
+  // carries the count, so the badge costs no request of its own) and stays off
+  // entirely without a session: account data cannot be read without one.
+  const { user } = useAccount();
+  const { data: directory } = useFriendDirectory({ enabled: Boolean(user) });
+  const incomingRequests = user ? (directory?.counts.incoming ?? 0) : 0;
   const [isHovered, setIsHovered] = useState(false);
   const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
   const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
@@ -383,6 +392,15 @@ export function LeftSidebar({
                     badge={
                       item.id === "timer" && timerActive ? (
                         <span className="size-1.5 rounded-full bg-ready animate-pulse" />
+                      ) : item.id === "friends" && incomingRequests > 0 ? (
+                        <span className="nums grid h-3.5 min-w-3.5 place-items-center rounded-full bg-caution px-1 text-[0.5rem] font-bold leading-none text-surface">
+                          <span aria-hidden="true">
+                            {incomingRequests > 99 ? "99+" : incomingRequests}
+                          </span>
+                          <span className="sr-only">
+                            {t("friendsPending", { count: incomingRequests })}
+                          </span>
+                        </span>
                       ) : undefined
                     }
                   />
