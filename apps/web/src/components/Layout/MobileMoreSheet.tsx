@@ -61,28 +61,10 @@ export function MobileMoreSheet({
   // with t() inside the component (render time) so they follow language
   // changes. Widgets live here too — the mobile header has no widgets
   // button; everything opens from this sheet.
+  // Order mirrors the desktop rail's new grouping: Progress (skill tree),
+  // Practice (reconstructions), Explore/Collection, then the account/theme
+  // entries.
   const items: MoreItem[] = [
-    {
-      key: "widgets",
-      icon: LayoutGrid,
-      title: tCommon("widgets"),
-      subtitle: t("more.widgetsSubtitle"),
-      onClick: () => handleAction(onOpenWidgets),
-    },
-    {
-      key: "settings",
-      icon: Settings,
-      title: tCommon("settings"),
-      subtitle: t("more.settingsSubtitle"),
-      onClick: () => handleAction(onOpenSettings),
-    },
-    {
-      key: "profile",
-      icon: User,
-      title: tCommon("profile"),
-      subtitle: t("more.profileSubtitle"),
-      onClick: () => handleAction(onOpenProfile),
-    },
     {
       key: "skill-tree",
       icon: Network,
@@ -103,6 +85,27 @@ export function MobileMoreSheet({
       title: tNav("locker"),
       subtitle: t("more.collectionSubtitle"),
       onClick: () => handleAction(() => onNavigate?.("collection")),
+    },
+    {
+      key: "widgets",
+      icon: LayoutGrid,
+      title: tCommon("widgets"),
+      subtitle: t("more.widgetsSubtitle"),
+      onClick: () => handleAction(onOpenWidgets),
+    },
+    {
+      key: "settings",
+      icon: Settings,
+      title: tCommon("settings"),
+      subtitle: t("more.settingsSubtitle"),
+      onClick: () => handleAction(onOpenSettings),
+    },
+    {
+      key: "profile",
+      icon: User,
+      title: tCommon("profile"),
+      subtitle: t("more.profileSubtitle"),
+      onClick: () => handleAction(onOpenProfile),
     },
     {
       // Fase 8 — the same entry the desktop rail has, so the section is

@@ -3,7 +3,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
-import { Palette, Settings, UserRound } from "lucide-react";
+import { Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
@@ -34,7 +34,6 @@ const HOVER_SUPPRESS_MS = 500;
 const SettingsDialog = lazy(() =>
   import("@/components/Settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
 );
-import { ThemeStudioModal } from "@/components/Settings/theme-studio/ThemeStudioModal";
 import { WidgetExplorer } from "@/widgets/explorer";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import type { Solve } from "@/types";
@@ -68,9 +67,6 @@ export interface LeftSidebarProps {
   onWidgetExplorerOpenChange?: (open: boolean) => void;
   cubeConnectorOpen?: boolean;
   onCubeConnectorOpenChange?: (open: boolean) => void;
-  themeStudioOpen?: boolean;
-  onThemeStudioOpenChange?: (open: boolean) => void;
-  themeStudioInitialTab?: "presets" | "colors" | "typography" | "general" | "background" | "layout" | "reset";
 }
 
 export function LeftSidebar({
@@ -92,9 +88,6 @@ export function LeftSidebar({
   onWidgetExplorerOpenChange,
   cubeConnectorOpen: externalCubeConnectorOpen,
   onCubeConnectorOpenChange,
-  themeStudioOpen: externalThemeStudioOpen,
-  onThemeStudioOpenChange,
-  themeStudioInitialTab = "presets",
 }: LeftSidebarProps) {
   // Touch regime (phones + small tablets <768px) renders the Sheet variant.
   // Desktop (>=768px) keeps the rail. The rail's touch interactions (tap-to-
@@ -115,10 +108,6 @@ export function LeftSidebar({
   const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
   const [internalWidgetExplorerOpen, setInternalWidgetExplorerOpen] = useState(false);
   const [internalCubeConnectorOpen, setInternalCubeConnectorOpen] = useState(false);
-  const [internalThemeStudioOpen, setInternalThemeStudioOpen] = useState(false);
-
-  const themeStudioOpen = externalThemeStudioOpen ?? internalThemeStudioOpen;
-  const setThemeStudioOpen = onThemeStudioOpenChange ?? setInternalThemeStudioOpen;
 
   const settingsOpen = externalSettingsOpen ?? internalSettingsOpen;
   const setSettingsOpen = onSettingsOpenChange ?? setInternalSettingsOpen;
@@ -446,15 +435,6 @@ export function LeftSidebar({
             labelVisible={labelVisible}
             onClick={() => setSettingsOpen(true)}
           />
-          <SidebarFooterItem
-            icon={Palette}
-            label={tCommon("theme")}
-            labelVisible={labelVisible}
-            onClick={() => {
-              setThemeStudioOpen(true);
-              if (isTouch) onMobileOpenChange?.(false);
-            }}
-          />
         </div>
       </LayoutGroup>
     </>
@@ -498,11 +478,6 @@ export function LeftSidebar({
             sessionName={sessionName}
             onImportSolves={onImportSolves}
             onExportAllJSON={onExportAllJSON}
-          />
-          <ThemeStudioModal
-            open={themeStudioOpen}
-            onOpenChange={setThemeStudioOpen}
-            initialTab={themeStudioInitialTab}
           />
         </Suspense>
         {/* Only the Drawer — no trigger. Its legacy `hidden sm:flex` trigger
@@ -568,11 +543,6 @@ export function LeftSidebar({
           sessionName={sessionName}
           onImportSolves={onImportSolves}
           onExportAllJSON={onExportAllJSON}
-        />
-        <ThemeStudioModal
-          open={themeStudioOpen}
-          onOpenChange={setThemeStudioOpen}
-          initialTab={themeStudioInitialTab}
         />
       </Suspense>
     </>

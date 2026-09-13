@@ -33,6 +33,10 @@ import { useStorageStatusStore } from "@/stores/storageStatus";
 import { preferencesStore } from "@cubeforge/state";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { WidgetExplorer } from "@/widgets/explorer";
+// Theme Studio lives in Settings → Appearance; AppShell renders the modal so
+// the context menu (openThemeStudioRef) can open it from anywhere without the
+// sidebar owning a footer entry for it.
+import { ThemeStudioModal } from "@/components/Settings/theme-studio/ThemeStudioModal";
 import { puzzleCategoryToOrder, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { useBackgroundMediaStore } from "@/stores/backgroundMediaStore";
 import type { AppShellProps } from "@/components/Layout/appShell.types";
@@ -409,12 +413,9 @@ export function AppShell(props: AppShellProps) {
               settingsInitialSection={settingsInitialSection}
               widgetExplorerOpen={widgetExplorerOpen}
               onWidgetExplorerOpenChange={setWidgetExplorerOpen}
-              cubeConnectorOpen={cubeConnectorOpen}
-              onCubeConnectorOpenChange={setCubeConnectorOpen}
-              themeStudioOpen={themeStudioOpen}
-              onThemeStudioOpenChange={setThemeStudioOpen}
-              themeStudioInitialTab={themeStudioInitialTab}
-              profileSeed={profileSeed}
+          cubeConnectorOpen={cubeConnectorOpen}
+          onCubeConnectorOpenChange={setCubeConnectorOpen}
+          profileSeed={profileSeed}
               profile={profile}
               onExportAllJSON={onExportAllJSON}
             />
@@ -494,6 +495,12 @@ export function AppShell(props: AppShellProps) {
           />
         )}
       </ThemeProvider>
+
+      <ThemeStudioModal
+        open={themeStudioOpen}
+        onOpenChange={setThemeStudioOpen}
+        initialTab={themeStudioInitialTab}
+      />
 
       {/* Global context menu — resolves i18n keys internally */}
       <ContextMenu />

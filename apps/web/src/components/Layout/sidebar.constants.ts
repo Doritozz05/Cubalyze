@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
-import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, Box, Package, Users } from "lucide-react";
+import { Timer, BarChart3, Puzzle, Grid3x3, BookOpen, Target, Network, Gamepad2, Package, Users } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 
 export const COLLAPSED_WIDTH = 56;
@@ -61,9 +61,10 @@ export interface NavGroup {
 
 /**
  * Nav rail sections. "Main" holds the live stage (timer + 3D cube);
- * "Progress" holds the unified stats + analysis dashboard (Insights) that
- * takes over the stage (sidebar of solves + overview / per-solve analysis).
- * "Training" holds the practice surfaces (drills, algorithms, skill tree).
+ * "Progress" holds the measurement surfaces (the unified stats + analysis
+ * dashboard (Insights) that takes over the stage, and the Skill tree).
+ * "Training" ("Practice") holds the practice surfaces (drills, algorithms,
+ * reconstructions).
  * "Explore" holds discovery surfaces like the Widgets panel.
  *
  * Profile lives in the sidebar FOOTER (next to Settings) — its item shows
@@ -74,21 +75,22 @@ export const NAV_GROUPS: NavGroup[] = [
     titleKey: "main",
     items: [
       { id: "timer", labelKey: "timer", icon: Timer },
-      { id: "cube", labelKey: "virtual", icon: Box },
+      { id: "cube", labelKey: "virtual", icon: Gamepad2 },
     ],
   },
   {
     titleKey: "progress",
     items: [
       { id: "insights", labelKey: "stats", icon: BarChart3 },
+      { id: "skill-tree", labelKey: "skills", icon: Network },
     ],
   },
   {
-    titleKey: "training",
+    titleKey: "practice",
     items: [
       { id: "training", labelKey: "training", icon: Target },
       { id: "algorithms", labelKey: "algorithms", icon: BookOpen },
-      { id: "skill-tree", labelKey: "skills", icon: Network },
+      { id: "reconstructions", labelKey: "reconstructions", icon: FaListOl },
     ],
   },
   {
@@ -96,7 +98,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "collection", labelKey: "locker", icon: Package },
       { id: "friends", labelKey: "friends", icon: Users },
-      { id: "reconstructions", labelKey: "reconstructions", icon: FaListOl },
       { id: "widgets", labelKey: "widgets", icon: Puzzle },
     ],
   },

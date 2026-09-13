@@ -4,20 +4,22 @@ import {
   BarChart3,
   Bluetooth,
   BookOpen,
-  Box,
+  Gamepad2,
   Grid3x3,
   Network,
-  Palette,
+  Package,
   Puzzle,
   Settings,
   Target,
   Timer,
   UserRound,
+  Users,
 } from 'lucide-react';
 import { FaListOl } from 'react-icons/fa';
 import { cn } from '@/lib/utils';
 
-const NAV = [Timer, Box, BarChart3, Target, BookOpen, Network, FaListOl, Puzzle];
+// Mirrors NAV_GROUPS in sidebar.constants (icons only, decorative).
+const NAV = [Timer, Gamepad2, BarChart3, Network, Target, BookOpen, FaListOl, Package, Users, Puzzle];
 
 /**
  * Static clone of the collapsed left sidebar (56px rail) for the
@@ -54,7 +56,7 @@ export function PreviewRail({ background }: { background: string }) {
         ))}
       </div>
       <div className="mt-auto flex flex-col items-center gap-1">
-        {[UserRound, Bluetooth, Settings, Palette].map((Icon, i) => (
+        {[UserRound, Bluetooth, Settings].map((Icon, i) => (
           <div
             key={i}
             className="flex size-9 items-center justify-center rounded-md text-sidebar-foreground/70"
