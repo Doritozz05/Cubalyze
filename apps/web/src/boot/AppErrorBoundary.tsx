@@ -73,7 +73,6 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
     return (
       <div style={OVERLAY}>
         <div style={PANEL}>
-          <div style={{ fontSize: 26 }}>⚠️</div>
           <h1 style={TITLE}>Algo se rompió</h1>
           <p style={DESCRIPTION}>
             La interfaz se detuvo por un error inesperado. Tus solves y sesiones no se han
@@ -82,7 +81,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
           </p>
           {isTranslationCrash && (
             <p style={{ ...DESCRIPTION, color: "#fbbf24" }}>
-              📖 Consejo: si el navegador está <strong>traduciendo la página</strong>
+              Consejo: si el navegador está <strong>traduciendo la página</strong>
               (Chrome/Safari), eso puede romper la interfaz. Añade este sitio a la lista
               «Nunca traducir» o cambia el idioma del navegador al de la página, y vuelve
               a cargar.
@@ -90,14 +89,14 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
           )}
           {chunkStale && (
             <p style={{ ...DESCRIPTION, color: "#7dd3fc" }}>
-              🔄 Esto suele pasar cuando hay una <strong>versión nueva</strong> y esta
+              Esto suele pasar cuando hay una <strong>versión nueva</strong> y esta
               pestaña cargó archivos antiguos. Recarga para traer los actuales.
             </p>
           )}
           <pre style={STACK}>{error.message + (stack ? `\n\n${stack}` : "")}</pre>
           <div style={ACTIONS}>
             <button type="button" style={BUTTON_SECONDARY} onClick={this.handleOpenLogs}>
-              📋 Ver logs
+              Ver logs
             </button>
             <button type="button" style={BUTTON_PRIMARY} onClick={this.handleReload}>
               Recargar
