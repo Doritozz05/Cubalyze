@@ -77,6 +77,8 @@ export interface MainStageProps {
   onDeleteSolve: (id: string) => void;
   /** Move solves to another session (batch). */
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
+  /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
+  onAssignCube: (ids: string[], cube: { id: string; label: string } | null) => void;
   puzzle: PuzzleCategory;
   onPuzzleChange: (puzzle: PuzzleCategory) => void;
   /** End-of-solve pipeline for the virtual cube simulator (source "virtual"). */
@@ -112,6 +114,7 @@ export function MainStage(props: MainStageProps) {
     onReanalyze,
     onDeleteSolve,
     onMoveSolves,
+    onAssignCube,
     puzzle,
     onPuzzleChange,
     onVirtualSolveComplete,
@@ -158,6 +161,7 @@ export function MainStage(props: MainStageProps) {
           onReanalyze={onReanalyze}
           onDeleteSolve={onDeleteSolve}
           onMoveSolves={onMoveSolves}
+          onAssignCube={onAssignCube}
         />
       </Suspense>
     );

@@ -16,6 +16,7 @@ import { OverviewPanel } from "./OverviewPanel";
 import { SolveAnalysisPanel } from "./SolveAnalysisPanel";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { MoveToSessionDialog } from "./MoveToSessionDialog";
+import { AssignCubeDialog, type AssignedCube } from "./AssignCubeDialog";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
@@ -46,6 +47,8 @@ export interface InsightsDashboardProps {
   onDeleteSolve: (id: string) => void;
   /** Move solves to another session (batch). */
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
+  /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
+  onAssignCube: (ids: string[], cube: AssignedCube | null) => void;
   className?: string;
 }
 
@@ -78,6 +81,7 @@ export function InsightsDashboard({
   onReanalyze,
   onDeleteSolve,
   onMoveSolves,
+  onAssignCube,
   className,
 }: InsightsDashboardProps) {
   const { t } = useTranslation("insights");
@@ -195,6 +199,9 @@ export function InsightsDashboard({
   // Destination picker for moving solve(s) to another session.
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveIds, setMoveIds] = useState<string[]>([]);
+  // Cube picker for (re-)attributing solve(s) to a Locker cube.
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignIds, setAssignIds] = useState<string[]>([]);
 
   // The ?solve= URL param is the source of truth until the data pool has
   // loaded. Before that point the URL-sync effect below must never write to
@@ -287,6 +294,20 @@ export function InsightsDashboard({
     [handleMoveRequest],
   );
 
+  const handleAssignRequest = useCallback((ids: string[]) => {
+    setAssignIds(ids);
+    setAssignOpen(true);
+  }, []);
+
+  const handleAssignSolveRow = useCallback(
+    (id: string) => {
+      handleAssignRequest([id]);
+    },
+    [handleAssignRequest],
+  );
+
+
+
   // ── Selection-mode handlers ───────────────────────────────────────────
   const handleLongPress = useCallback((id: string) => {
     setSelectedId(null);
@@ -364,6 +385,30 @@ export function InsightsDashboard({
     },
     [moveIds, onMoveSolves, handleExitSelection],
   );
+
+  const handleAssignConfirm = useCallback(
+    (cube: AssignedCube | null) => {
+      if (assignIds.length > 0) onAssignCube(assignIds, cube);
+      handleExitSelection();
+      setAssignIds([]);
+    },
+    [assignIds, onAssignCube, handleExitSelection],
+  );
+
+  // Event code of the solves targeted by the assign dialog (they always
+  // share the current cube filter) + the shared cubeId when all agree.
+  const assignEventCode = currentCube;
+  const assignSharedCubeId = useMemo(() => {
+    if (assignIds.length === 0) return null;
+    const byId = new Map(dataPool.map((s) => [s.id, s]));
+    let shared: string | null | undefined;
+    for (const id of assignIds) {
+      const cubeId = byId.get(id)?.cubeId ?? null;
+      if (shared === undefined) shared = cubeId;
+      else if (shared !== cubeId) return null;
+    }
+    return shared ?? null;
+  }, [assignIds, dataPool]);
 
   // ── Detail mode (desktop only): reconstruction-style split — replay
   //     pinned large on the left, the solve list hidden.
@@ -533,8 +578,10 @@ export function InsightsDashboard({
           onEnterSelection={handleEnterSelection}
           onDeleteSelected={() => setConfirmBulkDeleteOpen(true)}
           onMoveSelected={() => handleMoveRequest(Array.from(selection))}
+          onAssignSelected={() => handleAssignRequest(Array.from(selection))}
           onMoveSolve={handleMoveSolveRow}
           onDeleteSolve={handleDeleteSolveRow}
+          onAssignSolve={handleAssignSolveRow}
           className={cn(
             "lg:w-85 lg:shrink-0",
             // Detail mode hides the list so the replay gets the full width.
@@ -560,6 +607,7 @@ export function InsightsDashboard({
                 onReanalyze={() => onReanalyze(selected)}
                 onDeleteSolve={handleDeleteRequest}
                 onMoveSolve={() => handleMoveRequest([selected.id])}
+                onAssignSolve={() => handleAssignRequest([selected.id])}
                 onBackToOverview={handleBackToOverview}
                 detailMode={detailMode}
                 onToggleDetailMode={toggleDetailMode}
@@ -603,11 +651,12 @@ export function InsightsDashboard({
                   solve={selected}
                   liveMetrics={liveMetrics}
                   isLive={isLive}
-                  onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
-                  onReanalyze={() => onReanalyze(selected)}
-                  onDeleteSolve={handleDeleteRequest}
-                  onMoveSolve={() => handleMoveRequest([selected.id])}
-                  onBackToOverview={handleBackToOverview}
+                   onUpdateSolve={(updates) => onUpdateSolve(selected.id, updates)}
+                   onReanalyze={() => onReanalyze(selected)}
+                   onDeleteSolve={handleDeleteRequest}
+                   onMoveSolve={() => handleMoveRequest([selected.id])}
+                   onAssignSolve={() => handleAssignRequest([selected.id])}
+                   onBackToOverview={handleBackToOverview}
                   className="px-3"
                 />
               </div>
@@ -651,6 +700,16 @@ export function InsightsDashboard({
         sessions={sessions}
         count={moveIds.length}
         onConfirm={handleMoveConfirm}
+      />
+
+      {/* Cube picker for "Assign cube". */}
+      <AssignCubeDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        count={assignIds.length}
+        eventCode={assignEventCode}
+        currentCubeId={assignSharedCubeId}
+        onConfirm={handleAssignConfirm}
       />
     </div>
   );

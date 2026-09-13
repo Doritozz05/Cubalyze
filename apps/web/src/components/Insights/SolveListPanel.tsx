@@ -6,7 +6,7 @@ import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, X, ChevronDown, Check, CheckSquare, FolderInput, Trash2 } from "lucide-react";
+import { Search, X, ChevronDown, Check, CheckSquare, FolderInput, Trash2, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { effectiveTime } from "@/types";
 import { formatTime, computeStats } from "@/utils/formatTime";
@@ -71,9 +71,11 @@ export interface SolveListPanelProps {
   /** Bulk actions from the selection bar. */
   onDeleteSelected: () => void;
   onMoveSelected: () => void;
+  onAssignSelected: () => void;
   /** Single-solve context menu actions */
   onMoveSolve?: (id: string) => void;
   onDeleteSolve?: (id: string) => void;
+  onAssignSolve?: (id: string) => void;
   className?: string;
 }
 
@@ -105,8 +107,10 @@ export const SolveListPanel = memo(function SolveListPanel({
   onEnterSelection,
   onDeleteSelected,
   onMoveSelected,
+  onAssignSelected,
   onMoveSolve,
   onDeleteSolve,
+  onAssignSolve,
   className,
 }: SolveListPanelProps) {
   const { t } = useTranslation("insights");
@@ -166,19 +170,111 @@ export const SolveListPanel = memo(function SolveListPanel({
   onSetSelectedRef.current = onSetSelected;
   const onToggleSelectRef = useRef(onToggleSelect);
   onToggleSelectRef.current = onToggleSelect;
+  // Latest pointer position (viewport coords) + live solves for the
+  // edge-autoscroll loop below. Refs avoid stale closures inside rAF.
+  const lastPointerRef = useRef({ x: 0, y: 0 });
+  const solvesRef = useRef(solves);
+  solvesRef.current = solves;
+  const dragScrollRafRef = useRef<number | null>(null);
+
+  const stopDragScroll = () => {
+    if (dragScrollRafRef.current !== null) {
+      cancelAnimationFrame(dragScrollRafRef.current);
+      dragScrollRafRef.current = null;
+    }
+  };
+
+  // Last row index touched by the drag. Pointerenter/elementFromPoint only
+  // report sampled positions — a fast drag jumps over 40px rows — so every
+  // arrival paints the whole [last, current] range instead of one row.
+  const lastDragIndexRef = useRef<number | null>(null);
+
+  const paintDragRange = (toIndex: number) => {
+    const solves = solvesRef.current;
+    if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex >= solves.length) return;
+    const setSelected = onSetSelectedRef.current;
+    const from = lastDragIndexRef.current;
+    if (from === null || from === toIndex) {
+      lastDragIndexRef.current = toIndex;
+      const solve = solves[toIndex];
+      if (solve && setSelected) setSelected(solve.id, dragTargetCheckedRef.current);
+      return;
+    }
+    const [lo, hi] = from < toIndex ? [from, toIndex] : [toIndex, from];
+    if (setSelected) {
+      for (let idx = lo; idx <= hi; idx++) {
+        const solve = solves[idx];
+        if (solve) setSelected(solve.id, dragTargetCheckedRef.current);
+      }
+    }
+    lastDragIndexRef.current = toIndex;
+  };
+
+  const startDragScroll = () => {
+    stopDragScroll();
+    const EDGE_PX = 56;
+    const MAX_SPEED = 14;
+    const step = () => {
+      if (!isDraggingRef.current) {
+        dragScrollRafRef.current = null;
+        return;
+      }
+      const viewport = viewportRef.current;
+      if (viewport) {
+        const rect = viewport.getBoundingClientRect();
+        const { x, y } = lastPointerRef.current;
+        let dy = 0;
+        if (y > rect.bottom - EDGE_PX) {
+          const proximity = Math.min(1, Math.max(0, (y - (rect.bottom - EDGE_PX)) / EDGE_PX));
+          dy = 2 + MAX_SPEED * proximity;
+        } else if (y < rect.top + EDGE_PX) {
+          const proximity = Math.min(1, Math.max(0, ((rect.top + EDGE_PX) - y) / EDGE_PX));
+          dy = -(2 + MAX_SPEED * proximity);
+        }
+        if (dy !== 0) {
+          viewport.scrollTop += dy;
+          // pointerenter doesn't fire during programmatic scroll, so hit-test
+          // the row under the pointer and extend the selection manually.
+          const clampedY = Math.min(Math.max(y, rect.top + 1), rect.bottom - 1);
+          const el = document.elementFromPoint(x, clampedY);
+          const row = (el as HTMLElement | null)?.closest?.("[data-index]");
+          const indexAttr = row?.getAttribute("data-index");
+          if (indexAttr !== null && indexAttr !== undefined) {
+            paintDragRange(Number(indexAttr));
+          }
+        }
+      }
+      dragScrollRafRef.current = requestAnimationFrame(step);
+    };
+    dragScrollRafRef.current = requestAnimationFrame(step);
+  };
 
   // Window pointerup listener to end drag-select anywhere in the window
   useEffect(() => {
     const handleGlobalPointerUp = (e: PointerEvent) => {
       if (e.button === 0 && isDraggingRef.current) {
         isDraggingRef.current = false;
+        lastDragIndexRef.current = null;
+        stopDragScroll();
+      }
+    };
+    const handleGlobalCancel = () => {
+      isDraggingRef.current = false;
+      lastDragIndexRef.current = null;
+      stopDragScroll();
+    };
+    const handleGlobalMove = (e: PointerEvent) => {
+      if (isDraggingRef.current) {
+        lastPointerRef.current = { x: e.clientX, y: e.clientY };
       }
     };
     window.addEventListener("pointerup", handleGlobalPointerUp);
-    window.addEventListener("pointercancel", handleGlobalPointerUp);
+    window.addEventListener("pointercancel", handleGlobalCancel);
+    window.addEventListener("pointermove", handleGlobalMove);
     return () => {
       window.removeEventListener("pointerup", handleGlobalPointerUp);
-      window.removeEventListener("pointercancel", handleGlobalPointerUp);
+      window.removeEventListener("pointercancel", handleGlobalCancel);
+      window.removeEventListener("pointermove", handleGlobalMove);
     };
   }, []);
 
@@ -392,6 +488,8 @@ export const SolveListPanel = memo(function SolveListPanel({
                     if (selectionMode && e.pointerType === "mouse") {
                       e.preventDefault();
                       isDraggingRef.current = true;
+                      lastPointerRef.current = { x: e.clientX, y: e.clientY };
+                      lastDragIndexRef.current = vi.index;
                       const nextChecked = !isChecked;
                       dragTargetCheckedRef.current = nextChecked;
                       if (onSetSelectedRef.current) {
@@ -399,6 +497,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                       } else {
                         onToggleSelectRef.current(s.id);
                       }
+                      startDragScroll();
                       return;
                     }
                     // Long-press (touch only) enters selection mode. Mouse
@@ -414,7 +513,7 @@ export const SolveListPanel = memo(function SolveListPanel({
                   onPointerEnter={(e) => {
                     if (selectionMode && isDraggingRef.current && (e.buttons === 1 || e.pointerType === "mouse")) {
                       if (onSetSelectedRef.current) {
-                        onSetSelectedRef.current(s.id, dragTargetCheckedRef.current);
+                        paintDragRange(vi.index);
                       } else if (isChecked !== dragTargetCheckedRef.current) {
                         onToggleSelectRef.current(s.id);
                       }
@@ -423,12 +522,16 @@ export const SolveListPanel = memo(function SolveListPanel({
                   onPointerUp={(e) => {
                     if (e.button === 0 && isDraggingRef.current) {
                       isDraggingRef.current = false;
+                      lastDragIndexRef.current = null;
+                      stopDragScroll();
                     }
                     clearPress();
                   }}
                   onPointerLeave={clearPress}
                   onPointerCancel={() => {
                     isDraggingRef.current = false;
+                    lastDragIndexRef.current = null;
+                    stopDragScroll();
                     clearPress();
                   }}
                   onFocus={() => virtualizer.scrollToIndex(vi.index)}
@@ -451,6 +554,15 @@ export const SolveListPanel = memo(function SolveListPanel({
                         onClick: () => {
                           if (isMulti) onMoveSelected();
                           else onMoveSolve?.(s.id);
+                        },
+                      },
+                      {
+                        id: "assign-cube",
+                        label: "assignCube",
+                        icon: Box,
+                        onClick: () => {
+                          if (isMulti) onAssignSelected();
+                          else onAssignSolve?.(s.id);
                         },
                       },
                       {
@@ -557,39 +669,67 @@ export const SolveListPanel = memo(function SolveListPanel({
         </ScrollArea>
       )}
 
-      {/* ── Selection action bar (bulk delete / move) ─────────────────── */}
+      {/* ── Selection action bar (bulk move / assign / delete, icon-only) ── */}
       {selectionMode && (
-        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-surface px-3 py-2 pb-safe">
+        <div className="flex shrink-0 items-center gap-1 border-t border-line bg-surface px-3 py-2 pb-safe">
           <span className="nums text-xs tabular-nums text-ink-3">
             {t("list.selected", { count: selection.size })}
           </span>
           <span className="flex-1" />
-          <button
-            onClick={onMoveSelected}
-            disabled={selection.size === 0}
-            className={cn(
-              "flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors",
-              selection.size === 0
-                ? "opacity-40 cursor-not-allowed"
-                : "hover:bg-surface-2 hover:text-ink cursor-pointer",
-            )}
-          >
-            <FolderInput className="size-3.5" />
-            {t("list.moveToSession")}
-          </button>
-          <button
-            onClick={onDeleteSelected}
-            disabled={selection.size === 0}
-            className={cn(
-              "flex h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-2 transition-colors",
-              selection.size === 0
-                ? "opacity-40 cursor-not-allowed"
-                : "hover:bg-surface-2 hover:text-dnf cursor-pointer",
-            )}
-          >
-            <Trash2 className="size-3.5" />
-            {i18n.t("common:delete")}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onMoveSelected}
+                disabled={selection.size === 0}
+                aria-label={t("list.moveToSession")}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-md text-ink-2 transition-colors",
+                  selection.size === 0
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-surface-2 hover:text-ink cursor-pointer",
+                )}
+              >
+                <FolderInput className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t("list.moveToSession")}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onAssignSelected}
+                disabled={selection.size === 0}
+                aria-label={t("list.assignCube")}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-md text-ink-2 transition-colors",
+                  selection.size === 0
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-surface-2 hover:text-ink cursor-pointer",
+                )}
+              >
+                <Box className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t("list.assignCube")}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={onDeleteSelected}
+                disabled={selection.size === 0}
+                aria-label={i18n.t("common:delete")}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-md text-ink-2 transition-colors",
+                  selection.size === 0
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-surface-2 hover:text-dnf cursor-pointer",
+                )}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{i18n.t("common:delete")}</TooltipContent>
+          </Tooltip>
         </div>
       )}
     </div>

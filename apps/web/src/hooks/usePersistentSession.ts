@@ -79,11 +79,20 @@ export interface UsePersistentSessionResult {
     moves?: CubeMoveEvent[];
     analysis?: SolveMetrics;
     orientationTimeline?: OrientationTimeline;
+    /** Re-attribute the solve to a Locker cube. `null` clears it. */
+    cubeId?: string | null;
+    cubeLabel?: string | null;
   },
   ) => Promise<void>;
   deleteSolve: (id: string) => Promise<void>;
   /** Move solves to another session. Returns the number actually moved. */
   moveSolveToSession: (ids: string[], targetSessionId: string) => Promise<number>;
+  /**
+   * (Re-)attribute solves to a Locker cube. `cube: null` clears the
+   * attribution. Returns how many solves were actually updated. Each touched
+   * row gets a monotonic `{ local: true }` stamp so the change syncs.
+   */
+  assignCubeToSolves: (ids: string[], cube: { id: string; label: string } | null) => Promise<number>;
   clearSession: () => Promise<void>;
   /** Batch import solves. Returns the number of solves actually inserted. */
   importSolves: (inputs: Array<{
@@ -383,7 +392,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     return solveId;
   }, [session]);
 
-  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics; orientationTimeline?: OrientationTimeline }) => {
+  const updateSolve = useCallback(async (id: string, updates: { penalty?: Penalty; note?: string | null; source?: SolveSource; moves?: CubeMoveEvent[]; analysis?: SolveMetrics; orientationTimeline?: OrientationTimeline; cubeId?: string | null; cubeLabel?: string | null }) => {
     // ── Always update React state first so the UI reflects changes ────────
     // even if the DB operation fails. This prevents the "Live" badge
     // sticking around forever when the solve already has analysis.
@@ -397,6 +406,8 @@ export function usePersistentSession(): UsePersistentSessionResult {
            moves: updates.moves ?? s.moves,
            analysis: updates.analysis ?? s.analysis,
            orientationTimeline: updates.orientationTimeline ?? s.orientationTimeline,
+           cubeId: updates.cubeId === null ? undefined : (updates.cubeId ?? s.cubeId),
+           cubeLabel: updates.cubeLabel === null ? undefined : (updates.cubeLabel ?? s.cubeLabel),
          };
       }
       return s;
@@ -439,6 +450,12 @@ export function usePersistentSession(): UsePersistentSessionResult {
       }
       if (updates.orientationTimeline !== undefined) {
          existing.orientationTimeline = updates.orientationTimeline;
+      }
+      if (updates.cubeId !== undefined) {
+        existing.cubeId = updates.cubeId === null ? undefined : updates.cubeId;
+      }
+      if (updates.cubeLabel !== undefined) {
+        existing.cubeLabel = updates.cubeLabel === null ? undefined : updates.cubeLabel;
       }
 
       // Real user edit: { local: true } makes the repo take a monotonic
@@ -537,6 +554,40 @@ export function usePersistentSession(): UsePersistentSessionResult {
     }));
 
     return moved;
+  }, []);
+
+  const assignCubeToSolves = useCallback(async (
+    ids: string[],
+    cube: { id: string; label: string } | null,
+  ): Promise<number> => {
+    if (!reposRef.current || ids.length === 0) return 0;
+    const { solves: solvesRepo } = reposRef.current;
+    const wanted = new Set(ids);
+    let assigned = 0;
+    for (const id of wanted) {
+      const existing = await solvesRepo.findById(id);
+      if (!existing) continue;
+      const nextId = cube?.id;
+      const nextLabel = cube?.label;
+      if ((existing.cubeId ?? undefined) === nextId && (existing.cubeLabel ?? undefined) === nextLabel) {
+        continue;
+      }
+      existing.cubeId = nextId;
+      existing.cubeLabel = nextLabel;
+      // Same contract as move: a local edit bumps updated_at so push syncs it.
+      await solvesRepo.update(existing, { local: true });
+      assigned++;
+    }
+    if (assigned === 0) return 0;
+    setSolves(prev => prev.map(s => {
+      if (!wanted.has(s.id)) return s;
+      return {
+        ...s,
+        cubeId: cube?.id,
+        cubeLabel: cube?.label,
+      };
+    }));
+    return assigned;
   }, []);
 
   const importSolves = useCallback(async (
@@ -721,6 +772,7 @@ export function usePersistentSession(): UsePersistentSessionResult {
     updateSolve: syncAfter(updateSolve),
     deleteSolve: syncAfter(deleteSolve),
     moveSolveToSession: syncAfter(moveSolveToSession),
+    assignCubeToSolves: syncAfter(assignCubeToSolves),
     clearSession: syncAfter(clearSession),
     importSolves: syncAfter(importSolves),
     newSession: syncAfter(newSession),

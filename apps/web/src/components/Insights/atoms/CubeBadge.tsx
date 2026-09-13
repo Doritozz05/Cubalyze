@@ -12,6 +12,8 @@ export interface CubeBadgeProps {
    */
   label?: string;
   className?: string;
+  /** When provided the badge becomes a button that opens the cube picker. */
+  onClick?: () => void;
 }
 
 /**
@@ -24,10 +26,36 @@ export interface CubeBadgeProps {
  * empty space, because the absence of a cube is information and a gap would
  * read as "the UI forgot to render something".
  */
-export function CubeBadge({ label, className }: CubeBadgeProps) {
+export function CubeBadge({ label, className, onClick }: CubeBadgeProps) {
   const { t } = useTranslation("common");
   const name = label?.trim();
   const known = Boolean(name);
+
+  const inner = (
+    <>
+      <BiCube className={cn("size-3 shrink-0", known ? "opacity-70" : "opacity-40")} />
+      <span className={cn("truncate", !known && "italic")}>{known ? name : t("noCube")}</span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={t("assignCube")}
+        className={cn(
+          "flex min-w-0 max-w-[12rem] cursor-pointer items-center gap-1 rounded border px-1.5 py-0.5 text-[0.58rem] font-medium tracking-wide transition-colors hover:opacity-80",
+          known
+            ? "border-line bg-surface-2 text-ink-2"
+            : "border-dashed border-line text-ink-3/70",
+          className,
+        )}
+      >
+        {inner}
+      </button>
+    );
+  }
 
   return (
     <span
@@ -39,8 +67,7 @@ export function CubeBadge({ label, className }: CubeBadgeProps) {
         className,
       )}
     >
-      <BiCube className={cn("size-3 shrink-0", known ? "opacity-70" : "opacity-40")} />
-      <span className={cn("truncate", !known && "italic")}>{known ? name : t("noCube")}</span>
+      {inner}
     </span>
   );
 }

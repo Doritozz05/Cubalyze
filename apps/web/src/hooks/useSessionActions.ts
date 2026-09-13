@@ -27,6 +27,8 @@ export interface SessionActionsDeps {
   deleteSolve: (id: string) => Promise<void>;
   /** Move solves to another session. Returns the number actually moved. */
   moveSolveToSession: (ids: string[], targetSessionId: string) => Promise<number>;
+  /** (Re-)attribute solves to a Locker cube. Returns the number updated. */
+  assignCubeToSolves: (ids: string[], cube: { id: string; label: string } | null) => Promise<number>;
   clearSession: () => Promise<void>;
   importSolves: (inputs: ImportInputs) => Promise<number>;
   newSession: (name?: string) => Promise<void>;
@@ -51,6 +53,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
     updateSolve,
     deleteSolve,
     moveSolveToSession,
+    assignCubeToSolves,
     clearSession,
     importSolves,
     newSession,
@@ -99,6 +102,25 @@ export function useSessionActions(deps: SessionActionsDeps) {
     [moveSolveToSession],
   );
 
+  const handleAssignCube = useCallback(
+    (ids: string[], cube: { id: string; label: string } | null) => {
+      assignCubeToSolves(ids, cube)
+        .then((assigned) => {
+          if (assigned <= 0) {
+            toast.info(i18n.t("toast:assignNone"));
+            return;
+          }
+          toast.success(
+            cube
+              ? i18n.t("toast:assignedCube", { count: assigned })
+              : i18n.t("toast:clearedCube", { count: assigned }),
+          );
+        })
+        .catch(() => toast.error(i18n.t("toast:assignFailed")));
+    },
+    [assignCubeToSolves],
+  );
+
   const handleNewSession = useCallback(() => {
     newSession()
       .then(() => {
@@ -140,6 +162,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
     handleUpdate,
     handleDelete,
     handleMoveSolves,
+    handleAssignCube,
     handleClear,
     handleNewSession,
     handleSwitchSession,

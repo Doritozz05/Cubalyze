@@ -81,6 +81,7 @@ export function AppShell(props: AppShellProps) {
     onReanalyze,
     onDeleteSolve,
     onMoveSolves,
+    onAssignCube,
     onClear,
     onAnalyze,
     onReplay,
@@ -433,6 +434,7 @@ export function AppShell(props: AppShellProps) {
               onReanalyze={onReanalyze}
               onDeleteSolve={onDeleteSolve}
               onMoveSolves={onMoveSolves}
+              onAssignCube={onAssignCube}
               puzzle={puzzle}
               onPuzzleChange={onPuzzleChange}
               onVirtualSolveComplete={onVirtualSolveComplete}

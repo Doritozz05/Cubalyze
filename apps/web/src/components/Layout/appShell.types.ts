@@ -78,6 +78,8 @@ export interface AppShellProps {
   onDeleteSolve: (id: string) => void;
   /** Move solves to another session (batch). */
   onMoveSolves: (ids: string[], targetSessionId: string) => void;
+  /** (Re-)attribute solves to a Locker cube (batch). `null` clears it. */
+  onAssignCube: (ids: string[], cube: { id: string; label: string } | null) => void;
   onClear: () => void;
   onAnalyze: (solve: Solve) => void;
   onReplay: (solve: Solve) => void;

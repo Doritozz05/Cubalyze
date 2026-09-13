@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw, Columns2, Rows2 } from "lucide-react";
+import { ArrowLeft, Clipboard, ClipboardCheck, Trash2, FolderInput, MessageSquare, Check, Pencil, X, RotateCcw, Columns2, Rows2, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatTime";
 import {
@@ -60,6 +60,8 @@ export interface SolveAnalysisPanelProps {
   onDeleteSolve: () => void;
   /** Open the "Move to another session" dialog for this solve. */
   onMoveSolve?: () => void;
+  /** Open the "Assign cube" dialog for this solve. */
+  onAssignSolve?: () => void;
   onBackToOverview: () => void;
   /** Reconstruction-style detail layout: replay pinned large on the left,
       content in a scrollable right column. */
@@ -108,6 +110,7 @@ export function SolveAnalysisPanel({
   onReanalyze,
   onDeleteSolve,
   onMoveSolve,
+  onAssignSolve,
   onBackToOverview,
   detailMode,
   onToggleDetailMode,
@@ -245,8 +248,8 @@ export function SolveAnalysisPanel({
             </span>
             {/* Which physical cube this solve was done with. The detail is the
                 right home for it: on the row it would repeat the same name
-                down the whole column. */}
-            <CubeBadge label={solve.cubeLabel} />
+                down the whole column. Clicking re-attributes the solve. */}
+            <CubeBadge label={solve.cubeLabel} onClick={onAssignSolve} />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1">
@@ -284,6 +287,17 @@ export function SolveAnalysisPanel({
             >
               <FolderInput className="size-3" />
               {t("analysis.moveToSession")}
+            </Button>
+          )}
+          {onAssignSolve && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onAssignSolve}
+              className="h-7 max-lg:h-10 gap-1 px-2 text-xs text-ink-3 hover:text-ink"
+            >
+              <Box className="size-3" />
+              {t("analysis.assignCube")}
             </Button>
           )}
           <Button

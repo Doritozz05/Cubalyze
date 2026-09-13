@@ -146,6 +146,7 @@ export default function App() {
     updateSolve,
     deleteSolve,
     moveSolveToSession,
+    assignCubeToSolves,
     clearSession,
     importSolves,
     newSession,
@@ -297,6 +298,7 @@ export default function App() {
     handleUpdate,
     handleDelete,
     handleMoveSolves,
+    handleAssignCube,
     handleClear,
     handleNewSession,
     handleSwitchSession,
@@ -306,6 +308,7 @@ export default function App() {
     updateSolve,
     deleteSolve,
     moveSolveToSession,
+    assignCubeToSolves,
     clearSession,
     importSolves,
     newSession,
@@ -511,6 +514,7 @@ export default function App() {
       onReanalyze={handleReanalyze}
       onDeleteSolve={handleDelete}
       onMoveSolves={handleMoveSolves}
+      onAssignCube={handleAssignCube}
       onClear={handleClear}
       onAnalyze={handleAnalyzeSolve}
       onReplay={handleReplaySolve}
