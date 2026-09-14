@@ -403,6 +403,12 @@ function SkillsTab() {
     return [...map.entries()];
   }, [allNodes, completedIds]);
 
+  // First paint must already carry real data: the initial state holds the
+  // presentational default set, and swapping it mid-load is what makes the
+  // numbers/text visibly jump. Gate on ready (with grace for fast loads).
+  const showSkills = useLoadingGrace(!ready);
+  if (!ready && !showSkills) return null;
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-surface p-4">
@@ -545,13 +551,13 @@ export function ProfileView({ onNavigate, onOpenSettings, onOpenPrivacySettings 
             <TabsContent value="stats" className="mt-4">
               <StatsTab stats={stats} />
             </TabsContent>
-            <TabsContent value="training" className="mt-4">
+            <TabsContent value="training" className="mt-4 min-h-[300px]">
               <TrainingTab />
             </TabsContent>
-            <TabsContent value="algorithms" className="mt-4">
+            <TabsContent value="algorithms" className="mt-4 min-h-[300px]">
               <AlgorithmsTab />
             </TabsContent>
-            <TabsContent value="skills" className="mt-4">
+            <TabsContent value="skills" className="mt-4 min-h-[300px]">
               <SkillsTab />
             </TabsContent>
           </Tabs>
