@@ -24,7 +24,6 @@ export interface ItemGridProps {
   selectedId: string | null;
   locale: string;
   onSelect: (item: GearItem) => void;
-  onTogglePrimary: (item: GearItem) => void;
   onToggleFavorite: (item: GearItem) => void;
   empty: React.ReactNode;
 }
@@ -35,7 +34,6 @@ export function ItemGrid({
   selectedId,
   locale,
   onSelect,
-  onTogglePrimary,
   onToggleFavorite,
   empty,
 }: ItemGridProps) {
@@ -63,7 +61,6 @@ export function ItemGrid({
             solveCount={usage.get(item.id)?.count}
             locale={locale}
             onSelect={() => onSelect(item)}
-            onTogglePrimary={() => onTogglePrimary(item)}
             onToggleFavorite={() => onToggleFavorite(item)}
           />
         );

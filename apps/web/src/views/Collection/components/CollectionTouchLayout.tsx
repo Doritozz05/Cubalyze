@@ -93,7 +93,6 @@ export interface CollectionTouchProps {
   onAddItem: () => void;
   onEditItem: (item: GearItem) => void;
   onDeleteItem: (item: GearItem) => void;
-  onTogglePrimary: (item: GearItem) => void;
   onToggleFavorite: (item: GearItem) => void;
 }
 
@@ -130,7 +129,6 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
     onAddItem,
     onEditItem,
     onDeleteItem,
-    onTogglePrimary,
     onToggleFavorite,
   } = props;
 
@@ -284,7 +282,6 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
                   compact
                   locale={locale}
                   onSelect={() => onSelectItem(item)}
-                  onTogglePrimary={() => onTogglePrimary(item)}
                   onToggleFavorite={() => onToggleFavorite(item)}
                 />
               );
@@ -348,7 +345,6 @@ export function CollectionTouchLayout(props: CollectionTouchProps) {
               locale={locale}
               onEdit={() => onEditItem(selectedItem)}
               onDelete={() => onDeleteItem(selectedItem)}
-              onTogglePrimary={() => onTogglePrimary(selectedItem)}
               onToggleFavorite={() => onToggleFavorite(selectedItem)}
               onClose={onCloseItem}
             />

@@ -16,10 +16,8 @@
  *     (safe-area aware) instead of the X, and a sticky footer padded for the
  *     home indicator. Same content, so a phone shows the same product page.
  *
- * The "Main" flag lives in the header as a chip — one short control, always in
- * the same place, instead of a full-width button shouting from the footer. It
- * only exists for cube categories: that is the one piece of state the rest of
- * the app consumes (the cube a solve defaults to).
+ * The "Main" flag shows in the header as a display-only badge (mains only).
+ * Toggling lives in the editor switch; the grid badge mirrors it.
  */
 
 import { useTranslation } from "react-i18next";
@@ -41,6 +39,7 @@ import { toast } from "sonner";
 import { formatSmartId } from "@cubeforge/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";
 import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
@@ -88,7 +87,6 @@ export interface ItemDetailPanelProps {
   variant?: "panel" | "overlay";
   onEdit: () => void;
   onDelete: () => void;
-  onTogglePrimary: () => void;
   onToggleFavorite: () => void;
   onClose?: () => void;
 }
@@ -105,7 +103,6 @@ export function ItemDetailPanel({
   variant = "panel",
   onEdit,
   onDelete,
-  onTogglePrimary,
   onToggleFavorite,
   onClose,
 }: ItemDetailPanelProps) {
@@ -209,21 +206,15 @@ export function ItemDetailPanel({
             </p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {isCube ? (
-              <button
-                type="button"
-                aria-pressed={item.primary}
-                onClick={onTogglePrimary}
-                title={item.primary ? t("unsetPrimary") : t("setPrimary")}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] transition-colors touch-manipulation",
-                  item.primary
-                    ? "bg-ink text-canvas"
-                    : "border border-dashed border-line-2 text-ink-3 active:text-ink",
-                )}
-              >
-                {t("primary")}
-              </button>
+            {isCube && item.primary ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="rounded-full border border-canvas/40 bg-ink px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-canvas">
+                    {t("primary")}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t("editor.mainHint")}</TooltipContent>
+              </Tooltip>
             ) : null}
             {item.favorite ? (
               <Badge variant="outline" className="gap-1 rounded-full text-[0.6rem] font-normal">

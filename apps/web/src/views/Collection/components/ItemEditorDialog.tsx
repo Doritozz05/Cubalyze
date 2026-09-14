@@ -566,20 +566,14 @@ export function ItemEditorDialog({
             {t("editor.favorite")}
           </label>
           {isCube ? (
-            <button
-              type="button"
-              aria-pressed={form.primary}
-              title={t("editor.mainHint")}
-              onClick={() => patch({ primary: !form.primary })}
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em] transition-colors",
-                form.primary
-                  ? "bg-ink text-canvas"
-                  : "border border-dashed border-line-2 text-ink-3 hover:text-ink",
-              )}
-            >
+            <label className="flex cursor-pointer items-center gap-2 text-[0.78rem] text-ink-2">
+              <Switch
+                checked={form.primary}
+                onCheckedChange={(checked) => patch({ primary: checked })}
+              />
               {t("primary")}
-            </button>
+              <span className="text-[0.68rem] text-ink-3">{t("editor.mainHint")}</span>
+            </label>
           ) : null}
         </div>
       </Section>

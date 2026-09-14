@@ -17,13 +17,15 @@
  *   • the default density is the pointer one, where hover can reveal the
  *     favourite toggle without spending permanent space on it.
  *
- * The "Main" flag is a theme chip in the top-left corner, readable at a glance
- * in both densities.
+ * The "Main" flag is a display-only badge in the top-left corner, rendered
+ * solely on main cubes — presence alone is the state. Toggling lives in the
+ * editor switch, never on the photo.
  */
 
 import { useTranslation } from "react-i18next";
 import { Activity, Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ItemMedia } from "./ItemMedia";
 import { usePhotoUrl } from "../usePhotoUrl";
 import { STATUS_I18N_KEY, formatPrice, type CollectionCategory, type GearItem } from "../collectionModel";
@@ -44,7 +46,6 @@ export interface ItemCardProps {
   /** Touch density: squares the media, tightens the body, pins the actions. */
   compact?: boolean;
   onSelect: () => void;
-  onTogglePrimary: () => void;
   onToggleFavorite: () => void;
   locale: string;
 }
@@ -58,7 +59,6 @@ export function ItemCard({
   solveCount,
   compact = false,
   onSelect,
-  onTogglePrimary,
   onToggleFavorite,
   locale,
 }: ItemCardProps) {
@@ -114,13 +114,8 @@ export function ItemCard({
 
         <div className={cn("pointer-events-none absolute flex items-start justify-between gap-1", compact ? "inset-x-1.5 top-1.5" : "inset-x-2 top-2")}>
           <div className="flex min-w-0 flex-wrap items-center gap-1">
-            {isCube ? (
-              <MainChip
-                active={item.primary}
-                compact={compact}
-                label={item.primary ? t("unsetPrimary") : t("setPrimary")}
-                onToggle={onTogglePrimary}
-              />
+            {isCube && item.primary ? (
+              <MainBadge compact={compact} />
             ) : null}
             {item.status !== "owned" ? (
               <span
@@ -250,41 +245,25 @@ export function ItemCard({
 }
 
 /**
- * The "Main" flag as a chip — always on screen, in the same corner of every
- * cube card. Active it is a filled theme chip; inactive it is a dashed outline,
- * so the state is readable at a glance without having to hunt for it.
+ * The "Main" flag as a display-only badge — rendered solely on main cubes, so
+ * presence alone is the state (no on/off styling to misread). Toggling lives
+ * in the editor switch; the grid never carries an action.
  */
-function MainChip({
-  active,
-  compact,
-  label,
-  onToggle,
-}: {
-  active: boolean;
-  compact?: boolean;
-  label: string;
-  onToggle: () => void;
-}) {
+function MainBadge({ compact }: { compact?: boolean }) {
   const { t } = useTranslation("collection");
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      aria-label={label}
-      title={label}
-      onClick={(event) => {
-        event.stopPropagation();
-        onToggle();
-      }}
-      className={cn(
-        "pointer-events-auto rounded-full font-semibold uppercase tracking-[0.08em] transition touch-manipulation",
-        compact ? "px-1.5 py-1 text-[0.55rem]" : "px-2 py-0.5 text-[0.6rem]",
-        active
-          ? "border border-transparent bg-ink text-canvas"
-          : "border border-dashed border-line-2 bg-surface/85 text-ink-3 backdrop-blur-sm hover:border-ink/40 hover:text-ink",
-      )}
-    >
-      {t("primary")}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "pointer-events-auto rounded-full border border-canvas/40 bg-ink font-semibold uppercase tracking-[0.08em] text-canvas",
+            compact ? "px-1.5 py-1 text-[0.55rem]" : "px-2 py-0.5 text-[0.6rem]",
+          )}
+        >
+          {t("primary")}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">{t("editor.mainHint")}</TooltipContent>
+    </Tooltip>
   );
 }

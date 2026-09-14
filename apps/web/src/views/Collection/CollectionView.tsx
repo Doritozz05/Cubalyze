@@ -130,7 +130,6 @@ export function CollectionView() {
   const addItem = useCollectionStore((s) => s.addItem);
   const updateItem = useCollectionStore((s) => s.updateItem);
   const removeItem = useCollectionStore((s) => s.removeItem);
-  const togglePrimary = useCollectionStore((s) => s.togglePrimary);
   const toggleFavorite = useCollectionStore((s) => s.toggleFavorite);
   const setExcluded = useCollectionStore((s) => s.setExcluded);
   const syncCategory = useCollectionStore((s) => s.syncCategory);
@@ -574,7 +573,6 @@ export function CollectionView() {
           onAddItem={() => setItemEditor({ open: true, item: null })}
           onEditItem={(item) => setItemEditor({ open: true, item })}
           onDeleteItem={(item) => setConfirm({ kind: "item", item })}
-          onTogglePrimary={(item) => togglePrimary(item.id)}
           onToggleFavorite={(item) => toggleFavorite(item.id)}
         />
         {dialogs}
@@ -818,7 +816,6 @@ export function CollectionView() {
                 selectedId={selectedItemId}
                 locale={i18n.language}
                 onSelect={(item) => setSelectedItemId(item.id)}
-                onTogglePrimary={(item) => togglePrimary(item.id)}
                 onToggleFavorite={(item) => toggleFavorite(item.id)}
                 empty={
                   <EmptyState
@@ -850,7 +847,6 @@ export function CollectionView() {
                 locale={i18n.language}
                 onEdit={() => setItemEditor({ open: true, item: selectedItem })}
                 onDelete={() => setConfirm({ kind: "item", item: selectedItem })}
-                onTogglePrimary={() => togglePrimary(selectedItem.id)}
                 onToggleFavorite={() => toggleFavorite(selectedItem.id)}
                 onClose={() => setSelectedItemId(null)}
               />
@@ -883,7 +879,6 @@ export function CollectionView() {
               locale={i18n.language}
               onEdit={() => setItemEditor({ open: true, item: selectedItem })}
               onDelete={() => setConfirm({ kind: "item", item: selectedItem })}
-              onTogglePrimary={() => togglePrimary(selectedItem.id)}
               onToggleFavorite={() => toggleFavorite(selectedItem.id)}
               onClose={() => setSelectedItemId(null)}
             />
