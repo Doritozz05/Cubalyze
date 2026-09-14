@@ -2448,3 +2448,71 @@ describe("E13) sessions pull is watermark-independent", () => {
     expect(await b.ctx.sessions.findById("s1")).toBeNull();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// S) Steady state never oscillates: once converged, further cycles move
+// nothing, rebuild nothing and leave the dirty flag clear — so the 250ms
+// loop guard never re-schedules and the UI status stays put (no blinking
+// "Sync now"). Covers every synced writer: sessions, solves, profiles,
+// skills (the unconditional-upsert loop driver), gear categories/items.
+// ────────────────────────────────────────────────────────────────────────────
+describe("S) a converged device stays quiet (no self-rescheduling sync)", () => {
+  it("cycles after convergence transfer nothing and dirty nothing", async () => {
+    const cloud = new FakeCloud();
+    const a = makeDevice(cloud);
+    const engine = new SyncEngine(a.executor, cloud.client() as never, undefined);
+    engine.setUser(UID, { schedule: false });
+
+    await a.ctx.sessions.insert({ id: "s1", name: "Main", createdAt: 1000, updatedAt: 1000 });
+    await a.ctx.solves.insert({
+      id: "x1", sessionId: "s1", timeMs: 1000, timestamp: 1000, scramble: "R",
+      penalty: "none", source: "manual", moves: [], puzzleType: "333", createdAt: 1000, updatedAt: 1000,
+    });
+    await a.ctx.profiles.upsert({
+      userId: UID,
+      displayName: "Ada",
+      handle: "",
+      bio: "content so the row travels",
+      avatarKind: "identicon",
+      mainPuzzle: "333",
+      declaredMethods: [],
+      country: "ES",
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await a.ctx.skills.setCompleted("skill-1");
+    await a.ctx.gear.upsertCategory(gearCategory("c1"));
+    await a.ctx.gear.upsertItem(gearItem("i1", "c1"));
+
+    // Cycle 1 pushes everything (and pulls it straight back, LWW-equal).
+    const first = await engine.syncNow();
+    expect(Object.keys(first.pushed).length).toBeGreaterThan(0);
+
+    const solveTs = Number((await a.ctx.solves.findById("x1"))?.updatedAt);
+    const skillTs = Number(
+      (await a.ctx.skills.findAllRows()).find((s) => s.skillId === "skill-1")?.completedAt,
+    );
+
+    // Cycles 2 and 3 must be fully quiet: no push, no pull (not even the
+    // sessions full-pull phantom), no rebuild, no dirty flag — the exact
+    // conditions that keep the loop guard from scheduling another cycle.
+    for (let i = 0; i < 2; i += 1) {
+      const quiet = await engine.syncNow();
+      expect(quiet.pushed).toEqual({});
+      expect(quiet.pulled).toEqual({});
+      expect(quiet.pushedTombstones).toBe(0);
+      expect(quiet.appliedTombstones).toBe(0);
+      expect(quiet.rebuilt).toBe(false);
+      expect(await a.ctx.meta.get("sync_dirty")).toBe("0");
+    }
+
+    // No stamp inflated along the way (a rewrite loop would bump these).
+    expect(Number((await a.ctx.solves.findById("x1"))?.updatedAt)).toBe(solveTs);
+    expect(
+      Number(
+        (await a.ctx.skills.findAllRows()).find((s) => s.skillId === "skill-1")?.completedAt,
+      ),
+    ).toBe(skillTs);
+    expect(engine.currentStatus).toBe("idle");
+  });
+});
