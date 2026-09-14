@@ -75,8 +75,6 @@ export interface SubBadge {
   thresholdLabel: string;
   /** True when this puzzle is the user's declared main puzzle. */
   mainPuzzle: boolean;
-  /** Rainbow phase token (e.g. 'phase-blue') from the design-system palette. */
-  color: string;
   /** The trimmed average that earned the badge, in ms (best ever). */
   averageMs: number;
   /** Which average earned it: the durable ao100, or the provisional ao12. */
@@ -114,58 +112,8 @@ const SUB_THRESHOLDS: Record<string, number[]> = {
 /** Sensible default ladder for any puzzle without a curated list. */
 const FALLBACK_THRESHOLDS = [30, 45, 60, 90, 120, 180, 300];
 
-/**
- * Rainbow palette: one `--phase-*` token per puzzle, so each puzzle keeps a
- * stable color (same family as the CFOP timeline / phase dots).
- */
-const PUZZLE_COLORS: Record<string, string> = {
-  "222": "phase-blue",
-  "333": "phase-emerald",
-  "444": "phase-teal",
-  "555": "phase-amber",
-  "666": "phase-violet",
-  "777": "phase-purple",
-  "333oh": "phase-indigo",
-  minx: "phase-rose",
-  pyram: "phase-cyan",
-  skewb: "phase-orange",
-};
-
-/** Fallback rainbow for unknown puzzles — cycled by a stable key hash. */
-const FALLBACK_COLORS = [
-  "phase-blue",
-  "phase-emerald",
-  "phase-teal",
-  "phase-amber",
-  "phase-violet",
-  "phase-rose",
-  "phase-cyan",
-  "phase-orange",
-  "phase-sky",
-  "phase-pink",
-];
-
-/** Stable string hash so an unknown puzzle always resolves to one color. */
-function hashString(input: string): number {
-  let h = 0;
-  for (let i = 0; i < input.length; i++) {
-    h = (h * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return h;
-}
-
-/** Resolve a puzzle's rainbow token color (deterministic, stable). */
-export function badgeColor(puzzle: string): string {
-  return (
-    PUZZLE_COLORS[puzzle] ??
-    FALLBACK_COLORS[hashString(puzzle) % FALLBACK_COLORS.length]
-  );
-}
-
-/**
- * Short puzzle label for badges ("333" → "3×3"). Resolved from the shared
- * label map (puzzleTypes.ts, phase A3 SSoT) — never the raw DB code.
- */
+/** Short puzzle label for badges ("333" → "3×3"). Resolved from the shared
+ * label map (puzzleTypes.ts, phase A3 SSoT) — never the raw DB code. */
 export function puzzleShortLabel(key: string): string {
   return puzzleTypeLabel(key);
 }
@@ -262,7 +210,6 @@ export function computeSubBadges(
       seconds: milestone,
       thresholdLabel: formatThresholdLabel(milestone),
       mainPuzzle: p.puzzle === mainKey,
-      color: badgeColor(p.puzzle),
       averageMs: peak.ms,
       windowSize: peak.window,
       solveCount: p.count,

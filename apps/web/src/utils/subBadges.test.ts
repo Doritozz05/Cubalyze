@@ -220,24 +220,6 @@ describe("computeSubBadges — sub-X comes from a trimmed average", () => {
 // ─── Presentation helpers ───────────────────────────────────────────────────
 
 describe("computeSubBadges — presentation", () => {
-  it("assigns a stable rainbow phase token per puzzle", () => {
-    const stats = makeStats([
-      { puzzle: "333", times: repeat(8.2, 20) },
-      { puzzle: "222", times: repeat(1.9, 20) },
-    ]);
-    const badges = computeSubBadges(stats, "222");
-    expect(badges.find((b) => b.puzzle === "333")?.color).toBe("phase-emerald");
-    expect(badges.find((b) => b.puzzle === "222")?.color).toBe("phase-blue");
-  });
-
-  it("falls back deterministically for unknown puzzles", () => {
-    const puzzle = { puzzle: "mystery", times: repeat(40, 13) };
-    const a = computeSubBadges(makeStats([puzzle]));
-    const b = computeSubBadges(makeStats([puzzle]));
-    expect(a[0].color).toBe(b[0].color);
-    expect(a[0].color).toMatch(/^phase-/);
-  });
-
   it("uses the 2x2 ladder (Sub 1 / Sub 2 / Sub 3)", () => {
     const sub3 = computeSubBadges(makeStats([{ puzzle: "222", times: repeat(2.9, 20) }]));
     expect(sub3[0].seconds).toBe(3);
