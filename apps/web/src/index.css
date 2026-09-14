@@ -1648,73 +1648,102 @@ body.replay-fullscreen-active [class*="relative z-1"] {
    - active pop: springy overshoot grow when a move becomes current.
    - done flash: ready-green hold fading to muted
      while shrinking elegantly to the resolved size.
-   NOTE: sizes use font-size (em), never transform/scale — scale
-   raster-scales glyphs and blurs text, and `transition-[color,transform]`
-   can't even animate Tailwind v4 `scale-*` (separate `scale` property).
-   Steady-state classes below mirror the keyframe end states so handoff
-   between animation and class is seamless. */
+   NOTE: glyphs render at peak size with states as composited downscale
+   (sharp + smooth). font-size animation re-rasterizes per frame (jitter);
+   upscale raster-blurs. `transition-[color,transform]` can't animate
+   Tailwind v4 `scale-*` (separate `scale` property) — hence explicit
+   `scale` below. Steady-state classes mirror keyframe end states so
+   handoff between animation and class is seamless. */
 @keyframes scramble-active-pop {
   0% {
-    font-size: 1em;
+    scale: 0.735;
   }
 
   45% {
-    font-size: 1.36em;
+    scale: 1;
   }
 
   70% {
-    font-size: 1.24em;
+    scale: 0.91;
   }
 
   100% {
-    font-size: 1.28em;
+    scale: 0.94;
   }
 }
 
 @keyframes scramble-done-flash {
   0% {
     color: var(--ready);
-    font-size: 1.28em;
+    scale: 0.94;
     opacity: 1;
   }
 
   30% {
     color: var(--ready);
-    font-size: 1.1em;
+    scale: 0.81;
     opacity: 1;
   }
 
   100% {
     color: var(--ink-3);
-    font-size: 0.9em;
+    scale: 0.66;
     opacity: 0.7;
   }
 }
 
-.scramble-token {
+/* Layout anchor: the token box NEVER changes size — a hidden placeholder
+   at base size owns the layout, the visual copy floats centered above it.
+   Siblings and wrapped rows stay pixel-still during every animation
+   (animating font-size on a laid-out box reflows the whole row). */
+.scr-token {
+  position: relative;
   display: inline-block;
-  /* Sizes are em-relative: they compose with the container base size
-     (tokenSizeClass / tokenSizePx) instead of fighting it. font-size
-     re-renders glyphs at every size — ultra sharp always. No
-     transform / scale / will-change anywhere near text by design:
-     those raster-scale the glyphs and blur them (worse at fractional
-     factors like 1.28, worse still on a composited layer). */
+  white-space: nowrap;
+}
+
+.scr-token-ph {
+  visibility: hidden;
+  font-size: 1em;
+  white-space: nowrap;
+}
+
+.scr-token-vis {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  /* Glyph rendered once at peak size (1.36em); every state is a
+     downscale (<= 1), so the GPU shrinks a supersampled raster: smooth AND
+     sharp. Animating font-size instead re-rasterizes + reflows per frame
+     (pixel-rounding jitter = saltos). Composited `scale` never reflows.
+     transform-origin center keeps growth symmetric on the anchor. */
+  font-size: 1.36em;
+  line-height: 1;
+  transform-origin: center;
+  will-change: scale;
   transition:
     color 0.7s ease-out,
-    font-size 0.45s cubic-bezier(0.22, 1.36, 0.36, 1),
+    scale 0.45s cubic-bezier(0.22, 1.36, 0.36, 1),
     opacity 0.4s ease-out;
 }
 
+.scr-token-vis-top {
+  z-index: 2;
+}
+
 .scramble-size-pending {
-  font-size: 1em;
+  scale: 0.735;
 }
 
 .scramble-size-active {
-  font-size: 1.28em;
+  scale: 0.94;
 }
 
 .scramble-size-done {
-  font-size: 0.9em;
+  scale: 0.66;
 }
 
 .scramble-active-anim {

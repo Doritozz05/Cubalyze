@@ -245,35 +245,46 @@ export function ScrambleDisplay({
               // Remount when active toggles or a new flash starts on this
               // index so the pop / flash keyframes replay. Flash end keeps
               // the same key (flashGen stable) for a seamless handoff.
-              // NOTE: sizes via font-size (.scramble-size-*), never scale —
-              // scale raster-blurs glyphs. Base size lives on the container
-              // (tokenText / tokenSizePx); spans size in em relative to it.
+              // NOTE: sizes via font-size on the floating visual copy, never
+              // scale — scale raster-blurs glyphs. The hidden placeholder
+              // owns the layout at constant base size, so siblings and rows
+              // never shift during animations. Base size lives on the
+              // container (tokenText / tokenSizePx); copies size in em.
               key={`${tok}-${i}-${isActive ? "active" : "idle"}-f${flashGen[i] ?? 0}`}
-              className={cn(
-                "scramble-token whitespace-nowrap",
-                !isVerificationActive && "text-ink scramble-size-pending",
-                isVerificationActive && isFlashing && "text-ready scramble-done-anim",
-                isVerificationActive &&
-                  isCompleted &&
-                  !isFlashing &&
-                  "text-ink-3 opacity-70 scramble-size-done",
-                isVerificationActive &&
-                  isActive &&
-                  !isCompleted &&
-                  pendingHalfDouble &&
-                  "text-ink scramble-size-active scramble-active-anim animate-pulse",
-                isVerificationActive &&
-                  isActive &&
-                  !isCompleted &&
-                  !pendingHalfDouble &&
-                  "text-ink scramble-size-active scramble-active-anim",
-                isVerificationActive &&
-                  !isCompleted &&
-                  !isActive &&
-                  "text-ink scramble-size-pending",
-              )}
+              className="scr-token"
             >
-              {tok}
+              <span aria-hidden="true" className="scr-token-ph">
+                {tok}
+              </span>
+              <span
+                className={cn(
+                  "scr-token-vis",
+                  !isVerificationActive && "text-ink scramble-size-pending",
+                  isVerificationActive &&
+                    isFlashing &&
+                    "text-ready scr-token-vis-top scramble-done-anim",
+                  isVerificationActive &&
+                    isCompleted &&
+                    !isFlashing &&
+                    "text-ink-3 opacity-70 scramble-size-done",
+                  isVerificationActive &&
+                    isActive &&
+                    !isCompleted &&
+                    pendingHalfDouble &&
+                    "text-ink scr-token-vis-top scramble-size-active scramble-active-anim animate-pulse",
+                  isVerificationActive &&
+                    isActive &&
+                    !isCompleted &&
+                    !pendingHalfDouble &&
+                    "text-ink scr-token-vis-top scramble-size-active scramble-active-anim",
+                  isVerificationActive &&
+                    !isCompleted &&
+                    !isActive &&
+                    "text-ink scramble-size-pending",
+                )}
+              >
+                {tok}
+              </span>
             </span>
           );
         })}
