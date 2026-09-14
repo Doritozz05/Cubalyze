@@ -1642,4 +1642,98 @@ body.replay-fullscreen-active [class*="relative z-1"] {
   }
 }
 
-
+/* ── Scramble move feedback (smart-cube / virtual verification) ─────────
+   Three steady sizes (resolved small + muted, active large, remaining
+   normal) plus two replayed animations:
+   - active pop: springy overshoot grow when a move becomes current.
+   - done flash: ready-green hold fading to muted
+     while shrinking elegantly to the resolved size.
+   NOTE: sizes use font-size (em), never transform/scale — scale
+   raster-scales glyphs and blurs text, and `transition-[color,transform]`
+   can't even animate Tailwind v4 `scale-*` (separate `scale` property).
+   Steady-state classes below mirror the keyframe end states so handoff
+   between animation and class is seamless. */
+@keyframes scramble-active-pop {
+  0% {
+    font-size: 1em;
+  }
+
+  45% {
+    font-size: 1.36em;
+  }
+
+  70% {
+    font-size: 1.24em;
+  }
+
+  100% {
+    font-size: 1.28em;
+  }
+}
+
+@keyframes scramble-done-flash {
+  0% {
+    color: var(--ready);
+    font-size: 1.28em;
+    opacity: 1;
+  }
+
+  30% {
+    color: var(--ready);
+    font-size: 1.1em;
+    opacity: 1;
+  }
+
+  100% {
+    color: var(--ink-3);
+    font-size: 0.9em;
+    opacity: 0.7;
+  }
+}
+
+.scramble-token {
+  display: inline-block;
+  /* Sizes are em-relative: they compose with the container base size
+     (tokenSizeClass / tokenSizePx) instead of fighting it. font-size
+     re-renders glyphs at every size — ultra sharp always. No
+     transform / scale / will-change anywhere near text by design:
+     those raster-scale the glyphs and blur them (worse at fractional
+     factors like 1.28, worse still on a composited layer). */
+  transition:
+    color 0.7s ease-out,
+    font-size 0.45s cubic-bezier(0.22, 1.36, 0.36, 1),
+    opacity 0.4s ease-out;
+}
+
+.scramble-size-pending {
+  font-size: 1em;
+}
+
+.scramble-size-active {
+  font-size: 1.28em;
+}
+
+.scramble-size-done {
+  font-size: 0.9em;
+}
+
+.scramble-active-anim {
+  animation: scramble-active-pop 0.45s cubic-bezier(0.22, 1.36, 0.36, 1);
+}
+
+.scramble-done-anim {
+  animation: scramble-done-flash 0.7s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .scramble-active-anim,
+  .scramble-done-anim {
+    animation: none;
+  }
+
+  .scramble-token {
+    transition: color 0.2s ease-out;
+    will-change: auto;
+  }
+}

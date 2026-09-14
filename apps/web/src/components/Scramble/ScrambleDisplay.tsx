@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -93,15 +93,63 @@ export function ScrambleDisplay({
     setTimeout(() => setCopied(false), 1400);
   };
 
-  // Move verification states (black & gray progress) trigger when a smart
-  // cube is connected OR verification is explicitly active (the virtual cube
-  // runs the same scramble validator) AND non-empty verification states are
-  // present. Otherwise, scramble tokens display cleanly in solid black text
-  // (text-ink) without opacity reduction.
+  // Move verification states (3 sizes: resolved small + muted, active
+  // large, remaining normal) trigger when a smart cube is connected OR
+  // verification is explicitly active (the virtual cube runs the same
+  // scramble validator) AND non-empty verification states are present.
+  // Otherwise, scramble tokens display cleanly in solid text (text-ink).
+  // Active and remaining share the same color — only size differs.
+  // Resolved moves shrink to small muted gray; a just-resolved move
+  // flashes ready-green while shrinking, then settles to muted.
   const isVerificationActive =
     (verificationActive ?? Boolean(smartCubeConnected)) &&
     Array.isArray(states) &&
     states.length > 0;
+
+  // Flash index: the move that just transitioned active -> resolved.
+  // Shows ready-green briefly while shrinking elegantly, then settles
+  // to the muted resolved style. `flashGen` bumps per completion so the
+  // flash animation replays via remount on flash START, while the key
+  // stays stable when the flash ENDS — no remount, no flicker: the
+  // keyframe end state mirrors the steady resolved class exactly.
+  const [flashIndex, setFlashIndex] = useState<number | null>(null);
+  const [flashGen, setFlashGen] = useState<Record<number, number>>({});
+  const prevIndexRef = useRef(currentIndex);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const prev = prevIndexRef.current;
+    if (currentIndex > prev && isVerificationActive) {
+      const done = currentIndex - 1;
+      setFlashGen((g) => ({ ...g, [done]: (g[done] ?? 0) + 1 }));
+      setFlashIndex(done);
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = setTimeout(() => setFlashIndex(null), 700);
+    } else if (currentIndex < prev || !isVerificationActive) {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+      setFlashIndex(null);
+    }
+    prevIndexRef.current = currentIndex;
+    return () => {
+      if (currentIndex < prev && flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, [currentIndex, isVerificationActive]);
+
+  // New scramble: clear any lingering flash.
+  useEffect(() => {
+    setFlashIndex(null);
+    setFlashGen({});
+    prevIndexRef.current = 0;
+  }, [displayScramble ?? scramble]);
+
+  useEffect(
+    () => () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    },
+    [],
+  );
 
   const isCompactRight = layoutMode === "compact-right";
   const isCompactDown = layoutMode === "compact-down";
@@ -165,17 +213,14 @@ export function ScrambleDisplay({
     if (errorMoves.length > 0) {
       return (
         <div
-          className={cn(tokensClass)}
+          className={cn(tokensClass, tokenText)}
+          style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
           translate="no"
         >
           {errorMoves.map((m, i) => (
             <span
               key={`err-${i}`}
-              className={cn(
-                "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300 text-dnf scale-100",
-                tokenText,
-              )}
-              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
+              className="whitespace-nowrap text-dnf"
             >
               {m}
             </span>
@@ -184,32 +229,48 @@ export function ScrambleDisplay({
       );
     }
     return (
-      <div className={cn(tokensClass)} translate="no">
+      <div
+        className={cn(tokensClass, tokenText)}
+        style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
+        translate="no"
+      >
         {tokens.map((tok, i) => {
           const state = isVerificationActive ? states?.[i] || "pending" : "normal";
           const isCompleted = isVerificationActive && state === "correct";
           const isActive = isVerificationActive && i === currentIndex;
+          const isFlashing = isVerificationActive && flashIndex === i && isCompleted;
 
           return (
             <span
-              key={`${tok}-${i}`}
-              style={tokenSizePx != null ? { fontSize: tokenSizePx } : undefined}
+              // Remount when active toggles or a new flash starts on this
+              // index so the pop / flash keyframes replay. Flash end keeps
+              // the same key (flashGen stable) for a seamless handoff.
+              // NOTE: sizes via font-size (.scramble-size-*), never scale —
+              // scale raster-blurs glyphs. Base size lives on the container
+              // (tokenText / tokenSizePx); spans size in em relative to it.
+              key={`${tok}-${i}-${isActive ? "active" : "idle"}-f${flashGen[i] ?? 0}`}
               className={cn(
-                "inline-block origin-center whitespace-nowrap transition-[color,transform] duration-300",
-                tokenText,
-                !isVerificationActive && "text-ink scale-100",
-                isVerificationActive && isCompleted && "text-ink-3 scale-110",
+                "scramble-token whitespace-nowrap",
+                !isVerificationActive && "text-ink scramble-size-pending",
+                isVerificationActive && isFlashing && "text-ready scramble-done-anim",
+                isVerificationActive &&
+                  isCompleted &&
+                  !isFlashing &&
+                  "text-ink-3 opacity-70 scramble-size-done",
                 isVerificationActive &&
                   isActive &&
                   !isCompleted &&
                   pendingHalfDouble &&
-                  "text-ink scale-100 animate-pulse",
+                  "text-ink scramble-size-active scramble-active-anim animate-pulse",
                 isVerificationActive &&
                   isActive &&
                   !isCompleted &&
                   !pendingHalfDouble &&
-                  "text-ink scale-100",
-                isVerificationActive && !isCompleted && !isActive && "text-ink/40 scale-95",
+                  "text-ink scramble-size-active scramble-active-anim",
+                isVerificationActive &&
+                  !isCompleted &&
+                  !isActive &&
+                  "text-ink scramble-size-pending",
               )}
             >
               {tok}
