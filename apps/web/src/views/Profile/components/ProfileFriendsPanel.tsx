@@ -88,9 +88,13 @@ export function ProfileFriendsPanel({
       {/* Same height as the content TabsList (h-8 triggers + py-1.5 = h-11)
           with the same mt-4 gap below, so both columns start symmetric. */}
       <div className="mb-4 flex min-h-11 flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
+        <h2 className="flex items-center text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
           {t("friends.title")}
-          {friends.length > 0 && <span className="nums"> · {friends.length}</span>}
+          {data && friends.length > 0 && (
+            <span className="nums ml-2 rounded-full border border-line bg-surface-2 px-1.5 py-px text-[0.6rem] font-bold normal-case tracking-normal text-ink-2">
+              {friends.length}
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-3">
           {onOpenPrivacySettings && user && (
