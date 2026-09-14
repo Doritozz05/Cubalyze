@@ -231,3 +231,94 @@ describe("pullChanges FK guards", () => {
     expect(solves).toEqual(["v3"]);
   });
 });
+
+describe("pullChanges poison-row resilience (gear)", () => {
+  const categoryRow = (updatedAt: number) => ({
+    user_id: UID, id: "c1", name: "Cubes", kind: "cube", icon: "Box",
+    created_at: 1, updated_at: updatedAt,
+  });
+  const itemRow = (id: string, updatedAt: number) => ({
+    user_id: UID, id, category_id: "c1", type_id: null, name: `Item ${id}`,
+    palette: "[]", links: "[]", photos: "[]", tags: "[]", status: "owned",
+    is_primary: 0, is_favorite: 0, quantity: 1,
+    created_at: 1, updated_at: updatedAt,
+  });
+
+  /**
+   * Fake over makeDb: a local gear store plus an app_meta KV so watermarks
+   * behave like the real thing. The `poison` item's upsert always throws
+   * (the stale-trigger 1555 signature); everything else lands.
+   */
+  function makeGearDb() {
+    const base = makeDb();
+    const meta = new Map<string, string>();
+    const categories = new Map<string, number>();
+    const items = new Map<string, number>();
+    const itemAttempts = new Map<string, number>();
+    const db: DBExecutor = async (sql, bind = []) => {
+      if (/FROM gear_items WHERE id IN/.test(sql)) {
+        return [...items.entries()]
+          .filter(([id]) => (bind as unknown[]).map(String).includes(id))
+          .map(([id, updated_at]) => ({ id, updated_at }));
+      }
+      if (/FROM gear_categories WHERE id IN/.test(sql)) {
+        return [...categories.entries()]
+          .filter(([id]) => (bind as unknown[]).map(String).includes(id))
+          .map(([id, updated_at]) => ({ id, updated_at }));
+      }
+      if (/FROM gear_types WHERE id IN/.test(sql)) return [];
+      if (/INSERT INTO gear_categories/.test(sql)) {
+        categories.set(String(bind[0]), 1);
+        return [];
+      }
+      if (/INSERT INTO gear_items/.test(sql)) {
+        const id = String(bind[0]);
+        itemAttempts.set(id, (itemAttempts.get(id) ?? 0) + 1);
+        if (id === "poison") {
+          throw new Error(
+            "SQLITE_CONSTRAINT_PRIMARYKEY: UNIQUE constraint failed: app_meta.key",
+          );
+        }
+        // updated_at is bound late in the column list; the cloud value rides
+        // in the row — recover it from the known fixture watermarks.
+        items.set(id, id === "good" ? 5 : Number(bind[bind.length - 1]) || 0);
+        return [];
+      }
+      if (/FROM app_meta WHERE key = \?/.test(sql)) {
+        const v = meta.get(String(bind[0]));
+        return v === undefined ? [] : [{ value: v }];
+      }
+      if (/INSERT OR REPLACE INTO app_meta/.test(sql)) {
+        meta.set(String(bind[0]), String(bind[1]));
+        return [];
+      }
+      return base.db(sql, bind);
+    };
+    return { db, meta, items, itemAttempts };
+  }
+
+  it("skips a throwing gear row, applies the rest, and retries the failed row next cycle", async () => {
+    const { db, meta, items, itemAttempts } = makeGearDb();
+    const supabase = cloud({
+      gear_categories: [categoryRow(1)],
+      gear_items: [itemRow("good", 5), itemRow("poison", 9)],
+    });
+
+    const totals = await pullChanges(makeCtx(db, supabase), UID);
+
+    // No throw: the good row landed, the poison row did not.
+    expect(items.has("good")).toBe(true);
+    expect(items.has("poison")).toBe(false);
+    expect(totals.pulled.gear_items).toBe(1);
+    expect(totals.pulled.gear_categories).toBe(1);
+    // The watermark advanced over the applied row but NOT past the failure,
+    // so the poison row is retried instead of silently dropped.
+    expect(meta.get(`sync_watermark_pull_gear_items_${UID}`)).toBe("5");
+
+    // Second cycle, same cloud state: the poison row is attempted again,
+    // the applied row is left alone (LWW, no rewrite).
+    await pullChanges(makeCtx(db, supabase), UID);
+    expect(itemAttempts.get("poison")).toBe(2);
+    expect(itemAttempts.get("good")).toBe(1);
+  });
+});

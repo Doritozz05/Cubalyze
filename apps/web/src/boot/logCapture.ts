@@ -28,9 +28,23 @@ const logBuffer: LogEntry[] = [];
 let installed = false;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
-function safeString(value: unknown): string {
+/** Rendered form of one console argument. Exported for tests. */
+export function safeString(value: unknown): string {
   if (value instanceof Error) {
     return `${value.name}: ${value.message}${value.stack ? `\n${value.stack}` : ""}`;
+  }
+  // Cross-realm errors (worker/Comlink round-trips, deserialized rejections):
+  // `instanceof Error` is false and `message` is non-enumerable, so plain
+  // JSON.stringify renders them as `{}` and the evidence is lost — exactly
+  // when it matters most. Read the fields explicitly.
+  if (typeof value === "object" && value !== null) {
+    const v = value as { name?: unknown; message?: unknown; stack?: unknown };
+    if (typeof v.message === "string" || typeof v.stack === "string") {
+      const name = typeof v.name === "string" && v.name ? v.name : "Error";
+      const message = typeof v.message === "string" ? v.message : String(value);
+      const stack = typeof v.stack === "string" ? `\n${v.stack}` : "";
+      return `${name}: ${message}${stack}`;
+    }
   }
   if (typeof value === "string") return value;
   try {

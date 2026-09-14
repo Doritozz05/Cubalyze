@@ -1611,4 +1611,41 @@ export const MIGRATIONS: Migration[] = [
       END;
     `,
   },
+  {
+    id: '039_gear_trigger_self_heal',
+    description:
+      'Re-applies the six Locker dirty-flag triggers (037) with the UPSERT-safe statement. 037 shipped them in the safe form and 038 repaired every other table — but a device whose local database carries stale bodies under these same trigger names (e.g. created by a pre-release build) throws SQLITE_CONSTRAINT_PRIMARYKEY on the SECOND upsert of any gear row: SQLite refuses to resolve any conflict inside a trigger fired by the DO UPDATE arm of an UPSERT, even one the sub-statement would resolve itself. The outer statement aborts, the pull watermark never advances, and the whole sync fails on the same rows every cycle — the Locker on that device freezes with no rows, no refs and no photos, and the only evidence is a bare 1555. DROP + CREATE is idempotent: on a healthy database this migration is a no-op rewrite of identical triggers; on a stale one it heals the pull on next boot, and the stuck watermark re-fetches the missed rows by itself.',
+    sql: `
+      DROP TRIGGER IF EXISTS trg_dirty_gear_categories;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_categories AFTER INSERT ON gear_categories BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_gear_categories_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_categories_upd AFTER UPDATE ON gear_categories BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_gear_types;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_types AFTER INSERT ON gear_types BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_gear_types_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_types_upd AFTER UPDATE ON gear_types BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_gear_items;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_items AFTER INSERT ON gear_items BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+      DROP TRIGGER IF EXISTS trg_dirty_gear_items_upd;
+      CREATE TRIGGER IF NOT EXISTS trg_dirty_gear_items_upd AFTER UPDATE ON gear_items BEGIN
+        INSERT INTO app_meta (key, value) VALUES ('sync_dirty', '1')
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value;
+      END;
+    `,
+  },
 ];

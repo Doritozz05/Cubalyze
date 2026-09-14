@@ -141,12 +141,19 @@ export async function pullChanges(
     const rows = result.data as CloudRow[] | null;
     if (!rows || rows.length === 0) continue;
 
-    const applied = await applyRows(ctx, table, rows);
+    const { applied, failedWms } = await applyRows(ctx, table, rows);
 
-    const maxWm = rows.reduce(
-      (max, r) => Math.max(max, Number(r[def.watermarkColumn]) || 0),
-      wm,
-    );
+    // The watermark advances over every row EXCEPT ones that threw: a failed
+    // row is retried next cycle (transient failure, or a heal like 039 that
+    // lands later), while every other row still converges. Advancing past a
+    // failure would drop it silently until its updated_at moves again; never
+    // advancing at all (the old throw-through behavior) re-failed the whole
+    // table on the same rows forever and blocked the sync with it.
+    const failed = new Set(failedWms);
+    const maxWm = rows.reduce((max, r) => {
+      const w = Number(r[def.watermarkColumn]) || 0;
+      return failed.has(w) ? max : Math.max(max, w);
+    }, wm);
     await setWatermark(ctx.meta, pullWatermarkKey(table, uid), maxWm);
     // Count only rows actually applied: sessions pulls the full table every
     // cycle (E13, no watermark filter), so counting fetched rows reports
@@ -160,16 +167,35 @@ export async function pullChanges(
   return totals;
 }
 
+/** Readable one-liner for a thrown apply error (worker errors may travel oddly). */
+function applyErrorText(err: unknown): string {
+  if (err instanceof Error) return err.message || String(err);
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    return (err as { message: string }).message;
+  }
+  return String(err);
+}
+
 /**
  * Apply one table's pulled rows locally with per-row LWW.
- * Returns how many rows were actually written (inserted/updated).
+ * Returns how many rows were actually written (inserted/updated), plus the
+ * watermarks of rows whose write THREW (as opposed to rows skipped on
+ * purpose — orphans, re-homes, older-than-local — which converge and must
+ * still advance the cursor). The caller keeps failed rows below the watermark
+ * so they are retried next cycle instead of lost or blocking the sync.
  */
 async function applyRows(
   ctx: SyncContext,
   table: string,
   rows: CloudRow[],
-): Promise<number> {
+): Promise<{ applied: number; failedWms: number[] }> {
   let applied = 0;
+  const failedWms: number[] = [];
   switch (table) {
     case "solves": {
       let toInsert: ReturnType<typeof cloudRowToSolve>[] = [];
@@ -393,8 +419,18 @@ async function applyRows(
         const category = cloudRowToGearCategory(row);
         const localUpdated = existing.get(category.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (category.updatedAt ?? 0)) {
-          await ctx.gear.upsertCategory(category);
-          applied += 1;
+          try {
+            await ctx.gear.upsertCategory(category);
+            applied += 1;
+          } catch (err) {
+            // One poison row must never fail the whole pull (and with it the
+            // photo channel and every table behind it): skip it loudly and
+            // retry next cycle via the watermark.
+            failedWms.push(Number(category.updatedAt) || 0);
+            console.warn(
+              `[sync-engine] pull: skipped gear_categories row ${category.id} (${applyErrorText(err)})`,
+            );
+          }
         }
       }
       break;
@@ -422,8 +458,15 @@ async function applyRows(
         }
         const localUpdated = existing.get(type.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (type.updatedAt ?? 0)) {
-          await ctx.gear.upsertType(type);
-          applied += 1;
+          try {
+            await ctx.gear.upsertType(type);
+            applied += 1;
+          } catch (err) {
+            failedWms.push(Number(type.updatedAt) || 0);
+            console.warn(
+              `[sync-engine] pull: skipped gear_types row ${type.id} (${applyErrorText(err)})`,
+            );
+          }
         }
       }
       if (orphaned > 0) {
@@ -465,8 +508,15 @@ async function applyRows(
         }
         const localUpdated = existing.get(item.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (next.updatedAt ?? 0)) {
-          await ctx.gear.upsertItem(next);
-          applied += 1;
+          try {
+            await ctx.gear.upsertItem(next);
+            applied += 1;
+          } catch (err) {
+            failedWms.push(Number(next.updatedAt) || 0);
+            console.warn(
+              `[sync-engine] pull: skipped gear_items row ${item.id} (${applyErrorText(err)})`,
+            );
+          }
         }
       }
       if (orphaned > 0 || rehomed > 0) {
@@ -479,5 +529,5 @@ async function applyRows(
     default:
       break;
   }
-  return applied;
+  return { applied, failedWms };
 }
