@@ -139,8 +139,9 @@ describe("pullChanges FK guards", () => {
     expect(sessions.has("s1")).toBe(true);
     expect(solves).toEqual(["v1"]);
     // The watermark advances over ALL rows (including the orphan), so the
-    // skipped solve is never re-pulled on the next cycle.
-    expect(totals.pulled.solves).toBe(2);
+    // skipped solve is never re-pulled on the next cycle. `pulled` counts
+    // only applied rows, so the orphaned solve is excluded here.
+    expect(totals.pulled.solves).toBe(1);
   });
 
   it("unlinks training attempts whose case is unknown to this device", async () => {
@@ -169,6 +170,42 @@ describe("pullChanges FK guards", () => {
     expect(attempts.find((a) => a.id === "a1")?.case_id).toBe("case-known");
     expect(attempts.find((a) => a.id === "a2")?.case_id).toBeNull();
     expect(totals.pulled.training_attempts).toBe(2);
+  });
+
+  it("does not rewrite skill_progress when the cloud rows are already applied (no dirty loop)", async () => {
+    const store = new Map<string, number>();
+    let upserts = 0;
+    const base = makeDb();
+    const db: DBExecutor = async (sql, bind = []) => {
+      if (/INSERT INTO skill_progress/.test(sql)) {
+        upserts += 1;
+        store.set(String(bind[0]), Number(bind[1]));
+        return [];
+      }
+      if (/FROM skill_progress/.test(sql)) {
+        return [...store.entries()].map(([skill_id, completed_at]) => ({
+          skill_id,
+          completed_at,
+        }));
+      }
+      return base.db(sql, bind);
+    };
+    const supabase = cloud({
+      skill_progress: [
+        { user_id: UID, skill_id: "s1", completed_at: 100 },
+      ],
+    });
+
+    const first = await pullChanges(makeCtx(db, supabase), UID);
+    expect(first.pulled.skill_progress).toBe(1);
+    expect(upserts).toBe(1);
+
+    // Steady state: same cloud rows must neither write (the upsert would fire
+    // the dirty trigger and re-schedule a sync 250ms later, forever) nor be
+    // reported as pulled (that would rebuild + notify every cycle).
+    const second = await pullChanges(makeCtx(db, supabase), UID);
+    expect(second.pulled.skill_progress).toBeUndefined();
+    expect(upserts).toBe(1);
   });
 
   it("pulls a solve whose session arrives in the same pass (ordering)", async () => {

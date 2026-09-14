@@ -141,25 +141,35 @@ export async function pullChanges(
     const rows = result.data as CloudRow[] | null;
     if (!rows || rows.length === 0) continue;
 
-    await applyRows(ctx, table, rows);
+    const applied = await applyRows(ctx, table, rows);
 
     const maxWm = rows.reduce(
       (max, r) => Math.max(max, Number(r[def.watermarkColumn]) || 0),
       wm,
     );
     await setWatermark(ctx.meta, pullWatermarkKey(table, uid), maxWm);
-    totals.pulled[table as keyof typeof totals.pulled] = rows.length;
+    // Count only rows actually applied: sessions pulls the full table every
+    // cycle (E13, no watermark filter), so counting fetched rows reports
+    // "changed" forever — the engine rebuilds + notifies every cycle and the
+    // UI flickers non-stop. The watermark still advances past skipped rows.
+    if (applied > 0) {
+      totals.pulled[table as keyof typeof totals.pulled] = applied;
+    }
   }
 
   return totals;
 }
 
-/** Apply one table's pulled rows locally with per-row LWW. */
+/**
+ * Apply one table's pulled rows locally with per-row LWW.
+ * Returns how many rows were actually written (inserted/updated).
+ */
 async function applyRows(
   ctx: SyncContext,
   table: string,
   rows: CloudRow[],
-): Promise<void> {
+): Promise<number> {
+  let applied = 0;
   switch (table) {
     case "solves": {
       let toInsert: ReturnType<typeof cloudRowToSolve>[] = [];
@@ -194,8 +204,12 @@ async function applyRows(
           );
         }
       }
-      if (toInsert.length > 0) await ctx.solves.insertMany(toInsert);
+      if (toInsert.length > 0) {
+        await ctx.solves.insertMany(toInsert);
+        applied += toInsert.length;
+      }
       for (const solve of toUpdate) await ctx.solves.update(solve);
+      applied += toUpdate.length;
       break;
     }
     case "sessions": {
@@ -212,6 +226,7 @@ async function applyRows(
       }
       for (const session of toInsert) await ctx.sessions.insert(session);
       for (const session of toUpdate) await ctx.sessions.update(session);
+      applied += toInsert.length + toUpdate.length;
       break;
     }
     case "profiles": {
@@ -227,10 +242,12 @@ async function applyRows(
         const local = await ctx.profiles.findById(profile.userId);
         if (!local) {
           await ctx.profiles.upsert(profile);
+          applied += 1;
           break;
         }
         if ((local.updatedAt ?? 0) < (profile.updatedAt ?? 0)) {
           await ctx.profiles.upsert(profile);
+          applied += 1;
           break;
         }
         // El contenido gana al vacío, sin mirar los sellos.
@@ -247,6 +264,7 @@ async function applyRows(
         // del usuario; el contenido sí.
         if (!profileHasContent(local) && profileHasContent(profile)) {
           await ctx.profiles.upsert(profile);
+          applied += 1;
           break;
         }
         // F8.0 — el handle NO se rige por LWW: lo decide el servidor.
@@ -268,6 +286,7 @@ async function applyRows(
         // name, bio, país) ni se reabre el ciclo de sync.
         if (profile.handle !== "" && local.handle !== profile.handle) {
           await ctx.profiles.upsert({ ...local, handle: profile.handle });
+          applied += 1;
         }
       }
       break;
@@ -303,12 +322,14 @@ async function applyRows(
           } else {
             await ctx.training.insertAttemptWithId(attempt);
           }
+          applied += 1;
         } else if ((local.updatedAt ?? 0) < (attempt.updatedAt ?? 0)) {
           await ctx.training.updateAttemptFromCloud(
             attempt.id,
             attempt.reviewGrade ?? null,
             attempt.updatedAt ?? 0,
           );
+          applied += 1;
         }
       }
       if (unlinked > 0) {
@@ -324,8 +345,10 @@ async function applyRows(
         const local = await ctx.training.findTrainingSessionById(record.id);
         if (!local) {
           await ctx.training.upsertTrainingSession(record);
+          applied += 1;
         } else if ((local.updatedAt ?? 0) < (record.updatedAt ?? 0)) {
           await ctx.training.upsertTrainingSession(record);
+          applied += 1;
         }
       }
       break;
@@ -336,16 +359,28 @@ async function applyRows(
         const local = await ctx.calendar.findById(task.id);
         if (!local || (local.updatedAt ?? 0) < (task.updatedAt ?? 0)) {
           await ctx.calendar.upsert(task);
+          applied += 1;
         }
       }
       break;
     }
     case "skill_progress": {
+      // LWW guard: the upsert fires the dirty triggers even when the value is
+      // identical (no WHEN clause), so an unconditional write re-dirties every
+      // cycle and the loop guard re-schedules a sync 250ms later — forever.
+      // Only write when the cloud row is actually newer; steady state is silent.
+      const existingSkills = new Map(
+        (await ctx.skills.findAllRows()).map((s) => [s.skillId, s.completedAt]),
+      );
       for (const row of rows) {
-        await ctx.skills.setCompletedAt(
-          String(row.skill_id),
-          Number(row.completed_at) || 0,
-        );
+        const skillId = String(row.skill_id);
+        const cloudCompletedAt = Number(row.completed_at) || 0;
+        const localCompletedAt = existingSkills.get(skillId);
+        if (localCompletedAt === undefined || localCompletedAt < cloudCompletedAt) {
+          await ctx.skills.setCompletedAt(skillId, cloudCompletedAt);
+          existingSkills.set(skillId, cloudCompletedAt);
+          applied += 1;
+        }
       }
       break;
     }
@@ -359,6 +394,7 @@ async function applyRows(
         const localUpdated = existing.get(category.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (category.updatedAt ?? 0)) {
           await ctx.gear.upsertCategory(category);
+          applied += 1;
         }
       }
       break;
@@ -387,6 +423,7 @@ async function applyRows(
         const localUpdated = existing.get(type.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (type.updatedAt ?? 0)) {
           await ctx.gear.upsertType(type);
+          applied += 1;
         }
       }
       if (orphaned > 0) {
@@ -429,6 +466,7 @@ async function applyRows(
         const localUpdated = existing.get(item.id) ?? 0;
         if (localUpdated === 0 || localUpdated < (next.updatedAt ?? 0)) {
           await ctx.gear.upsertItem(next);
+          applied += 1;
         }
       }
       if (orphaned > 0 || rehomed > 0) {
@@ -441,4 +479,5 @@ async function applyRows(
     default:
       break;
   }
+  return applied;
 }
