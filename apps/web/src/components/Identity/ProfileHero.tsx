@@ -2,12 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Profile } from "@cubeforge/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
 import { CountryFlag } from "./CountryFlag";
-import { SubBadge, SubBadgeOverflow, rollSubBadgeStyle } from "./SubBadge";
+import { SubBadge, SubBadgeOverflow, badgeStyleFor } from "./SubBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsTouch } from "@/hooks/use-mobile";
@@ -101,15 +100,6 @@ export function ProfileHero({
     ...profile.declaredMethods.map((method) => ({ key: `method-${method}`, value: method })),
   ].filter((chip) => chip.value !== "");
 
-  // Random color + variant per badge, rolled once per badge list.
-  // Stable across re-renders, re-rolled only when the badge set changes.
-  const badgeKey = badges.map((b) => b.puzzle).join(",");
-  const badgeStyles = useMemo(
-    () => badges.map(() => rollSubBadgeStyle()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [badgeKey],
-  );
-
   return (
     <div
       data-onboarding-target="profile"
@@ -166,11 +156,11 @@ export function ProfileHero({
             </div>
             {badges.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2.5 py-0.5">
-                {badges.slice(0, 6).map((badge, idx) => (
+                {badges.slice(0, 6).map((badge) => (
                   <Tooltip key={badge.puzzle}>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
-                        <SubBadge badge={badge} style={badgeStyles[idx]} />
+                        <SubBadge badge={badge} style={badgeStyleFor(badge)} />
                       </span>
                     </TooltipTrigger>
                       {/* The claim in full: which average earned the badge and

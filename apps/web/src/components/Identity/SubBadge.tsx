@@ -40,13 +40,32 @@ export interface SubBadgeStyle {
   dark: string;
 }
 
-/** Roll one random color + one random variant. Caller memoizes per badge. */
-export function rollSubBadgeStyle(
-  random: () => number = Math.random,
-): SubBadgeStyle {
-  const colorIndex = Math.floor(random() * SUB_BADGE_PALETTE.length);
+/** FNV-1a 32-bit — stable across sessions, devices, accounts. */
+function hashString(input: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Deterministic style for a badge: same puzzle + threshold → same color +
+ * variant on every account, device and session. Pure function, no hooks,
+ * no randomness. Variant reads higher hash bits so it does not correlate
+ * with the color index.
+ */
+export function badgeStyleFor(badge: {
+  puzzle: string;
+  seconds: number;
+}): SubBadgeStyle {
+  const h = hashString(`${badge.puzzle}:${badge.seconds}`);
+  const colorIndex = h % SUB_BADGE_PALETTE.length;
   const variant =
-    SUB_BADGE_VARIANTS[Math.floor(random() * SUB_BADGE_VARIANTS.length)];
+    SUB_BADGE_VARIANTS[
+      Math.floor(h / SUB_BADGE_PALETTE.length) % SUB_BADGE_VARIANTS.length
+    ];
   const color = SUB_BADGE_PALETTE[colorIndex];
   return { colorIndex, variant, base: color.base, dark: color.dark };
 }

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   SubBadge,
   SubBadgeOverflow,
-  rollSubBadgeStyle,
+  badgeStyleFor,
   SUB_BADGE_PALETTE,
   SUB_BADGE_VARIANTS,
 } from "./SubBadge";
@@ -38,22 +38,24 @@ describe("SubBadge — professional badge system", () => {
     );
   });
 
-  it("rolls a valid color + variant", () => {
-    for (let i = 0; i < 50; i++) {
-      const s = rollSubBadgeStyle();
-      expect(s.colorIndex).toBeGreaterThanOrEqual(0);
-      expect(s.colorIndex).toBeLessThan(10);
-      expect(SUB_BADGE_VARIANTS).toContain(s.variant);
-      expect(s.base).toBe(SUB_BADGE_PALETTE[s.colorIndex].base);
-    }
+  it("derives a valid color + variant deterministically from the badge", () => {
+    const a = badgeStyleFor(badge);
+    const b = badgeStyleFor(badge);
+    expect(a).toEqual(b);
+    expect(a.colorIndex).toBeGreaterThanOrEqual(0);
+    expect(a.colorIndex).toBeLessThan(10);
+    expect(SUB_BADGE_VARIANTS).toContain(a.variant);
+    expect(a.base).toBe(SUB_BADGE_PALETTE[a.colorIndex].base);
   });
 
-  it("is deterministic given a fixed random source", () => {
-    const a = rollSubBadgeStyle(() => 0);
-    const b = rollSubBadgeStyle(() => 0);
-    expect(a).toEqual(b);
-    expect(a.variant).toBe("solid");
-    expect(a.colorIndex).toBe(0);
+  it("gives different badges different styles across the palette", () => {
+    const styles = new Set<string>();
+    for (let seconds = 1; seconds <= 60; seconds++) {
+      const s = badgeStyleFor({ puzzle: "333", seconds });
+      styles.add(`${s.colorIndex}:${s.variant}`);
+    }
+    // Hash spreads across colors and variants, not stuck on one.
+    expect(styles.size).toBeGreaterThan(10);
   });
 
   it("renders milestone + puzzle in every variant", () => {
