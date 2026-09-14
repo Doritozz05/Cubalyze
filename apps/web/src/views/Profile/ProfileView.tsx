@@ -8,6 +8,7 @@ import { useProfileStats, type PuzzleStats, type ProfileStats, bestEffectiveTime
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useSkillProgress } from "@/hooks/useSkillProgress";
+import { useLoadingGrace } from "@/hooks/useLoadingGrace";
 import { ProfileHero } from "@/components/Identity/ProfileHero";
 import { AccountCard } from "@/components/Account/AccountCard";
 import { StatStrip } from "@/components/Identity/StatStrip";
@@ -156,6 +157,11 @@ function TrainingTab() {
   );
   const newCount = useMemo(() => queue.filter((q) => q.reason === "new").length, [queue]);
 
+  // Fast loads skip the fallback entirely: render nothing until the grace
+  // window passes, so opening the tab never flashes spinners/skeletons.
+  const showFallback = useLoadingGrace(!ready || loading);
+  if (!error && !showFallback && (!ready || loading)) return null;
+
   // A failed load must never leave the tab frozen on a skeleton — surface the
   // error with a retry instead.
   if (error) {
@@ -258,6 +264,8 @@ function AlgorithmsTab() {
   const [insightsError, setInsightsError] = useState<string | null>(null);
   // Bump to re-run the insights load after a failure (Retry button).
   const [reloadKey, setReloadKey] = useState(0);
+  // Same grace as TrainingTab: fast loads go straight to content.
+  const showFallback = useLoadingGrace(!ready || (!insights && !insightsError));
 
   // t is stable across renders; the fallback error message is static per render
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -285,6 +293,8 @@ function AlgorithmsTab() {
     ? insights.stateCounts.learning + insights.stateCounts.relearning
     : 0;
   const fresh = insights ? insights.stateCounts.new : 0;
+
+  if (!showFallback && (!ready || (!insights && !insightsError))) return null;
 
   return (
     <div className="space-y-4">
