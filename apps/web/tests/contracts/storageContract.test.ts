@@ -94,9 +94,20 @@ describe('storage contract — acoplamiento por PREFIJO (bug silencioso si se re
     const checks = source.match(/startsWith\("cubeforge"\)/g) ?? [];
     expect(
       checks.length,
-      'AdvancedSection ya no comprueba el prefijo legacy. Si las claves se renombraron, esta ' +
-        'lógica debe aceptar AMBOS prefijos (cubeforge* y el nuevo) o «Borrar datos de la app» ' +
-        'y el inspector de almacenamiento fallarán en silencio.',
+      'AdvancedSection ya no comprueba el prefijo legacy. Las claves con datos NO se renombran ' +
+        '(este fichero las enumera), así que el prefijo antiguo debe seguir contemplado o ' +
+        '«Borrar datos de la app» y el inspector dejarán de vaciar las claves históricas.',
+    ).toBe(2);
+
+    // …and the SAME two call sites must also accept the new prefix, because PR-5
+    // renamed the debug flags (`cubalyze:cfop-debug`, `cubalyze:debug-ui`,
+    // `cubalyze:orientation-debug`). With only one of the two prefixes, the
+    // inspector would hide those keys and «Borrar datos» would leave them behind.
+    const checksNew = source.match(/startsWith\("cubalyze"\)/g) ?? [];
+    expect(
+      checksNew.length,
+      'El prefijo nuevo quedó fuera de la enumeración: las claves con la marca nueva no se ' +
+        'vaciarían con «Borrar datos de la app» ni aparecerían en el inspector.',
     ).toBe(2);
   });
 

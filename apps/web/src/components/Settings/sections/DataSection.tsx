@@ -29,17 +29,17 @@ export interface DataSectionProps {
  * Data management settings section.
  *
  * Provides:
- * - CSV export (CubeForge format)
+ * - CSV export (Cubalyze format)
  * - csTimer-compatible CSV export (semicolon delimited)
  * - JSON export (full metadata)
- * - Import from csTimer / CubeForge / generic CSV with preview
+ * - Import from csTimer / Cubalyze / generic CSV with preview
  */
 const FORMAT_NAME_KEY: Record<string, ParseKeys<'settings'>> = {
   cstimer: 'data.formatNameCstimer',
   'cstimer-json': 'data.formatNameCstimer',
   twistytimer: 'data.formatNameTwisty',
-  'cubeforge-csv': 'data.formatNameCubeforgeCsv',
-  'cubeforge-json': 'data.formatNameCubeforgeJson',
+  'cubalyze-csv': 'data.formatNameCubalyzeCsv',
+  'cubalyze-json': 'data.formatNameCubalyzeJson',
   generic: 'data.formatNameGeneric',
 };
 
@@ -48,7 +48,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
   const [importOpen, setImportOpen] = useState(false);
   const [importState, setImportState] = useState<'idle' | 'preview' | 'importing' | 'done' | 'error'>('idle');
   // 'category': legacy flow — user picks 2x2/3x3/etc and ALL solves are forced
-  // into that category. 'json': full-fidelity CubeForge JSON flow — per-solve
+  // into that category. 'json': full-fidelity Cubalyze JSON flow — per-solve
   // puzzleType (and every other field) is preserved as-is.
   const [importMode, setImportMode] = useState<'category' | 'json'>('category');
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
@@ -158,9 +158,9 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
 
       let inputs: ReturnType<typeof toSolveInput>[];
       if (importMode === 'json') {
-        // Full-fidelity path: CubeForge JSON — keep the per-solve puzzleType
+        // Full-fidelity path: Cubalyze JSON — keep the per-solve puzzleType
         // (and everything else) exactly as exported. Never force a category.
-        if (importPreview.format !== 'cubeforge-json') {
+        if (importPreview.format !== 'cubalyze-json') {
           setImportError(t('data.notJsonError'));
           setImportState('error');
           return;
@@ -197,14 +197,14 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
     if (solves.length === 0) return;
     const csv = exportSolvesToCSV(solves, sessionName);
     const name = (sessionName ?? 'session').replace(/[^a-z0-9_-]/gi, '_');
-    downloadFile(csv, `cubeforge-${name}.csv`, 'text/csv;charset=utf-8');
+    downloadFile(csv, `cubalyze-${name}.csv`, 'text/csv;charset=utf-8');
   };
 
   const handleExportCsTimer = () => {
     if (solves.length === 0) return;
     const csv = exportSolvesToCsTimer(solves);
     const name = (sessionName ?? 'session').replace(/[^a-z0-9_-]/gi, '_');
-    downloadFile(csv, `cubeforge-${name}-cstimer.csv`, 'text/csv;charset=utf-8');
+    downloadFile(csv, `cubalyze-${name}-cstimer.csv`, 'text/csv;charset=utf-8');
   };
 
   const handleExportAllJSON = useCallback(() => {
@@ -282,7 +282,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           </div>
         </div>
 
-        {/* ── CubeForge CSV ─────────────────────────────────────────── */}
+        {/* ── Cubalyze CSV ─────────────────────────────────────────── */}
         <div className="group flex items-center justify-between gap-6 rounded-xl border border-line bg-surface p-5 transition-shadow duration-200 hover:shadow-sm">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
               {importState === 'idle' && (
                 <div className="flex flex-col gap-5">
                   {importMode === 'json' ? (
-                    /* ── Full-fidelity CubeForge JSON flow (no category) ── */
+                    /* ── Full-fidelity Cubalyze JSON flow (no category) ── */
                     <>
                       <div className="flex items-start gap-3 rounded-lg border border-phase-indigo/25 bg-phase-indigo/5 p-3">
                         <Check className="mt-0.5 size-4 shrink-0 text-phase-indigo" />

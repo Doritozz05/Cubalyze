@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Changelog generator for CubeForge.
+ * Changelog generator for Cubalyze.
  *
  * Reads the full git history (every commit, no skipping), groups commits into
  * the version bands declared in scripts/changelog.config.json, and emits:
@@ -213,7 +213,10 @@ function writeMasterMarkdown(versions, total, dates) {
   const filesBySha = new Map(collectCommits().map((c) => [c.sha.slice(0, 7), c.files]));
   const now = new Date().toISOString().slice(0, 10);
   const lines = [];
-  lines.push('# Lista maestra de commits — CubeForge', '');
+  // El título se emite con la marca actual: los CHANGELOGs ya generados son
+  // historia y no se reescriben, pero una regeneración futura no debe volver a
+  // estampar el nombre antiguo.
+  lines.push('# Lista maestra de commits — Cubalyze', '');
   lines.push(
     `> Generado automáticamente el ${now} por \`scripts/generate-changelog.cjs\`.`,
   );

@@ -60,7 +60,20 @@ describe('storage contract — identidad de la app de escritorio (Tauri)', () =>
     // una segunda app en macOS y rompería la cadena del instalador/firma.
   });
 
-  it('el crate de Rust sigue llamándose cubeforge (nombre histórico, documentado)', () => {
-    expect(read('apps/desktop/src-tauri/Cargo.toml')).toMatch(/^name = "cubeforge"$/m);
+  it('el crate de Rust usa la marca NUEVA y el identifier la VIEJA (no son lo mismo)', () => {
+    // These two assertions belong together: they are the whole point of the
+    // distinction. The CRATE name is build-time metadata — nothing on disk, in
+    // the OS or in any installer key reads it — so PR-5 renamed it (here it was
+    // `cubeforge`, plus `authors = ["CubeForge Team"]` and the `cubeforge_lib`
+    // lib target that `main.rs` calls). The IDENTIFIER above is what the OS
+    // derives the app-data folder from, which is why it keeps the historical
+    // spelling forever. This test fails if somebody "aligns" one with the other
+    // in either direction.
+    const cargo = read('apps/desktop/src-tauri/Cargo.toml');
+    expect(cargo).toMatch(/^name = "cubalyze"$/m);
+    expect(cargo).toMatch(/^name = "cubalyze_lib"$/m);
+    expect(cargo).toContain('authors = ["Cubalyze Team"]');
+    expect(cargo).not.toMatch(/cube[ _.-]?forge/i);
+    expect(read('apps/desktop/src-tauri/src/main.rs')).toContain('cubalyze_lib::run()');
   });
 });

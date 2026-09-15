@@ -134,7 +134,7 @@ bytes min/seg/msec LE) y devuelve el display + 3 tiempos previos.
 | `src/ble/cube.rs` | Conexión con **3 estrategias en cascada**: (1) MAC cacheada → conexión directa; (2) periféricos cacheados (sin escanear); (3) escaneo activo con short-circuit (poll 500ms, hasta 8s). Detección de generación por servicios GATT descubiertos (no anunciados — tras el GATT connect la lista anunciada suele estar vacía). Emite `ble:data`, `ble:status`, `ble:devices_found`. |
 | `src/ble/timer.rs` | Conexión al timer, **validación CRC-16/CCITT-FALSE** (polinomio 0x1021, init 0xFFFF — espejo de la implementación TS) y magic byte `0xFE` de cada paquete, parseo de estados y de tiempos. Emite `ble:timer_event` y `ble:timer_status`. |
 | `src/log.rs` | Macro `debug_log!`: solo escribe a stderr en builds de debug; en release se expande a nada — los nombres de dispositivos/MACs nunca se filtran en producción. |
-| `src/main.rs` | Entrypoint (`cubeforge_lib::run()`); la ventana de consola de Windows está comentada para depuración BLE. |
+| `src/main.rs` | Entrypoint (`cubalyze_lib::run()`); la ventana de consola de Windows está comentada para depuración BLE. |
 
 **Eventos emitidos por Rust → TS:**
 

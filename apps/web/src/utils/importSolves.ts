@@ -12,7 +12,7 @@ import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubalyze
    Import format identifiers
    ─────────────────────────────────────────────────────────────────────── */
 
-export type ImportFormat = "cstimer" | "cstimer-json" | "twistytimer" | "cubeforge-csv" | "cubeforge-json" | "generic-csv" | "unknown";
+export type ImportFormat = "cstimer" | "cstimer-json" | "twistytimer" | "cubalyze-csv" | "cubalyze-json" | "generic-csv" | "unknown";
 
 export interface ImportPreview {
   format: ImportFormat;
@@ -39,7 +39,7 @@ export interface ImportedSolve {
   category?: string;
   /** Puzzle type for this solve (e.g. '333', '222'). */
   puzzleType?: string;
-  /** How the solve was recorded ('smart' | 'manual') — preserved from CubeForge JSON. */
+  /** How the solve was recorded ('smart' | 'manual') — preserved from Cubalyze JSON. */
   source?: SolveSource;
   /** Raw moves captured from a Smart Cube / virtual solve — full-fidelity JSON. */
   moves?: CubeMoveEvent[];
@@ -65,7 +65,7 @@ export interface ImportResult {
  * csTimer JSON: {"session1":[[[0,73521],"scramble","",1737013787],...],...,"properties":{...}}
  * csTimer CSV:  "333";"Normal";"122170";"1620000000000";"R U R' U'...";"0";""
  * TwistyTimer:  "54.03";"R U R' U'";"2025-01-08T19:50:06.520+01:00"
- * CubeForge:    No.,Time,Penalty,Scramble,Date,Method,Note
+ * Cubalyze:     No.,Time,Penalty,Scramble,Date,Method,Note
  * generic CSV:  any comma or tab delimited data with a header row
  * JSON:         starts with `{` or `[`
  */
@@ -111,11 +111,11 @@ export function detectFormat(content: string): ImportFormat {
         // Our JSON: has "app", "solves", etc. `app` is accepted with the old
         // spelling too, so a file exported before the rename still imports.
         if (isKnownExportTag(parsed.app, SOLVE_EXPORT_TAGS) && Array.isArray(parsed.solves)) {
-          return "cubeforge-json";
+          return "cubalyze-json";
         }
-        return "cubeforge-json";
+        return "cubalyze-json";
       }
-      return "cubeforge-json";
+      return "cubalyze-json";
     } catch {
       return "unknown";
     }
@@ -140,9 +140,9 @@ export function detectFormat(content: string): ImportFormat {
     return "cstimer";
   }
 
-  // CubeForge CSV: comma-delimited with known header
+  // Cubalyze CSV: comma-delimited with known header
   if (firstLine.startsWith("No.,Time,Penalty,Scramble,Date,Method,Note")) {
-    return "cubeforge-csv";
+    return "cubalyze-csv";
   }
 
   // Generic CSV: has commas, might have headers
@@ -463,7 +463,7 @@ function parseCsTimerHeaderLine(
 
   // In csTimer header CSV, the Time column (e.g. "46.07+") contains the penalty-adjusted time (raw + 2s).
   // The P.1 column (e.g. "44.07") contains the raw solve time.
-  // CubeForge expects solve.time to be the RAW time, so effectiveTime(solve) = solve.time + 2000ms.
+  // Cubalyze expects solve.time to be the RAW time, so effectiveTime(solve) = solve.time + 2000ms.
   if (penalty === "+2") {
     const pMs = pRaw ? parseWcaTimeMs(pRaw) : null;
     if (pMs !== null && pMs > 0 && pMs < timeMs) {
@@ -542,11 +542,11 @@ function parseCsTimerHeaderCsv(content: string): ImportResult {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   CubeForge CSV parser
+   Cubalyze CSV parser
    Format: No.,Time,Penalty,Scramble,Date,Method,Note
    ─────────────────────────────────────────────────────────────────────── */
 
-function parseCubeForgeLine(line: string, _index: number): ImportedSolve | null {
+function parseCubalyzeLine(line: string, _index: number): ImportedSolve | null {
   const fields = splitCSVLine(line, ",");
   if (fields.length < 5) return null;
 
@@ -839,10 +839,10 @@ function mapCsTimerPenaltyNumber(n: number): Penalty {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   JSON import (CubeForge format)
+   JSON import (Cubalyze format)
    ─────────────────────────────────────────────────────────────────────── */
 
-interface CubeForgeExport {
+interface CubalyzeSolveExport {
   exportedAt: string;
   app: string;
   sessionName: string;
@@ -862,7 +862,7 @@ interface CubeForgeExport {
   }>;
 }
 
-interface CubeForgeAllExport {
+interface CubalyzeAllSessionsExport {
   exportedAt: string;
   app: string;
   sessionCount: number;
@@ -885,7 +885,7 @@ interface CubeForgeAllExport {
   }>;
 }
 
-function toImportedSolve(s: CubeForgeExport["solves"][number]): ImportedSolve {
+function toImportedSolve(s: CubalyzeSolveExport["solves"][number]): ImportedSolve {
   return {
     time: s.timeMs,
     penalty: normalizePenalty(s.penalty),
@@ -912,21 +912,21 @@ function parseJsonImport(content: string): ImportResult {
     if (isKnownExportTag(data.app, SOLVE_EXPORT_TAGS)) {
       // Single-session export: { app, sessionName, solves }
       if (Array.isArray(data.solves)) {
-        const export_ = data as CubeForgeExport;
+        const export_ = data as CubalyzeSolveExport;
         const solves: ImportedSolve[] = export_.solves.map(toImportedSolve);
-        return { solves, errors: [], format: "cubeforge-json" };
+        return { solves, errors: [], format: "cubalyze-json" };
       }
 
       // Full export: { app, sessions: [{ sessionName, solves }] } — flattens
       // every session's solves, preserving each solve's per-solve metadata.
       if (Array.isArray(data.sessions)) {
-        const export_ = data as CubeForgeAllExport;
+        const export_ = data as CubalyzeAllSessionsExport;
         const solves: ImportedSolve[] = [];
         for (const session of export_.sessions) {
           if (!Array.isArray(session.solves)) continue;
           for (const s of session.solves) solves.push(toImportedSolve(s));
         }
-        return { solves, errors: [], format: "cubeforge-json" };
+        return { solves, errors: [], format: "cubalyze-json" };
       }
     }
 
@@ -949,8 +949,8 @@ function parseJsonImport(content: string): ImportResult {
  *
  * Supports:
  * - csTimer semicolon CSV
- * - CubeForge CSV
- * - CubeForge JSON
+ * - Cubalyze CSV
+ * - Cubalyze JSON
  * - Generic CSV/Tab-delimited with auto-column detection
  */
 export function parseImport(content: string): ImportResult {
@@ -984,7 +984,7 @@ export function parseImport(content: string): ImportResult {
       return { solves, errors, format };
     }
 
-    case "cubeforge-csv": {
+    case "cubalyze-csv": {
       const lines = content.trim().split("\n");
       const solves: ImportedSolve[] = [];
       const errors: { line: number; message: string }[] = [];
@@ -992,7 +992,7 @@ export function parseImport(content: string): ImportResult {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]!.trim();
         if (!line) continue;
-        const solve = parseCubeForgeLine(line, i + 1);
+        const solve = parseCubalyzeLine(line, i + 1);
         if (solve) {
           solves.push(solve);
         } else if (i > 0) {
@@ -1009,7 +1009,7 @@ export function parseImport(content: string): ImportResult {
     case "twistytimer":
       return parseTwistyTimerCsv(content);
 
-    case "cubeforge-json":
+    case "cubalyze-json":
       return parseJsonImport(content);
 
     case "generic-csv":
@@ -1040,7 +1040,7 @@ export function previewImport(content: string): ImportPreview {
     if (format === "cstimer" && CSTIMER_HEADER_RE.test(lines[0]?.trim() ?? "")) {
       headers = splitCSVLine(lines[0] ?? "", ";").map((h) => unquote(h));
     }
-  } else if (format === "cubeforge-csv") {
+  } else if (format === "cubalyze-csv") {
     headers = ["No.", "Time", "Penalty", "Scramble", "Date", "Method", "Note"];
   }
 

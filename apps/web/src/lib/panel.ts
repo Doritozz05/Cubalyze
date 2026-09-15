@@ -1,5 +1,5 @@
 /**
- * CubeForge Panel Tokens
+ * Cubalyze Panel Tokens
  *
  * Canonical className strings for panel / card primitives.
  *

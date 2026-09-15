@@ -43,14 +43,14 @@ export interface OrientationTrackingSource {
 type Quat = { x: number; y: number; z: number; w: number };
 
 // ── Diagnostic logging (opt-in) ────────────────────────────────────────────
-// `?orientation_debug=1` or `localStorage.cubeforge:orientation-debug = "1"`
+// `?orientation_debug=1` or `localStorage.cubalyze:orientation-debug = "1"`
 // enables the calibration trace so the connect flow can be verified on real
 // hardware without touching production consoles.
 function orientationDebugEnabled(): boolean {
   if (typeof window === "undefined") return false;
   try {
     if (new URLSearchParams(window.location.search).has("orientation_debug")) return true;
-    if (window.localStorage.getItem("cubeforge:orientation-debug") === "1") return true;
+    if (window.localStorage.getItem("cubalyze:orientation-debug") === "1") return true;
   } catch {
     /* ignore */
   }

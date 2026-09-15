@@ -36,7 +36,7 @@ export function getEasing(strategy: EasingStrategy): EasingFn {
 
 /**
  * Quadratic ease-in-out — smooth acceleration then deceleration.
- * This is the standard easing used by both CubeForge and Sebastian Lague.
+ * This is the standard easing used by both Cubalyze and Sebastian Lague.
  *
  * f(t) = 2t²           for t < 0.5
  * f(t) = -1 + (4-2t)t  for t ≥ 0.5

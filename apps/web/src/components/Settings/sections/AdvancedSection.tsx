@@ -45,10 +45,14 @@ const STORAGE_LABEL_KEY: Partial<Record<string, ParseKeys<"settings">>> = {
 };
 
 /**
- * Every key the app owns in localStorage shares the `cubeforge` prefix
- * (preferences, active session, widget layout, onboarding/migration flags…).
- * Clears them all — solves and training data live in SQLite, not localStorage,
- * so they are never touched here.
+ * App-owned localStorage keys carry one of TWO prefixes:
+ *  · `cubeforge*` — frozen for life (preferences, active session, widget
+ *    layout, onboarding/migration flags). They hold user data and renaming
+ *    them would open an empty store, so they keep the historical spelling.
+ *  · `cubalyze*` — the debug flags, which hold no user data.
+ * Both are cleared — solves and training data live in SQLite, not localStorage,
+ * so they are never touched here. Accepting both prefixes is what keeps this
+ * feature correct across the rename.
  */
 function clearAppStorage() {
   if (typeof window === "undefined") return;
@@ -57,7 +61,7 @@ function clearAppStorage() {
   const keys: string[] = [];
   for (let i = 0; i < window.localStorage.length; i++) {
     const key = window.localStorage.key(i);
-    if (key && key.startsWith("cubeforge")) keys.push(key);
+    if (key && (key.startsWith("cubeforge") || key.startsWith("cubalyze"))) keys.push(key);
   }
   for (const key of keys) {
     window.localStorage.removeItem(key);
@@ -110,8 +114,8 @@ function useAppStorageEntries() {
       const key = window.localStorage.key(i);
       if (!key) continue;
       const value = window.localStorage.getItem(key) ?? "";
-      // Only app-namespaced keys (cubeforge-*) plus anything huge.
-      if (key.startsWith("cubeforge") || value.length > 2048) {
+      // Only app-namespaced keys (cubeforge*/cubalyze*) plus anything huge.
+      if (key.startsWith("cubeforge") || key.startsWith("cubalyze") || value.length > 2048) {
         out.push({ key, bytes: new Blob([value]).size });
       }
     }
@@ -150,16 +154,16 @@ export function AdvancedSection() {
   // Debug logs = durable localStorage flag (mirrors ?cfop_debug=1).
   const [debugLogs, setDebugLogs] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("cubeforge:cfop-debug") === "1";
+    return window.localStorage.getItem("cubalyze:cfop-debug") === "1";
   });
 
   const handleToggleDebugLogs = (v: boolean) => {
     setDebugLogs(v);
     if (v) {
-      window.localStorage.setItem("cubeforge:cfop-debug", "1");
+      window.localStorage.setItem("cubalyze:cfop-debug", "1");
       toast.success(i18n.t("toast:debugLogsEnabled"));
     } else {
-      window.localStorage.removeItem("cubeforge:cfop-debug");
+      window.localStorage.removeItem("cubalyze:cfop-debug");
       toast.success(i18n.t("toast:debugLogsDisabled"));
     }
   };

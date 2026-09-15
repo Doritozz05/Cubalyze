@@ -7,7 +7,7 @@ import { widgetStore } from "./widgetStore";
  * stored position, and — if mounted — its actual on-screen DOM rect.
  *
  * Call it from the browser console:
- *   __cubeforgeDebugWidgets()
+ *   __cubalyzeDebugWidgets()
  */
 export function debugWidgetPositions(): void {
   const state = widgetStore.getState();
@@ -32,7 +32,7 @@ export function debugWidgetPositions(): void {
         : false,
     };
   });
-  console.groupCollapsed("%c[cubeforge] widget positions", "color:#38bdf8");
+  console.groupCollapsed("%c[Cubalyze] widget positions", "color:#38bdf8");
   console.table(rows);
   console.log(
     "%cRaw store state:",
@@ -45,7 +45,7 @@ export function debugWidgetPositions(): void {
 /**
  * Reset a widget's position back to its definition default.
  * Useful from the console to force a widget back on screen:
- *   __cubeforgeDebugWidgets.reset("cube-button")
+ *   __cubalyzeDebugWidgets.reset("cube-button")
  */
 export function resetWidgetPosition(id: string): void {
   widgetStore.getState().resetWidgetPosition(id);
@@ -55,7 +55,7 @@ export function resetWidgetPosition(id: string): void {
 export function installWidgetDebug(): void {
   // Only called from App's useEffect (client-side), so `window` is safe.
   const w = window as unknown as Record<string, unknown>;
-  w["__cubeforgeDebugWidgets"] = Object.assign(debugWidgetPositions, {
+  w["__cubalyzeDebugWidgets"] = Object.assign(debugWidgetPositions, {
     reset: resetWidgetPosition,
   });
 }

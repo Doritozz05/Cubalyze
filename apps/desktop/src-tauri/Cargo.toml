@@ -1,12 +1,12 @@
 [package]
-name = "cubeforge"
+name = "cubalyze"
 version = "0.1.0"
 description = "Smart Cube Training Platform"
-authors = ["CubeForge Team"]
+authors = ["Cubalyze Team"]
 edition = "2021"
 
 [lib]
-name = "cubeforge_lib"
+name = "cubalyze_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

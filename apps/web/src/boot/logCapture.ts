@@ -198,7 +198,7 @@ export interface LogCaptureApi {
 
 declare global {
   interface Window {
-    __cubeforgeLogs?: LogCaptureApi;
+    __cubalyzeLogs?: LogCaptureApi;
   }
 }
 
@@ -214,7 +214,7 @@ export function installLogCapture(): void {
   installConsoleCapture();
   installWindowErrorCapture();
 
-  window.__cubeforgeLogs = {
+  window.__cubalyzeLogs = {
     get: getLogs,
     text: logsToText,
     clear: clearLogBuffer,

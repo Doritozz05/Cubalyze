@@ -6,7 +6,7 @@ import * as SwitchPrimitive from "@radix-ui/react-switch"
 import { cn } from "../lib/utils"
 
 /**
- * CubeForge switch component — exact Uiverse animation & geometry scaled to compact size:
+ * Cubalyze switch component — exact Uiverse animation & geometry scaled to compact size:
  *   - Base scale: 10px (`text-[10px]`)
  *   - Track dimensions: 3.5em wide (35px) x 2em high (20px)
  *   - Track radius: 6px (`rounded-[6px]`)

@@ -15,7 +15,7 @@ export interface SettingToggleProps {
  * A refined toggle card for a single boolean setting.
  *
  * Clean, minimal card with a subtle hover ring and generous spacing.
- * Uses ink-based accents — no green — matching the CubeForge palette.
+ * Uses ink-based accents — no green — matching the Cubalyze palette.
  */
 export function SettingToggle({
   title,

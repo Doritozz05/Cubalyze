@@ -66,7 +66,7 @@ async function auditSolves(executor: Executor, storageType: () => string): Promi
   );
 
   console.groupCollapsed(
-    "%c[CubeForge] Diagnóstico de datos (auditSolves)",
+    "%c[Cubalyze] Diagnóstico de datos (auditSolves)",
     "color:#38bdf8;font-weight:bold",
   );
   console.log("URL:", window.location.href);
@@ -117,13 +117,13 @@ async function dedupeSolves(executor: Executor, confirm: boolean): Promise<void>
   const extra = num(dupRows?.extra);
 
   if (groups === 0) {
-    console.log("%c[CubeForge] Sin duplicados exactos. No hay nada que limpiar.", "color:#4ade80");
+    console.log("%c[Cubalyze] Sin duplicados exactos. No hay nada que limpiar.", "color:#4ade80");
     return;
   }
 
   if (!confirm) {
     console.groupCollapsed(
-      "%c[CubeForge] Simulación de dedupeSolves (no se borró nada)",
+      "%c[Cubalyze] Simulación de dedupeSolves (no se borró nada)",
       "color:#facc15;font-weight:bold",
     );
     console.log(`Se eliminarían ${extra} filas de ${groups} grupos duplicados (se conserva la copia más antigua).`);
@@ -142,7 +142,7 @@ async function dedupeSolves(executor: Executor, confirm: boolean): Promise<void>
   );
 
   console.log(
-    `%c[CubeForge] Deduplicación completada: ${extra} fila(s) duplicada(s) eliminada(s) de ${groups} grupo(s).`,
+    `%c[Cubalyze] Deduplicación completada: ${extra} fila(s) duplicada(s) eliminada(s) de ${groups} grupo(s).`,
     "color:#4ade80;font-weight:bold",
   );
 }

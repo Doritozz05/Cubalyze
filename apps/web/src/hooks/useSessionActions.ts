@@ -155,7 +155,7 @@ export function useSessionActions(deps: SessionActionsDeps) {
       withSolves.push({ sessionName: s.name, solves: sessionSolves });
     }
     const json = exportAllSolvesToJSON(withSolves);
-    downloadFile(json, 'cubeforge-all-sessions.json', 'application/json');
+    downloadFile(json, 'cubalyze-all-sessions.json', 'application/json');
   }, [sessions, fetchSessionSolves]);
 
   return {

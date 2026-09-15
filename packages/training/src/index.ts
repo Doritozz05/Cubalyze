@@ -1,7 +1,7 @@
 /**
  * @cubalyze/training
  *
- * Core training engine for CubeForge.
+ * Core training engine for Cubalyze.
  *
  * This package provides:
  * - Type definitions: exercises, sessions, progress tracking

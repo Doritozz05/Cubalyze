@@ -160,7 +160,7 @@ describe("Cubalyze JSON full-fidelity round trip", () => {
     expect(JSON.parse(json).app).toBe("Cubalyze");
 
     const result = parseImport(json);
-    expect(result.format).toBe("cubeforge-json");
+    expect(result.format).toBe("cubalyze-json");
     expect(result.errors).toHaveLength(0);
     expect(result.solves).toHaveLength(2);
 
@@ -191,7 +191,7 @@ describe("Cubalyze JSON full-fidelity round trip", () => {
     expect(data.sessions[1].solveCount).toBe(1);
 
     const result = parseImport(json);
-    expect(result.format).toBe("cubeforge-json");
+    expect(result.format).toBe("cubalyze-json");
     expect(result.errors).toHaveLength(0);
     expect(result.solves).toHaveLength(3);
     // Puzzle types survive the round trip per solve.
@@ -213,7 +213,7 @@ describe("Cubalyze JSON full-fidelity round trip", () => {
     });
 
     const result = parseImport(legacy);
-    expect(result.format).toBe("cubeforge-json");
+    expect(result.format).toBe("cubalyze-json");
     expect(result.errors).toHaveLength(0);
     expect(result.solves).toHaveLength(1);
     expect(result.solves[0]!.time).toBe(10000);
@@ -268,7 +268,7 @@ describe("Cubalyze JSON full-fidelity round trip", () => {
     });
 
     const result = parseImport(legacyJson);
-    expect(result.format).toBe("cubeforge-json");
+    expect(result.format).toBe("cubalyze-json");
     expect(result.errors).toHaveLength(0);
 
     const inputs = result.solves.map((s) => toSolveInput(s));

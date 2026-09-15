@@ -1051,9 +1051,9 @@ html.liquid-glass *::-webkit-scrollbar-thumb:hover {
   }
 
   /* Mode 3: Composite. Digits and math symbols throughout the entire page render
-     via CubeforgeCompositeDigits (defined by dynamic unicode-range). */
+     via CubalyzeCompositeDigits (defined by dynamic unicode-range). */
   html[data-font-mode="composite"] .nums {
-    font-family: 'CubeforgeCompositeDigits', var(--font-mono), var(--font-sans), ui-monospace, monospace;
+    font-family: 'CubalyzeCompositeDigits', var(--font-mono), var(--font-sans), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
   }
 

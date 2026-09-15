@@ -252,7 +252,7 @@ async function runAnalysis(
     });
 
     // End-of-solve diagnostic. Gated behind URL/localStorage flag
-    // (?cfop_debug=1 or localStorage.cubeforge:cfop-debug="1") so
+    // (?cfop_debug=1 or localStorage.cubalyze:cfop-debug="1") so
     // production consoles stay clean.
     logSolveDiagnostic({
       moves,

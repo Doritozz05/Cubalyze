@@ -23,15 +23,15 @@ import { findPreset } from "@/theme/customThemes";
 
 function updateCompositeStyle(digitSrc: string): void {
   if (typeof document === 'undefined') return;
-  let tag = document.getElementById('cubeforge-composite-font') as HTMLStyleElement | null;
+  let tag = document.getElementById('cubalyze-composite-font') as HTMLStyleElement | null;
   if (!tag) {
     tag = document.createElement('style');
-    tag.id = 'cubeforge-composite-font';
+    tag.id = 'cubalyze-composite-font';
     document.head.appendChild(tag);
   }
   tag.textContent = `
 @font-face {
-  font-family: 'CubeforgeCompositeDigits';
+  font-family: 'CubalyzeCompositeDigits';
   src: ${digitSrc};
   unicode-range: ${DIGIT_UNICODE_RANGE};
   font-display: swap;
@@ -43,7 +43,7 @@ function updateCompositeStyle(digitSrc: string): void {
 
 function removeCompositeStyle(): void {
   if (typeof document === 'undefined') return;
-  const tag = document.getElementById('cubeforge-composite-font');
+  const tag = document.getElementById('cubalyze-composite-font');
   if (tag) tag.remove();
 }
 
@@ -210,8 +210,8 @@ function ThemeSync() {
     if (fontDigitMode === 'composite') {
       const digitSrc = resolveDigitFontSrc(fontMono, customFonts);
       updateCompositeStyle(digitSrc);
-      root.style.setProperty('--app-font-sans', `'CubeforgeCompositeDigits', ${resolvedSans}`);
-      root.style.setProperty('--app-font-mono', `'CubeforgeCompositeDigits', ${resolvedMono}`);
+      root.style.setProperty('--app-font-sans', `'CubalyzeCompositeDigits', ${resolvedSans}`);
+      root.style.setProperty('--app-font-mono', `'CubalyzeCompositeDigits', ${resolvedMono}`);
     } else {
       removeCompositeStyle();
       root.style.setProperty('--app-font-sans', resolvedSans);

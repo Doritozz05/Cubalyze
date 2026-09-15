@@ -2,10 +2,14 @@
  * Brand surface guard — Cubeforge → Cubalyze.
  *
  * Pins the contract that every USER-FACING string carries the new brand and no
- * trace of the old one. It scans **values**, never keys: locale keys are allowed
- * to keep the legacy spelling (`formatNameCubeforge*`) because renaming a key is
- * a code change in `DataSection.tsx`, not a text change. That exception is
- * asserted explicitly below so it cannot be "tidied up" by accident.
+ * trace of the old one. It scans **values**, never keys: renaming a key is a code
+ * change, not a text change, so keys are judged elsewhere (the metadata guard in
+ * docsBrand.test.ts, and the dynamic-lookup guard in src/i18n/index.test.ts).
+ *
+ * PR-1 deliberately left `formatNameCubeforge*` in place and pinned that decision
+ * here. PR-5 renamed it — together with `DataSection.tsx` and the tests — and this
+ * file now asserts the keys it looks up actually resolve, which is the risk that
+ * made renaming them unsafe in the first place.
  *
  * Why a test instead of a grep:
  *   • it keeps holding after the package scope is renamed (PR-3) and after the
@@ -60,8 +64,8 @@ describe('brand surface — visible text values', () => {
     const offenders = values.filter((entry) => LEGACY.test(entry.value));
     expect(
       offenders.map((entry) => `${entry.path} = ${entry.value}`),
-      'Un texto visible (valor de i18n) sigue diciendo la marca antigua. ' +
-        'Renombrar el VALOR es seguro; la CLAVE formatNameCubeforge* sí se queda (§15 PR-1).',
+      'Un texto visible (valor de i18n) sigue diciendo la marca antigua. '
+        + 'Renombrar el VALOR es seguro; las CLAVES también van con la marca nueva (§15 PR-5).',
     ).toEqual([]);
   });
 
@@ -81,16 +85,15 @@ describe('brand surface — visible text values', () => {
     }
   });
 
-  it.each(LOCALES)('%s: la excepción declarada de las claves de formato sigue intacta', (file) => {
-    // Renaming these keys requires touching DataSection.tsx + the import/format
-    // tests in the same commit — that is PR-2/PR-5 work, not a text edit. Looked
-    // up by name (not by a fixed path) so a reorganisation of the JSON tree does
-    // not turn this guard into a false alarm.
+  it.each(LOCALES)('%s: las claves de formato llevan ya la marca nueva', (file) => {
+    // Replaces PR-1's "the legacy keys are still here" exception, which expired the
+    // moment PR-5 renamed them. Looked up by name (not by a fixed path) so a
+    // reorganisation of the JSON tree does not turn this guard into a false alarm.
     const paths = collectValues(JSON.parse(read(file))).map((entry) => entry.path);
-    for (const key of ['formatNameCubeforgeCsv', 'formatNameCubeforgeJson']) {
+    for (const key of ['formatNameCubalyzeCsv', 'formatNameCubalyzeJson']) {
       expect(
         paths.some((path) => path.split('.').includes(key)),
-        `desapareció la clave ${key}: renombrarla obliga a tocar código (DataSection.tsx) en el mismo commit`,
+        `falta la clave ${key}: DataSection.tsx la busca y la etiqueta saldría en crudo`,
       ).toBe(true);
     }
   });

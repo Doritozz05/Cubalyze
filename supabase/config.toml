@@ -1,4 +1,9 @@
-# CubeForge — Supabase local dev config.
+# Cubalyze — Supabase local dev config.
+#
+# `project_id` conserva el nombre histórico A PROPÓSITO: es la identidad del
+# stack local de `supabase start` (nombra sus contenedores y volúmenes), así que
+# renombrarlo abriría un entorno local vacío. Va con el cutover de dominio, no
+# con un PR de branding.
 # Generated for `supabase start` / `supabase db push`. If `supabase init`
 # regenerates this file with a newer schema, keep the project_id and the
 # auth redirect settings below.

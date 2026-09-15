@@ -333,7 +333,7 @@ export function CollectionView() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `cubeforge-locker-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.download = `cubalyze-locker-${new Date().toISOString().slice(0, 10)}.json`;
       anchor.click();
       URL.revokeObjectURL(url);
       if (photoCount > 0) {

@@ -57,7 +57,7 @@ export function ThemeShareSection() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cubeforge-theme-${themeFileSlug(label)}.json`;
+    a.download = `cubalyze-theme-${themeFileSlug(label)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success(t('appearance.themeExported'));

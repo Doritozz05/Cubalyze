@@ -190,7 +190,7 @@ export function ProfileSection() {
     const payload = JSON.stringify(profile, null, 2);
     downloadFile(
       payload,
-      `cubeforge-profile-${new Date().toISOString().slice(0, 10)}.json`,
+      `cubalyze-profile-${new Date().toISOString().slice(0, 10)}.json`,
       "application/json",
     );
     toast.success(i18n.t("toast:profileExported"));

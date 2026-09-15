@@ -59,14 +59,14 @@ describe("detectFormat — csTimer header CSV", () => {
   });
 
   it("still detects the Cubalyze CSV header", () => {
-    expect(detectFormat("No.,Time,Penalty,Scramble,Date,Method,Note\n1,12.34,,R U R',2025-01-01,,,")).toBe("cubeforge-csv");
+    expect(detectFormat("No.,Time,Penalty,Scramble,Date,Method,Note\n1,12.34,,R U R',2025-01-01,,,")).toBe("cubalyze-csv");
   });
 
   it("detects our JSON by its app tag, old spelling included", () => {
     // Dual read: the tag written today is `Cubalyze`, but a file exported before
     // the rename carries `CubeForge` and must still be recognised.
-    expect(detectFormat(JSON.stringify({ app: "Cubalyze", solves: [] }))).toBe("cubeforge-json");
-    expect(detectFormat(JSON.stringify({ app: "CubeForge", solves: [] }))).toBe("cubeforge-json");
+    expect(detectFormat(JSON.stringify({ app: "Cubalyze", solves: [] }))).toBe("cubalyze-json");
+    expect(detectFormat(JSON.stringify({ app: "CubeForge", solves: [] }))).toBe("cubalyze-json");
   });
 });
 

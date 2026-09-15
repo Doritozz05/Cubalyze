@@ -244,7 +244,7 @@ export async function exportSolvesToXLSX(
     "Info",
   );
 
-  XLSX.writeFile(wb, `cubeforge-${sanitizeFilename(sessionName)}.xlsx`);
+  XLSX.writeFile(wb, `cubalyze-${sanitizeFilename(sessionName)}.xlsx`);
 }
 
 /** Keep session names filesystem-safe for downloads. */

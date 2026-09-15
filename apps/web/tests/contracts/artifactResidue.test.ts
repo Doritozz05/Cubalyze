@@ -55,13 +55,12 @@ const FROZEN_WORD = [
   /^cubeforge[-:._][A-Za-z0-9:_.-]*$/,
   /^cubeforge_[A-Za-z0-9_]+$/, // claves OPFS/sahpool (cubeforge_snap_3d_v8_, cubeforge_puzzle…)
   /^cube-forge-db$/, // IndexedDB del snapshot
-  // Globales de consola (`window.__cubeforgeLogs`, `e.__cubeforgeLastSolve__`…).
-  // Se permite el prefijo de acceso al miembro (`e.`, `window.`) porque la
-  // «palabra» extraída incluye el objeto al que pertenecen.
-  /(^|\.)__(cubeforge|CubeForge)[A-Za-z0-9_]*$/,
-  /^CubeforgeCompositeDigits$/, // familia tipográfica interna (¡la F va en minúscula!)
-  /^cubeforge-composite-font$/, // id del <style> inyectado
-  /^cubeforge_lib$/, // crate Rust
+  // PR-5 borró de aquí cuatro exenciones que ya no hacían falta —los globales de
+  // consola `__cubeforge*`, la familia tipográfica `CubeforgeCompositeDigits`, el
+  // id del `<style>` `cubeforge-composite-font` y el crate `cubeforge_lib`—: todas
+  // se renombraron. Una exención que ya no coincide con nada no es inofensiva, es
+  // un punto ciego que dejaría volver el nombre viejo sin que nadie se enterara.
+  // Lo mismo con las banderas de depuración, que ahora se llaman `cubalyze:*`.
 ];
 
 /** Una mención «desnuda» (sin sufijo) = copy visible o discriminador → exige clasificación. */
@@ -82,9 +81,10 @@ const FROZEN_CONTEXT = [
     pattern: /startsWith\(`cubeforge`\)/,
     why:
       'Acoplamiento por PREFIJO en AdvancedSection (botón «Borrar datos de la app» + inspector de ' +
-      'almacenamiento). Congelado junto al resto de nombres; si algún día se renombran las claves, ' +
-      'estas dos comprobaciones deben aceptar AMBOS prefijos o fallarán en silencio. ' +
-      'Guardado también en storageContract.test.ts.',
+      'almacenamiento). El prefijo antiguo no puede desaparecer: las claves con datos lo conservan ' +
+      'de por vida. Desde PR-5 esas dos comprobaciones aceptan TAMBIÉN el prefijo nuevo (las ' +
+      'banderas de depuración se renombraron a `cubalyze:*`), así que borrar datos sigue siendo ' +
+      'completo. Guardado también en storageContract.test.ts (los dos prefijos).',
   },
   {
     pattern: /[`'"]cubeforge[`'"],\s*[`'"]forgemark[`'"]/,
@@ -117,22 +117,16 @@ const FROZEN_CONTEXT = [
  * dos entradas se borraron de aquí, porque la lectura doble deja las etiquetas
  * antiguas en el bundle PARA SIEMPRE. Esas ya no son residuo pendiente sino
  * contexto congelado (arriba), que es la clasificación honesta: no caducan, se
- * quedan a propósito. Las que quedan son solo nombres internos (PR-5).
+ * quedan a propósito.
+ *
+ * PR-5 (nombres internos de desarrollo: logs de consola, globales, familia
+ * tipográfica, ids de formato de importación, banderas de depuración y los siete
+ * nombres de descarga) también aterrizó, así que sus DOS últimas entradas se
+ * borraron igual que las anteriores: el bundle dejó de contenerlas y el test lo
+ * dijo en el acto. **La lista queda vacía a propósito**: el mecanismo se conserva
+ * porque es lo que permite que un rename futuro se declare aquí y caduque solo.
  */
-const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [
-  {
-    id: 'console-diagnostics',
-    pattern: /%c\[cube[ _.-]?forge\]/i,
-    pr: 'PR-5',
-    why: 'logs de diagnóstico en consola (dataIntegrity + widgets debug)',
-  },
-  {
-    id: 'i18n-format-keys',
-    pattern: /formatNameCubeforge(Csv|Json)/,
-    pr: 'PR-5 (opcional)',
-    why: 'CLAVES de i18n con la grafía antigua: renombrarlas exige tocar DataSection.tsx + tests',
-  },
-];
+const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [];
 
 function bundleText(): string {
   const assets = join(DIST, 'assets');

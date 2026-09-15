@@ -15,7 +15,7 @@
 // optional "(time)" keeping the raw time) logs a DNF solve.
 // Several times can be entered at once, separated by commas or newlines.
 //
-// CubeForge extension (not in csTimer): unit suffixes "90s", "2m30s", "1h".
+// Cubalyze extension (not in csTimer): unit suffixes "90s", "2m30s", "1h".
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { Penalty } from '@/types';
@@ -92,7 +92,7 @@ function parseEntry(raw: string): ParsedManualTime | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  // CubeForge extension: unit-suffixed values.
+  // Cubalyze extension: unit-suffixed values.
   const unitMs = parseUnitString(trimmed.toLowerCase());
   if (unitMs !== null) return { timeMs: unitMs, penalty: 'none' };
 

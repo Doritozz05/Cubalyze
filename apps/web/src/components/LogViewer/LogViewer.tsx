@@ -14,9 +14,9 @@ import {
  *
  * - Lives OUTSIDE the AppErrorBoundary (mounted as a sibling in main.tsx),
  *   so it survives a render crash and can open from the crash screen via the
- *   `cubeforge:open-logs` window event.
+ *   `cubalyze:open-logs` window event.
  * - The floating button appears with `?debug=1` in the URL (or the
- *   `cubeforge:debug-ui=1` localStorage flag) — nothing new in the UI for
+ *   `cubalyze:debug-ui=1` localStorage flag) — nothing new in the UI for
  *   normal users.
  * - Polls the in-memory ring buffer a few times per second; everything is
  *   local to the device, nothing is uploaded.
@@ -30,8 +30,8 @@ export function LogViewer(): ReactNode | null {
   // Open from the crash screen; show the floating button with ?debug=1.
   useEffect(() => {
     const onOpen = (): void => setOpen(true);
-    window.addEventListener("cubeforge:open-logs", onOpen);
-    return () => window.removeEventListener("cubeforge:open-logs", onOpen);
+    window.addEventListener("cubalyze:open-logs", onOpen);
+    return () => window.removeEventListener("cubalyze:open-logs", onOpen);
   }, []);
 
   const debugEnabled = useDebugUiEnabled(false);
@@ -229,7 +229,7 @@ function useDebugUiEnabled(initial: boolean): boolean {
   useEffect(() => {
     try {
       const hasParam = new URLSearchParams(window.location.search).has("debug");
-      const hasFlag = window.localStorage.getItem("cubeforge:debug-ui") === "1";
+      const hasFlag = window.localStorage.getItem("cubalyze:debug-ui") === "1";
       setEnabled(hasParam || hasFlag);
     } catch {
       /* ignore */

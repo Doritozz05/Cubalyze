@@ -6,7 +6,7 @@
  * Extracted from `useSolveSession.ts` to keep the orchestration hook focused.
  * Everything here is OPT-IN: it only logs when the user enables the debug
  * flags (URL `?cfop_debug=1` / `?moves_debug=1`, or localStorage keys
- * `cubeforge:cfop-debug` / `cubeforge:moves-debug`), or automatically on the
+ * `cubalyze:cfop-debug` / `cubalyze:moves-debug`), or automatically on the
  * localhost Vite dev server. Production consoles stay clean by default.
  */
 
@@ -59,7 +59,7 @@ function readDebugFlag(
       }
     }
     for (const name of paramNames) {
-      const stored = window.localStorage.getItem(`cubeforge:${name}`);
+      const stored = window.localStorage.getItem(`cubalyze:${name}`);
       if (stored === "1" || stored === "true") {
         return { enabled: true, source: "localStorage" };
       }
@@ -93,7 +93,7 @@ const _debugInitState = (() => {
     // Only show the "how to enable" hint when logs are actually OFF.
     if (!cfopEffective) {
       console.log(
-        '%c[CFOP Debug]%c end-of-solve logs OFF \u2014 turn on with ?cfop_debug=1, or localStorage.setItem("cubeforge:cfop-debug","1")',
+        '%c[CFOP Debug]%c end-of-solve logs OFF \u2014 turn on with ?cfop_debug=1, or localStorage.setItem("cubalyze:cfop-debug","1")',
         "color:#facc15;font-weight:bold",
         "color:inherit",
       );
@@ -394,9 +394,9 @@ export function logSolveDiagnostic(args: {
   }
 
   try {
-    type DebugGlobal = { __cubeforgeLastSolve__?: unknown };
+    type DebugGlobal = { __cubalyzeLastSolve__?: unknown };
     const w = window as unknown as DebugGlobal;
-    w.__cubeforgeLastSolve__ = {
+    w.__cubalyzeLastSolve__ = {
       moveCount: moves.length,
       moves,
       moveNotations: moves.map(moveNotation),

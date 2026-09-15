@@ -60,7 +60,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, CrashSt
   };
 
   private handleOpenLogs = (): void => {
-    window.dispatchEvent(new CustomEvent("cubeforge:open-logs"));
+    window.dispatchEvent(new CustomEvent("cubalyze:open-logs"));
   };
 
   render(): ReactNode {

@@ -1,7 +1,7 @@
 /**
  * @cubalyze/sync-engine
  *
- * Offline-first cloud sync for CubeForge (Supabase):
+ * Offline-first cloud sync for Cubalyze (Supabase):
  *  - row-level LWW sync with per-table watermarks and tombstone deletes;
  *  - derived training aggregates are NEVER synced raw — they are rebuilt
  *    from the synced attempt log via @cubalyze/training's deterministic
