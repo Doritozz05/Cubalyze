@@ -20,6 +20,16 @@ export default defineConfig({
   },
   test: {
     passWithNoTests: true,
+    // 5 s (the default) is calibrated for a fast laptop, not for a shared
+    // 4-vCPU CI runner, where the SAME test can be 10x slower … and has been
+    // measured at 80x (68 ms locally, 5454 ms on the runner). Two legitimate
+    // algorithmic tests were failed by it in one day: the Pyraminx reachable
+    // state space (6.1 s) and the cross-scramble rotation prefix (5.5 s).
+    // Raised here — not per test — because the inflation is a property of the
+    // runner, not of a test: with 80x any test over ~60 ms is a coin flip.
+    // Still bounded: a genuinely hung test fails in 30 s, and the CI job caps
+    // at 30 min. Tests that are heavy by design keep their own, larger budget.
+    testTimeout: 30_000,
     // `.freebuff/` is gitignored scratch space that can hold full repo copies
     // from parallel agent worktrees. Globbing into them duplicates every test
     // (and surfaces their unrelated failures), so keep discovery on the real
