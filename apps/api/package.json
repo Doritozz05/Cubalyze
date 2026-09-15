@@ -2,6 +2,7 @@
   "name": "@cubalyze/api",
   "version": "0.0.0",
   "private": true,
+  "description": "Scaffold vacío a propósito: no hay backend. Decisión del 2026-08-12 en docs/02-architecture/Desktop_App.md §5 (ver también ADR-019). Existe para marcar el sitio del backend cuando el sync en la nube sea prioridad; añadir código aquí dispara el ciclo RFC → ADR → TDD.",
   "scripts": {
     "typecheck": "echo no sources"
   }
