@@ -1102,6 +1102,30 @@ el id de elemento `cubeforge-composite-font` en `:26,29,46`) → renombrarlo es 
   colección (`collectionTransfer.ts:105`, ya versionado con `version`) y el `app: 'cubeforge'`
   *dentro* del tema compartido (`themeShare.ts:26`).
 
+##### Corrección de esta corrección (al ejecutar PR-4) — son **tres**, no dos
+
+La frase anterior es **falsa** en su segunda mitad: `exportSolves.ts` **sí** escribe un discriminador
+dentro del fichero. Lo que ocurrió es que esta pasada buscó el nombre en los *valores de retorno* de
+`detectFormat()` (`cubeforge-json`, `cubeforge-csv`) y no en el campo que realmente viaja escrito,
+`app: "CubeForge"` (`exportSolves.ts:108,140` y `App` en la hoja `Info` del `.xlsx`), que `importSolves.ts`
+exige para detectar y para tomar la ruta full-fidelity (`:110`, `:909`).
+
+Y el documento **se contradecía a sí mismo**: §15.8 ya listaba ese mismo discriminador como contrato real,
+y el test del artefacto —escrito en PR-1— lo declaraba explícitamente como el motivo de su existencia. Es
+decir: la contradicción no la encontró un grep, la encontró **comparar dos secciones propias**.
+
+| Contrato | Escrito en | Leído por | Etiqueta heredada |
+|---|---|---|---|
+| `app` del tema compartido | `themeShare.ts` / `ThemeShareSection.tsx` | `parseSharedTheme` | `cubeforge` |
+| `format` del backup de colección | `collectionTransfer.ts` | `isLockerFile` | `cubeforge-locker` |
+| `app`/`App` del export de solves | `exportSolves.ts` (JSON + `.xlsx`) | `importSolves.ts` | `CubeForge` |
+
+**`cubeforge-locker` es dos constantes distintas que comparten texto**, y clasificarlas igual sería el
+fallo: `COLLECTION_STORAGE_KEY` (`collectionStore.ts:83`) es una clave de `localStorage` **congelada de
+por vida**, mientras que `LOCKER_FILE_FORMAT` es un marcador **dentro** del fichero exportado y por tanto
+un contrato con doble lectura. Un rename ciego de esa cadena no rompe un fichero: **pierde la colección
+entera** de quien tenga el blob antiguo.
+
 #### Hallazgo nuevo: dos fuentes para el título y un texto que ignora i18n
 
 - El título visible se compone de **`meta:brand`** (`useDocumentTitle.ts:24`) con fallback a
@@ -1594,6 +1618,72 @@ fichero (solo exime si le siguen letras, como en `cubeforge.db`). Prueba en rojo
 `lint` 0 errores · `build` 13/13.
 
 **Lo que queda del barrido de texto** (PR-5, opcional): los comentarios de código, los identificadores
-como `parseCubeForgeLine` / `CubeForgeExport`, los nombres de test (`it("still detects CubeForge CSV")`),
-los globales `__cubeforgeLogs`, la familia tipográfica y el título que escribe `generate-changelog.cjs`.
-Los dos últimos son los únicos que un usuario podría llegar a ver.
+como `parseCubeForgeLine` / `CubeForgeExport`, los globales `__cubeforgeLogs`, la familia tipográfica y el
+título que escribe `generate-changelog.cjs`. El último y los nombres de descarga son lo único que un
+usuario podría llegar a ver.
+
+### 15.9 PR-4 ejecutado — contratos con doble lectura
+
+**Tres contratos, no dos.** La corrección está en §14.6.4; aquí va la ejecución. La regla que se aplica en
+los tres sitios es siempre la misma: **el escritor graba el tag nuevo, el lector acepta el nuevo y el
+antiguo**.
+
+| Contrato | Escrito en | Leído por | Heredado |
+|---|---|---|---|
+| `app` del tema | `themeShare.ts` + `ThemeShareSection.tsx` | `parseSharedTheme` | `cubeforge` |
+| `format` del backup | `collectionTransfer.ts` | `isLockerFile` | `cubeforge-locker` |
+| `app` / `App` del export | `exportSolves.ts` (JSON y `.xlsx`) | `importSolves.ts` | `CubeForge` |
+
+**La política vive en un solo sitio**, `apps/web/src/lib/exportTag.ts`: un tipo `ExportTagContract`
+(`current` + `legacy`) y una función `isKnownExportTag`. La regla tiene **sus propios 7 tests unitarios**,
+no solo su aplicación: acepta el tag actual, acepta cada heredado, acepta varios heredados, rechaza
+cualquier otra cosa, **es exacta** (una variante de caja o con espacios es otro formato, no una
+coincidencia), y no lanza con valores que no son strings.
+
+**El caso que ningún grep distingue: `cubeforge-locker` son dos constantes que comparten texto.**
+`COLLECTION_STORAGE_KEY` (`collectionStore.ts:83`) es una clave de `localStorage` **congelada de por
+vida**; `LOCKER_FILE_FORMAT` (`collectionTransfer.ts:40`) es un marcador **dentro** del fichero exportado
+y por tanto un contrato. Clasificarlas igual sería el fallo silencioso perfecto: un rename ciego de esa
+cadena no rompe un fichero, **pierde la colección entera** de quien tenga el blob antiguo.
+
+**Prueba en rojo de la superficie completa.** Rompiendo la regla
+(`return value === contract.current`) caen **8 tests** repartidos por los tres contratos y por la regla
+misma. Dos de ellos son **preexistentes** —los fixtures de `puzzleType` legacy que ya usaban
+`app: "CubeForge"`—, lo que confirma que la superficie de compatibilidad es exactamente la declarada y
+que no hay ningún test dependiendo de ella por accidente.
+
+#### La consecuencia estructural que hay que asumir
+
+Con doble lectura, **las etiquetas antiguas se quedan en el bundle para siempre**:
+`` {current:`Cubalyze`,legacy:[`CubeForge`]} ``. No es deuda pendiente; es la única forma de que un
+fichero ya descargado siga abriéndose, porque no podemos reescribir el disco de nadie.
+
+Por eso el test del artefacto las **reclasifica**: dejan de ser entradas `PENDING` (que caducan solas y
+fuerzan su propia limpieza) y pasan a ser `FROZEN_CONTEXT` (permanentes, con su justificación escrita).
+Sus dos entradas de contrato se borraron y la lista de pendientes baja a los dos nombres internos de
+PR-5. A partir de ahora, un `legacy: [...]` en el bundle es la **señal de que la compatibilidad está
+viva**, no un residuo.
+
+#### Lo que se queda fuera a propósito
+
+| Se queda en PR-5 | Por qué |
+|---|---|
+| Ids internos `cubeforge-json` / `cubeforge-csv` | No viajan dentro de ningún fichero: son lo que `detectFormat()` **devuelve** al inspeccionar el contenido |
+| `parseCubeForgeLine`, `CubeForgeExport`, `CubeForgeAllExport` | Nombres de símbolos: invisibles fuera del editor y de DevTools |
+| Nombres de descarga (`cubeforge-theme-*.json`, `cubeforge-${name}.xlsx`) | Payload libre: no se persiste ni se vuelve a leer. Renombrarlos es seguro, pero es otro cambio |
+
+**Dos comentarios que mentían** (y que este PR arregla porque PR-2b no podía tocar código): describían el
+flujo como «Import **CubeForge** JSON» cuando el label visible ya dice «Import **Cubalyze** JSON». Un
+comentario que cita un literal congelado no se puede renombrar a ciegas, pero uno que describe la UI
+**tiene** que seguirla.
+
+#### Verificación de PR-4
+
+| Comprobación | Resultado |
+|---|---|
+| Web | **962 tests** (eran 951); los 11 nuevos: 7 de la regla + 1 por cada contrato, y los 2 preexistentes que ahora se prueban explícitamente |
+| `pnpm -r exec vitest run --passWithNoTests` (comando del CI) | **exit 0** |
+| `pnpm -r exec tsc --noEmit` · `pnpm lint` | **0 errores** · 12/12 tareas (solo el warning preexistente de `ScrambleDisplay.tsx:145`) |
+| `pnpm build` | 13/13 + `verify-worker-build` OK (worker dedicado y tiers de OPFS presentes) |
+| Contratos | **29** almacén + **22** marca + **7** docs + **3** artefacto |
+| Bundle compilado | `` legacy:[`cubeforge`] `` · `` legacy:[`cubeforge-locker`] `` · `` legacy:[`CubeForge`] `` — y ningún `app`, `format` o `App` con el valor antiguo |
