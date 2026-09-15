@@ -21,6 +21,13 @@
  * name the old brand to be able to describe the change. Its entry asserts the file
  * still exists, so the day the document is archived or deleted this guard fails
  * and forces the exception to be cleaned up instead of lingering as dead weight.
+ *
+ * The same guard covers the METADATA (`*.json`) and the Mermaid diagrams
+ * (`*.mmd`), because those sit outside a prose sweep and a JSON value is exactly
+ * where a name hides in plain sight: `"project": "CubeForge"`, `"name":
+ * "CubeForge API Reference"`. There the rule needs one adjustment — see
+ * `isMetadataMention` — and one case it cannot decide by shape at all, which is
+ * why the root package name is asserted by VALUE.
  */
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -53,8 +60,8 @@ function isHistory(rel: string): boolean {
  * pasó al escribir esta guarda: marcó dos borradores que no forman parte del
  * proyecto.
  */
-function trackedMarkdown(): string[] {
-  const out = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
+function trackedFiles(...patterns: string[]): string[] {
+  const out = execFileSync('git', ['ls-files', '-z', '--', ...patterns], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
@@ -98,6 +105,35 @@ function wordmarkMentions(text: string): string[] {
   return found;
 }
 
+/**
+ * En prosa, unas comillas significan «esto es un nombre técnico».
+ *
+ * En JSON las comillas son SINTAXIS: `"project": "CubeForge"` es una mención en
+ * prosa, no una cita. Si la regla de arriba se aplicara tal cual, **cada valor de
+ * cada fichero JSON quedaría exento** y la guarda no vería absolutamente nada — el
+ * fallo perfecto: verde, grande y ciego. Por eso aquí se quitan las comillas de la
+ * lista de caracteres que eximen.
+ */
+const TECHNICAL_BEFORE_METADATA = /[@/\\:._()[\]-]/;
+
+function isMetadataMention(text: string, at: number, form: string): boolean {
+  const before = at > 0 ? text[at - 1] : '';
+  if (TECHNICAL_BEFORE_METADATA.test(before)) return false;
+  const after = text.slice(at + form.length, at + form.length + 12);
+  // Un sufijo (`cubeforge-locker`) o un dominio (`.desktop`) siguen siendo técnicos.
+  if (TECHNICAL_AFTER.test(after)) return false;
+  if (/^\.[a-z]{2,}/i.test(after)) return false;
+  return true;
+}
+
+function metadataMentions(text: string): string[] {
+  const found: string[] = [];
+  for (const match of text.matchAll(LEGACY_GLOBAL)) {
+    if (isMetadataMention(text, match.index ?? 0, match[0])) found.push(match[0]);
+  }
+  return found;
+}
+
 describe('docs brand — la regla, probada en sí misma', () => {
   it('reconoce el wordmark en prosa', () => {
     for (const bad of ['CubeForge', 'La app CubeForge', 'cubeforge es la app', 'CUBEFORGE']) {
@@ -127,7 +163,7 @@ describe('docs brand — la regla, probada en sí misma', () => {
 });
 
 describe('docs brand — documentación viva sin el nombre antiguo', () => {
-  const all = trackedMarkdown();
+  const all = trackedFiles('*.md');
   const live = all.filter((rel) => !isHistory(rel) && rel !== AUDIT_DOC);
 
   it('la lista viene del repositorio y trae contenido (una guarda que lee 0 ficheros pasa en falso)', () => {
@@ -166,5 +202,72 @@ describe('docs brand — documentación viva sin el nombre antiguo', () => {
       readFileSync(join(REPO_ROOT, master), 'utf8'),
       'El registro histórico ya no nombra la marca antigua: entonces ya no hay nada que excluir.',
     ).toMatch(LEGACY);
+  });
+});
+
+describe('docs brand — la regla de metadatos, probada en sí misma', () => {
+  it('marca un valor en prosa aunque vaya entre comillas', () => {
+    for (const bad of [
+      '"project": "CubeForge"',
+      '{ "name": "CubeForge API Reference" }',
+      'title: Cubeforge — flujo de datos',
+      '"description": "Default capabilities for CubeForge desktop"',
+    ]) {
+      expect(metadataMentions(bad), `debería ser residuo: ${bad}`).not.toEqual([]);
+    }
+  });
+
+  it('no marca identificadores, rutas, URLs ni claves', () => {
+    for (const ok of [
+      '"identifier": "com.cubeforge.desktop"',
+      '"commitUrlTemplate": "https://github.com/Doritozz05/Cubeforge/commit/{sha}"',
+      '"homepage": "https://cubeforge-phi.vercel.app/"',
+      '"formatNameCubeforgeCsv": "Cubalyze CSV"',
+      '"key": "cubeforge-locker"',
+      '"path": "cubeforge/"',
+    ]) {
+      expect(metadataMentions(ok), `no debería marcarse: ${ok}`).toEqual([]);
+    }
+  });
+});
+
+describe('docs brand — metadatos y diagramas sin el nombre antiguo', () => {
+  const all = trackedFiles('*.json', '*.mmd');
+  const live = all.filter((rel) => !isHistory(rel) && rel !== AUDIT_DOC);
+
+  it('la lista viene del repositorio y trae contenido (una guarda que lee 0 ficheros pasa en falso)', () => {
+    expect(
+      all.length,
+      'git no devolvió metadatos: la guarda está mirando al sitio equivocado.',
+    ).toBeGreaterThan(20);
+    expect(live.length).toBeGreaterThan(20);
+  });
+
+  it('ningún metadato vivo conserva el wordmark antiguo', () => {
+    const offenders: string[] = [];
+    for (const rel of live) {
+      const text = readFileSync(join(REPO_ROOT, rel), 'utf8');
+      for (const form of metadataMentions(text)) offenders.push(`${rel} → «${form}»`);
+    }
+    expect(
+      offenders,
+      'Un JSON o un diagrama VIVO vuelve a nombrar la marca antigua.\n' +
+        'Los identificadores (`com.cubeforge.desktop`, `cubeforge-locker`), las claves de i18n\n' +
+        'y las URLs son legítimos y la regla los exime; un valor en prosa no.\n' +
+        '`apps/desktop/src-tauri/gen/**` es salida de `tauri build` generada desde\n' +
+        '`capabilities/default.json`, así que se mantiene limpio por su origen.',
+    ).toEqual([]);
+  });
+
+  it('el paquete raíz no vuelve al nombre antiguo (la forma no puede decidirlo)', () => {
+    // `cubeforge-monorepo` y `cubeforge-prefs` tienen la MISMA forma: palabra +
+    // sufijo tras un guion. La regla no puede separarlos — el primero es un nombre que
+    // renombramos, el segundo una clave congelada que no se puede tocar sin perder
+    // datos (ver storageContract.test.ts). Cuando la forma no puede decidir, se afirma
+    // por VALOR.
+    const root = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as {
+      name?: string;
+    };
+    expect(root.name).toBe('cubalyze-monorepo');
   });
 });
