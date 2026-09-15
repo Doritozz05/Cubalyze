@@ -1487,3 +1487,64 @@ solo cambia de proyecto dueño (el que lo usa). Sonda eliminada.
 | `pnpm -r exec tsc --noEmit` (comando del CI) | rojo | **0 errores** |
 | `pnpm typecheck` (turbo, 33 tareas) | — | **33/33 OK** |
 | `pnpm --filter @cubeforge/desktop build` | — | **OK** |
+
+> Nota: esos comandos llevan el nombre que los paquetes tenían **entonces**. Desde §15.7 el nombre es
+> `@cubalyze/*` (`pnpm --filter @cubalyze/desktop …`).
+
+### 15.7 PR-3 ejecutado — el scope del monorepo
+
+`@cubeforge/*` → `@cubalyze/*`. Mecánico pero **atómico**: a medias no compila.
+
+**Alcance real: 566 ficheros · 1.123 líneas** (el plan decía 592/1.301; la diferencia son las
+exclusiones congeladas, unas 180 líneas). Todo con reemplazo literal del token `@cubeforge/`, que por
+construcción no puede tocar ningún nombre congelado: ninguno de ellos lleva `@` ni `/`.
+
+**Prueba de que fue un renombrado puro y no un codemod con daño colateral:** de los 569 ficheros del
+diff, **568 tienen exactamente las mismas líneas añadidas que borradas** (1+/1- por línea tocada). El
+único asimétrico es `brandSurface.test.ts` (68+/10-), que edité a mano a propósito. Un solo fichero con
+una línea de más habría delatado una sustitución mal hecha.
+
+**Congelado, con motivo** (no por comodidad):
+
+| Zona | Motivo |
+|---|---|
+| `packages/database/src/migrations/**` | un comentario SQL dentro de una migración **ya aplicada**, cuyo texto viaja en el bundle y cuyo id está en la tabla `_migrations` de cada dispositivo |
+| `supabase/migrations/**` | migración ya aplicada en producción: artefacto histórico |
+| 17 `CHANGELOG.md` · `docs/17-releases/CHANGELOG_MASTER.md` · `docs/18-archive/**` | historia: reescribirla falsificaría cuándo existió cada paquete |
+| `pnpm-lock.yaml` | **regenerado** con `pnpm install`, nunca editado a mano |
+
+**Dos correcciones a mi propio trabajo, ambas detectadas por la verificación:**
+
+1. **`docs/17-releases/RELEASE_PROCESS.md` no es historia, es documentación viva** (afirma el estado
+   actual: «hoy todos son `private: true` excepto …»). Mi exclusión por carpeta era demasiado gruesa y
+   lo había congelado. Solo `CHANGELOG_MASTER.md` es historia.
+2. **El codemod renombró el scope dentro de ESTA auditoría**, convirtiendo frases como
+   «Alias `@cubeforge/*` → `@cubalyze/*`» en «`@cubalyze/*` → `@cubalyze/*`». Es exactamente el error
+   contra el que advierte el §14: un documento que describe el **antes** no puede recibir el
+   reemplazo del después. Revertido el fichero (24 líneas) y escrito a mano. Lección aplicable a la
+   fase externa: el reemplazo global se aplica a lo que describe el presente, nunca a lo que
+   documenta el cambio.
+
+**El renombrado destapó un fallo en mi propia guarda de grafía (PR-2).** El test falló: la cadena
+`cubalyze` está dentro de `@cubalyze/database`, así que marcaba en falso cada import del monorepo. La
+regla ahora distingue **mención de marca** de **identificador técnico** (`isTechnicalIdentifier`:
+`@cubalyze/x`, `cubalyze-config`, `cubalyze_db`, `cubalyze.app` no son marca; `cubalyze` suelto o
+`Cub-Alyze` en prosa sí) y — esto es lo importante — **la regla tiene sus propios tests unitarios** (10
+casos), no solo su aplicación. El primer intento de arreglo perdió la excepción de hostname y fue el
+test unitario quien lo cazó, no el barrido.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm typecheck` | **33/33** (delata cualquier import sin renombrar) |
+| `pnpm lint` · `lint:lines` | 0 errores (1 warning preexistente) · 0 violaciones |
+| `pnpm -r exec vitest run --passWithNoTests` (comando del CI) | **exit 0** · web **943 tests** |
+| `pnpm build` | **13/13** · `verify-worker-build` OK (worker de OPFS intacto) |
+| `git grep -F "@cubeforge/"` | solo lo congelado (docs de historia + 3 comentarios de migración) |
+| `node_modules` | residuo hoisted `@cubeforge` **eliminado** para que el entorno no pudiera enmascarar un import sin renombrar |
+
+Los fallos que imprime el informe de `scdb-alg-verification.test.ts` (`PASS: 130 | FAIL: 38`, etc.) son
+una **auditoría de contenido** del catálogo de algoritmos, no tests rotos: el fichero pasa y el run sale
+con 0. Ninguna operación de este PR puede alterar la validez de un algoritmo, y los datos no cambiaron
+(todos los diffs del paquete son de una línea de import).
