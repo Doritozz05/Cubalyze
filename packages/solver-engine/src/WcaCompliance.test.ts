@@ -1,5 +1,5 @@
 /**
- * WCA compliance regression test — Cubeforge scramble generators.
+ * WCA compliance regression test — Cubalyze scramble generators.
  *
  * Verifies that the 2×2 and 3×3 scrambles satisfy the WCA Regulations
  * (April 1, 2026 version):

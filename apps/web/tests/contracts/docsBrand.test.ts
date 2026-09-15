@@ -271,3 +271,76 @@ describe('docs brand — metadatos y diagramas sin el nombre antiguo', () => {
     expect(root.name).toBe('cubalyze-monorepo');
   });
 });
+
+/**
+ * Los COMENTARIOS del código: la única superficie que ninguna otra guarda ve.
+ *
+ * El test del artefacto mira el bundle ya minificado, y minificar BORRA los
+ * comentarios: un nombre antiguo dentro de un comentario es literalmente
+ * invisible para él. La guarda de marca mira valores visibles. Así que el barrido
+ * de código de PR-5 se apoyaba en greps, y ahí está la trampa que este bloque
+ * cierra: una alternancia sensible a mayúsculas del tipo `cubeforge|CubeForge|
+ * CUBEFORGE` **no ve** `` `Cubeforge` `` (la grafía del repositorio). Se escapó en
+ * dos ficheros de código y en cuatro de test, y ningún test podía notarlo.
+ *
+ * Ámbito deliberado: solo comentarios. Un literal entre comillas puede ser un
+ * CONTRATO con datos que el usuario ya tiene (`` legacy: ['cubeforge'] ``, la sal
+ * del identicon, una clave de almacén) y quien lo juzga es la guarda que conoce ese
+ * contrato. Por eso las cadenas se quitan ANTES de mirar, en vez de intentar
+ * adivinar cuáles son legítimas.
+ */
+function commentsOf(source: string): string {
+  // 1) Fuera las cadenas: '…', "…" y `…`, respetando los escapes.
+  const withoutStrings = source
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/`(?:\\.|[^`\\])*`/g, '``');
+  // 2) Lo que queda y empieza por `//` o va entre `/* */` es comentario.
+  return (withoutStrings.match(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g) ?? []).join('\n');
+}
+
+describe('docs brand — comentarios del código sin el nombre antiguo', () => {
+  const sources = trackedFiles('*.ts', '*.tsx');
+
+  it('la lista viene del repositorio y trae contenido (una guarda que lee 0 pasa en falso)', () => {
+    expect(
+      sources.length,
+      'git no devolvió fuentes TypeScript: la guarda está mirando al sitio equivocado.',
+    ).toBeGreaterThan(200);
+    // Y la extracción de comentarios tiene que encontrar algo, o el bloque de
+    // abajo pasaría por estar leyendo en vano.
+    const total = sources.reduce((acc, rel) => {
+      const comments = commentsOf(readFileSync(join(REPO_ROOT, rel), 'utf8'));
+      return acc + (comments.length > 0 ? 1 : 0);
+    }, 0);
+    expect(total).toBeGreaterThan(150);
+  });
+
+  it('ningún comentario de código nombra el wordmark antiguo', () => {
+    const offenders: string[] = [];
+    for (const rel of sources) {
+      const comments = commentsOf(readFileSync(join(REPO_ROOT, rel), 'utf8'));
+      for (const form of wordmarkMentions(comments)) offenders.push(`${rel} → «${form}»`);
+    }
+    expect(
+      offenders,
+      'Un comentario de código vuelve a nombrar la marca antigua (en cualquier grafía: la\n' +
+        'mayúscula/minúscula del medio es justo lo que un grep se salta).\n' +
+        'Un comentario que CITA un nombre técnico congelado va entre backticks o comillas\n' +
+        '(`cubeforge-prefs`) y la regla lo exime; uno que describe el producto, no.',
+    ).toEqual([]);
+  });
+
+  it('la regla de comentarios, probada en sí misma', () => {
+    // Solo comentarios: el contenido de una cadena no se mira aquí.
+    expect(commentsOf("const a = 'cubeforge'; // CubeForge en prosa")).toBe(
+      '// CubeForge en prosa',
+    );
+    expect(commentsOf("const a = 'cubeforge-prefs';")).toBe('');
+    expect(commentsOf('/* Cubeforge */ const a = 1;')).toBe('/* Cubeforge */');
+    // Y la regla de prosa sigue distinguiendo cita de mención.
+    expect(wordmarkMentions(commentsOf('// Cubeforge Theme Presets'))).toEqual(['Cubeforge']);
+    expect(wordmarkMentions(commentsOf('// `cubeforge-prefs`'))).toEqual([]);
+    expect(wordmarkMentions(commentsOf('// sqlite:cubeforge.db'))).toEqual([]);
+  });
+});

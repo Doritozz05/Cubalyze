@@ -1,12 +1,12 @@
 /**
- * Test: Compare Cubeforge OLL facelet colors (yellow-gray style) with SpeedCubeDB's jcube data.
+ * Test: Compare Cubalyze OLL facelet colors (yellow-gray style) with SpeedCubeDB's jcube data.
  *
  * OLL recognition focuses on yellow-vs-gray patterns:
  *   - The U face 3×3 grid shows where the yellow stickers are.
  *   - The U-layer side strips (top 3 of F/R/L/B) show yellows on side faces.
  *
  * Color scheme:
- *   - Cubeforge (Kociemba upper-case): 'U' → Y (yellow on U face), anything else → #.
+ *   - Cubalyze (Kociemba upper-case): 'U' → Y (yellow on U face), anything else → #.
  *   - SpeedCubeDB jcube (lower-case): 'y' → Y, anything else → # (gray/non-yellow).
  *
  * Both pipelines are compared:
@@ -65,7 +65,7 @@ function toYGJcube(s: string): string {
   return s.split("").map((c) => (c === "y" ? "Y" : "#")).join("");
 }
 
-/** Cubeforge facelet (Kociemba uppercase): 'U' → Y, else → #. */
+/** Cubalyze facelet (Kociemba uppercase): 'U' → Y, else → #. */
 function toYGKociemba(s: string): string {
   return s.split("").map((c) => (c === "U" ? "Y" : "#")).join("");
 }
@@ -160,7 +160,7 @@ function compareStrips(caseName: string, jcube: JcubeData, cf: string): StripCom
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
+describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubalyze vs SpeedCubeDB", () => {
   const html = HAS_HTML ? readFileSync(HTML_PATH, "utf-8") : "";
   const scdbData = HAS_HTML ? extractJcubeData(html) : [];
   const { cases, algorithms } = getSeedData();
@@ -168,7 +168,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
   const ollCases = cases.filter((c) => c.subsetId === OLL_SUBSET);
 
   // Build the SCDB index — keys are case number; if duplicates exist, prefer
-  // the entry whose subgroup matches Cubeforge's `category` field for that case.
+  // the entry whose subgroup matches Cubalyze's `category` field for that case.
   const warnedAlgs = new Set<string>();
   const scdbByAlg = new Map<string, JcubeData[]>();
   for (const d of scdbData) {
@@ -181,7 +181,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
     if (!arr || arr.length === 0) return undefined;
     if (arr.length === 1) return arr[0];
     // Multiple entries with the same `data-alg` exist (e.g. OLL 5 appears in
-    // multiple subgroups). Try to match by Cubeforge's `category` field first.
+    // multiple subgroups). Try to match by Cubalyze's `category` field first.
     if (category) {
       const match = arr.find((d) => d.subgroup === category);
       if (match) return match;
@@ -204,7 +204,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
     expect(scdbData.length).toBe(57);
   });
 
-  it("Cubeforge should have 57 OLL cases", () => {
+  it("Cubalyze should have 57 OLL cases", () => {
     expect(ollCases.length).toBe(57);
   });
 
@@ -223,7 +223,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
 
   describe("1-to-1 comparison (using setupScramble)", () => {
     it("compares all 57 cases via setupScramble", () => {
-      console.log("\n=== OLL Facelet Comparison: Cubeforge vs SpeedCubeDB (setupScramble) ===\n");
+      console.log("\n=== OLL Facelet Comparison: Cubalyze vs SpeedCubeDB (setupScramble) ===\n");
       console.log("Case    | U  F  R  L  B  | Match?");
       console.log("--------|----------------|--------");
 
@@ -251,7 +251,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
       // Print failure details.
       const failing = comparisons.filter((c) => !c.allOk);
       if (failing.length > 0) {
-        console.log("\n=== Failure details (U face Cubeforge vs SpeedCubeDB) ===\n");
+        console.log("\n=== Failure details (U face Cubalyze vs SpeedCubeDB) ===\n");
         for (const f of failing) {
           const jcube = pickScdb(f.caseName)!;
           const state = CaseStateGenerator.generateFromScramble(
@@ -261,7 +261,7 @@ describe.runIf(HAS_HTML)("OLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
           const cfU = toYGKociemba(cf.substring(0, 9));
           const scdbU = toYGJcube(jcube.faces.us);
           console.log(`${f.caseName}:`);
-          console.log(`  Cubeforge U:    \n      ${toGrid(cfU)}`);
+          console.log(`  Cubalyze U:    \n      ${toGrid(cfU)}`);
           console.log(`  SpeedCubeDB U:  \n      ${toGrid(scdbU)}`);
           if (!f.uOk) {
             const positions = Object.keys(f.uDiffs).map(Number).sort((a, b) => a - b);

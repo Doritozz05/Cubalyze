@@ -1,10 +1,10 @@
 /**
- * Test: Compare Cubeforge PLL facelet colors with SpeedCubeDB's jcube data.
+ * Test: Compare Cubalyze PLL facelet colors with SpeedCubeDB's jcube data.
  *
  * Uses setupScramble to generate the case state (matching SpeedCubeDB's visual),
  * then compares the U-layer side-strip colors for all 21 PLL cases.
  *
- * Color scheme (both Cubeforge and SpeedCubeDB):
+ * Color scheme (both Cubalyze and SpeedCubeDB):
  *   y→U (yellow), r→L (red=left), o→R (orange=right), g→F (green=front),
  *   b→B (blue=back), w→D (white=bottom)
  *
@@ -24,7 +24,7 @@ const HTML_PATH = resolve(__dirname, "../../../../pruebas/raw/scdb/speedcubedbpl
 const HAS_HTML = existsSync(HTML_PATH);
 
 /** Color mapping: SpeedCubeDB jcube lowercase → Kociemba face labels.
- *  Both Cubeforge and SpeedCubeDB use R=orange, L=red. */
+ *  Both Cubalyze and SpeedCubeDB use R=orange, L=red. */
 const JCUBE_TO_KOCIEMBA: Record<string, string> = {
   y: "U", r: "L", o: "R", g: "F", b: "B", w: "D",
 };
@@ -75,7 +75,7 @@ function getScdbStrip(
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () => {
+describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubalyze vs SpeedCubeDB", () => {
   const html = HAS_HTML ? readFileSync(HTML_PATH, "utf-8") : "";
   const scdbData = HAS_HTML ? extractJcubeData(html) : [];
   const { cases, algorithms } = getSeedData();
@@ -87,7 +87,7 @@ describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
     expect(scdbData.length).toBe(21);
   });
 
-  it("Cubeforge should have 21 PLL cases", () => {
+  it("Cubalyze should have 21 PLL cases", () => {
     expect(pllCases.length).toBe(21);
   });
 
@@ -97,7 +97,7 @@ describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
     jcube: JcubeData,
     cf: string,
   ): { allOk: boolean; details: string } {
-    // Cubeforge strips
+    // Cubalyze strips
     const cfF = [18, 19, 20].map((i) => cf[i]).join("");
     const cfR = [11, 10, 9].map((i) => cf[i]).join("");
     const cfL = [38, 37, 36].map((i) => cf[i]).join("");
@@ -131,7 +131,7 @@ describe.runIf(HAS_HTML)("PLL Facelet Comparison: Cubeforge vs SpeedCubeDB", () 
 
   describe("1-to-1 comparison (using setupScramble)", () => {
     it("compares all 21 cases", () => {
-      console.log("\n=== PLL Facelet Comparison: Cubeforge vs SpeedCubeDB ===\n");
+      console.log("\n=== PLL Facelet Comparison: Cubalyze vs SpeedCubeDB ===\n");
       console.log("Case | U | F  | R  | L  | B  | Match?");
       console.log("-----|---|----|----|----|----|--------");
 

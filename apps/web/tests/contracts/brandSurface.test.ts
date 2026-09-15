@@ -1,15 +1,15 @@
 /**
- * Brand surface guard — Cubeforge → Cubalyze.
+ * Brand surface guard — del wordmark antiguo a Cubalyze.
  *
  * Pins the contract that every USER-FACING string carries the new brand and no
  * trace of the old one. It scans **values**, never keys: renaming a key is a code
  * change, not a text change, so keys are judged elsewhere (the metadata guard in
  * docsBrand.test.ts, and the dynamic-lookup guard in src/i18n/index.test.ts).
  *
- * PR-1 deliberately left `formatNameCubeforge*` in place and pinned that decision
- * here. PR-5 renamed it — together with `DataSection.tsx` and the tests — and this
- * file now asserts the keys it looks up actually resolve, which is the risk that
- * made renaming them unsafe in the first place.
+ * PR-1 deliberately left the legacy `formatName*` KEYS in place and pinned that
+ * decision here. PR-5 renamed them — together with `DataSection.tsx` and the tests
+ * — and this file now asserts the keys it looks up actually resolve, which is the
+ * risk that made renaming them unsafe in the first place.
  *
  * Why a test instead of a grep:
  *   • it keeps holding after the package scope is renamed (PR-3) and after the
@@ -39,7 +39,8 @@ const REPO_ROOT = existsSync(join(process.cwd(), 'pnpm-workspace.yaml'))
 
 const read = (relative: string): string => readFileSync(join(REPO_ROOT, relative), 'utf8');
 
-/** Any spelling of the legacy wordmark: CubeForge, cubeforge, cube-forge, cube forge. */
+/** Cualquier grafía del wordmark antiguo: las dos capitalizaciones y, entre ellas,
+ *  un separador opcional (espacio, `-`, `.` o `_`). */
 const LEGACY = /cube[ _.-]?forge/i;
 /** Any spelling of the new wordmark. */
 const BRAND = /cubalyze/i;

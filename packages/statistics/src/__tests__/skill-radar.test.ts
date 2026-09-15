@@ -286,7 +286,7 @@ describe("deriveSkillRadarProfile", () => {
   });
 
   it("scores user session (36s down to 17.89s) with solid consistency score (> 70) and formatted percent", () => {
-    // CubeForge passes newest-first:
+    // Cubalyze passes newest-first:
     const s4 = { time: 17890, timestamp: 1725277840000, moves: [] }; // newest
     const s3 = { time: 31140, timestamp: 1725277830000, moves: [] };
     const s2 = { time: 20820, timestamp: 1725277820000, moves: [] };

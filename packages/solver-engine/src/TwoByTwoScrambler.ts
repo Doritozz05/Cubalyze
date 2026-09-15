@@ -24,7 +24,7 @@
  *     **exactly 11 moves** (`TWO_BY_TWO_MIN_SCRAMBLE_LENGTH = 11`, God's
  *     number for the 2×2) so scrambles cannot be distinguished by length —
  *     "something that has been a historical issue" (readme-scramble.md).
- *     Cubeforge matches this: the written scramble is always 11 moves.
+ *     Cubalyze matches this: the written scramble is always 11 moves.
  *   • **DBL corner fixed**: Only U, R, F moves appear in scrambles (since
  *     the DBL corner never moves). This matches WCA standards.
  *   • **Random state**: Uniform over all 3,674,160 valid 2×2 states.

@@ -1,5 +1,5 @@
 /**
- * Cubeforge Theme Presets & Color Token Registry.
+ * Cubalyze Theme Presets & Color Token Registry.
  *
  * Provides curated, aesthetic palettes and utilities to resolve active tokens
  * for the web app, live scaled preview, and theme synchronization.
