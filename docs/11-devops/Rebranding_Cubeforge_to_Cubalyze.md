@@ -1410,6 +1410,51 @@ Regla del proyecto, con test en `brandSurface.test.ts`:
 **Prueba en rojo ejecutada:** con `common:appName` en minúscula el test falla y señala el culpable
 (`common.appName → «cubalyze»`); revertido, verde.
 
+### 15.6 PR-2 ejecutado — la copy visible suelta
+
+Los 5 sitios que quedaban fuera de los ficheros de idioma, resueltos:
+
+| Fichero | Antes | Ahora |
+|---|---|---|
+| `Layout/LeftSidebar.tsx:356` | `cubeforge` (wordmark del sidebar) | `Cubalyze` |
+| `Settings/theme-studio/ThemeStudioModal.tsx:862` | `AaBbCcDd · CubeForge` | `AaBbCcDd · Cubalyze` |
+| `widgets/implementations/*/definition.ts` (11) | `author: "cubeforge"` (visible en `WidgetCard.tsx:114`) | `author: "Cubalyze"` |
+| `views/Collection/collectionTransfer.ts:294` | `Not a CubeForge collection file` | `Not a Cubalyze collection file` |
+| `utils/importSolves.ts:1016` | `…CubeForge CSV/JSON…` | `…Cubalyze CSV/JSON…` |
+
+Más los dos comentarios que documentaban el sufijo de marca del título (`App.tsx:402`,
+`useDocumentTitle.ts:12`), que describían exactamente lo que este PR renombra.
+
+**El wordmark del sidebar se queda como literal, a propósito.** No se mueve a i18n porque un nombre de
+marca **no se traduce**: meterlo en los ficheros de idioma permitiría que una traducción lo reescribiera.
+Su grafía la vigila el test de contrato, no el sistema de traducción.
+
+**La lista de pendientes se limpió sola.** Al renombrar, el test del artefacto falló **en las cinco
+entradas a la vez** ("Estas entradas ya no existen en el bundle: bórralas de PENDING"), que es
+exactamente el comportamiento para el que se diseñó: la lista no puede quedarse como peso muerto.
+
+**Lo que NO entra en PR-2, y por qué:**
+
+- **Discriminadores de exportación** (`exportSolves.ts` / `importSolves.ts` / `themeShare.ts`): viajan
+  *dentro* de ficheros que el usuario ya tiene → PR-4, con doble lectura. Verificado en el bundle: son
+  los únicos `CubeForge` visibles que quedan ahí (más los logs de consola de PR-5).
+- **Comentarios, `description` de los 7 `package.json` y los 16 `CHANGELOG.md`**: cambio puramente de
+  documentación y ~150 líneas repartidas en ~40 ficheros. Va en su **propio PR mecánico**, para no
+  mezclar un barrido de texto con un cambio de comportamiento en el mismo diff.
+- **Diagnósticos de consola** (`[CubeForge]` en `dataIntegrity.ts` y `widgets/debug.ts`): PR-5.
+
+**Guardas nuevas en `brandSurface` (19 tests):** la regla de grafía única ahora cubre también estos
+cuatro ficheros, y la **autoría de cada widget** se lee de `widgets/implementations/*/definition.ts` de
+forma *data-driven* — un widget nuevo queda cubierto sin tocar el test, y rechaza tanto la marca antigua
+como una variante de la nueva. Pruebas en rojo ejecutadas por separado: `author: "cubeforge"` en el
+metrónomo y `cubalyze` en el sidebar hacen fallar cada guarda señalando su fichero.
+
+**Verificación en el artefacto compilado** (no en el fuente): el bundle contiene
+`` children:`Cubalyze` `` (sidebar), `` author:`Cubalyze` `` (widgets), `Not a Cubalyze collection file`,
+`Cubalyze CSV/JSON`, `` appName:`Cubalyze` `` y `` `AaBbCcDd · Cubalyze` ``; el `children:`cubeforge``
+minúsculo ya no existe. En el bundle solo sobreviven los `CubeForge` de PR-4 (export/import) y PR-5
+(consola).
+
 **Bug preexistente arreglado de paso (colisión de programas TypeScript)**
 
 `pnpm -r exec tsc --noEmit` — el comando exacto del job `typecheck` del CI (§`.github/workflows/quality-gates.yml`) — **fallaba** en el escritorio:
