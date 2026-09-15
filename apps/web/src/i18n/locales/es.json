@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "cubeforge",
+    "appName": "Cubalyze",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
     "delete": "Eliminar",
@@ -17,9 +17,9 @@
     "darkMode": "Modo oscuro",
     "widgets": "Widgets",
     "ok": "Aceptar",
-    "appTitle": "CubeForge — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing",
+    "appTitle": "Cubalyze — Plataforma de entrenamiento de cubos inteligentes y análisis de speedcubing",
     "updateAvailable": "Actualización disponible",
-    "updateAvailableBody": "Hay una nueva versión de CubeForge lista. Recarga cuando te venga bien.",
+    "updateAvailableBody": "Hay una nueva versión de Cubalyze lista. Recarga cuando te venga bien.",
     "reload": "Recargar",
     "later": "Más tarde",
     "noCube": "Sin cubo",
@@ -27,7 +27,7 @@
     "undo": "Deshacer"
   },
   "meta": {
-    "brand": "CubeForge",
+    "brand": "Cubalyze",
     "timer": "Cronómetro — {{count}} resoluciones",
     "timer_one": "Cronómetro — {{count}} resolución",
     "insights": "Estadísticas — {{count}} resoluciones",
@@ -496,7 +496,7 @@
       "fontUploadCap": "Límite de fuentes alcanzado",
       "fontUploadError": "Archivo no válido (.woff2, .woff, .ttf, .otf, máx 3 MB)",
       "fontDigitModeTitle": "Modo de dígitos",
-      "fontDigitModeSubtitle": "Elige cómo y dónde se aplica la fuente de dígitos en CubeForge.",
+      "fontDigitModeSubtitle": "Elige cómo y dónde se aplica la fuente de dígitos en Cubalyze.",
       "fontDigitModeTimerOnly": "Solo temporizador",
       "fontDigitModeTimerOnlyDesc": "La fuente de dígitos solo se usa en el timer. En el resto de la web (solves, promedios, tablas) se usa la de interfaz.",
       "fontDigitModeHybrid": "Híbrido",
@@ -714,11 +714,11 @@
       "importSolves": "Importar resoluciones",
       "importHint": "Importa desde csTimer, Twisty Timer, CubeDesk o cualquier archivo CSV.",
       "importData": "Importar datos",
-      "importJson": "Importar CubeForge JSON",
+      "importJson": "Importar Cubalyze JSON",
       "noDataLoss": "(sin pérdida de datos)",
       "noDataLossBadge": "Sin pérdida de datos",
-      "importJsonTitle": "Restaura una exportación JSON de CubeForge exactamente — se conserva el tipo de puzzle de cada resolución y todos los metadatos.",
-      "csvTitle": "CubeForge CSV",
+      "importJsonTitle": "Restaura una exportación JSON de Cubalyze exactamente — se conserva el tipo de puzzle de cada resolución y todos los metadatos.",
+      "csvTitle": "Cubalyze CSV",
       "csvHint": "Formato de hoja de cálculo estándar. Tiempos en segundos, fechas ISO. Ideal para Excel / Google Sheets.",
       "noSolves": "Aún no hay resoluciones que exportar.",
       "exportCsv": "Exportar CSV",
@@ -727,7 +727,7 @@
       "cstimerHint": "Formato delimitado por punto y coma importable de forma nativa por csTimer, Twisty Timer y la mayoría de apps de cubing. Tiempos en milisegundos, fechas epoch.",
       "exportCstimer": "Exportar csTimer",
       "exportAllTitle": "Exportar todas las sesiones (JSON)",
-      "exportAllHint": "Exporta cada sesión con todos los metadatos por resolución (incluido el tipo de puzzle y la fuente smart/manual). Reimporta con “Importar CubeForge JSON (sin pérdida de datos)” para restaurar todas las resoluciones en tu sesión actual sin perder nada por resolución.",
+      "exportAllHint": "Exporta cada sesión con todos los metadatos por resolución (incluido el tipo de puzzle y la fuente smart/manual). Reimporta con “Importar Cubalyze JSON (sin pérdida de datos)” para restaurar todas las resoluciones en tu sesión actual sin perder nada por resolución.",
       "exporting": "Exportando…",
       "exportAll": "Exportar todo",
       "excelTitle": "Exportación Excel",
@@ -740,22 +740,22 @@
       "importFailed": "Importación fallida",
       "jsonBadgeNote": "Cada resolución conserva su tipo de puzzle original (2x2, 3x3, …), método, notas, fuente y marca de tiempo — exactamente como se exportó. No se necesita seleccionar categoría.",
       "useCategoryImport": "Usar importación por categoría",
-      "dropJson": "Suelta tu CubeForge JSON aquí o haz clic para explorar",
+      "dropJson": "Suelta tu Cubalyze JSON aquí o haz clic para explorar",
       "dropJsonHint": "Archivos exportados con “Exportar todas las sesiones (JSON)”",
       "chooseCategory": "Elige la categoría de puzzle",
       "chooseCategoryHint": "Las resoluciones se guardarán en esta categoría.",
       "importingInto": "Importando en {{category}}",
       "change": "Cambiar",
       "dropFile": "Suelta tu archivo aquí o haz clic para explorar",
-      "dropFileHint": "CSV de csTimer, CSV/JSON de CubeForge, Twisty Timer o cualquier CSV",
+      "dropFileHint": "CSV de csTimer, CSV/JSON de Cubalyze, Twisty Timer o cualquier CSV",
       "formatCstimer": "Formato csTimer:",
       "formatNewerCstimer": "csTimer más reciente:",
       "formatTwisty": "Twisty Timer:",
       "detected": "Detectado: {{format}}",
       "formatNameCstimer": "csTimer",
       "formatNameTwisty": "Twisty Timer",
-      "formatNameCubeforgeCsv": "CubeForge CSV",
-      "formatNameCubeforgeJson": "CubeForge JSON",
+      "formatNameCubeforgeCsv": "Cubalyze CSV",
+      "formatNameCubeforgeJson": "Cubalyze JSON",
       "formatNameGeneric": "CSV genérico",
       "into": " · en {{category}}",
       "solvesFound_one": "{{count}} resolución encontrada",
@@ -781,7 +781,7 @@
       "tryAgain": "Reintentar",
       "parseError": "No se pudo analizar ninguna resolución de este archivo. Revisa el formato e inténtalo de nuevo.",
       "readError": "No se pudo leer el archivo: {{message}}",
-      "notJsonError": "Este archivo no es una exportación JSON de CubeForge. Usa “Importar datos” para otros formatos, o vuelve a exportar con “Exportar todo (JSON)”.",
+      "notJsonError": "Este archivo no es una exportación JSON de Cubalyze. Usa “Importar datos” para otros formatos, o vuelve a exportar con “Exportar todo (JSON)”.",
       "importError": "Importación fallida: {{message}}"
     },
     "audio": {
@@ -920,7 +920,7 @@
       "version": "Versión de la app",
       "versionHint": "La versión que estás ejecutando actualmente.",
       "introTitle": "Hecho posible por la comunidad",
-      "introBody": "CubeForge se construye sobre el trabajo de la comunidad de speedcubing y una amplia gama de proyectos de código abierto: {{linked}} fuentes con enlaces y {{total}} créditos en total. Estamos agradecidos con todos los que comparten algoritmos, reconstrucciones y conocimiento.",
+      "introBody": "Cubalyze se construye sobre el trabajo de la comunidad de speedcubing y una amplia gama de proyectos de código abierto: {{linked}} fuentes con enlaces y {{total}} créditos en total. Estamos agradecidos con todos los que comparten algoritmos, reconstrucciones y conocimiento.",
       "builtWithTitle": "Construido con",
       "libraryGroups_one": "{{count}} grupo de librerías",
       "libraryGroups_other": "{{count}} grupos de librerías",
@@ -969,7 +969,7 @@
           "i3": "Las contribuciones individuales se acreditan por resolución y por algoritmo en toda la app."
         }
       },
-      "provenance": "La procedencia completa de los datos y las notas de regeneración están documentadas en {{file}} en la raíz del repositorio. CubeForge se publica bajo la licencia MIT."
+      "provenance": "La procedencia completa de los datos y las notas de regeneración están documentadas en {{file}} en la raíz del repositorio. Cubalyze se publica bajo la licencia MIT."
     },
     "placeholder": {
       "ready": "Esta sección está lista para configurarse. Vuelve pronto para ver nuevas opciones."
@@ -3547,7 +3547,7 @@
         "title": "Análisis de debilidades",
         "subtitle": "Usa los tiempos por fases y la reconstrucción de resoluciones para identificar tus cuellos de botella exactos",
         "description": "Analiza tus resoluciones científicamente: mide el tiempo por fase, compáralo con los benchmarks de tu nivel objetivo e identifica la mayor brecha.",
-        "theory": "Los tiempos brutos esconden la historia real. El análisis por fases revela: ¿tu cruz tarda 3s cuando debería tardar 2? ¿El reconocimiento F2L consume el 60% de tu tiempo? Usa las herramientas de análisis de CubeForge o el cronometrado multifase de CsTimer para obtener datos por fase. Arregla primero tu mayor brecha.",
+        "theory": "Los tiempos brutos esconden la historia real. El análisis por fases revela: ¿tu cruz tarda 3s cuando debería tardar 2? ¿El reconocimiento F2L consume el 60% de tu tiempo? Usa las herramientas de análisis de Cubalyze o el cronometrado multifase de CsTimer para obtener datos por fase. Arregla primero tu mayor brecha.",
         "drills": [
           "Completa 25 resoluciones con tiempos por fase e identifica la peor fase",
           "Compara tus tiempos por fase con los benchmarks de tu nivel objetivo"
@@ -4749,8 +4749,8 @@
     "duplicateTheme": "Duplicar tema"
   },
   "auth": {
-    "eyebrow": "CubeForge",
-    "title": "Inicia sesión en CubeForge",
+    "eyebrow": "Cubalyze",
+    "title": "Inicia sesión en Cubalyze",
     "subtitle": "Conecta tu cuenta de Google para sincronizar tu perfil, solves y entrenamiento entre dispositivos.",
     "continueWithGoogle": "Continuar con Google",
     "privacyNote": "Solo se usa Google para iniciar sesión. Tus datos viven en tu dispositivo y se sincronizan con tu cuenta cuando quieras.",

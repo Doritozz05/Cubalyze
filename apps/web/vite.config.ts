@@ -152,8 +152,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: 'CubeForge',
-        short_name: 'CubeForge',
+        name: 'Cubalyze',
+        short_name: 'Cubalyze',
         description: 'Smart Cube Training Platform',
         start_url: '/',
         display: 'standalone',

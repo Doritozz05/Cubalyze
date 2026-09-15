@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "cubeforge",
+    "appName": "Cubalyze",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
@@ -17,9 +17,9 @@
     "darkMode": "Dark mode",
     "widgets": "Widgets",
     "ok": "OK",
-    "appTitle": "CubeForge — Smart cube training platform & speedcubing analytics",
+    "appTitle": "Cubalyze — Smart cube training platform & speedcubing analytics",
     "updateAvailable": "Update available",
-    "updateAvailableBody": "A new version of CubeForge is ready. Reload when convenient.",
+    "updateAvailableBody": "A new version of Cubalyze is ready. Reload when convenient.",
     "reload": "Reload",
     "later": "Later",
     "noCube": "No cube",
@@ -27,7 +27,7 @@
     "undo": "Undo"
   },
   "meta": {
-    "brand": "CubeForge",
+    "brand": "Cubalyze",
     "timer": "Timer — {{count}} solves",
     "timer_one": "Timer — {{count}} solve",
     "insights": "Stats — {{count}} solves",
@@ -496,7 +496,7 @@
       "fontUploadCap": "Font limit reached",
       "fontUploadError": "Not a valid font file (.woff2, .woff, .ttf, .otf, max 3 MB)",
       "fontDigitModeTitle": "Digit Font Mode",
-      "fontDigitModeSubtitle": "Choose how and where the digit font applies throughout CubeForge.",
+      "fontDigitModeSubtitle": "Choose how and where the digit font applies throughout Cubalyze.",
       "fontDigitModeTimerOnly": "Timer only",
       "fontDigitModeTimerOnlyDesc": "Digit font is used exclusively on the main timer. All other UI (solves, averages, tables) uses the interface font.",
       "fontDigitModeHybrid": "Hybrid",
@@ -714,11 +714,11 @@
       "importSolves": "Import solves",
       "importHint": "Import from csTimer, Twisty Timer, CubeDesk, or any CSV file.",
       "importData": "Import data",
-      "importJson": "Import CubeForge JSON",
+      "importJson": "Import Cubalyze JSON",
       "noDataLoss": "(no data loss)",
       "noDataLossBadge": "No data loss",
-      "importJsonTitle": "Restores a CubeForge JSON export exactly — per-solve puzzle type and all metadata preserved.",
-      "csvTitle": "CubeForge CSV",
+      "importJsonTitle": "Restores a Cubalyze JSON export exactly — per-solve puzzle type and all metadata preserved.",
+      "csvTitle": "Cubalyze CSV",
       "csvHint": "Standard spreadsheet format. Times in seconds, ISO dates. Good for Excel / Google Sheets.",
       "noSolves": "No solves to export yet.",
       "exportCsv": "Export CSV",
@@ -727,7 +727,7 @@
       "cstimerHint": "Semicolon-delimited format natively importable by csTimer, Twisty Timer, and most cubing apps. Times in milliseconds, epoch dates.",
       "exportCstimer": "Export csTimer",
       "exportAllTitle": "Export all sessions (JSON)",
-      "exportAllHint": "Exports every session with all metadata per solve (including puzzle type and smart/manual source). Re-import with “Import CubeForge JSON (no data loss)” to restore all solves into your current session with nothing lost per solve.",
+      "exportAllHint": "Exports every session with all metadata per solve (including puzzle type and smart/manual source). Re-import with “Import Cubalyze JSON (no data loss)” to restore all solves into your current session with nothing lost per solve.",
       "exporting": "Exporting…",
       "exportAll": "Export all",
       "excelTitle": "Excel export",
@@ -740,22 +740,22 @@
       "importFailed": "Import failed",
       "jsonBadgeNote": "Every solve keeps its original puzzle type (2x2, 3x3, …), method, notes, source and timestamp — exactly as exported. No category selection needed.",
       "useCategoryImport": "Use category import instead",
-      "dropJson": "Drop your CubeForge JSON here or click to browse",
+      "dropJson": "Drop your Cubalyze JSON here or click to browse",
       "dropJsonHint": "Files exported with “Export all sessions (JSON)”",
       "chooseCategory": "Choose the puzzle category",
       "chooseCategoryHint": "Solves will be saved into this category.",
       "importingInto": "Importing into {{category}}",
       "change": "Change",
       "dropFile": "Drop your file here or click to browse",
-      "dropFileHint": "csTimer CSV, CubeForge CSV/JSON, Twisty Timer, or any CSV",
+      "dropFileHint": "csTimer CSV, Cubalyze CSV/JSON, Twisty Timer, or any CSV",
       "formatCstimer": "csTimer format:",
       "formatNewerCstimer": "Newer csTimer:",
       "formatTwisty": "Twisty Timer:",
       "detected": "Detected: {{format}}",
       "formatNameCstimer": "csTimer",
       "formatNameTwisty": "Twisty Timer",
-      "formatNameCubeforgeCsv": "CubeForge CSV",
-      "formatNameCubeforgeJson": "CubeForge JSON",
+      "formatNameCubeforgeCsv": "Cubalyze CSV",
+      "formatNameCubeforgeJson": "Cubalyze JSON",
       "formatNameGeneric": "Generic CSV",
       "into": " · into {{category}}",
       "solvesFound_one": "{{count}} solve found",
@@ -781,7 +781,7 @@
       "tryAgain": "Try again",
       "parseError": "Could not parse any solves from this file. Check the format and try again.",
       "readError": "Failed to read file: {{message}}",
-      "notJsonError": "This file is not a CubeForge JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.",
+      "notJsonError": "This file is not a Cubalyze JSON export. Use “Import data” for other formats, or export again with “Export all (JSON)”.",
       "importError": "Import failed: {{message}}"
     },
     "audio": {
@@ -920,7 +920,7 @@
       "version": "App version",
       "versionHint": "The build you're currently running.",
       "introTitle": "Made possible by the community",
-      "introBody": "CubeForge is built on the work of the speedcubing community and a wide range of open-source projects — {{linked}} sources with links, {{total}} credits in total. We are grateful to everyone who shares algorithms, reconstructions and knowledge.",
+      "introBody": "Cubalyze is built on the work of the speedcubing community and a wide range of open-source projects — {{linked}} sources with links, {{total}} credits in total. We are grateful to everyone who shares algorithms, reconstructions and knowledge.",
       "builtWithTitle": "Built with",
       "libraryGroups_one": "{{count}} library group",
       "libraryGroups_other": "{{count}} library groups",
@@ -969,7 +969,7 @@
           "i3": "Individual contributions are credited per solve and per algorithm throughout the app."
         }
       },
-      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. CubeForge itself is released under the MIT license."
+      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. Cubalyze itself is released under the MIT license."
     },
     "placeholder": {
       "ready": "This section is ready for configuration. Check back soon for new options."
@@ -3547,7 +3547,7 @@
         "title": "Weakness Analysis",
         "subtitle": "Use split timing and solve reconstruction to identify your exact bottlenecks",
         "description": "Analyze your solves scientifically: measure time per phase, compare against benchmarks for your target level, and identify the biggest gap.",
-        "theory": "Raw solve times hide the real story. Split analysis reveals: is your cross 3s when it should be 2s? Is F2L recognition 60% of your time? Use CubeForge's analysis tools or CsTimer's multi-phase timing to get per-phase data. Fix your biggest gap first.",
+        "theory": "Raw solve times hide the real story. Split analysis reveals: is your cross 3s when it should be 2s? Is F2L recognition 60% of your time? Use Cubalyze's analysis tools or CsTimer's multi-phase timing to get per-phase data. Fix your biggest gap first.",
         "drills": [
           "Complete 25 solves with phase timing, identify worst phase",
           "Compare your splits against benchmarks for your target level"
@@ -4749,8 +4749,8 @@
     "duplicateTheme": "Duplicate theme"
   },
   "auth": {
-    "eyebrow": "CubeForge",
-    "title": "Sign in to CubeForge",
+    "eyebrow": "Cubalyze",
+    "title": "Sign in to Cubalyze",
     "subtitle": "Connect your Google account to sync your profile, solves and training across devices.",
     "continueWithGoogle": "Continue with Google",
     "privacyNote": "Only Google is used to sign in. Your data lives on your device and syncs to your account whenever you want.",
