@@ -95,7 +95,12 @@ describe("PyraminxSolver — model", () => {
     // God's number is 11 (the last non-zero depth)
     expect(counts.length - 1).toBe(11);
     expect(counts[11]).toBe(32); // the 32 antipodes
-  });
+    //
+    // Explicit budget: this walks the whole reachable space (933,120 states ×
+    // 8 moves) in ~0.3 s on a fast machine, but the 5 s default leaves no
+    // headroom on a shared 4-vCPU CI runner, where per-test wall-clock can
+    // inflate by more than an order of magnitude (see the 1000-scramble test).
+  }, 30_000);
 
   it("exactly half of the edge permutations are reachable (parity)", () => {
     let reachable = 0;
