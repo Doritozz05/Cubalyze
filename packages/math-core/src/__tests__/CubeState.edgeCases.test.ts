@@ -321,8 +321,12 @@ describe('CubeState — Edge Cases', () => {
       cube.applySequence('R');
     }
     const end = performance.now();
-    // Should be very fast (~10–25ms on Linux, scaled for Windows).
-    expect(end - start).toBeLessThan(50 * PERF_MULTIPLIER);
+    // Smoke bound, not a benchmark: the loop runs in ~10ms locally and measured
+    // 50.9ms on a shared CI runner (2 vCPU). At 50ms it failed by 0.9ms and took
+    // `main` down with it, so the budget is 5x the worst observed value. It still
+    // catches what it is here for: re-deriving the move tables per call costs
+    // hundreds of ms, not 5x.
+    expect(end - start).toBeLessThan(250 * PERF_MULTIPLIER);
     // After 1000 R moves: 1000 % 4 = 0, so should be solved
     expect(cube.isSolved()).toBe(true);
   });
