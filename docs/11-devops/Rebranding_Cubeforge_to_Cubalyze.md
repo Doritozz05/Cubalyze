@@ -1744,19 +1744,52 @@ fichero descargado. Nada de esto viaja dentro de un dato persistido.
 
 | Comprobación | Resultado |
 |---|---|
-| `pnpm -r exec vitest run --passWithNoTests` (comando del CI) | **exit 0** · **3 238 tests** en 15 paquetes (12 skipped) |
+| `pnpm -r exec vitest run --passWithNoTests` (comando del CI) | **exit 0** · **3 241 tests** en 15 paquetes (12 skipped) |
 | `pnpm -r exec tsc --noEmit` · `pnpm lint` | **0 errores** · 12/12 tareas (solo el warning preexistente) |
 | `pnpm --filter web build` | OK + `verify-worker-build` (worker dedicado y tiers de OPFS presentes) |
-| Contratos | 29 almacén + 22 marca + 12 docs + **3 artefacto** |
+| Contratos | 29 almacén + 22 marca + **15 docs** + **3 artefacto** |
 | `cargo check --offline` (crate renombrado) | **OK** — `Compiling cubalyze v0.1.0` · `Cargo.lock` con 0 ocurrencias del nombre antiguo |
-| Residuo vivo (sin historia, sin archive, sin auditoría) | **241 líneas**, todas contratos o nombres congelados: **0 pendientes** |
+| Residuo vivo (sin historia, sin archive, sin auditoría) | todas las líneas son contratos o nombres congelados: **0 pendientes** |
+
+#### El hueco que apareció después: la tercera grafía
+
+Al revisar el residuo línea a línea salió lo que ningún barrido anterior había visto: existe una
+**tercera grafía**, `Cubeforge` (mayúscula inicial, f minúscula — la del repositorio), y los greps de
+todos los PRs eran **alternancias sensibles a mayúsculas** (`cubeforge|CubeForge|CUBEFORGE`), que no
+la cubren. Ni la guarda de marca (mira valores visibles), ni la del artefacto (minificar borra los
+comentarios), ni la de docs (solo `.md`/`.json`/`.mmd`) podían verla: **siete menciones en comentarios
+de código y en nombres de test**: **22 líneas en 7 ficheros**, todas prosa.
+
+| Fichero | Qué era |
+|---|---|
+| `apps/web/src/theme/themePresets.ts:2` | cabecera de comentario: «Cubeforge Theme Presets…» |
+| `packages/solver-engine/src/TwoByTwoScrambler.ts:27` | comentario de cumplimiento WCA |
+| `packages/solver-engine/src/WcaCompliance.test.ts:2` | cabecera del test |
+| `packages/algorithm-db/src/__tests__/oll-speedcubedb-comparison.test.ts` | **10 líneas**: comentarios, `describe`/`it` y etiquetas de consola |
+| `packages/algorithm-db/src/__tests__/pll-speedcubedb-comparison.test.ts` | **7 líneas**, lo mismo |
+| `packages/statistics/src/__tests__/skill-radar.test.ts:289` | comentario |
+| `apps/web/tests/contracts/brandSurface.test.ts:42` | un comentario que enumeraba las 4 grafías del regex (reformulado) |
+
+Todas eran prosa (cero impacto funcional) y todas están renombradas. Y en vez de confiar otra vez en un
+grep, la superficie que faltaba tiene guarda propia: `docsBrand.test.ts` gana un bloque que extrae los
+**comentarios** de los `*.ts`/`*.tsx` rastreados (quitando antes las cadenas, para no juzgar contratos
+legítimos como `legacy: ['cubeforge']`) y les aplica la misma regla de wordmark en prosa. 15 tests.
+
+Prueba en rojo en **las dos direcciones a la vez**: en un mismo fichero, un comentario con `Cubeforge`
+⇒ falla y lo nombra; un **literal** `"Cubeforge"` en una línea de al lado ⇒ no se marca, porque juzgar
+cadenas es trabajo de las guardas que conocen cada contrato. La conclusión de forma se escribe también
+aquí, porque es la lección cara: **un grep de una grafía no es un barrido, es una apuesta**.
 
 **Lo que sigue abierto (fuera del alcance de PR-5)**
 
-1. **El handle `cubalyze` no está reservado.** La lista vive en `20260912000016_handle_identity.sql`,
-   ya aplicada, e incluye `'cubeforge'`. La regla es no liberar nunca el viejo y añadir el nuevo
-   **con una migración NUEVA** (nunca editando la aplicada). Hasta entonces cualquiera puede
-   registrarse `cubalyze`.
+1. **El handle `cubalyze` no está reservado.** `public.normalize_handle()` (en
+   `20260912000016_handle_identity.sql`, ya aplicada) lleva una lista de nombres que nadie puede
+   reclamar para hacerse pasar por la app: `admin`, `support`, `official`… y `cubeforge`. No incluye
+   `cubalyze`. La regla es no liberar nunca el viejo y añadir el nuevo **con una migración NUEVA**
+   (`create or replace function`, misma firma) y no editando la aplicada: el CLI registra las
+   migraciones por su id, así que reescribir una ya aplicada no se vuelve a ejecutar en el proyecto
+   hosteado pero sí en un entorno nuevo — divergencia silenciosa entre bases. Hasta entonces
+   cualquiera puede registrarse `cubalyze`; el nombre viejo seguirá protegido para siempre.
 2. **Fase 1 externa** (Supabase, Google Cloud, Vercel, GitHub, DNS + 301s): sin código, la única que
    necesita calendario. Con ella caen las URLs de `robots.txt`/`sitemap.xml`/`llms.txt`/
    `config.toml` y la plantilla de URL del changelog, sin tocar los changelogs ya generados.
