@@ -1548,3 +1548,52 @@ Los fallos que imprime el informe de `scdb-alg-verification.test.ts` (`PASS: 130
 una **auditoría de contenido** del catálogo de algoritmos, no tests rotos: el fichero pasa y el run sale
 con 0. Ninguna operación de este PR puede alterar la validez de un algoritmo, y los datos no cambiaron
 (todos los diffs del paquete son de una línea de import).
+
+### 15.8 PR-2b ejecutado — documentación viva
+
+**93 documentos `.md` + 7 `description` de `package.json`.** El invariante que hace este PR verificable es
+tajante: **no toca ni una línea de código ejecutable**. Antes de commitear se comprueba (1) que solo hay
+`.md` y `package.json` en el diff, (2) que en los `package.json` la única línea cambiada es
+`"description"`, y (3) que todos los ficheros son simétricos (201+/201-): 1 línea fuera, 1 dentro, sin
+excepciones.
+
+**Lo que NO se renombra, y por qué**
+
+| Clase | Ejemplo | Motivo |
+|---|---|---|
+| Historia | 17 `CHANGELOG.md`, `CHANGELOG_MASTER.md`, `docs/18-archive/**` | Registran cómo se llamaba el proyecto **entonces**; reescribirlos falsifican cuándo pasó cada cosa |
+| Nombres técnicos (minúscula) | `cubeforge-prefs`, `cubeforge:widgets`, `sqlite:cubeforge.db`, `com.cubeforge.desktop`, `cubeforge_lib::run()`, `cubeforge/` (raíz del árbol), URLs de GitHub y dominios | Contratos con datos en los dispositivos, o territorio de la fase externa |
+| **Comentarios de código** | `exportSolves.ts` escribe `app: "CubeForge"` y `importSolves.ts` lo exige (PR-4) | Un comentario que **cita un literal congelado** no se puede renombrar: pasaría a mentir sobre el código. Va con PR-5 |
+
+Esa última fila es la razón de que el invariante sea «cero código»: cualquier reemplazo sobre ficheros de
+código podía tocar los discriminadores de PR-4 o los comentarios que los describen.
+
+**Hueco real de PR-1 encontrado aquí (arreglado):** el escritorio seguía llamándose `CubeForge`.
+`productName` (lo que Windows muestra en el menú Inicio y en «Aplicaciones instaladas») y el `title` de la
+ventana viven en `tauri.conf.json`, **no en el bundle web**, así que PR-1 —que cubrió el manifest de la PWA
+y los dos shells HTML— no los vio. El `identifier` sigue siendo `com.cubeforge.desktop`: el directorio de
+datos queda intacto.
+
+> **Consecuencia antes del próximo `tauri build`:** el instalador NSIS deriva la carpeta y el acceso
+directo del `productName`, así que la build nueva se instala como *Cubalyze* **al lado** de la vieja
+> *CubeForge*. Los datos están a salvo (van por el `identifier`); la limpieza es desinstalar la entrada
+> antigua una vez.
+
+**La guarda aprendió algo que el grep no podía ver.** La primera versión recorría el disco y marcó
+`pruebas/*`: dos borradores locales que `.gitignore` excluye. La lista ahora sale de **`git ls-files`**,
+porque la definición de «el repositorio» es el repositorio — y un test que lee el disco se comporta
+distinto en dos máquinas. Además comprueba que la lista **no esté vacía**, porque una guarda que lee 0
+ficheros pasa en falso.
+
+La regla tiene **sus propios tests unitarios** (7 casos), con la lección de §15.7 aplicada: el wordmark en
+prosa es residuo, `` `cubeforge-prefs` `` no, y el punto de «…era cubeforge.» no es una extensión de
+fichero (solo exime si le siguen letras, como en `cubeforge.db`). Prueba en rojo ejecutada: reintroducir
+`CubeForge` en `RELEASE_PROCESS.md` hace fallar la guarda señalando el fichero.
+
+**Verificación:** `pnpm -r exec vitest run` **exit 0** · web **951 tests** (eran 943) · `typecheck` 33/33 ·
+`lint` 0 errores · `build` 13/13.
+
+**Lo que queda del barrido de texto** (PR-5, opcional): los comentarios de código, los identificadores
+como `parseCubeForgeLine` / `CubeForgeExport`, los nombres de test (`it("still detects CubeForge CSV")`),
+los globales `__cubeforgeLogs`, la familia tipográfica y el título que escribe `generate-changelog.cjs`.
+Los dos últimos son los únicos que un usuario podría llegar a ver.
