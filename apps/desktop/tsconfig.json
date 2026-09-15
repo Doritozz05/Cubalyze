@@ -23,9 +23,17 @@
     }
   },
   "include": ["src", "../web/src"],
-  // web/src/main.tsx is the PWA-only entry (it imports virtual:pwa-register,
-  // a module only vite-plugin-pwa provides). The desktop app has its own
-  // src/main.tsx entry — compiling the web one here would fail on that
-  // virtual import.
-  "exclude": ["../web/src/main.tsx"]
+  // PWA-only modules, excluded because they import `virtual:pwa-register` — a
+  // module only vite-plugin-pwa declares, and desktop has no such dependency
+  // (the web project resolves it via `"types": ["vite-plugin-pwa/client"]` in
+  // apps/web/tsconfig.app.json).
+  //
+  // The desktop app runs no service worker, so nothing in its module graph
+  // reaches either file:
+  //   · ../web/src/main.tsx           — the PWA entry; desktop has its own
+  //                                     src/main.tsx and never loads this one.
+  //   · ../web/src/boot/appUpdate.ts  — the SW update flow; its only consumer
+  //                                     is web/src/main.tsx (initAppUpdate).
+  // Both stay fully typechecked by the web project, which owns them.
+  "exclude": ["../web/src/main.tsx", "../web/src/boot/appUpdate.ts"]
 }
