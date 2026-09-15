@@ -1854,3 +1854,49 @@ trabajo), `identicon/render` (1 ms para ~0.01 ms) y `hardware-hal/memory-leak` (
 > en el workflow *Quality Gates*, que sí usa `pnpm -r exec vitest run`. El job llamado `Test` del
 > workflow `CI` no es, por tanto, la suite completa — conviene saberlo al depurar en local, porque
 > `pnpm test` deja fuera todo el frontend.
+
+#### Incidente de producción: el 404 que se cacheó un año (2026-09-15)
+
+No es del rebranding, pero apareció justo después y con la marca nueva ya correcta en producción, así
+que se documenta aquí. Síntoma exacto en el navegador:
+
+```
+workbox-….js  Uncaught (in promise) bad-precaching-response: … time-distribution-CJnAwwWs.js  404
+```
+
+Repetido **en cada carga**, `Ctrl+Shift+R` incluido, **siempre con el mismo hash**, mientras ese mismo
+fichero respondía `200` por `curl` desde la misma máquina. Esa contradicción era la pista: el 404 no
+provenía del despliegue actual — vivía en la caché del propio navegador.
+
+**La cadena completa — un solo fallo, tres capas**
+
+| Paso | Qué ocurre |
+|---|---|
+| 1 | Ventana de despliegue de unos segundos: el `sw.js` nuevo ya se sirve, el chunk nuevo todavía no resuelve en ese edge ⇒ **un único 404** |
+| 2 | `vercel.json` aplicaba `/assets/(.*)` → `public, max-age=31536000, immutable`. La regla es **por ruta, no por estado** ⇒ el navegador guarda ese **404 con vida de un año e inmutable**, sin revalidar jamás |
+| 3 | Workbox precachea los assets con hash **sin `revision`** (el hash ya es la clave) y `workbox-precaching` solo usa `cache: "reload"` cuando hay `revision` ⇒ esos fetch **sí leen la caché HTTP**. `precacheAndRoute` aborta la instalación **entera** por un solo fallo ⇒ la actualización queda imposible para ese cliente |
+
+Medido en producción: `/assets/*` **existente** → `immutable`; 404 **fuera** de `/assets/` →
+`max-age=0, must-revalidate`; 404 **dentro** → `immutable`. El edge estaba sano
+(`X-Vercel-Cache: HIT` + `200`): el 404 vivía en la caché del navegador, no en el CDN. Y explica por
+qué un `Ctrl+Shift+R` no ayuda: una recarga dura no desaloja lo que lee el fetch del propio worker.
+
+**Arreglo** — `vercel.json`: `/assets/(.*)` pasa a `public, max-age=0, must-revalidate`. Un 404
+transitorio deja de ser veneno permanente (se revalida en el siguiente intento y ya recibe `200`), el
+hash del nombre mantiene la revalidación barata (304) y las visitas repetidas las sirve el precache del
+service worker, no la caché HTTP. La regla se deja explícita, aunque coincida con el valor por defecto
+de Vercel, para que la intención quede escrita y comprobada.
+
+**Guarda** — `apps/web/tests/contracts/deployHeaders.test.ts` (5 tests): ninguna regla de cabeceras
+puede conceder `immutable` ni un `max-age` alto a una ruta que puede dar 404; `sw.js`, `index.html` y
+`version.json` deben revalidar (cacheados, un despliegue deja de ser visible y el usuario se queda en
+la versión vieja); y el rewrite del SPA debe seguir excluyendo los caminos con punto, para que un asset
+ausente nunca se responda con `index.html` y un `200`. Prueba en rojo: reintroduciendo `immutable`, el
+TTL en `index.html`/`version.json` y rompiendo el rewrite, falla nombrando los cinco puntos exactos.
+
+**Un cliente ya envenenado no se cura con el arreglo** (su entrada de caché conserva las cabeceras
+antiguas): hay que borrar **solo «Imágenes y archivos en caché»** — nunca «Cookies y datos del sitio»,
+que es donde viven OPFS/IndexedDB/localStorage — o esperar a que ese chunk cambie de contenido y
+estrene URL. Es el argumento a favor de que la instalación del precache sea tolerante a un fallo
+individual (`injectManifest`), que además eliminaría el modo de fallo completo: hoy un solo asset
+inalcanzable impide entregar una versión nueva.
