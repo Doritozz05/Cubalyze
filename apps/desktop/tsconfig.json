@@ -19,7 +19,7 @@
     "paths": {
       "@/components/ui/*": ["../../packages/ui/src/components/*"],
       "@/*": ["./src/*", "../web/src/*"],
-      "@cubeforge/hardware-hal": ["./src/hardware-hal-override.ts"]
+      "@cubalyze/hardware-hal": ["./src/hardware-hal-override.ts"]
     }
   },
   "include": ["src", "../web/src"],

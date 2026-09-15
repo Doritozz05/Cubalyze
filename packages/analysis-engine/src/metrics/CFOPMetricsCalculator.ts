@@ -2,9 +2,9 @@ import type {
   SolveTimeline,
   CFOPMetrics,
   F2LPairMetrics,
-} from '@cubeforge/types';
-import { ColorPhaseDetector, CubeState } from '@cubeforge/math-core';
-import { solveCross } from '@cubeforge/solver-engine';
+} from '@cubalyze/types';
+import { ColorPhaseDetector, CubeState } from '@cubalyze/math-core';
+import { solveCross } from '@cubalyze/solver-engine';
 import { segmentF2LPairs } from '../pipeline/segmentF2LPairs';
 import { detectLastLayerCase } from '../cases/lastLayerCases';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Penalty, SPEED_RULES, BLD_RULES, FMC_RULES, MBLD_RULES } from "@cubeforge/timer-engine";
+import { Penalty, SPEED_RULES, BLD_RULES, FMC_RULES, MBLD_RULES } from "@cubalyze/timer-engine";
 import {
   DB_PUZZLE_TYPES,
   EVENT_REGISTRY,

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { CubeState, conjugatePhaseStream, tokenize } from '@cubeforge/math-core';
+import { CubeState, conjugatePhaseStream, tokenize } from '@cubalyze/math-core';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
-import { createCFOPDetector, recolorState } from '@cubeforge/algorithm-db';
+import { createCFOPDetector, recolorState } from '@cubalyze/algorithm-db';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 
 const DATA_DIR = path.resolve(

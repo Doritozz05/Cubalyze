@@ -20,4 +20,4 @@ This document outlines the architecture for the global state management within t
 
 ## 5. Security & Constraints
 - Sensitive user data must not be persisted in plain text if local storage is used without explicit encryption.
-- The state package must remain framework-agnostic (no React-specific code inside `@cubeforge/state`).
+- The state package must remain framework-agnostic (no React-specific code inside `@cubalyze/state`).

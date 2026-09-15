@@ -10,7 +10,7 @@ import {
 } from "@/views/Collection/collectionModel";
 import { createHardwareLinkStore, isOfferDismissed, SMART_ITEM_TAG } from "@/stores/hardwareLinkStore";
 import type { HardwareLinkDeps } from "@/stores/hardwareLinkStore";
-import type { CubeIdentity } from "@cubeforge/hardware-hal";
+import type { CubeIdentity } from "@cubalyze/hardware-hal";
 
 const OPTIONS: GlobalCategoryOption[] = [
   { category: "2x2", name: "2×2", playable: true, planned: false },

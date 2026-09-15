@@ -25,8 +25,8 @@
  * colours, seen from the standard 3/4 isometric angle.
  */
 
-import { Cube3DEngine, getSkinStyle } from "@cubeforge/cube-3d-engine";
-import { preferencesStore } from "@cubeforge/state";
+import { Cube3DEngine, getSkinStyle } from "@cubalyze/cube-3d-engine";
+import { preferencesStore } from "@cubalyze/state";
 import { PALETTE_FACES, type GearPalette } from "./collectionModel";
 
 /** Square render size; the cards scale it down, the editor shows it larger. */

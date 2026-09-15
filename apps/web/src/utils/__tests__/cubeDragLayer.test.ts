@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveDragMove } from "../cubeDragLayer";
-import type { CubeFace } from "@cubeforge/types";
+import type { CubeFace } from "@cubalyze/types";
 
 /**
  * Virtual-cube drag model — the gesture is read in the GRABBED FACE's own

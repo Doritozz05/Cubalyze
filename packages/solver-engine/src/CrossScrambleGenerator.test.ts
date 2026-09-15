@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { CrossScrambleGenerator } from './CrossScrambleGenerator';
 import { crossDepth } from './PhaseSolver';
 

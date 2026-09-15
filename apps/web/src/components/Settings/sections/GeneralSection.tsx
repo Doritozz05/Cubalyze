@@ -3,7 +3,7 @@
 import { Settings, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
-import { preferencesStore, type AppLanguage } from '@cubeforge/state';
+import { preferencesStore, type AppLanguage } from '@cubalyze/state';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { SettingToggle } from '../components/SettingToggle';

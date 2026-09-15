@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { SessionStats, Penalty } from "@cubeforge/statistics";
+import type { SessionStats, Penalty } from "@cubalyze/statistics";
 import type { ProfileStats } from "@/hooks/useProfileStats";
 import type { Solve as UISolve } from "@/types";
 import {

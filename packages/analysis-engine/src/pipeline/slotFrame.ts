@@ -4,8 +4,8 @@ import {
   ColorPhaseDetector,
   countCompletedF2LSlotsInFrame,
   IDENTITY_SCHEME,
-} from '@cubeforge/math-core';
-import type { SolveTimeline } from '@cubeforge/types';
+} from '@cubalyze/math-core';
+import type { SolveTimeline } from '@cubalyze/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 
 export interface SlotFrame {

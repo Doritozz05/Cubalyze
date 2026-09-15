@@ -21,7 +21,7 @@
  * solves.
  */
 
-import { averageOf, type Penalty as StatPenalty, type StatSolve } from "@cubeforge/statistics";
+import { averageOf, type Penalty as StatPenalty, type StatSolve } from "@cubalyze/statistics";
 
 /** The only fields this module needs from a solve row. */
 export interface CubeSolveRow {

@@ -9,7 +9,7 @@ import { es, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { Target, CalendarDays, RotateCcw, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS } from "@cubalyze/algorithm-db";
 import { AlgorithmDrillView } from "./AlgorithmDrillView";
 import { AlgorithmRecognizeView } from "./AlgorithmRecognizeView";
 import { PhaseStatsView } from "./PhaseStatsView";
@@ -27,9 +27,9 @@ import { useTrainingProgress } from "@/hooks/useTrainingProgress";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 import type { PuzzleCategory } from "@/types";
-import type { PhaseStatsRecord, PhasePracticeType } from "@cubeforge/training";
-import type { TrainingTask, TaskRepeat, TaskColor } from "@cubeforge/database";
-import { EXERCISE_IDS } from "@cubeforge/training";
+import type { PhaseStatsRecord, PhasePracticeType } from "@cubalyze/training";
+import type { TrainingTask, TaskRepeat, TaskColor } from "@cubalyze/database";
+import { EXERCISE_IDS } from "@cubalyze/training";
 import { puzzleCategoryToType, SELECTABLE_PUZZLE_CATEGORIES } from "@/utils/puzzleUtils";
 import {
   TrainingPractice,

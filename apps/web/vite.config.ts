@@ -79,7 +79,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: [
       // More specific alias must come first: redirect shadcn UI components
-      // to the shared @cubeforge/ui package.
+      // to the shared @cubalyze/ui package.
       { find: '@/components/ui', replacement: path.resolve(__dirname, '../../packages/ui/src/components') },
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ],

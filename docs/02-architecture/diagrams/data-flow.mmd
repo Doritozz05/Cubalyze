@@ -10,12 +10,12 @@ flowchart LR
         stackmat["StackmatAdapter (audio)"]
     end
 
-    timer["@cubeforge/timer-engine<br/>(TimerEngine: fases + penalizaciones)"]
+    timer["@cubalyze/timer-engine<br/>(TimerEngine: fases + penalizaciones)"]
     timerStore["timerStore (idle→cooldown…)"]
     solveSession["useSolveSession<br/>(registro de movimientos wide)"]
     sessionStore["sessionStore + solves"]
     db["SQLite (worker Comlink)<br/>OPFS (web) / nativa (desktop)"]
-    analysis["@cubeforge/analysis-engine<br/>(pipeline versionado)"]
+    analysis["@cubalyze/analysis-engine<br/>(pipeline versionado)"]
     widgets["Widgets (times-log, stats,<br/>pb-progression, phase-balance…)"]
     insights["Vistas Insights + Training<br/>(estadísticas, SRS/FSRS)"]
 

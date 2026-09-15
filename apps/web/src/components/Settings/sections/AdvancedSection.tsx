@@ -17,7 +17,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { SettingToggle } from "../components/SettingToggle";
 import { Button } from "@/components/ui/button";
 import {

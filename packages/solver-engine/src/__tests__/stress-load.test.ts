@@ -9,7 +9,7 @@
  * thresholds flake there. Run locally for the full stress pass.
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState, Cube2x2State, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, Cube2x2State, FaceletStringConverter } from '@cubalyze/math-core';
 import { Min2PhaseSolver, TwoByTwoSolver, RandomStateGenerator } from '../index';
 
 const isCI = !!process.env.GITHUB_ACTIONS || !!process.env.CI;

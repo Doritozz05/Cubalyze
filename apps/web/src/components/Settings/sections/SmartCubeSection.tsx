@@ -6,7 +6,7 @@ import type { ParseKeys } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
-import { orientationStore, preferencesStore } from "@cubeforge/state";
+import { orientationStore, preferencesStore } from "@cubalyze/state";
 import { Switch } from "@/components/ui/switch";
 import { LockerLinkCard } from "@/components/Hardware/LockerLinkCard";
 import { cn } from "@/lib/utils";

@@ -1,4 +1,4 @@
-// ─── Canonical schema re-exported from @cubeforge/algorithm-db ──────────
+// ─── Canonical schema re-exported from @cubalyze/algorithm-db ──────────
 // (The legacy `algorithms` table + its Algorithm/LegacyAlgorithm types were
 // removed with the baseline v2 DB wipe — the canonical catalog lives in
 // algorithm-db now.)
@@ -8,7 +8,7 @@ export {
   AlgorithmCaseSchema,
   AlgorithmSubsetSchema,
   AlgorithmMethodSchema,
-} from '@cubeforge/algorithm-db';
+} from '@cubalyze/algorithm-db';
 
 export type {
   ArrowDef,
@@ -19,4 +19,4 @@ export type {
   AlgorithmMethod,
   CaseWithAlgorithms,
   Algorithm as NewAlgorithm,
-} from '@cubeforge/algorithm-db';
+} from '@cubalyze/algorithm-db';

@@ -1,4 +1,4 @@
-import type { CubeState } from '@cubeforge/math-core';
+import type { CubeState } from '@cubalyze/math-core';
 
 // ─── AUF (Adjust U Face) System ─────────────────────────────────────────
 //

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 import {
   derivePhaseTimeStats,
   deriveEconomyStats,

@@ -1,10 +1,10 @@
-import { FACE_ROTATION_MAP, type LayerAxis } from "@cubeforge/cube-3d-engine";
+import { FACE_ROTATION_MAP, type LayerAxis } from "@cubalyze/cube-3d-engine";
 import {
   conjugateTokenThroughGrip,
   expandWideMoves,
   type OrientationEntry,
-} from "@cubeforge/math-core";
-import type { CubeFace } from "@cubeforge/types";
+} from "@cubalyze/math-core";
+import type { CubeFace } from "@cubalyze/types";
 
 /**
  * Virtual-cube keyboard layout — an exact mirror of the professional standard

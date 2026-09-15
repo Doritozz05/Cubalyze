@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { cubesForEventWithSmartFallback, cubeShortLabel } from "@/views/Collection/activeCube";
 import { Button } from "@/components/ui/button";

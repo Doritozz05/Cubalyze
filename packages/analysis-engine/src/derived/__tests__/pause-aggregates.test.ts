@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 import { derivePauseCauseSums, flattenPauseCauses } from "../pause-aggregates";
 
 function makeSolve(phases: string[], pauses: Array<{ phase: string; durationMs: number; category: "recognition" | "mid-algorithm" | "mid-phase" }>): { analysis: SolveMetrics } {

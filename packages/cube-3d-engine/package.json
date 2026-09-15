@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/cube-3d-engine",
+  "name": "@cubalyze/cube-3d-engine",
   "version": "0.2.0",
   "description": "Core 3D Engine for CubeForge using Three.js and Web Workers",
   "main": "dist/index.js",
@@ -30,15 +30,15 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/math-core": "workspace:*",
-    "@cubeforge/types": "workspace:*",
+    "@cubalyze/math-core": "workspace:*",
+    "@cubalyze/types": "workspace:*",
     "comlink": "^4.4.1",
     "rxjs": "^7.8.1",
     "three": "^0.185.1",
     "three-stdlib": "^2.28.0"
   },
   "devDependencies": {
-    "@cubeforge/solver-engine": "workspace:*",
+    "@cubalyze/solver-engine": "workspace:*",
     "@types/three": "^0.185.1",
     "tsup": "^8.0.1",
     "typescript": "~6.0.2",

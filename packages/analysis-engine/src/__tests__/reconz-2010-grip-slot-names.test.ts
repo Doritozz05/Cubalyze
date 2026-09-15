@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
-import type { CubeStateSnapshot } from '@cubeforge/types';
+import { CubeState } from '@cubalyze/math-core';
+import type { CubeStateSnapshot } from '@cubalyze/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 

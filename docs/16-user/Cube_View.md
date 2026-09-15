@@ -29,10 +29,10 @@ Settings y el generador de scrambles — no reimplementa nada.
 
 ## Dependencias de paquetes
 
-- `@cubeforge/cube-3d-engine` — motor 3D (Three.js puro, ADR-014).
-- `@cubeforge/math-core` — estado del cubo y facelets.
-- `@cubeforge/solver-engine` — generador de scrambles WCA (ADR-015).
-- `@cubeforge/state` — `preferencesStore` (skin 3D, stickers personalizados).
+- `@cubalyze/cube-3d-engine` — motor 3D (Three.js puro, ADR-014).
+- `@cubalyze/math-core` — estado del cubo y facelets.
+- `@cubalyze/solver-engine` — generador de scrambles WCA (ADR-015).
+- `@cubalyze/state` — `preferencesStore` (skin 3D, stickers personalizados).
 
 ## ADRs relacionados
 

@@ -9,7 +9,7 @@
  * tested with fakes: no IndexedDB, no network, no Supabase.
  */
 import { describe, expect, it, vi } from 'vitest';
-import type { GearPhotoRef, GearPhotoSyncState } from '@cubeforge/database';
+import type { GearPhotoRef, GearPhotoSyncState } from '@cubalyze/database';
 import {
   MAX_OBJECTS_PER_CYCLE,
   RETRY_BACKOFF_MS,

@@ -7,7 +7,7 @@ This document outlines the architecture for the foundational monorepo and CI/CD 
 - **Package Manager**: `pnpm` (selected for fast, strict, and efficient workspace management).
 - **Build System**: `Turborepo` (selected for task orchestration and local caching).
 - **Versioning & Publishing**: `Changesets` (for managing versions across interdependent packages).
-- **Linting & Formatting**: Standardized ESLint configurations encapsulated in `@cubeforge/config-eslint`.
+- **Linting & Formatting**: Standardized ESLint configurations encapsulated in `@cubalyze/config-eslint`.
 - **Testing**: `Vitest` (selected for native ESM support and fast execution).
 
 ## 3. Directory Structure

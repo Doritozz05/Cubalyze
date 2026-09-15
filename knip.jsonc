@@ -15,19 +15,19 @@
       // of its deps — they are actually consumed by the bundled web source.
       // KNIP LIMITATION (documented) — these are shared, not dead.
       "ignoreDependencies": [
-        "@cubeforge/algorithm-db",
-        "@cubeforge/analysis-engine",
-        "@cubeforge/cube-3d-engine",
-        "@cubeforge/database",
-        "@cubeforge/gan-protocol",
-        "@cubeforge/hardware-hal",
-        "@cubeforge/math-core",
-        "@cubeforge/solver-engine",
-        "@cubeforge/state",
-        "@cubeforge/statistics",
-        "@cubeforge/timer-engine",
-        "@cubeforge/training",
-        "@cubeforge/types",
+        "@cubalyze/algorithm-db",
+        "@cubalyze/analysis-engine",
+        "@cubalyze/cube-3d-engine",
+        "@cubalyze/database",
+        "@cubalyze/gan-protocol",
+        "@cubalyze/hardware-hal",
+        "@cubalyze/math-core",
+        "@cubalyze/solver-engine",
+        "@cubalyze/state",
+        "@cubalyze/statistics",
+        "@cubalyze/timer-engine",
+        "@cubalyze/training",
+        "@cubalyze/types",
         "@radix-ui/react-accordion",
         "@radix-ui/react-alert-dialog",
         "@radix-ui/react-aspect-ratio",
@@ -146,8 +146,8 @@
     // though nothing imports them yet.
     "packages/algorithm-db/src/seed/**",
     // Desktop Tauri shell adapter layer — wired via vite.config.ts resolve.alias:
-    //   @cubeforge/hardware-hal → src/hardware-hal-override.ts
-    //   @cubeforge/database     → src/database-override.ts
+    //   @cubalyze/hardware-hal → src/hardware-hal-override.ts
+    //   @cubalyze/database     → src/database-override.ts
     // The overrides import the two Tauri adapters (GanCube/GanTimer). Knip cannot
     // trace Vite resolve.alias, so these appear unused — they are the desktop entry surface.
     "apps/desktop/src/adapters/**",

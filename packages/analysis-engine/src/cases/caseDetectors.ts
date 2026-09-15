@@ -13,7 +13,7 @@ import {
   createF2LDetector,
   createCFOPDetector,
   type CaseDetector,
-} from '@cubeforge/algorithm-db';
+} from '@cubalyze/algorithm-db';
 
 let f2lDetector: CaseDetector | undefined;
 let cfopDetector: CaseDetector | undefined;

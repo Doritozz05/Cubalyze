@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { generateCubeMarkSpec, renderCubeMark } from "@cubeforge/identicon";
+import { generateCubeMarkSpec, renderCubeMark } from "@cubalyze/identicon";
 
 export interface IdenticonAvatarProps {
   /** Stable seed — the anonymous user_id. Never the display name (D2). */

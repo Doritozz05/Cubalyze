@@ -31,7 +31,7 @@ import {
   generateUuid,
   initDB,
   USER_ID_KEY,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import { clearAllPhotos } from "@/views/Collection/collectionPhotos";
 import { COLLECTION_STORAGE_KEY } from "@/views/Collection/collectionStore";
 

@@ -1,5 +1,5 @@
-import { recolorState } from '@cubeforge/algorithm-db';
-import type { CubeState, FaceLetter } from '@cubeforge/math-core';
+import { recolorState } from '@cubalyze/algorithm-db';
+import type { CubeState, FaceLetter } from '@cubalyze/math-core';
 import {
   applyFrameRotation,
   bestFrameRotationSequence,
@@ -8,8 +8,8 @@ import {
   FaceletStringConverter,
   FACE_LAYERS,
   orderPairFaces,
-} from '@cubeforge/math-core';
-import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
+} from '@cubalyze/math-core';
+import type { PhaseDetectionReport, SolveTimeline } from '@cubalyze/types';
 import { getF2LDetector } from '../cases/caseDetectors';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { pickSlotFrame } from './slotFrame';

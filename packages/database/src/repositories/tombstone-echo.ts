@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — Tombstone echoes
+ * @cubalyze/database — Tombstone echoes
  *
  * Why the versioned (remote) deletes must not announce themselves.
  *

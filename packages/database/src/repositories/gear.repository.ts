@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — Gear (Locker) Repository
+ * @cubalyze/database — Gear (Locker) Repository
  *
  * Persists the Locker collection to SQLite: `gear_categories` → `gear_types` →
  * `gear_items` (migration 034). This replaces the legacy single localStorage

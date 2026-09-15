@@ -5,7 +5,7 @@ import {
   CubeState,
   FaceletStringConverter,
   CFOPDefinition,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { makeMoves, makeSolveFromScramble } from './test-helpers';
 
 /**

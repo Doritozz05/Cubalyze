@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from 'zustand';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { BottomLayout } from '@/bottom-layout/BottomLayout';
 import { Scramble2DNet } from '@/components/Scramble/Scramble2DNet';
 import { Scramble3DNet } from '@/components/Scramble/Scramble3DNet';

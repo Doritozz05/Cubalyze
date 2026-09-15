@@ -15,7 +15,7 @@
  * for all 6 cross frames by the invariance tests below.
  */
 import { describe, it, expect } from "vitest";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import { CubeState, FaceletStringConverter } from "@cubalyze/math-core";
 import {
   spawnInfiniteF2LState,
   respawnPair,

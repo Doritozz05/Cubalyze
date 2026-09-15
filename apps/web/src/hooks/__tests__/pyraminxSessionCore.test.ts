@@ -18,7 +18,7 @@ import {
 import {
   isPyraminxSolved,
   PYRAMINX_SOLVED_STATES,
-} from "@cubeforge/solver-engine/pyraminx";
+} from "@cubalyze/solver-engine/pyraminx";
 
 const SCRAMBLE = "U L' B R' u l'";
 

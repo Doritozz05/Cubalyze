@@ -1,7 +1,7 @@
 "use client";
 
 import { Subject } from "rxjs";
-import type { CubeFace } from "@cubeforge/types";
+import type { CubeFace } from "@cubalyze/types";
 import type { ScrambleValidationAdapter } from "@/hooks/useScrambleValidator";
 
 /**
@@ -42,7 +42,7 @@ export interface VirtualCubeAdapter extends ScrambleValidationAdapter {
 }
 
 export function createVirtualCubeAdapter(): VirtualCubeAdapter {
-  const movesSubject = new Subject<import("@cubeforge/types").CubeMoveEvent>();
+  const movesSubject = new Subject<import("@cubalyze/types").CubeMoveEvent>();
   const faceletsSubject = new Subject<string>();
   const resetSubject = new Subject<void>();
   const tokensSubject = new Subject<string>();

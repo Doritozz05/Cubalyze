@@ -1,6 +1,6 @@
 "use client";
 
-import type { CustomFontMeta } from "@cubeforge/state";
+import type { CustomFontMeta } from "@cubalyze/state";
 
 /**
  * User-uploaded fonts: blobs in IndexedDB, metadata in preferencesStore.

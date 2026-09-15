@@ -13,12 +13,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Subject } from 'rxjs';
 
-vi.mock('@cubeforge/gan-protocol', () => ({
+vi.mock('@cubalyze/gan-protocol', () => ({
   connectGanCube: vi.fn(),
   reconnectGanCube: vi.fn(),
 }));
 
-import { connectGanCube, reconnectGanCube } from '@cubeforge/gan-protocol';
+import { connectGanCube, reconnectGanCube } from '@cubalyze/gan-protocol';
 import { GanCubeAdapter } from '../src/bluetooth/GanCubeAdapter';
 
 interface FakeDevice {

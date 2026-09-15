@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — Calendar Repository
+ * @cubalyze/database — Calendar Repository
  *
  * Persists training calendar tasks (recurring schedule entries) to SQLite.
  * This is the single source of truth, replacing the legacy localStorage

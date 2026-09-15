@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { deriveHistogram } from "@cubeforge/analysis-engine";
+import { deriveHistogram } from "@cubalyze/analysis-engine";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Solve } from "@/types";
 

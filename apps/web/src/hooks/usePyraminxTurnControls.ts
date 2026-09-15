@@ -6,7 +6,7 @@ import {
   resolvePyraminxDragMove,
   type PyraminxEngine,
   type PyraminxPick,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 
 /**
  * Touch + keyboard controls for the virtual-Pyraminx view — the vertex-

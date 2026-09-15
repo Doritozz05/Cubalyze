@@ -26,7 +26,7 @@ La conexión a Smart Cubes vía Bluetooth es clave para CubeForge. Mientras en e
 ## Decision Outcome
 Chosen option: **Hardware Abstraction Layer (HAL) + Tauri para escritorio** (Capacitor para iOS diferido).
 
-> **Estado de implementación (2026-08-12):** la app de escritorio `apps/desktop` está implementada con **Tauri** (plugins `@tauri-apps/api`, `plugin-sql`, `plugin-updater`), no con Capacitor como planteaba la decisión original. Los adaptadores `GanCubeAdapterTauri.ts` y `GanTimerAdapterTauri.ts` extienden la interfaz del HAL (`@cubeforge/hardware-hal`) para el entorno Tauri; en navegador (web/PWA) se usa Web Bluetooth nativo. El wrapper móvil (Capacitor para iOS App Store) sigue diferido (DEC-22, bloqueado hasta Milestone 2+).
+> **Estado de implementación (2026-08-12):** la app de escritorio `apps/desktop` está implementada con **Tauri** (plugins `@tauri-apps/api`, `plugin-sql`, `plugin-updater`), no con Capacitor como planteaba la decisión original. Los adaptadores `GanCubeAdapterTauri.ts` y `GanTimerAdapterTauri.ts` extienden la interfaz del HAL (`@cubalyze/hardware-hal`) para el entorno Tauri; en navegador (web/PWA) se usa Web Bluetooth nativo. El wrapper móvil (Capacitor para iOS App Store) sigue diferido (DEC-22, bloqueado hasta Milestone 2+).
 
 ### Positive Consequences
 *   Permite lanzar CubeForge en la App Store de Apple sin reescribir la UI o el Core matemático.

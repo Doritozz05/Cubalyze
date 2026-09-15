@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isDbPuzzleType } from '@cubeforge/events';
+import { isDbPuzzleType } from '@cubalyze/events';
 
 /** How the user's avatar is rendered: procedural identicon or uploaded photo. */
 export const AvatarKindSchema = z.enum(['identicon', 'photo']);

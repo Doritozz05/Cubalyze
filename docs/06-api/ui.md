@@ -2,7 +2,7 @@
 
 > Sub-fase 4.6 · 2026-08-12
 
-## `@cubeforge/ui` — kit de UI compartido (4+ archivos)
+## `@cubalyze/ui` — kit de UI compartido (4+ archivos)
 
 **Propósito:** kit de componentes de UI (estilo shadcn sobre **Radix UI** +
 tailwind): `accordion`, `alert-dialog`, `alert`, `aspect-ratio`, `avatar`,
@@ -17,7 +17,7 @@ tailwind): `accordion`, `alert-dialog`, `alert`, `aspect-ratio`, `avatar`,
   es el candidato para el kit compartido futuro (desktop/SDK). `private:
   true`, v0.0.0.
 
-## `@cubeforge/identicon` — CubeMark (8 archivos)
+## `@cubalyze/identicon` — CubeMark (8 archivos)
 
 **Propósito:** identicon de marca (CubeMark) generado del seed del usuario:
 spec determinista → render SVG inline o data-URI.
@@ -30,11 +30,11 @@ spec determinista → render SVG inline o data-URI.
 - **Dependencias:** ninguna (puro).
 - **Consumido por:** web (`IdenticonAvatar` del perfil).
 
-## `@cubeforge/config-eslint` — configuración de ESLint
+## `@cubalyze/config-eslint` — configuración de ESLint
 
 **Propósito:** config compartida de ESLint del monorepo (flat config, `index.js`).
 
-## `@cubeforge/config-typescript` — configuración de TypeScript
+## `@cubalyze/config-typescript` — configuración de TypeScript
 
 **Propósito:** tsconfigs base compartidos: `tsconfig.base.json`,
 `tsconfig.react.json` (extendidos por apps/packages).

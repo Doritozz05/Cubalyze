@@ -1,6 +1,6 @@
 import type { Solve } from './types.js';
-import { isDbPuzzleType } from '@cubeforge/events';
-import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
+import { isDbPuzzleType } from '@cubalyze/events';
+import type { CubeMoveEvent, OrientationTimeline } from '@cubalyze/types';
 import { withTransaction } from './transaction.js';
 import { nextLocalStamps } from './local-clock.js';
 import { purgeTombstoneEchoes, rowIsDoomed } from './tombstone-echo.js';

@@ -24,9 +24,9 @@ import {
 import { wipeAccountLocalData } from "@/services/accountCleanup";
 import { refreshProfile, resetIdentity } from "@/hooks/useProfile";
 import { resetFriendDirectory } from "@/hooks/useFriends";
-import type { LocalDataCounts } from "@cubeforge/sync-engine";
+import type { LocalDataCounts } from "@cubalyze/sync-engine";
 import type { User } from "@supabase/supabase-js";
-import type { SyncEngine } from "@cubeforge/sync-engine";
+import type { SyncEngine } from "@cubalyze/sync-engine";
 
 export type ClaimState = "none" | "pending" | "in_progress";
 

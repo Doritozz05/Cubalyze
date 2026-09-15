@@ -11,8 +11,8 @@ import {
   getSubset,
   resolveAlgorithmDiagramRotation,
   resolveCaseVisualizationStyle,
-} from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubalyze/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

@@ -27,8 +27,8 @@
 
 import { create } from "zustand";
 import { toast } from "sonner";
-import { normalizeSmartId, smartIdsMatch } from "@cubeforge/database";
-import type { CubeIdentity } from "@cubeforge/hardware-hal";
+import { normalizeSmartId, smartIdsMatch } from "@cubalyze/database";
+import type { CubeIdentity } from "@cubalyze/hardware-hal";
 import i18n from "@/i18n";
 import { provisioningTarget } from "@/views/Collection/activeCube";
 import { useCollectionStore } from "@/views/Collection/collectionStore";

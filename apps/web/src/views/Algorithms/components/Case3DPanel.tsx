@@ -11,7 +11,7 @@ import { Case3DDiagram } from "./Case3DDiagram";
 import { AlgorithmEditorDialog } from "./AlgorithmEditorDialog";
 import { SortableAlgorithmItem } from "./SortableAlgorithmItem";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
-import { algorithmStore } from "@cubeforge/state";
+import { algorithmStore } from "@cubalyze/state";
 import {
   DndContext,
   closestCenter,
@@ -24,8 +24,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { isF2LCase } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm } from "@cubeforge/algorithm-db";
+import { isF2LCase } from "@cubalyze/algorithm-db";
+import type { AlgorithmCase, Algorithm } from "@cubalyze/algorithm-db";
 
 export interface Case3DPanelProps {
   caseData: AlgorithmCase;

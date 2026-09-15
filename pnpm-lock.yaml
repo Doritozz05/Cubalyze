@@ -65,43 +65,43 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../../packages/algorithm-db
-      '@cubeforge/analysis-engine':
+      '@cubalyze/analysis-engine':
         specifier: workspace:*
         version: link:../../packages/analysis-engine
-      '@cubeforge/cube-3d-engine':
+      '@cubalyze/cube-3d-engine':
         specifier: workspace:*
         version: link:../../packages/cube-3d-engine
-      '@cubeforge/database':
+      '@cubalyze/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@cubeforge/gan-protocol':
+      '@cubalyze/gan-protocol':
         specifier: workspace:*
         version: link:../../packages/gan-protocol
-      '@cubeforge/hardware-hal':
+      '@cubalyze/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../../packages/solver-engine
-      '@cubeforge/state':
+      '@cubalyze/state':
         specifier: workspace:*
         version: link:../../packages/state
-      '@cubeforge/statistics':
+      '@cubalyze/statistics':
         specifier: workspace:*
         version: link:../../packages/statistics
-      '@cubeforge/timer-engine':
+      '@cubalyze/timer-engine':
         specifier: workspace:*
         version: link:../../packages/timer-engine
-      '@cubeforge/training':
+      '@cubalyze/training':
         specifier: workspace:*
         version: link:../../packages/training
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@fontsource/cascadia-code':
@@ -330,49 +330,49 @@ importers:
 
   apps/web:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../../packages/algorithm-db
-      '@cubeforge/analysis-engine':
+      '@cubalyze/analysis-engine':
         specifier: workspace:*
         version: link:../../packages/analysis-engine
-      '@cubeforge/cube-3d-engine':
+      '@cubalyze/cube-3d-engine':
         specifier: workspace:*
         version: link:../../packages/cube-3d-engine
-      '@cubeforge/database':
+      '@cubalyze/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@cubeforge/events':
+      '@cubalyze/events':
         specifier: workspace:*
         version: link:../../packages/events
-      '@cubeforge/hardware-hal':
+      '@cubalyze/hardware-hal':
         specifier: workspace:*
         version: link:../../packages/hardware-hal
-      '@cubeforge/identicon':
+      '@cubalyze/identicon':
         specifier: workspace:*
         version: link:../../packages/identicon
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../../packages/math-core
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../../packages/solver-engine
-      '@cubeforge/state':
+      '@cubalyze/state':
         specifier: workspace:*
         version: link:../../packages/state
-      '@cubeforge/statistics':
+      '@cubalyze/statistics':
         specifier: workspace:*
         version: link:../../packages/statistics
-      '@cubeforge/sync-engine':
+      '@cubalyze/sync-engine':
         specifier: workspace:*
         version: link:../../packages/sync-engine
-      '@cubeforge/timer-engine':
+      '@cubalyze/timer-engine':
         specifier: workspace:*
         version: link:../../packages/timer-engine
-      '@cubeforge/training':
+      '@cubalyze/training':
         specifier: workspace:*
         version: link:../../packages/training
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@dnd-kit/core':
@@ -589,7 +589,7 @@ importers:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@18.3.1)(immer@11.1.11)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../../packages/config-eslint
       '@tailwindcss/postcss':
@@ -642,20 +642,20 @@ importers:
 
   packages/algorithm-db:
     dependencies:
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../math-core
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../solver-engine
       zod:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -670,23 +670,23 @@ importers:
 
   packages/analysis-engine:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../math-core
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../solver-engine
-      '@cubeforge/statistics':
+      '@cubalyze/statistics':
         specifier: workspace:*
         version: link:../statistics
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       tsup:
@@ -721,10 +721,10 @@ importers:
 
   packages/cube-3d-engine:
     dependencies:
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../math-core
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       comlink:
@@ -740,7 +740,7 @@ importers:
         specifier: ^2.28.0
         version: 2.36.1(three@0.185.1)
     devDependencies:
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../solver-engine
       '@types/three':
@@ -758,19 +758,19 @@ importers:
 
   packages/database:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
-      '@cubeforge/events':
+      '@cubalyze/events':
         specifier: workspace:*
         version: link:../events
-      '@cubeforge/models':
+      '@cubalyze/models':
         specifier: workspace:*
         version: link:../models
-      '@cubeforge/training':
+      '@cubalyze/training':
         specifier: workspace:*
         version: link:../training
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       '@sqlite.org/sqlite-wasm':
@@ -780,10 +780,10 @@ importers:
         specifier: ^4.4.1
         version: 4.4.2
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -798,14 +798,14 @@ importers:
 
   packages/events:
     dependencies:
-      '@cubeforge/timer-engine':
+      '@cubalyze/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -830,10 +830,10 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       '@types/aes-js':
@@ -857,20 +857,20 @@ importers:
 
   packages/hardware-hal:
     dependencies:
-      '@cubeforge/gan-protocol':
+      '@cubalyze/gan-protocol':
         specifier: workspace:*
         version: link:../gan-protocol
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       '@types/audioworklet':
@@ -894,10 +894,10 @@ importers:
 
   packages/identicon:
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -912,20 +912,20 @@ importers:
 
   packages/math-core:
     dependencies:
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       min2phase.js:
         specifier: ^0.0.4
         version: 0.0.4
     devDependencies:
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
-      '@cubeforge/hardware-hal':
+      '@cubalyze/hardware-hal':
         specifier: workspace:*
         version: link:../hardware-hal
-      '@cubeforge/timer-engine':
+      '@cubalyze/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine
       '@types/three':
@@ -946,23 +946,23 @@ importers:
 
   packages/models:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
-      '@cubeforge/events':
+      '@cubalyze/events':
         specifier: workspace:*
         version: link:../events
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       zod:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -977,14 +977,14 @@ importers:
 
   packages/solver-engine:
     dependencies:
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../math-core
       min2phase.js:
         specifier: ^0.0.4
         version: 0.0.4
     devDependencies:
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       tsup:
@@ -999,20 +999,20 @@ importers:
 
   packages/state:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
       zustand:
         specifier: ^5.0.3
         version: 5.0.14(@types/react@18.3.1)(immer@11.1.11)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -1027,11 +1027,11 @@ importers:
 
   packages/statistics:
     dependencies:
-      '@cubeforge/types':
+      '@cubalyze/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       tsup:
@@ -1046,23 +1046,23 @@ importers:
 
   packages/sync-engine:
     dependencies:
-      '@cubeforge/database':
+      '@cubalyze/database':
         specifier: workspace:*
         version: link:../database
-      '@cubeforge/models':
+      '@cubalyze/models':
         specifier: workspace:*
         version: link:../models
-      '@cubeforge/training':
+      '@cubalyze/training':
         specifier: workspace:*
         version: link:../training
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.112.3
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       '@sqlite.org/sqlite-wasm':
@@ -1084,10 +1084,10 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       eslint:
@@ -1105,23 +1105,23 @@ importers:
 
   packages/training:
     dependencies:
-      '@cubeforge/algorithm-db':
+      '@cubalyze/algorithm-db':
         specifier: workspace:*
         version: link:../algorithm-db
-      '@cubeforge/solver-engine':
+      '@cubalyze/solver-engine':
         specifier: workspace:*
         version: link:../solver-engine
-      '@cubeforge/timer-engine':
+      '@cubalyze/timer-engine':
         specifier: workspace:*
         version: link:../timer-engine
     devDependencies:
-      '@cubeforge/config-eslint':
+      '@cubalyze/config-eslint':
         specifier: workspace:*
         version: link:../config-eslint
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
-      '@cubeforge/math-core':
+      '@cubalyze/math-core':
         specifier: workspace:*
         version: link:../math-core
       eslint:
@@ -1139,7 +1139,7 @@ importers:
 
   packages/types:
     devDependencies:
-      '@cubeforge/config-typescript':
+      '@cubalyze/config-typescript':
         specifier: workspace:*
         version: link:../config-typescript
       tsup:

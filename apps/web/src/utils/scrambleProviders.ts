@@ -5,21 +5,21 @@ import {
   getScrambleProvider,
   registerScrambleProvider,
   type ScrambleProvider,
-} from "@cubeforge/events";
-import { Cube2x2State, CubeState } from "@cubeforge/math-core";
+} from "@cubalyze/events";
+import { Cube2x2State, CubeState } from "@cubalyze/math-core";
 import {
   RandomStateGenerator,
   applyPyraminxSequence,
   generatePyraminxScramble,
   isPyraminxSolved,
   solvedPyraminx,
-} from "@cubeforge/solver-engine";
+} from "@cubalyze/solver-engine";
 import { getMin2PhaseSolver, getTwoByTwoScrambler } from "./puzzleUtils";
 
 /**
  * Concrete ScrambleProvider implementations (TDD A4).
  *
- * The @cubeforge/events package only declares the contract; the real 2×2/3×3
+ * The @cubalyze/events package only declares the contract; the real 2×2/3×3
  * scramblers live here, wrapping the lazy solver singletons from puzzleUtils
  * so scramble output is byte-identical to the previous direct calls. The
  * module self-registers on import so the registry is ready before the first

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Palette,
@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ALL_FONTS, slashedZeroFeature, supportsSlashedZero } from '@/theme/fonts';
-import { MAX_CUSTOM_FONTS } from '@cubeforge/state';
+import { MAX_CUSTOM_FONTS } from '@cubalyze/state';
 import {
   customFontFamily,
   deleteFontBlob,

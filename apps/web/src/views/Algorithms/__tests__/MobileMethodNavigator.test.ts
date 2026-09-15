@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SUBSETS } from "@cubeforge/algorithm-db";
+import { SUBSETS } from "@cubalyze/algorithm-db";
 import {
   buildTree,
   findPathTo,

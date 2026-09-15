@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Session Engine unit tests
+ * @cubalyze/training — Session Engine unit tests
  *
  * Tests all valid transitions, invalid transitions, and edge cases
  * for the TrainingSessionEngine state machine.

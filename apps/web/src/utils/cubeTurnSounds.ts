@@ -59,7 +59,7 @@
  * `assets/sounds/README.md` for the attribution/rename table).
  */
 
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { SoundManager, soundManager, type AssetDescriptor } from "@/audio/soundManager";
 import turn1Url from "@/assets/sounds/turn-1.wav";
 import turn2Url from "@/assets/sounds/turn-2.wav";

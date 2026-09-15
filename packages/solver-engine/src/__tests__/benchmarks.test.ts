@@ -6,7 +6,7 @@
  * acting as CI/CD quality gates.
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState, Cube2x2State, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, Cube2x2State, FaceletStringConverter } from '@cubalyze/math-core';
 import { Min2PhaseSolver, TwoByTwoSolver } from '../index';
 import { RandomStateGenerator } from '../RandomStateGenerator';
 

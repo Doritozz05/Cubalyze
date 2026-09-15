@@ -4,7 +4,7 @@ import ibmPlexWoff2 from '@/assets/fonts/ibm-plex-mono-400-latin.woff2';
 import openSansWoff2 from '@fontsource/open-sans/files/open-sans-latin-400-normal.woff2';
 import interWoff2 from '@fontsource/inter/files/inter-latin-400-normal.woff2';
 import spaceGroteskWoff2 from '@fontsource/space-grotesk/files/space-grotesk-latin-400-normal.woff2';
-import type { CustomFontMeta } from '@cubeforge/state';
+import type { CustomFontMeta } from '@cubalyze/state';
 import { getCustomFontBlobUrl } from './customFonts';
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/gan-protocol",
+  "name": "@cubalyze/gan-protocol",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -29,8 +29,8 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "@types/aes-js": "^3.1.4",
     "@types/web-bluetooth": "^0.0.21",
     "eslint": "^10.7.0",

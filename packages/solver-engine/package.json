@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/solver-engine",
+  "name": "@cubalyze/solver-engine",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -27,11 +27,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/math-core": "workspace:*",
+    "@cubalyze/math-core": "workspace:*",
     "min2phase.js": "^0.0.4"
   },
   "devDependencies": {
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "tsup": "^8.3.6",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

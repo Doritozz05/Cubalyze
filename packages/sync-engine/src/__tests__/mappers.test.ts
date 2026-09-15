@@ -11,7 +11,7 @@ import {
   solveToCloudRow,
   taskToCloudRow,
 } from "../mappers";
-import type { Solve, Session, Profile } from "@cubeforge/models";
+import type { Solve, Session, Profile } from "@cubalyze/models";
 
 const UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 

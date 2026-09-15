@@ -66,7 +66,7 @@ export {
 export { CaseVerifier } from './caseVerifier';
 export type { CaseVerificationResult, SubsetVerificationReport } from './caseVerifier';
 
-// Move parsing / reconstruction notation lives in @cubeforge/math-core
+// Move parsing / reconstruction notation lives in @cubalyze/math-core
 // (notation/moveNotation).
 
 // ─── Modular Case Detection ──────────────────────────────────────────────

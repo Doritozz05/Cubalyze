@@ -40,7 +40,7 @@ import { useStore } from "zustand";
 import { useCollectionStore } from "@/views/Collection/collectionStore";
 import { activeCubeStore } from "@/stores/activeCubeStore";
 import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { cubeShortLabel, cubesForEventWithSmartFallback, NO_CUBE, resolveActiveCube } from "@/views/Collection/activeCube";
 import type { GearItem } from "@/views/Collection/collectionModel";
 

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Session & attempt type definitions
+ * @cubalyze/training — Session & attempt type definitions
  *
  * The Training Session is the runtime state machine that orchestrates
  * an exercise from start to finish. It is exercise-agnostic: the same

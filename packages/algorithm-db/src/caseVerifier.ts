@@ -1,4 +1,4 @@
-import { Min2PhaseSolver } from '@cubeforge/solver-engine';
+import { Min2PhaseSolver } from '@cubalyze/solver-engine';
 import type { Algorithm, AlgorithmCase } from './schema';
 import { CaseStateGenerator } from './caseGenerator';
 

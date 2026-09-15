@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter } from '@cubalyze/math-core';
 import { Min2PhaseSolver } from './Min2PhaseSolver';
 
 describe('FaceletStringConverter', () => {

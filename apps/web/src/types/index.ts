@@ -42,11 +42,11 @@ export interface Solve {
   /** How the solve was recorded: "smart" (cube hardware) or "manual". */
   source?: SolveSource;
   /** Raw moves captured from Smart Cube during the solve. */
-  moves?: import('@cubeforge/types').CubeMoveEvent[];
+  moves?: import('@cubalyze/types').CubeMoveEvent[];
   /** Post-solve analysis metrics (computed after solve completes). */
-  analysis?: import('@cubeforge/types').SolveMetrics;
+  analysis?: import('@cubalyze/types').SolveMetrics;
   /** Compact orientation timeline for smart cube solves with IMU. */
-  orientationTimeline?: import('@cubeforge/types').OrientationTimeline;
+  orientationTimeline?: import('@cubalyze/types').OrientationTimeline;
   /**
    * Whether `moves` are pre-conjugated to the cube-fixed frame.
    *

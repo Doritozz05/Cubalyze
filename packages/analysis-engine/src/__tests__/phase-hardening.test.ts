@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CFOPDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition } from '@cubalyze/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';

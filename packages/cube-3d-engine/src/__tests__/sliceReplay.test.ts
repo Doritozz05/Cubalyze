@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 import { ReplayEngine } from '../replay/ReplayEngine';
-import type { CubeMoveEvent } from '@cubeforge/types';
+import type { CubeMoveEvent } from '@cubalyze/types';
 
 /**
  * P0 — the 3D replay must animate the slice half of wide moves (r → R M',

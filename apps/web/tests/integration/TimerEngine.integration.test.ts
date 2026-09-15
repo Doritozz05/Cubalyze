@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TimerEngine, TimerState } from '@cubeforge/timer-engine';
+import { TimerEngine, TimerState } from '@cubalyze/timer-engine';
 import { Subject } from 'rxjs';
 
-// Simulate the HardwareTimerEvent type from @cubeforge/hardware-hal
+// Simulate the HardwareTimerEvent type from @cubalyze/hardware-hal
 // (avoids a build dependency on hardware-hal for this test)
 interface HardwareTimerEvent {
   type: 'hardwareDown' | 'hardwareUp' | 'hardwareReset';

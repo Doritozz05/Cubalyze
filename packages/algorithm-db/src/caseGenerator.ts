@@ -1,4 +1,4 @@
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter } from '@cubalyze/math-core';
 import type { Algorithm, AlgorithmCase } from './schema';
 
 // ─── Visualization Styles ───────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — CubeMark spec generation
+ * @cubalyze/identicon — CubeMark spec generation
  *
  * Turns a stable seed into a deterministic {@link CubeMarkSpec}:
  *

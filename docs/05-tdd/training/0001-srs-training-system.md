@@ -14,8 +14,8 @@
 Sistema de entrenamiento offline-first que registra intentos de práctica
 (reconocimiento + ejecución), mantiene progreso por caso de algoritmo y
 **programa repasos** con el modelo FSRS-4 para maximizar la retención a largo
-plazo. Se integra con el catálogo de `@cubeforge/algorithm-db` y persiste en
-SQLite vía `@cubeforge/database`.
+plazo. Se integra con el catálogo de `@cubalyze/algorithm-db` y persiste en
+SQLite vía `@cubalyze/database`.
 
 ## 2. Arquitectura de módulos (`packages/training/src/`)
 
@@ -32,7 +32,7 @@ SQLite vía `@cubeforge/database`.
 
 **Layering:** UI (`apps/web`) → hooks (`useTrainingProgress`, `useSRSQueue`) →
 `ProgressTracker` → `ITrainingProgressRepo` → `TrainingRepository`
-(`@cubeforge/database`) → SQLite WASM (worker, ADR-013/016).
+(`@cubalyze/database`) → SQLite WASM (worker, ADR-013/016).
 
 ## 3. Modelo de datos (SQLite, `migrations.ts`)
 

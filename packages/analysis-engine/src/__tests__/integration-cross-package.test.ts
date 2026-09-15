@@ -5,12 +5,12 @@
  * simulating real-world usage: scramble → solve → analyze → persist.
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState, Cube2x2State, Cube2x2FaceletConverter } from '@cubeforge/math-core';
-import { Min2PhaseSolver, TwoByTwoSolver } from '@cubeforge/solver-engine';
+import { CubeState, Cube2x2State, Cube2x2FaceletConverter } from '@cubalyze/math-core';
+import { Min2PhaseSolver, TwoByTwoSolver } from '@cubalyze/solver-engine';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';
-import { CFOPDefinition, RouxFullDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition, RouxFullDefinition } from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves } from './test-helpers';
 
 // ═══════════════════════════════════════════════════════════════════════

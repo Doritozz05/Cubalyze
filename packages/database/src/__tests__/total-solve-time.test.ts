@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { MIGRATIONS } from '../migrations/migrations.js';
 import { SolvesRepository } from '../repositories/solves.repository.js';
-import type { Solve } from '@cubeforge/models';
+import type { Solve } from '@cubalyze/models';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sqlite3: any;

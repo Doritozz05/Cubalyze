@@ -33,7 +33,7 @@
  *   cases: measured collisions like F2L 5+U ≡ F2L 21). Regularizing the
  *   observed state instead keeps the signature's discrimination intact.
  */
-import { FaceletStringConverter, type CubeState } from '@cubeforge/math-core';
+import { FaceletStringConverter, type CubeState } from '@cubalyze/math-core';
 import { pairSignature } from '../pairSignature';
 import { resolveSlotPiecesByColor, slotToFRRotation } from '../slotResolver';
 import { CROSS_TO_D, D_TO_CROSS } from '../crossFaceAdapter';

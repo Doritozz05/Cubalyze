@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Exercise catalog invariance tests.
+ * @cubalyze/training — Exercise catalog invariance tests.
  *
  * The catalog is the single source of truth for exercise ids that get
  * persisted in training_attempts. These tests guard the invariants the
@@ -17,7 +17,7 @@ import {
   findSubsetId,
   masteryLevel,
 } from '../catalog';
-import { METHODS, SUBSETS, getChildSubsets, getSubsetsForMethod } from '@cubeforge/algorithm-db';
+import { METHODS, SUBSETS, getChildSubsets, getSubsetsForMethod } from '@cubalyze/algorithm-db';
 
 function allSubsetIds(methodId: string): string[] {
   const out: string[] = [];

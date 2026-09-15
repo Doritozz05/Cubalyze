@@ -400,7 +400,7 @@ export interface OrientationCapabilities {
 }
 ```
 
-**API:** Pure types, exported from `@cubeforge/types`.
+**API:** Pure types, exported from `@cubalyze/types`.
 
 ---
 
@@ -869,20 +869,20 @@ These properties are tested with a fast-check / property-based test runner over 
 - `packages/math-core/src/orientation/OrientationTable.ts` — 24-orientation table + snap
 - `packages/math-core/src/orientation/MoveTransformer.ts` — move remapping
 - Unit tests for all three (§6.1, §6.2)
-- **Validation:** `pnpm --filter @cubeforge/math-core test`
+- **Validation:** `pnpm --filter @cubalyze/math-core test`
 
 ### Phase 2: Orientation Tracker (no UI changes)
 - `packages/cube-3d-engine/src/hardware/OrientationTracker.ts`
 - Wire into `EngineWorker.ts` (instantiate, feed gyro events, expose via Comlink)
 - Unit tests for tracker (§6.3)
-- **Validation:** `pnpm --filter @cubeforge/cube-3d-engine test`
+- **Validation:** `pnpm --filter @cubalyze/cube-3d-engine test`
 
 ### Phase 3: State + Hooks
 - `packages/state/src/orientation.store.ts`
 - `apps/web/src/hooks/useOrientation.ts`
 - Wire `GanCubeAdapter.gyroSupported` flag
 - Wire `GyroFusion.calibrate()` callback to tracker
-- **Validation:** `pnpm --filter @cubeforge/state test` + `pnpm --filter web typecheck`
+- **Validation:** `pnpm --filter @cubalyze/state test` + `pnpm --filter web typecheck`
 
 ### Phase 4: UI Integration
 - `Cube3DPanel.tsx` — use `toDisplayNotation` for move overlay

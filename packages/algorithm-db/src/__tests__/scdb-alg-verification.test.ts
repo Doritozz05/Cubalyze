@@ -96,7 +96,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import { CubeState, FaceletStringConverter } from "@cubalyze/math-core";
 import { CaseStateGenerator } from "../caseGenerator";
 
 // ─── Types ─────────────────────────────────────────────────────────────────

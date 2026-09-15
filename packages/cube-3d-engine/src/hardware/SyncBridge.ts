@@ -2,7 +2,7 @@ import { Subscription } from 'rxjs';
 import type { Observable } from 'rxjs';
 import type * as Comlink from 'comlink';
 import type { EngineWorkerAPI } from '../workers/EngineWorker';
-import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubeforge/types';
+import type { CubeMoveEvent, GyroEvent, CubeFace } from '@cubalyze/types';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 import type { RotationAxis } from '../animation/RotationEngine';
 import type { EasingStrategy } from '../animation/Easing';

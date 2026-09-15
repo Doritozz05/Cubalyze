@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { getSeedData } from "@cubeforge/algorithm-db";
-import type { Algorithm } from "@cubeforge/algorithm-db";
-import { algorithmStore } from "@cubeforge/state";
+import { getSeedData } from "@cubalyze/algorithm-db";
+import type { Algorithm } from "@cubalyze/algorithm-db";
+import { algorithmStore } from "@cubalyze/state";
 import { useStore } from "zustand";
 
 // ─── Lazy seed cache (shared across hook + utility) ─────────────────────

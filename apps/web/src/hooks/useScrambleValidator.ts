@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Observable } from 'rxjs';
 import { globalCubeAdapter } from '@/components/Hardware/CubeConnector';
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS, SOLVED_FACELETS_2X2, cornerFacelet } from '@cubeforge/math-core';
-import { orientationStore } from '@cubeforge/state';
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubalyze/types';
+import { CubeState, FaceletStringConverter, MoveTransformer, SOLVED_FACELETS, SOLVED_FACELETS_2X2, cornerFacelet } from '@cubalyze/math-core';
+import { orientationStore } from '@cubalyze/state';
 
 /**
  * The minimal adapter surface the scramble validator consumes. The real

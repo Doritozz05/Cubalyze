@@ -3,7 +3,7 @@ import type {
   CubeMoveEvent,
   F2LPairMetrics,
   SolveMetrics,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { derivePairSegments, deriveTimeline } from '../derived/timeline';
 
 /**

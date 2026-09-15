@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseFaceletsToCubies2x2 } from '../core/FaceletParser2x2';
-import { Cube2x2State, Cube2x2FaceletConverter } from '@cubeforge/math-core';
+import { Cube2x2State, Cube2x2FaceletConverter } from '@cubalyze/math-core';
 
 describe('parseFaceletsToCubies2x2', () => {
   it('parses solved 2×2 facelets into 8 valid cubies', () => {

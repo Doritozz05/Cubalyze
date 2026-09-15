@@ -1,14 +1,14 @@
 /**
  * Shared puzzle-type vocabulary (Phase A3 — SSoT).
  *
- * The canonical `PuzzleType` union comes from `@cubeforge/events` (the WCA
+ * The canonical `PuzzleType` union comes from `@cubalyze/events` (the WCA
  * event registry). This module is the ONE place the app defines the display
  * labels and ordering for the puzzle types that have content today — it was
  * previously duplicated in three Algorithm UI files.
  */
-import type { PuzzleType } from "@cubeforge/events";
+import type { PuzzleType } from "@cubalyze/events";
 
-export type { PuzzleType } from "@cubeforge/events";
+export type { PuzzleType } from "@cubalyze/events";
 
 /**
  * Display labels for every WCA event code (the UI never shows the raw code

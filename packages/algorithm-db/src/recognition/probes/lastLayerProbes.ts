@@ -36,7 +36,7 @@
  * Signatures are namespaced ('O:' / 'P:') so the three probe families can
  * share the same flat catalog without ever colliding.
  */
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter } from '@cubalyze/math-core';
 import { CROSS_TO_D } from '../crossFaceAdapter';
 import type { DetectionProbe } from './types';
 

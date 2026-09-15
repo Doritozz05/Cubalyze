@@ -10,7 +10,7 @@ import {
   pyraminxCornerSlotPosition,
   computePyraminxIsometricBasis,
   displayPyraminxTokenThroughGrip,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 
 interface V3 { x: number; y: number; z: number }
 

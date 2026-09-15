@@ -13,7 +13,7 @@
  *   - labels of the baked first phase (rotations-only) that fail to match.
  *
  * IMPORTANT: requires a FRESH build of analysis-engine (the dist is what
- * this script measures): `pnpm --filter @cubeforge/analysis-engine build`.
+ * this script measures): `pnpm --filter @cubalyze/analysis-engine build`.
  */
 const fs = require("fs");
 const path = require("path");

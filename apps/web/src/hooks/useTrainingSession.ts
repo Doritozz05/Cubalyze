@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTrainingProgress } from "./useTrainingProgress";
-import type { TrainingSessionProgressRecord } from "@cubeforge/training";
+import type { TrainingSessionProgressRecord } from "@cubalyze/training";
 
 function createSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {

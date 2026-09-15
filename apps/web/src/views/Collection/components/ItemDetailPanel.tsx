@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
-import { formatSmartId } from "@cubeforge/database";
+import { formatSmartId } from "@cubalyze/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

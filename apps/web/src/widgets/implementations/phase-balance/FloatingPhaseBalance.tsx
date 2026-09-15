@@ -11,7 +11,7 @@ import { phaseColorHex } from "@/utils/phaseColors";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PhaseSkipBadge } from "@/widgets/components/PhaseSkipBadge";
 import type { Solve } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 import {
   buildPhaseBalance,
   getLatestComparableAnalysis,

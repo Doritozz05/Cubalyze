@@ -7,13 +7,13 @@ import {
   orderPairFaces,
   type FaceLetter,
   type PhaseMask,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import {
   createF2LDetector,
   D_TO_CROSS,
   CROSS_TO_D,
   type CaseDetector,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 
 export type CrossColor = "white" | "yellow" | "green" | "blue" | "red" | "orange";
 

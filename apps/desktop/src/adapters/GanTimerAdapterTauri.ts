@@ -8,14 +8,14 @@
  * Maps the GAN Timer protocol states to the HardwareTimerAdapter interface
  * (hardwareDown / hardwareUp / hardwareReset events) consumed by TimerEngine.
  *
- * Reuses the GanTimerState enum values from @cubeforge/gan-protocol.
+ * Reuses the GanTimerState enum values from @cubalyze/gan-protocol.
  * Zero changes to packages/hardware-hal/.
  */
 
 import { Subject } from 'rxjs';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type { HardwareTimerAdapter, HardwareTimerEvent } from '@cubeforge/hardware-hal';
+import type { HardwareTimerAdapter, HardwareTimerEvent } from '@cubalyze/hardware-hal';
 
 // ── Timer state constants (mirrors GanTimerState enum) ────────────────
 

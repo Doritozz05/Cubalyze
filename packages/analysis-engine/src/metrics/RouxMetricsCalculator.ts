@@ -1,4 +1,4 @@
-import type { SolveTimeline, RouxMetrics } from '@cubeforge/types';
+import type { SolveTimeline, RouxMetrics } from '@cubalyze/types';
 
 /**
  * Computes Roux-specific metrics from a solve timeline.

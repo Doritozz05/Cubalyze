@@ -113,7 +113,7 @@ most notable:
 
 ```bash
 # 1. Dump the current seed caseDefs (stable case IDs keep user progress intact)
-pnpm --filter @cubeforge/algorithm-db exec vitest run src/__tests__/scdb-dump-seed-catalog.test.ts
+pnpm --filter @cubalyze/algorithm-db exec vitest run src/__tests__/scdb-dump-seed-catalog.test.ts
 
 # 2. Fuse SpeedCubeDB + BirdF2L
 npx tsx pruebas/scripts/fase5-fuse.ts
@@ -125,9 +125,9 @@ python pruebas/scripts/generate_seed_catalog.py
 pnpm dlx tsx pruebas/scripts/build-recon-web-data.ts
 
 # 5. Verify
-pnpm --filter @cubeforge/algorithm-db test
-pnpm --filter @cubeforge/analysis-engine test
-pnpm --filter @cubeforge/math-core test
+pnpm --filter @cubalyze/algorithm-db test
+pnpm --filter @cubalyze/analysis-engine test
+pnpm --filter @cubalyze/math-core test
 ```
 
 ---

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
-import { CFOPDefinition, RouxFullDefinition, ZZDefinition, PetrusDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition, RouxFullDefinition, ZZDefinition, PetrusDefinition } from '@cubalyze/math-core';
 import { makeMoves, makeSolveFromScramble } from './test-helpers';
 
 describe('PhaseSplitter — validate()', () => {

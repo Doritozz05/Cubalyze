@@ -7,7 +7,7 @@
 import { it } from "vitest";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import { CubeState, FaceletStringConverter } from "@cubalyze/math-core";
 
 // generateFromScramble only applies the setup to a solved cube:
 function setupState(setup: string): CubeState {

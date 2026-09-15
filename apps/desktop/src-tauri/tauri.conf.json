@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "pnpm --filter @cubeforge/desktop dev",
-    "beforeBuildCommand": "pnpm --filter @cubeforge/desktop build"
+    "beforeDevCommand": "pnpm --filter @cubalyze/desktop dev",
+    "beforeBuildCommand": "pnpm --filter @cubalyze/desktop build"
   },
   "app": {
     "windows": [

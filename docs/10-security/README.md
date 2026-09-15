@@ -25,7 +25,7 @@
 |---|---|
 | Crypto/firmas (decidido, **no implementado**) | ADR-018 |
 | CSP y cabeceras de producción | [`../11-devops/Deploy_and_Hosting.md`](../11-devops/Deploy_and_Hosting.md) |
-| Seguridad del protocolo GAN (BLE cifrado) | `docs/06-api/hardware.md` + `@cubeforge/gan-protocol` |
+| Seguridad del protocolo GAN (BLE cifrado) | `docs/06-api/hardware.md` + `@cubalyze/gan-protocol` |
 | Policy de reportes de vulnerabilidades | [`SECURITY.md`](../../SECURITY.md) (raíz) |
 | **Auditoría 2026-09-12** (RLS, sync, cuentas, cuotas) | [`Auditoria-2026-09-12.md`](./Auditoria-2026-09-12.md) |
 

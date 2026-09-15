@@ -33,7 +33,7 @@ import {
   FaceletStringConverter,
   cornerFacelet,
   edgeFacelet,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 
 /** Canonical face order used to sort face pairs deterministically. */
 const FACE_ORDER: Record<string, number> = { U: 0, R: 1, F: 2, D: 3, L: 4, B: 5 };

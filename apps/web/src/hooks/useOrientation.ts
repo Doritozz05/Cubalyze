@@ -15,15 +15,15 @@
 
 import { useCallback } from 'react';
 import { useStore } from 'zustand';
-import { orientationStore, preferencesStore } from '@cubeforge/state';
-import { MoveTransformer } from '@cubeforge/math-core';
+import { orientationStore, preferencesStore } from '@cubalyze/state';
+import { MoveTransformer } from '@cubalyze/math-core';
 import type { PuzzleCategory } from '@/types';
 import type {
   CubeMoveEvent,
   CubeOrientation,
   DisplayMove,
   OrientationCapabilities,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 
 /**
  * Whether a puzzle's orientation can define the frame the scramble is written

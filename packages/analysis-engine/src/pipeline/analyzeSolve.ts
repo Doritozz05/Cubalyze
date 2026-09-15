@@ -4,15 +4,15 @@ import type {
   CubeStateSnapshot,
   SolveMetrics,
   SolveTimeline,
-} from '@cubeforge/types';
-import { CubeState } from '@cubeforge/math-core';
+} from '@cubalyze/types';
+import { CubeState } from '@cubalyze/math-core';
 import {
   CFOPDefinition,
   PetrusDefinition,
   RouxFullDefinition,
   ZZDefinition,
   type MethodDefinition,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { TimerEngine, TimerState as EngineState } from "@cubalyze/timer-engine";
 import {
   compactOrientationTimeline,
   expandWideMoves,
@@ -9,13 +9,13 @@ import {
   SOLVED_FACELETS,
   SOLVED_FACELETS_2X2,
   type OrientationEntry,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import type {
   CubeFace,
   CubeMoveEvent,
   CubeOrientation,
   OrientationTimeline,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import type { Penalty, TimerState } from "@/types";
 import { mapTimerState } from "@/utils/timerState";
 import { createVirtualCubeAdapter } from "@/utils/virtualCubeAdapter";

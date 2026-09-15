@@ -36,7 +36,7 @@ import { appReady, appDataReady, markAppReady, markAppDataReady } from './boot/a
 import { installLogCapture } from './boot/logCapture'
 import { AppErrorBoundary } from './boot/AppErrorBoundary'
 import { LogViewer } from './components/LogViewer/LogViewer'
-import { preferencesStore } from '@cubeforge/state'
+import { preferencesStore } from '@cubalyze/state'
 import { loadCustomFonts } from '@/theme/customFonts'
 
 // Rebuild user-uploaded @font-faces from IndexedDB (fire-and-forget;

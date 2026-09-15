@@ -12,7 +12,7 @@ export type WcaScoring = 'time' | 'mbf-points' | 'fmc-moves';
 
 /**
  * WCA rules profile for one event. Single source of truth lives here (phase
- * A5); the event registry (`@cubeforge/events`) declares which profile each
+ * A5); the event registry (`@cubalyze/events`) declares which profile each
  * event uses and the timer engine consumes it — never a global 3×3 set.
  */
 export interface WcaRulesProfile {

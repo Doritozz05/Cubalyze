@@ -1,5 +1,5 @@
 import type { Solve } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 
 /**
  * Props passed from App.tsx through WidgetHost to each widget.

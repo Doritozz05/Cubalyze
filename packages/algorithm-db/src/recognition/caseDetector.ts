@@ -21,7 +21,7 @@
  * determines what can be recognized. Adding OLL, PLL or 2×2 cases means
  * loading their data into the same catalog structure.
  */
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { lookupCatalog, createCatalog } from './caseCatalog';
 import { getProbe } from './probes';
 import type {

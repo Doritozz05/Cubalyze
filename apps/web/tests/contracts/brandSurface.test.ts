@@ -148,30 +148,88 @@ describe('brand surface — PWA manifest', () => {
  * mismo nombre en la misma interfaz se lee como descuido de marca. Un nombre
  * propio no se «lowercasea» porque el sitio donde aparece sea un título.
  *
- * Ámbito: SOLO texto visible. Los identificadores de código son otra cosa — el
- * scope de los paquetes (`@cubalyze/*`) y los nombres de fichero van en
- * minúsculas por convención y no son marca, así que este test no los mira.
+ * Ámbito: la marca **como palabra**. Los identificadores de código son otra cosa —
+ * el scope de los paquetes (`@cubalyze/*`), los nombres de fichero y las claves
+ * van en minúsculas por convención y no son marca. Por eso la regla distingue
+ * una MENCIÓN de un IDENTIFICADOR (ver `isTechnicalIdentifier`), y no simplemente
+ * busca la cadena: buscarla marcaría en falso cada import del monorepo.
  *
- * Única excepción admitida: un nombre de host, en minúsculas por convención
- * (`cubalyze.app`). Cualquier otra grafía debe ser una decisión explícita, no un
- * descuido.
+ * Dos excepciones, ambas por convención y no por descuido:
+ *   · un nombre de host va en minúsculas (`cubalyze.app`);
+ *   · un identificador técnico va en minúsculas (`@cubalyze/database`, `cubalyze-config`).
+ * Cualquier OTRA grafía debe ser una decisión explícita.
  */
 const CANONICAL_BRAND = 'Cubalyze';
 
-/** La marca en CUALQUIER grafía, para poder rechazar las que no son la canónica. */
+/**
+ * ¿La mención forma parte de un identificador técnico en vez del wordmark?
+ *
+ * `@cubalyze/database` · `cubalyze/database` · `cubalyze-config` · `cubalyze_db`
+ * · `cubalyze.app` → sí (identificador/host). `cubalyze` suelto o `Cub-Alyze` en
+ * prosa → no (es marca mal escrita, y queremos que falle).
+ */
+function isTechnicalIdentifier(text: string, at: number, form: string): boolean {
+  const before = at > 0 ? text[at - 1] : '';
+  const after = text.slice(at + form.length, at + form.length + 12);
+  // Precedido por `@` o por otro carácter de palabra: parte de un identificador.
+  if (before === '@' || /\w/.test(before)) return true;
+  // Seguido de `/`, `_`, `-` u otro carácter de palabra (…-config, …/database) →
+  // identificador técnico.
+  if (/^[\w/-]/.test(after)) return true;
+  // Seguido de `.` + dominio: nombre de host (`cubalyze.app`), minúscula correcta.
+  // El punto SOLO exime si le siguen letras: así «Bienvenido a cubalyze.» (marca
+  // en minúscula al final de una frase) sigue fallando, como debe.
+  return /^\.(?:[a-z]{2,})/i.test(after);
+}
+
+/**
+ * La marca en CUALQUIER grafía, para poder rechazar las que no son la canónica.
+ * Devuelve solo las que son menciones de verdad (no identificadores técnicos).
+ */
 function nonCanonicalMentions(text: string): string[] {
   const offenders: string[] = [];
   // Regex local (no compartida) para no depender nunca de `lastIndex`.
   for (const match of text.matchAll(/cub[ _.-]?alyze/gi)) {
     const form = match[0];
     if (form === CANONICAL_BRAND) continue;
-    const after = (match.index ?? 0) + form.length;
-    // `cubalyze.app` → nombre de host, la minúscula es correcta.
-    if (/^\.[a-z]{2,}/.test(text.slice(after, after + 12))) continue;
+    if (isTechnicalIdentifier(text, match.index ?? 0, form)) continue;
     offenders.push(form);
   }
   return offenders;
 }
+
+describe('brand surface — la regla de grafía, probada en sí misma', () => {
+  // Probar la REGLA (no solo su aplicación) es lo que impide que una futura
+  // «simplificación» la vuelva inservible sin que nadie se entere.
+  it('acepta la grafía canónica y los identificadores técnicos', () => {
+    for (const ok of [
+      'Cubalyze',
+      'Bienvenido a Cubalyze',
+      'Cubalyze CSV',
+      '@cubalyze/database',
+      'pnpm --filter @cubalyze/training test',
+      'cubalyze.app',
+      'cubalyze-config',
+      'cubalyze_db',
+      'packages/cubalyze-docs',
+    ]) {
+      expect(nonCanonicalMentions(ok), `debería aceptar: ${ok}`).toEqual([]);
+    }
+  });
+
+  it('rechaza la marca escrita de otra forma', () => {
+    for (const [bad, expected] of [
+      ['cubalyze es la app', ['cubalyze']],
+      ['CUBALYZE — timer', ['CUBALYZE']],
+      ['Cub-Alyze — timer', ['Cub-Alyze']],
+      ['Cub Alyze — timer', ['Cub Alyze']],
+      ['cub_alyze', ['cub_alyze']],
+      ['Cubalyze y cubalyze', ['cubalyze']],
+    ] as const) {
+      expect(nonCanonicalMentions(bad), `debería rechazar: ${bad}`).toEqual([...expected]);
+    }
+  });
+});
 
 describe('brand surface — una sola grafía visible (Cubalyze)', () => {
   it.each(LOCALES)('%s: toda mención visible es exactamente `Cubalyze`', (file) => {

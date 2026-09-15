@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   PyraminxEngine as PyraminxEngineT,
   PyraminxPick,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 
 // Hook-level tests need no real React reconciler: the hook only uses refs,
 // callbacks and one effect (window listeners — stubbed below), so the same

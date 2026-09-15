@@ -10,7 +10,7 @@
  *
  * This table is the translation, and it is deliberately SHORT: it only contains
  * names this repository can justify (the GYRO check in
- * `@cubeforge/gan-protocol` and the family table in
+ * `@cubalyze/gan-protocol` and the family table in
  * `docs/02-architecture/Dynamic_Notation_Orientation_System.md`). A cube whose
  * name is not listed is **not an error** — it degrades to the raw name, which is
  * still better than a wrong marketing label. Adding a model is one line.

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Type definitions (barrel)
+ * @cubalyze/training — Type definitions (barrel)
  *
  * Central export for all training type definitions.
  * This file is the single import point for consumers.

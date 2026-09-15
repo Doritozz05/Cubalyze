@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState, conjugatePhaseStream, tokenize } from '@cubeforge/math-core';
+import { CubeState, conjugatePhaseStream, tokenize } from '@cubalyze/math-core';
 import { PLL_CASES } from '../../seed/cfop-pll';
 
 // The conjugated PLL block (scramble frame) for cuberoot-2542, verified to

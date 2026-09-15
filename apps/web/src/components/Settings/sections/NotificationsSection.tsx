@@ -3,7 +3,7 @@
 import { Bell, BellOff, CalendarClock, Repeat } from "lucide-react";
 import { useStore } from "zustand";
 import { useTranslation } from "react-i18next";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { SettingToggle } from "../components/SettingToggle";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";

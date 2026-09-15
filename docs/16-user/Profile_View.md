@@ -14,7 +14,7 @@ reales** de las demás áreas de la app.
 
 - **Hero (B1)** — `ProfileHero` (componente de `@/components/Identity/`):
   avatar CubeMark (`IdenticonAvatar` renderiza el identicon como SVG inline vía
-  `@cubeforge/identicon`: `generateCubeMarkSpec` + `renderCubeMark`), nombre y
+  `@cubalyze/identicon`: `generateCubeMarkSpec` + `renderCubeMark`), nombre y
   datos de identidad local; botones de navegación y ajustes.
 - **Stat strip (B2)** — `StatStrip`: métricas rápidas (solves, tiempos, rachas).
 - **Pestañas de contenido (B3)** — con datos reales de cada área:
@@ -35,8 +35,8 @@ reales** de las demás áreas de la app.
 
 ## Dependencias
 
-- `@cubeforge/identicon` (CubeMark), `@cubeforge/statistics` (agregados),
-  `@cubeforge/training` + `@cubeforge/database` (progreso vía hooks),
+- `@cubalyze/identicon` (CubeMark), `@cubalyze/statistics` (agregados),
+  `@cubalyze/training` + `@cubalyze/database` (progreso vía hooks),
   componentes de Insights (ActivityHeatmap, MetricRing, SectionHeader).
 
 ## ADRs relacionados

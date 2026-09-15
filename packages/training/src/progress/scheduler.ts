@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — SRS daily queue scheduler
+ * @cubalyze/training — SRS daily queue scheduler
  *
  * Builds the "Today's Queue" for spaced repetition from the real DB data:
  * per-case FSRS state + algorithm catalog (cases + subsets + methods).

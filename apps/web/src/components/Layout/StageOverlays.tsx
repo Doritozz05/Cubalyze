@@ -2,7 +2,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { Toaster } from "@/components/ui/sonner";
 import { MobileTabBar } from "@/components/Layout/MobileTabBar";
 import { MobileMoreSheet } from "@/components/Layout/MobileMoreSheet";
@@ -13,7 +13,7 @@ import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
 import { OnboardingTour } from "@/components/Onboarding/OnboardingTour";
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 
 export interface StageOverlaysProps {
   isTouch: boolean;

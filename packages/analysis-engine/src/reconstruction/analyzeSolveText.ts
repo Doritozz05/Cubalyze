@@ -29,14 +29,14 @@ import {
   f2lSlotNames,
   type FaceLetter,
   type F2LSlotInfo,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import type {
   CubeFace,
   CubeMoveDirection,
   CubeMoveEvent,
   PhaseDetectionReport,
   SolveTimeline,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { buildAnnotatedTimeline } from '../pipeline/analyzeSolve';

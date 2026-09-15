@@ -3,7 +3,7 @@ import { CubeModel } from '../core/CubeModel';
 import { CubeMeshFactory } from '../core/CubeMeshFactory';
 import { RotationEngine } from '../animation/RotationEngine';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
-import { conjugateToBaseFrame, tokenize, CubeState } from '@cubeforge/math-core';
+import { conjugateToBaseFrame, tokenize, CubeState } from '@cubalyze/math-core';
 
 /**
  * Regression tests for the RECON REPLAY DESIGN: reconstruction records feed

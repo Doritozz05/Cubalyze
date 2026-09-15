@@ -13,7 +13,7 @@ import {
   type CubeKeyAction,
 } from "@/lib/keybinds/cubeKeybinds";
 import { pyraminxKeyToToken } from "@/lib/keybinds/pyraminxKeybinds";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 
 export type CubeTurnSpeed = "slow" | "normal" | "fast" | "instant";
 

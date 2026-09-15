@@ -30,7 +30,7 @@ import { AtSign, Check, Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useHandle } from "@/hooks/useFriends";
 import { cn } from "@/lib/utils";
-import type { HandleClaimFailure } from "@cubeforge/sync-engine";
+import type { HandleClaimFailure } from "@cubalyze/sync-engine";
 
 export interface HandleClaimCardProps {
   /** The handle already in the local profile ('' when none yet). */

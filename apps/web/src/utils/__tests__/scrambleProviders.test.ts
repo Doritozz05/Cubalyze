@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateScramble } from "@cubeforge/events";
+import { validateScramble } from "@cubalyze/events";
 import { generateScrambleFor, getEventForCategory, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import "@/utils/scrambleProviders"; // self-registers the real 2×2/3×3 providers
 import { registerScrambleProviders } from "@/utils/scrambleProviders";

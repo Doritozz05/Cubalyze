@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { pairSignature } from '../pairSignature';
 import { CaseStateGenerator } from '../../caseGenerator';
 import { BASIC_F2L_CASES } from '../../seed/cfop-f2l';

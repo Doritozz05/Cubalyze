@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } fro
 import { useTranslation } from "react-i18next";
 import { History, Menu } from "lucide-react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SIDEBAR_MOTION, type ViewId } from "./sidebar.constants";

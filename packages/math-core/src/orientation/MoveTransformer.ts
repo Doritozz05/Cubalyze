@@ -5,7 +5,7 @@ import type {
   DisplayMove,
   FacePermutation,
   OuterFace,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { OrientationTable, type OrientationEntry } from './OrientationTable';
 
 /** True for the six outer faces (slice moves M/E/S never enter orientation maps). */

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { MoveTransformer } from '../MoveTransformer';
 import { OrientationTable } from '../OrientationTable';
-import type { CubeMoveEvent, FacePermutation } from '@cubeforge/types';
+import type { CubeMoveEvent, FacePermutation } from '@cubalyze/types';
 
 // Helper: create a raw CubeMoveEvent
 function rawMove(face: string, direction: 1 | -1 | 2): CubeMoveEvent {

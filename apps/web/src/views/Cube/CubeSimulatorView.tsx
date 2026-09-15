@@ -24,9 +24,9 @@ import type {
   CubeMoveEvent,
   CubeOrientation,
   OrientationTimeline,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import type { Penalty, PuzzleCategory } from "@/types";
-import { scrambleMoveDurationMs } from "@cubeforge/cube-3d-engine";
+import { scrambleMoveDurationMs } from "@cubalyze/cube-3d-engine";
 import { generateScrambleFor, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
 import {
@@ -43,8 +43,8 @@ import {
   OrientationTable,
   SOLVED_FACELETS_2X2,
   type OrientationEntry,
-} from "@cubeforge/math-core";
-import { preferencesStore } from "@cubeforge/state";
+} from "@cubalyze/math-core";
+import { preferencesStore } from "@cubalyze/state";
 import { useVirtualScrambleStore } from "@/stores/virtualScrambleStore";
 import { useBackgroundMediaStore } from "@/stores/backgroundMediaStore";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";

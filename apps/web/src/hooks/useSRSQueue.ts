@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AlgorithmProgressRecord, QueueItem, SRSGrade } from "@cubeforge/training";
+import type { AlgorithmProgressRecord, QueueItem, SRSGrade } from "@cubalyze/training";
 import { useTrainingProgress, type UseTrainingProgressResult } from "./useTrainingProgress";
 
 export interface SRSReviewResult {

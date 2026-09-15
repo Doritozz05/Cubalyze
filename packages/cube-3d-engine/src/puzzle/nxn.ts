@@ -27,5 +27,5 @@ export function registerNxnPuzzle3D(): void {
 }
 
 // Self-register on import (same pattern as scrambleProviders in apps/web), so
-// importing @cubeforge/cube-3d-engine always has the nxn family available.
+// importing @cubalyze/cube-3d-engine always has the nxn family available.
 registerNxnPuzzle3D();

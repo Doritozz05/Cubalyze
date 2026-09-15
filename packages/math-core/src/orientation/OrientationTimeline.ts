@@ -1,7 +1,7 @@
 import { OrientationTable } from './OrientationTable';
-import type { OrientationTimeline } from '@cubeforge/types';
-import type { CubeOrientation } from '@cubeforge/types';
-import type { FacePermutation } from '@cubeforge/types';
+import type { OrientationTimeline } from '@cubalyze/types';
+import type { CubeOrientation } from '@cubalyze/types';
+import type { FacePermutation } from '@cubalyze/types';
 
 /**
  * Compresses per-move orientation snapshots into an ultra-compact

@@ -1,7 +1,7 @@
 import type { Solve } from "@/types";
 import { effectiveTime } from "@/types";
-import type { PhaseMetrics, SolveMetrics } from "@cubeforge/types";
-import { derivePhaseDistribution, isComparablePhaseAnalysis } from "@cubeforge/analysis-engine";
+import type { PhaseMetrics, SolveMetrics } from "@cubalyze/types";
+import { derivePhaseDistribution, isComparablePhaseAnalysis } from "@cubalyze/analysis-engine";
 import { getCfopBenchmark, type CfopBenchmarkReference } from "./benchmarks";
 
 export const CFOP_PHASES = ["Cross", "F2L", "OLL", "PLL"] as const;

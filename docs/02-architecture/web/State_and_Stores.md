@@ -1,10 +1,10 @@
 # Estado y Stores (apps/web)
 
 > Documentado el 2026-08-12. Todo el estado global vive en el paquete
-> `@cubeforge/state` (Zustand, ADR-009). Los stores de la web son solo
+> `@cubalyze/state` (Zustand, ADR-009). Los stores de la web son solo
 > auxiliares de una vista concreta.
 
-## `@cubeforge/state` — stores globales (Zustand vanilla)
+## `@cubalyze/state` — stores globales (Zustand vanilla)
 
 | Store | Archivo | Qué guarda | Persistido |
 | --- | --- | --- | --- |
@@ -31,7 +31,7 @@ orientación) se muta fuera del render de React (`getState()`/`setState()`).
 1. **Timer** → `timerStore` (fase/elapsedMs, alta frecuencia, fuera de React).
 2. **Solve completo** → `useSolveSession` construye el solve (tiempo, scramble,
    penalización, movimientos + orientaciones) → `sessionStore.addSolve` (memoria)
-   + persistencia SQLite (`@cubeforge/database`) → widgets vía `WidgetHostAPI`.
+   + persistencia SQLite (`@cubalyze/database`) → widgets vía `WidgetHostAPI`.
 3. **Preferencias** → `preferencesStore` (localStorage) consumidas por Timer,
    Settings, Scramble, Cube, i18n (`language`), hardware, etc.
 4. **Smart cube** → `connectionStore` + `orientationStore` (stream del adaptador

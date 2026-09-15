@@ -382,7 +382,7 @@ scrambles, ni `note`, ni `moves`, ni `analysis`, ni `orientation_timeline`.
 
 **Riesgo real de esta sección (R1):** las stats agregadas son una **segunda
 implementación** de las mismas fórmulas que el cliente ya tiene en
-`computeStats` (`@cubeforge/statistics`). Si las dos divergen, el amigo ve un PB
+`computeStats` (`@cubalyze/statistics`). Si las dos divergen, el amigo ve un PB
 que tú no ves — y eso se percibe como que la app miente. Mitigación:
 (a) escribir las fórmulas una vez en el plan y usarlas como especificación,
 (b) un **test de paridad** que compare el agregado de SQL contra `computeStats`

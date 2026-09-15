@@ -7,8 +7,8 @@ import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
 import { Case3DDiagram } from "./Case3DDiagram";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
-import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
+import { resolveAlgorithmDiagramRotation } from "@cubalyze/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubalyze/algorithm-db";
 
 export interface CaseGridProps {
   cases: AlgorithmCase[];

@@ -42,7 +42,7 @@ en cada conexión). Las preguntas de diseño que había que responder:
 - **Coste de mantenimiento de 1 persona**: una sola fuente de UI (la web).
 - **Persistencia real en escritorio**: sin OPFS viable, la BD debe ser nativa.
 - **Cero duplicación de protocolo**: el stack GAN (drivers + crypto + parsing)
-  ya existe en `@cubeforge/gan-protocol` — no se reimplementa en Rust.
+  ya existe en `@cubalyze/gan-protocol` — no se reimplementa en Rust.
 - **Seguridad**: no filtrar nombres de dispositivos/MACs en logs de release.
 - **Mínimo privilegio**: el Rust solo hace transporte BLE y SQLite; toda la
   lógica de negocio sigue en TS.
@@ -50,8 +50,8 @@ en cada conexión). Las preguntas de diseño que había que responder:
 ## Considered Options
 
 - **Opción 1 (elegida): mono-shell con overrides.** La app desktop reutiliza
-  `App` de `apps/web` tal cual; `vite.config.ts` resuelve `@cubeforge/database`
-  y `@cubeforge/hardware-hal` a archivos override locales. Rust (`btleplug`)
+  `App` de `apps/web` tal cual; `vite.config.ts` resuelve `@cubalyze/database`
+  y `@cubalyze/hardware-hal` a archivos override locales. Rust (`btleplug`)
   hace el transporte BLE; TS reutiliza el stack de `gan-protocol` para
   descifrar/parsear. SQLite nativa vía `tauri-plugin-sql` con las **mismas**
   migraciones de `packages/database`.
@@ -72,13 +72,13 @@ Chosen option: **Opción 1 — Mono-shell con overrides de infraestructura.**
 
 - **UI compartida**: `apps/desktop/src/main.tsx` importa `App` y `index.css`
   desde `apps/web`. Los aliases de Vite cambian solo dos dependencias
-  (`@cubeforge/database` → `database-override.ts`, `@cubeforge/hardware-hal` →
+  (`@cubalyze/database` → `database-override.ts`, `@cubalyze/hardware-hal` →
   `hardware-hal-override.ts`); el resto (stores, hooks, vistas, widgets) es
   idéntico y compartido.
 - **Puente BLE** (`GanCubeAdapterTauri`, `GanTimerAdapterTauri`):
   Rust (`btleplug`) hace GATT connect/discover/subscribe/write; emite eventos
   (`ble:data`, `ble:status`, `ble:devices_found`, `ble:timer_event`,
-  `ble:timer_status`); TS descifra y parsea con `@cubeforge/gan-protocol` sin
+  `ble:timer_status`); TS descifra y parsea con `@cubalyze/gan-protocol` sin
   cambios y expone los mismos Subjects RxJS que el adaptador web. Paridad
   funcional: `ClockDriftReconciler`, `invalidMoves$`, validación FACELETS(54),
   reconexión 3 intentos con backoff exponencial.

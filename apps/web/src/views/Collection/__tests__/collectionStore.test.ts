@@ -20,7 +20,7 @@ import type {
   GearCollectionSnapshot,
   GearItem,
   GearType,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import {
   COLLECTION_STORAGE_KEY,
   createCollectionStore,

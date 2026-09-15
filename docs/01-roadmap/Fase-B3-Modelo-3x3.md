@@ -26,7 +26,7 @@
 
 ## 2. Estado del cubo
 
-Dos representaciones, ambas en `@cubeforge/math-core`:
+Dos representaciones, ambas en `@cubalyze/math-core`:
 
 - **Facelets (54 stickers)** — string de 54 chars, 9 por cara en orden
   U R F D L B (convención csTimer). `SOLVED_FACELETS` es el patrón de
@@ -66,8 +66,8 @@ el mínimo de movimientos (WCA: ≥ 2, y el límite del evento).
 
 ## 5. Métodos y análisis
 
-- **Métodos con detección de fases** (`@cubeforge/analysis-engine` +
-  `@cubeforge/math-core`): **CFOP** (Cross → F2L → OLL → PLL), **Roux**,
+- **Métodos con detección de fases** (`@cubalyze/analysis-engine` +
+  `@cubalyze/math-core`): **CFOP** (Cross → F2L → OLL → PLL), **Roux**,
   **ZZ**, **Petrus** — todos 3×3 (definiciones: `CFOPDefinition`,
   `RouxFullDefinition`, `ZZDefinition`, `PetrusDefinition`).
 - **Pipelines**: `analyzeSolve` (ruta smart cube, timestamps reales),

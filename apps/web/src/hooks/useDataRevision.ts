@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { syncStore } from "@cubeforge/state";
+import { syncStore } from "@cubalyze/state";
 
 /**
  * Subscribe to the shared data revision counter.

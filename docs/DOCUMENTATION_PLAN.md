@@ -181,7 +181,7 @@ implementaciones.
       grupos con fichas (Layout, Timer, Stage, Stats, Settings, Insights,
       Scramble, Hardware, Identity, Onboarding, Cube3D, ContextMenu).
 - [x] Stores/estado (2026-08-12) → `docs/02-architecture/web/State_and_Stores.md`:
-      los 6 stores de `@cubeforge/state` (prefs, timer, session, connection,
+      los 6 stores de `@cubalyze/state` (prefs, timer, session, connection,
       orientation, algorithm) + stores locales (virtualScramble, storageStatus)
       + flujo de datos típico.
 - [x] Hooks/services/lib (2026-08-12) →
@@ -259,7 +259,7 @@ placeholders marcados como "planeado". ✅ Completado 2026-08-12.
 - [x] Instalar/Configurar TypeDoc + script `docs:api` (2026-08-12). TypeDoc
       `0.28.20` + TypeScript raíz `^5.9.3` (devDeps de root); `typedoc.json`
       (estrategia expand sobre `packages/*/src` + `apps/web/src`),
-      `tsconfig.typedoc.json` (paths `@cubeforge/*` → src, `@/` → web,
+      `tsconfig.typedoc.json` (paths `@cubalyze/*` → src, `@/` → web,
       `@/components/ui/*` → kit UI; sin strict para espejar la web) y
       `typedoc-env.d.ts` (declara `*.css` e `import.meta.env` sin vite/client).
 - [x] Generar la API reference (2026-08-12): `pnpm docs:api` → `docs/api/`

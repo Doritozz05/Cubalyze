@@ -8,7 +8,7 @@ import {
   CFOPDefinition,
   conjugatePhaseStream,
   tokenize,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves } from './test-helpers';
 
 /**

@@ -2,8 +2,8 @@ import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
 import type { Subscription } from 'rxjs';
 import { SmartCubeAdapter, type CubeIdentity } from '../interfaces/SmartCubeAdapter';
 import { ClockDriftReconciler } from '../sync/ClockDrift';
-import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
-import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC, type GanCubeEvent } from '@cubeforge/gan-protocol';
+import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubalyze/types';
+import { connectGanCube, reconnectGanCube, type GanCubeConnection, type BluetoothDeviceWithMAC, type GanCubeEvent } from '@cubalyze/gan-protocol';
 
 function parseMoveNotation(move: string): { face: CubeFace; direction: CubeMoveDirection } | null {
   const match = move.match(/^([UDRLBF])(2|'|2')?$/);

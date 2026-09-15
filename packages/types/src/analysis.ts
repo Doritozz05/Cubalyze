@@ -1,5 +1,5 @@
 /**
- * @cubeforge/types — Analysis pipeline types.
+ * @cubalyze/types — Analysis pipeline types.
  *
  * These types define the data structures used by the analysis engine
  * to compute solve metrics. They are framework-agnostic and shared

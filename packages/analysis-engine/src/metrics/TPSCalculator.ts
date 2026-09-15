@@ -1,4 +1,4 @@
-import type { SolveTimeline, TPSMetrics } from '@cubeforge/types';
+import type { SolveTimeline, TPSMetrics } from '@cubalyze/types';
 
 /**
  * Calculates Turns Per Second (TPS) metrics from a SolveTimeline.

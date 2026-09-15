@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Session Engine
+ * @cubalyze/training — Session Engine
  *
  * Pure state machine for training sessions. Exercise-agnostic:
  * the same engine runs an OLL Drill or a Cross Trainer.

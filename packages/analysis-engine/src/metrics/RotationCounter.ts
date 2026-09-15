@@ -1,4 +1,4 @@
-import type { SolveTimeline, RotationMetrics } from '@cubeforge/types';
+import type { SolveTimeline, RotationMetrics } from '@cubalyze/types';
 
 /**
  * Counts and analyzes cube rotations (x, y, z) from the solve timeline.

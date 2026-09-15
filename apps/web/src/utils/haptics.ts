@@ -1,6 +1,6 @@
 "use client";
 
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 
 /**
  * Optional haptic feedback for the touch regime (<768px).

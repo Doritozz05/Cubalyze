@@ -13,7 +13,7 @@ import {
   Play,
   Flag,
 } from "lucide-react";
-import { connectionStore } from "@cubeforge/state";
+import { connectionStore } from "@cubalyze/state";
 import { useCube3D } from "@/hooks/useCube3D";
 import { CubeConnector } from "@/components/Hardware/CubeConnector";
 import { Button } from "@/components/ui/button";

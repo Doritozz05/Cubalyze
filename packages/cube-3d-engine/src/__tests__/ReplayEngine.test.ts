@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ReplayEngine } from '../replay/ReplayEngine';
-import { OrientationTable } from '@cubeforge/math-core';
-import type { CubeFace, CubeMoveDirection, CubeMoveEvent } from '@cubeforge/types';
+import { OrientationTable } from '@cubalyze/math-core';
+import type { CubeFace, CubeMoveDirection, CubeMoveEvent } from '@cubalyze/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

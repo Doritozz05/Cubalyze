@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CubeModel, CubeMeshFactory, RotationEngine } from "@cubeforge/cube-3d-engine";
+import { CubeModel, CubeMeshFactory, RotationEngine } from "@cubalyze/cube-3d-engine";
 import {
   CubeState,
   FaceletStringConverter,
   OrientationTable,
   parseFaceletsToCubies,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import {
   CUBE_KEYMAP,
   actionToMoves,

@@ -13,7 +13,7 @@ import {
   Cube2x2State,
   FaceletStringConverter,
   Cube2x2FaceletConverter,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { Min2PhaseSolver } from '../Min2PhaseSolver';
 import { TwoByTwoSolver } from '../TwoByTwoSolver';
 

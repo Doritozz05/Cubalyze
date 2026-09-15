@@ -4,7 +4,7 @@
  *
  * The heart of the suite is FIDELITY: every 3D turn (driven through the real
  * RotationDriver3D hooks) must produce the exact same packed PyraminxState as
- * the clean-room WCA scrambler in @cubeforge/solver-engine — proving the 3D
+ * the clean-room WCA scrambler in @cubalyze/solver-engine — proving the 3D
  * rotation is physically faithful, not just visually plausible.
  */
 import { describe, expect, it } from 'vitest';
@@ -15,7 +15,7 @@ import {
   applyPyraminxTip,
   generatePyraminxScramble,
   solvedPyraminx,
-} from '@cubeforge/solver-engine/pyraminx';
+} from '@cubalyze/solver-engine/pyraminx';
 import { RotationDriver3D } from '../../animation/RotationDriver3D';
 import {
   PYRAMINX_AXES,

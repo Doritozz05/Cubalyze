@@ -1,5 +1,5 @@
 /**
- * @cubeforge/types — Shared interface contracts for the CubeForge platform.
+ * @cubalyze/types — Shared interface contracts for the CubeForge platform.
  *
  * This package is the single source of truth for types shared between
  * hardware-hal, cube-3d-engine, and the web app. It prevents duplicate

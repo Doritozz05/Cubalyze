@@ -26,8 +26,8 @@ import {
   getEvent,
   isPuzzleType,
   type PuzzleType,
-} from "@cubeforge/events";
-import { Min2PhaseSolver, TwoByTwoScrambler, TwoByTwoSolver } from "@cubeforge/solver-engine";
+} from "@cubalyze/events";
+import { Min2PhaseSolver, TwoByTwoScrambler, TwoByTwoSolver } from "@cubalyze/solver-engine";
 
 // ── Mappings ─────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/solver-engine — CrossScrambleGenerator
+ * @cubalyze/solver-engine — CrossScrambleGenerator
  *
  * Generates scrambles whose optimal cross solution is EXACTLY a requested
  * number of moves N (the "way-to-cross" technique from or18's
@@ -28,7 +28,7 @@
  * eocross once their masks + depth ranges are defined.
  */
 
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { RandomStateGenerator } from './RandomStateGenerator';
 import {
   solveCross,

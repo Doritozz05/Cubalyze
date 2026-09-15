@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { getSeedData } from "@cubeforge/algorithm-db";
+import { getSeedData } from "@cubalyze/algorithm-db";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 
 export function AlgorithmDbPreview() {

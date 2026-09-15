@@ -18,7 +18,7 @@
  */
 import { describe, expect, it, beforeAll } from "vitest";
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
-import { MIGRATIONS } from "@cubeforge/database";
+import { MIGRATIONS } from "@cubalyze/database";
 import {
   AppMetaRepository,
   CalendarRepository,
@@ -30,7 +30,7 @@ import {
   TrainingRepository,
   IDENTICON_SEED_KEY,
   USER_ID_KEY,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import { SyncEngine } from "../SyncEngine";
 import { maxOf, pushChanges } from "../push";
 import { claimHandle } from "../handle";

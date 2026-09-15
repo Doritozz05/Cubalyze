@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from 'zustand';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { useTranslation } from 'react-i18next';
 import { SettingToggle } from '../components/SettingToggle';
 

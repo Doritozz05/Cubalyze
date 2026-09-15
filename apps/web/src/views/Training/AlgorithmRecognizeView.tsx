@@ -11,8 +11,8 @@ import {
   getChildSubsets,
   resolveVisualizationStyleForSubset,
   resolveAlgorithmDiagramRotation,
-} from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
+import type { AlgorithmCase, Algorithm, VisualizationStyle } from "@cubalyze/algorithm-db";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
@@ -22,8 +22,8 @@ import {
   TouchAside,
 } from "./components";
 import { useTrainingEngine } from "@/hooks/useTrainingEngine";
-import type { AlgorithmProgressRecord } from "@cubeforge/training";
-import { EXERCISE_IDS } from "@cubeforge/training";
+import type { AlgorithmProgressRecord } from "@cubalyze/training";
+import { EXERCISE_IDS } from "@cubalyze/training";
 import {
   Check, X, ChevronRight, Target, Brain,
   Shuffle, TrendingDown,

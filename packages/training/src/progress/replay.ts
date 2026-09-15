@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Deterministic aggregate replay
+ * @cubalyze/training — Deterministic aggregate replay
  *
  * `algorithm_progress` / `exercise_progress` are INCREMENTAL aggregates:
  * the live tracker read-modify-writes them on every attempt. Two devices

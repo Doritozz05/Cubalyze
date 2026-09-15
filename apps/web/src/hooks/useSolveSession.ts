@@ -3,19 +3,19 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useStore } from "zustand";
 import type { TimerState, Penalty, SolveMethod } from "@/types";
-import { TimerEngine, TimerState as EngineState, type WcaRulesProfile } from "@cubeforge/timer-engine";
+import { TimerEngine, TimerState as EngineState, type WcaRulesProfile } from "@cubalyze/timer-engine";
 import { mapTimerState } from "@/utils/timerState";
 import { useTimerKeyboard } from "@/hooks/useTimerKeyboard";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { globalAudioSystem } from "@/utils/audioSystem";
 import { hapticStart, hapticStop } from "@/utils/haptics";
-import { preferencesStore, orientationStore } from "@cubeforge/state";
+import { preferencesStore, orientationStore } from "@cubalyze/state";
 import {
   StackmatAdapter,
   GanTimerAdapter,
   type HardwareTimerAdapter,
   type HardwareTimerEvent,
-} from "@cubeforge/hardware-hal";
+} from "@cubalyze/hardware-hal";
 import {
   useScrambleValidator,
   cubeStateCornersSolved,
@@ -35,8 +35,8 @@ import type {
   CubeOrientation,
   OrientationTimeline,
   SolveMetrics,
-} from "@cubeforge/types";
-import { analyzeSolve } from "@cubeforge/analysis-engine";
+} from "@cubalyze/types";
+import { analyzeSolve } from "@cubalyze/analysis-engine";
 import {
   compactCubeMoves,
   compactOrientationTimeline,
@@ -47,7 +47,7 @@ import {
   MoveTransformer,
   SOLVED_FACELETS,
   SOLVED_FACELETS_2X2,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 
 export interface UseSolveSessionOptions {
   /**

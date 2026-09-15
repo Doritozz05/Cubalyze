@@ -17,8 +17,8 @@ el bundler: la base de datos (sqlite-wasm → SQLite nativa) y el hardware
 apps/desktop/src/
 ├── main.tsx                    # Entrypoint: monta App de apps/web + auto-conexión
 ├── vite.config.ts              # Aliases + plugins de build
-├── database-override.ts        # Reemplaza @cubeforge/database (DBExecutor + repos)
-├── hardware-hal-override.ts    # Reemplaza @cubeforge/hardware-hal (adaptadores)
+├── database-override.ts        # Reemplaza @cubalyze/database (DBExecutor + repos)
+├── hardware-hal-override.ts    # Reemplaza @cubalyze/hardware-hal (adaptadores)
 └── adapters/
     ├── GanCubeAdapterTauri.ts  # SmartCubeAdapter sobre comandos/eventos Tauri
     └── GanTimerAdapterTauri.ts # HardwareTimerAdapter sobre estados del timer
@@ -59,7 +59,7 @@ la frontera) y toda la lógica de negocio permanecen en TypeScript.
 
 ## 4. Diseño del adaptador de cubo (`GanCubeAdapterTauri`)
 
-Implementa `SmartCubeAdapter` de `@cubeforge/hardware-hal` con paridad
+Implementa `SmartCubeAdapter` de `@cubalyze/hardware-hal` con paridad
 funcional con el adaptador web:
 
 1. **Subjects RxJS estables** (nunca se recrean): `moves$` (ReplaySubject(1)),
@@ -70,7 +70,7 @@ funcional con el adaptador web:
    - deduce generación del UUID de servicio (`GAN_GEN2/3/4_SERVICE`);
    - deriva el salt de la MAC (`macToSalt`, invertida) y elige la clave de
      `GAN_ENCRYPTION_KEYS` (gen2 con nombre `AiCube` → key[1], resto key[0]);
-   - instancia driver + encrypter de `@cubeforge/gan-protocol`;
+   - instancia driver + encrypter de `@cubalyze/gan-protocol`;
    - `listen('ble:data')` → `handleDataEvent` (descifra → `driver.handleStateEvent`
      → `emitEvent`); `listen('ble:status')` → `handleDisconnect`.
 3. **Ciclo de vida**: `disconnect()` marca `isUserDisconnect`, limpia listeners

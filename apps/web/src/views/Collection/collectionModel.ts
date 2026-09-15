@@ -26,8 +26,8 @@
  */
 
 import type { ParseKeys } from 'i18next';
-import { normalizeSmartId } from '@cubeforge/database';
-import type { GearPhotoRef } from '@cubeforge/database';
+import { normalizeSmartId } from '@cubalyze/database';
+import type { GearPhotoRef } from '@cubalyze/database';
 import type { PuzzleCategory } from '@/types';
 
 // The photo reference shape is owned by the database layer (it is the row's

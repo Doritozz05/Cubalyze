@@ -3,7 +3,7 @@ import { MeshBasicMaterial } from 'three';
 import { CubeMeshFactory } from '../core/CubeMeshFactory';
 import { CubeModel } from '../core/CubeModel';
 import { Cube3DEngine } from '../core/Cube3DEngine';
-import { Edge, type PhaseMask } from '@cubeforge/math-core';
+import { Edge, type PhaseMask } from '@cubalyze/math-core';
 
 describe('Stickering Multi-Skin System & Reactive Preservation', () => {
   let factory: CubeMeshFactory;

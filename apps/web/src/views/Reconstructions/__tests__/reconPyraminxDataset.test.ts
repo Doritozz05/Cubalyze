@@ -14,7 +14,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { isValidPyraminxScramble } from "@cubeforge/solver-engine/pyraminx";
+import { isValidPyraminxScramble } from "@cubalyze/solver-engine/pyraminx";
 import { pyraminxNotationToReplayMoves } from "../reconData";
 
 // Tests run from the repo root; the data lives under apps/web/public.

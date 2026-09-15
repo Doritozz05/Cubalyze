@@ -24,7 +24,7 @@ El registro es **código muerto hasta la A4/A5/A6** (que lo consumirán mantenie
 
 ## 3. Decisión de ubicación (ADR pendiente — recomendación del TDD)
 
-**Recomendación**: nuevo paquete headless `packages/events` (sin dependencias de runtime salvo el tipo `Penalty` de `@cubeforge/timer-engine`), espejo del estilo de `packages/algorithm-db` (tsup + vitest + `type: module`).
+**Recomendación**: nuevo paquete headless `packages/events` (sin dependencias de runtime salvo el tipo `Penalty` de `@cubalyze/timer-engine`), espejo del estilo de `packages/algorithm-db` (tsup + vitest + `type: module`).
 
 - `packages/types` queda descartado como hogar del registro: hoy es un paquete de tipos puros (`analysis.ts`, `orientation.ts`) y el registro mezcla tipos + **datos estáticos** (18 specs con labels, formatos, fechas WCA) — contamina la SSoT de tipos.
 - `packages/events` puede ser consumido por `web`, `desktop` y los paquetes de análisis sin ciclos (nadie depende de él; él solo depende de `timer-engine` para `Penalty`).
@@ -64,7 +64,7 @@ export interface WcaRulesProfile {
   plusTwoAfterMs?: number;
   /** Umbral DNF (ms desde el inicio de inspección). */
   dnfAfterMs?: number;
-  /** Penaltis permitidos (reutiliza Penalty de @cubeforge/timer-engine). */
+  /** Penaltis permitidos (reutiliza Penalty de @cubalyze/timer-engine). */
   allowedPenalties: readonly Penalty[];
   /** Formato oficial del intento. */
   format: WcaAttemptFormat;

@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/algorithm-db",
+  "name": "@cubalyze/algorithm-db",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -12,13 +12,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/math-core": "workspace:*",
-    "@cubeforge/solver-engine": "workspace:*",
+    "@cubalyze/math-core": "workspace:*",
+    "@cubalyze/solver-engine": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

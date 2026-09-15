@@ -5,7 +5,7 @@
  * us from three places that do NOT agree on spelling:
  *
  *   • the advertisement / `System ID` read, which the GAN protocol walks
- *     **backwards** (`extractMAC` in `@cubeforge/gan-protocol` pushes the bytes
+ *     **backwards** (`extractMAC` in `@cubalyze/gan-protocol` pushes the bytes
  *     from the end of the buffer), so the string it produces is the MAC with its
  *     bytes in reverse order;
  *   • the user typing it by hand (the manual fallback in the connector, or the

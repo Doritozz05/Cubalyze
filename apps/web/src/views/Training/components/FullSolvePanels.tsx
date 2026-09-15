@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Lock } from "lucide-react";
-import { buildMethodPhases } from "@cubeforge/training";
+import { buildMethodPhases } from "@cubalyze/training";
 import type { PhaseSplit, PhaseSplitTarget } from "./fullSolveTypes";
 
 /** Per-phase default target times (seconds) for Full Solve phase mode. */

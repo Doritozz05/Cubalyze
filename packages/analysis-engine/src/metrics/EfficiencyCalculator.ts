@@ -1,6 +1,6 @@
-import { CubeState } from '@cubeforge/math-core';
-import { Min2PhaseSolver } from '@cubeforge/solver-engine';
-import type { SolveTimeline, EfficiencyMetrics } from '@cubeforge/types';
+import { CubeState } from '@cubalyze/math-core';
+import { Min2PhaseSolver } from '@cubalyze/solver-engine';
+import type { SolveTimeline, EfficiencyMetrics } from '@cubalyze/types';
 
 /**
  * Computes move efficiency metrics by comparing the user's solve

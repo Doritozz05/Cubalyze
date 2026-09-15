@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { EfficiencyCalculator } from '../metrics/EfficiencyCalculator';
-import type { SolveTimeline, TimelineEntry, CubeMoveEvent } from '@cubeforge/types';
+import type { SolveTimeline, TimelineEntry, CubeMoveEvent } from '@cubalyze/types';
 
 /** Build a minimal SolveTimeline from an array of moves. */
 function makeTimeline(moves: Array<{ face: string; direction: number }>): SolveTimeline {

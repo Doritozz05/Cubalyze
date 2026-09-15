@@ -10,7 +10,7 @@ import type {
   CFOPMetrics,
   RouxMetrics,
   PhaseMetrics,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { TPSCalculator } from './TPSCalculator';
 import { PauseDetector } from './PauseDetector';
 import { FluidityCalculator } from './FluidityCalculator';

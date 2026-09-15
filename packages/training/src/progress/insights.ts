@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — SRS insights
+ * @cubalyze/training — SRS insights
  *
  * Pure aggregation over the algorithm catalog + per-case FSRS progress
  * (the same LEFT JOIN payload the queue scheduler consumes). Produces the

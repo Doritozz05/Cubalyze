@@ -1,5 +1,5 @@
-import type { MethodDefinition } from '@cubeforge/math-core';
-import type { PhaseDetectionReport, SolveTimeline } from '@cubeforge/types';
+import type { MethodDefinition } from '@cubalyze/math-core';
+import type { PhaseDetectionReport, SolveTimeline } from '@cubalyze/types';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 

@@ -1,5 +1,5 @@
 /**
- * Pyraminx-only entry point — `@cubeforge/solver-engine/pyraminx`.
+ * Pyraminx-only entry point — `@cubalyze/solver-engine/pyraminx`.
  *
  * Re-exports the clean-room WCA scrambler WITHOUT the min2phase WASM solver
  * (which lives in the main index). The main index loads min2phase.js at

@@ -6,8 +6,8 @@ import {
   effectiveTime,
   stdDeviation,
   type StatSolve,
-} from "@cubeforge/statistics";
-import { deriveTpsSeries } from "@cubeforge/analysis-engine";
+} from "@cubalyze/statistics";
+import { deriveTpsSeries } from "@cubalyze/analysis-engine";
 import type { Solve } from "@/types";
 import { formatDuration, statLabel } from "@/utils/formatTime";
 import type { BottomLayoutStatId } from "./types";

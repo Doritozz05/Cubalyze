@@ -28,8 +28,8 @@ import {
   SolvesRepository,
   TrainingRepository,
   USER_ID_KEY,
-} from "@cubeforge/database";
-import type { Profile } from "@cubeforge/models";
+} from "@cubalyze/database";
+import type { Profile } from "@cubalyze/models";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { claimHandle, type HandleClaimResult } from "./handle";
 import { profileHasContent, pullChanges } from "./pull";

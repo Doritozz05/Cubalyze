@@ -1,5 +1,5 @@
 import { Quaternion } from '../math3d';
-import type { CubeFace, FacePermutation, OuterFace } from '@cubeforge/types';
+import type { CubeFace, FacePermutation, OuterFace } from '@cubalyze/types';
 
 /**
  * A single entry in the 24-orientation table.

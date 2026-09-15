@@ -6,7 +6,7 @@
  * strings, so every reader coerces with Number()/String() defensively.
  */
 
-import type { Profile, Session, Solve } from "@cubeforge/models";
+import type { Profile, Session, Solve } from "@cubalyze/models";
 import type {
   GearCategory,
   GearItem,
@@ -14,8 +14,8 @@ import type {
   GearType,
   TrainingAttempt,
   TrainingTask,
-} from "@cubeforge/database";
-import type { TrainingSessionProgressRecord } from "@cubeforge/training";
+} from "@cubalyze/database";
+import type { TrainingSessionProgressRecord } from "@cubalyze/training";
 
 export type CloudRow = Record<string, unknown>;
 

@@ -5,9 +5,9 @@ import {
   PLLStateMask,
   PLLMask,
   OLLMask,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
-import { CFOPDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition } from '@cubalyze/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { makeMoves } from './test-helpers';
 

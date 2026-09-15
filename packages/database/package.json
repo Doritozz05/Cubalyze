@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/database",
+  "name": "@cubalyze/database",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -12,17 +12,17 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/algorithm-db": "workspace:*",
-    "@cubeforge/events": "workspace:*",
-    "@cubeforge/models": "workspace:*",
-    "@cubeforge/training": "workspace:*",
-    "@cubeforge/types": "workspace:*",
+    "@cubalyze/algorithm-db": "workspace:*",
+    "@cubalyze/events": "workspace:*",
+    "@cubalyze/models": "workspace:*",
+    "@cubalyze/training": "workspace:*",
+    "@cubalyze/types": "workspace:*",
     "@sqlite.org/sqlite-wasm": "3.53.0-build1",
     "comlink": "^4.4.1"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

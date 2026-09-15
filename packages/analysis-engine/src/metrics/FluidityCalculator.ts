@@ -1,4 +1,4 @@
-import type { SolveTimeline, FluidityMetrics } from '@cubeforge/types';
+import type { SolveTimeline, FluidityMetrics } from '@cubalyze/types';
 
 /**
  * Calculates fluidity metrics from inter-move time intervals.

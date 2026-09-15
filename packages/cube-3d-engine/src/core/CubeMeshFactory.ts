@@ -11,7 +11,7 @@ import {
   DoubleSide,
 } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
-import type { CubeFace } from '@cubeforge/types';
+import type { CubeFace } from '@cubalyze/types';
 
 export interface CubeStyleOptions {
   /** Visual strategy: classic, solid plastic, floating panels, or see-through */

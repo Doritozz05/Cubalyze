@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { useBackgroundMediaStore } from "@/stores/backgroundMediaStore";
 import type { ViewId } from "./sidebar.constants";
 

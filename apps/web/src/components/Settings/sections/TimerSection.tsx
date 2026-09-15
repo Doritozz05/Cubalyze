@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Clock, Cpu, Headphones, Bluetooth, Keyboard, LayoutTemplate, ArrowUpRight } from 'lucide-react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { SettingToggle } from '../components/SettingToggle';
 import { SettingRow } from '../components/SettingRow';
 import {

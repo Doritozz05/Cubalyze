@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — Skill Progress Repository
+ * @cubalyze/database — Skill Progress Repository
  *
  * Persists skill-tree completion state (set of completed skill IDs) to
  * SQLite. This is the single source of truth, replacing the legacy

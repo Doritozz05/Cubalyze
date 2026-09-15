@@ -420,7 +420,7 @@ export function getSystemBaseTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-import type { CustomTheme } from '@cubeforge/state';
+import type { CustomTheme } from '@cubalyze/state';
 
 /**
  * Resolves the complete map of CSS variables given the preset, base light/dark mode,

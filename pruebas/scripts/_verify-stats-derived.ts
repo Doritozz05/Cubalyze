@@ -2,7 +2,7 @@
  * End-to-end verification of the derived stat chips (STM / TPS / Cross STM /
  * F2L / LL / Rotations) against the real dataset — replicates the exact logic
  * added to `apps/web/src/views/Reconstructions/reconData.ts` (deriveReconStats)
- * using the built `@cubeforge/analysis-engine` dist (which contains the `2'`
+ * using the built `@cubalyze/analysis-engine` dist (which contains the `2'`
  * fix). Shows "before" (baked crawl data) vs "after" (derived).
  */
 import { analyzeSolveText } from "../../packages/analysis-engine/dist/index.js";

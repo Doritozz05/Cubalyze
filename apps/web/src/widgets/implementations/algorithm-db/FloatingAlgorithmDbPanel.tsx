@@ -10,8 +10,8 @@ import {
   SUBSETS,
   getSubsetsForMethod,
   getChildSubsets,
-} from "@cubeforge/algorithm-db";
-import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
+import type { AlgorithmCase } from "@cubalyze/algorithm-db";
 import { useCaseAlgorithms } from "@/hooks/useCaseAlgorithms";
 import { AlgorithmViewerCard } from "./components/AlgorithmViewerCard";
 import {

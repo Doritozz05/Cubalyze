@@ -26,7 +26,7 @@
  * a blob that does not exist.
  */
 
-import type { GearPhotoRef } from "@cubeforge/database";
+import type { GearPhotoRef } from "@cubalyze/database";
 import {
   legacyPhotoStrings,
   normalizeState,

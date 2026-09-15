@@ -1,7 +1,7 @@
 ---
 title: CubeForge — Dependencias reales del monorepo (2026-08-12)
 ---
-%% Verificado contra imports reales (grep de "@cubeforge/*" en src).
+%% Verificado contra imports reales (grep de "@cubalyze/*" en src).
 %% Los edges solo de tests (p.ej. math-core → hardware-hal en fuzzing.test.ts)
 %% no se representan: no son dependencias de producción.
 
@@ -12,31 +12,31 @@ flowchart LR
     end
 
     subgraph Data["Datos y estado"]
-        database["@cubeforge/database<br/>(SQLite WASM/OPFS + repos)"]
-        state["@cubeforge/state<br/>(Zustand, 6 stores)"]
-        models["@cubeforge/models<br/>(schemas zod)"]
-        statistics["@cubeforge/statistics"]
+        database["@cubalyze/database<br/>(SQLite WASM/OPFS + repos)"]
+        state["@cubalyze/state<br/>(Zustand, 6 stores)"]
+        models["@cubalyze/models<br/>(schemas zod)"]
+        statistics["@cubalyze/statistics"]
     end
 
     subgraph Domain["Dominio"]
-        training["@cubeforge/training<br/>(SRS/FSRS-4)"]
-        analysis["@cubeforge/analysis-engine<br/>(pipeline versionado)"]
-        algodb["@cubeforge/algorithm-db<br/>(catálogo + seed)"]
-        hal["@cubeforge/hardware-hal<br/>(HAL + adaptadores)"]
-        timer["@cubeforge/timer-engine"]
-        gan["@cubeforge/gan-protocol<br/>(BLE cifrado)"]
+        training["@cubalyze/training<br/>(SRS/FSRS-4)"]
+        analysis["@cubalyze/analysis-engine<br/>(pipeline versionado)"]
+        algodb["@cubalyze/algorithm-db<br/>(catálogo + seed)"]
+        hal["@cubalyze/hardware-hal<br/>(HAL + adaptadores)"]
+        timer["@cubalyze/timer-engine"]
+        gan["@cubalyze/gan-protocol<br/>(BLE cifrado)"]
     end
 
     subgraph Core["Núcleo"]
-        mathcore["@cubeforge/math-core"]
-        solver["@cubeforge/solver-engine<br/>(min2phase)"]
-        cube3d["@cubeforge/cube-3d-engine<br/>(Three.js)"]
-        types["@cubeforge/types"]
+        mathcore["@cubalyze/math-core"]
+        solver["@cubalyze/solver-engine<br/>(min2phase)"]
+        cube3d["@cubalyze/cube-3d-engine<br/>(Three.js)"]
+        types["@cubalyze/types"]
     end
 
     subgraph UI["UI"]
-        ui["@cubeforge/ui (kit Radix)"]
-        identicon["@cubeforge/identicon (CubeMark)"]
+        ui["@cubalyze/ui (kit Radix)"]
+        identicon["@cubalyze/identicon (CubeMark)"]
     end
 
     %% Núcleo

@@ -1,10 +1,10 @@
 /**
- * @cubeforge/sync-engine
+ * @cubalyze/sync-engine
  *
  * Offline-first cloud sync for CubeForge (Supabase):
  *  - row-level LWW sync with per-table watermarks and tombstone deletes;
  *  - derived training aggregates are NEVER synced raw — they are rebuilt
- *    from the synced attempt log via @cubeforge/training's deterministic
+ *    from the synced attempt log via @cubalyze/training's deterministic
  *    replay (see rebuild.ts);
  *  - anonymous local identity is preserved as the CubeMark seed when an
  *    account claims the device (see SyncEngine.claim).
@@ -21,7 +21,7 @@ export type { SupabaseEnv } from "./client";
 export { getWatermark, setWatermark, pullWatermarkKey, pushWatermarkKey } from "./watermarks";
 export { claimHandle } from "./handle";
 export type { HandleClaimFailure, HandleClaimResult } from "./handle";
-export { replayProgress } from "@cubeforge/training";
+export { replayProgress } from "@cubalyze/training";
 export type {
   ClaimMode,
   DBExecutor,

@@ -48,8 +48,8 @@ Facts established during code review:
 Steps:
 
 1. Run and record current results:
-   - `pnpm --filter @cubeforge/solver-engine test`
-   - `pnpm --filter @cubeforge/cube-3d-engine test`
+   - `pnpm --filter @cubalyze/solver-engine test`
+   - `pnpm --filter @cubalyze/cube-3d-engine test`
    - `pnpm --filter web test`
    - `pnpm --filter web typecheck`
 2. Confirm the two bugs manually in the running app (rotated solve does not

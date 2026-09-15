@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Training Timer
+ * @cubalyze/training — Training Timer
  *
  * Factory for creating a drill-configured TimerEngine.
  * The React hook (useDrillTimer) wraps this factory with
@@ -10,7 +10,7 @@
 
 import {
   TimerEngine,
-} from '@cubeforge/timer-engine';
+} from '@cubalyze/timer-engine';
 
 export interface CreateTrainingTimerOptions {
   /** Enable WCA-style 15s inspection countdown (e.g. full-solve views). Default false. */

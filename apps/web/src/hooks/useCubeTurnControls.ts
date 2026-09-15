@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import type { Cube3DEngine, CubeLayerPick } from "@cubeforge/cube-3d-engine";
+import type { Cube3DEngine, CubeLayerPick } from "@cubalyze/cube-3d-engine";
 import type { CubeKeyAction } from "@/lib/keybinds/cubeKeybinds";
 import { resolveDragMove } from "@/utils/cubeDragLayer";
 

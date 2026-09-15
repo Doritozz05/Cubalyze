@@ -1,5 +1,5 @@
-import { FACE_ROTATION_MAP, layerTwistAngleDelta } from "@cubeforge/cube-3d-engine";
-import type { CubeFace } from "@cubeforge/types";
+import { FACE_ROTATION_MAP, layerTwistAngleDelta } from "@cubalyze/cube-3d-engine";
+import type { CubeFace } from "@cubalyze/types";
 
 /** A 3D vector (structural — matches the engine's Vec3Like). */
 interface Vec3 {

@@ -1,4 +1,4 @@
-import type { CustomTheme } from '@cubeforge/state';
+import type { CustomTheme } from '@cubalyze/state';
 import {
   THEME_PRESETS,
   type ThemeColors,

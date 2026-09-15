@@ -2,15 +2,15 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import type { useDrillTimer } from "@/hooks/useDrillTimer";
 import { useOrientation } from "@/hooks/useOrientation";
 import { useTrainingEngine } from "@/hooks/useTrainingEngine";
-import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { RandomStateGenerator } from "@cubalyze/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
-import type { MetricKind } from "@cubeforge/training";
+import type { MetricKind } from "@cubalyze/training";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared helpers

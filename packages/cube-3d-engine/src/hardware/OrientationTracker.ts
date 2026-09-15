@@ -1,11 +1,11 @@
 import { Subject, type Observable } from 'rxjs';
-import type { GyroEvent } from '@cubeforge/types';
+import type { GyroEvent } from '@cubalyze/types';
 import type {
   CubeOrientation,
   OrientationCapabilities,
   RotationEvent,
-} from '@cubeforge/types';
-import { OrientationTable, type OrientationEntry } from '@cubeforge/math-core';
+} from '@cubalyze/types';
+import { OrientationTable, type OrientationEntry } from '@cubalyze/math-core';
 
 /**
  * Tracks the cube's current physical orientation by fusing IMU quaternion

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { CloudOff, CloudUpload, RefreshCw, LogOut, Trash2 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
 import { useStore } from "zustand";
-import { syncStore } from "@cubeforge/state";
+import { syncStore } from "@cubalyze/state";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { GoogleIcon } from "@/components/Account/GoogleIcon";

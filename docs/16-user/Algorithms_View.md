@@ -44,7 +44,7 @@ para OLL, etc.). El subset inicial por defecto es **PLL**.
 ## Datos
 
 - El catálogo (métodos, subsets, casos, algoritmos) proviene de
-  `getSeedData()` de `@cubeforge/algorithm-db`. El código comenta
+  `getSeedData()` de `@cubalyze/algorithm-db`. El código comenta
   "in-memory for now; database integration later" — la vista lee el catálogo en
   memoria (la siembra a SQLite ocurre en el lado de Training vía
   `seedIfEmpty`).
@@ -53,10 +53,10 @@ para OLL, etc.). El subset inicial por defecto es **PLL**.
 
 ## Dependencias de paquetes
 
-- `@cubeforge/algorithm-db` — catálogo + `resolveVisualizationStyleForSubset`.
-- `@cubeforge/math-core` — estado de cubo y facelets (vía diagramas).
-- `@cubeforge/cube-3d-engine` — render del diagrama 3D.
-- `@cubeforge/solver-engine` — scrambles de setup (diagramas).
+- `@cubalyze/algorithm-db` — catálogo + `resolveVisualizationStyleForSubset`.
+- `@cubalyze/math-core` — estado de cubo y facelets (vía diagramas).
+- `@cubalyze/cube-3d-engine` — render del diagrama 3D.
+- `@cubalyze/solver-engine` — scrambles de setup (diagramas).
 - dnd-kit (ordenar tarjetas), Radix UI (dialog), framer-motion (overlay touch).
 
 ## ADRs relacionados

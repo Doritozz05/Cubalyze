@@ -1,12 +1,12 @@
 /**
- * @cubeforge/cube-3d-engine — Replay Engine types
+ * @cubalyze/cube-3d-engine — Replay Engine types
  *
  * Shared public types for the ReplayEngine (see ReplayEngine.ts).
  * Kept in their own module so the engine implementation stays under the
  * TDD-0006 1000-line gate.
  */
 
-import type { RotationAxis } from '@cubeforge/types';
+import type { RotationAxis } from '@cubalyze/types';
 
 /** How to rotate a single layer for one move. */
 export interface RotationParams {

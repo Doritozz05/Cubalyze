@@ -5,14 +5,14 @@ import { useStore } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import i18n from "@/i18n";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import type { Penalty, PuzzleCategory, Solve, SolveSource } from "@/types";
 import type {
   CubeMoveEvent,
   CubeOrientation,
   OrientationTimeline,
   SolveMetrics,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import { detectPbMilestones, type PbMilestoneResult } from "@/utils/pbDetection";
 import { queueSolveAnalysis } from "@/utils/solveAnalysisCoordinator";
 import { runAnalysis } from "@/hooks/useSolveSession";

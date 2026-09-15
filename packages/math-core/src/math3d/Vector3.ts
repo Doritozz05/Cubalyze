@@ -2,7 +2,7 @@ import type { Quaternion } from './Quaternion';
 
 /**
  * Minimal 3D vector math (mirrors the three.js `Vector3` API surface used by
- * math-core). Kept dependency-free so `@cubeforge/math-core` — which is on the
+ * math-core). Kept dependency-free so `@cubalyze/math-core` — which is on the
  * critical path of the web app (solver preload, orientation remapping) — does
  * not drag the ~550 kB three.js bundle into the initial page load.
  *

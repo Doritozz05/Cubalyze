@@ -14,7 +14,7 @@
 | `useScrambleValidator` | Valida que el scramble se haya aplicado de verdad (con smart cube O cubo virtual — el mismo adaptador mínimo para ambos) |
 | `useSolveCompletion` | Pipeline de fin de solve (penalización, métricas, persistencia) |
 | `useTimerFocus` | Focus mode (oculta todo salvo el timer) |
-| `usePersistentSession` | Sesiones persistentes (metadatos de sesión, `@cubeforge/database`) |
+| `usePersistentSession` | Sesiones persistentes (metadatos de sesión, `@cubalyze/database`) |
 | `useManualSolves` | Entrada manual de tiempos (inline + sheet) |
 | `pressDispatch` / `shouldAutoArm` / `onboardingCore` | Lógica pura extraída y testeada (dispatch de pulsaciones, auto-arm del timer, core del onboarding) |
 
@@ -53,7 +53,7 @@
 | Servicio | Qué hace |
 | --- | --- |
 | `orientationTracking.ts` | Servicio headless de **seguimiento de orientación**: consume el stream de giroscopio del adaptador smart cube global y es el ÚNICO que escribe en `orientationStore` |
-| `Case3DRenderAdapter.ts` | Aplica un plan de render neutro (`CaseRenderPlan` de `@cubeforge/algorithm-db`) al motor 3D — adaptador entre catálogo y engine |
+| `Case3DRenderAdapter.ts` | Aplica un plan de render neutro (`CaseRenderPlan` de `@cubalyze/algorithm-db`) al motor 3D — adaptador entre catálogo y engine |
 | `Global3DSnapshotService.ts` | Snapshots 3D persistentes por caso (prefijo `cubeforge_snap_3d_v8_`) para el panel 3D |
 
 ## Lib (`apps/web/src/lib/`)

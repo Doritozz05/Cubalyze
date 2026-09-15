@@ -72,9 +72,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         name: Build packages
-      - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/benchmarks.test.ts
+      - run: pnpm --filter @cubalyze/solver-engine exec vitest run src/__tests__/benchmarks.test.ts
         name: Solver engine benchmarks
-      - run: pnpm --filter @cubeforge/analysis-engine exec vitest run src/__tests__/benchmarks.test.ts
+      - run: pnpm --filter @cubalyze/analysis-engine exec vitest run src/__tests__/benchmarks.test.ts
         name: Analysis engine benchmarks
 
 
@@ -93,11 +93,11 @@ jobs:
       - run: pnpm build
         name: Build packages
       - run: |
-          pnpm --filter @cubeforge/math-core exec vitest run --coverage
-          pnpm --filter @cubeforge/solver-engine exec vitest run --coverage
-          pnpm --filter @cubeforge/analysis-engine exec vitest run --coverage
-          pnpm --filter @cubeforge/timer-engine exec vitest run --coverage
-          pnpm --filter @cubeforge/database exec vitest run --coverage
+          pnpm --filter @cubalyze/math-core exec vitest run --coverage
+          pnpm --filter @cubalyze/solver-engine exec vitest run --coverage
+          pnpm --filter @cubalyze/analysis-engine exec vitest run --coverage
+          pnpm --filter @cubalyze/timer-engine exec vitest run --coverage
+          pnpm --filter @cubalyze/database exec vitest run --coverage
         name: Coverage (core packages, >80% lines)
 
   property-based:
@@ -114,5 +114,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         name: Build packages
-      - run: pnpm --filter @cubeforge/solver-engine exec vitest run src/__tests__/property-based.test.ts
+      - run: pnpm --filter @cubalyze/solver-engine exec vitest run src/__tests__/property-based.test.ts
         name: Property-based tests (0 failures required)

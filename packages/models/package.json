@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/models",
+  "name": "@cubalyze/models",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -13,13 +13,13 @@
   },
   "dependencies": {
     "zod": "^3.24.1",
-    "@cubeforge/algorithm-db": "workspace:*",
-    "@cubeforge/events": "workspace:*",
-    "@cubeforge/types": "workspace:*"
+    "@cubalyze/algorithm-db": "workspace:*",
+    "@cubalyze/events": "workspace:*",
+    "@cubalyze/types": "workspace:*"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

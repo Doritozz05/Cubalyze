@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
 import { Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Profile } from "@cubeforge/database";
+import type { Profile } from "@cubalyze/database";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
 import {
   Sheet,

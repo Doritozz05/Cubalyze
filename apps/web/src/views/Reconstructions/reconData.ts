@@ -16,16 +16,16 @@ import type {
   CubeMoveEvent,
   OrientationTimeline,
   SolveMetrics,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import {
   analyzeSolveText,
   type AnalyzeSolveTextResult,
-} from "@cubeforge/analysis-engine";
+} from "@cubalyze/analysis-engine";
 import {
   conjugatePhaseStream,
   OrientationTable,
   tokenize,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 
 /**
  * Recon dataset puzzle label → canonical WCA event code (ADR-002), so the

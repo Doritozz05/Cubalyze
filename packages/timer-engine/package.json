@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/timer-engine",
+  "name": "@cubalyze/timer-engine",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -24,8 +24,8 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "tsup": "^8.0.0",

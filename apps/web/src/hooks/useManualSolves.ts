@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import i18n from "@/i18n";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { methodForEvent, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import type { Penalty, PuzzleCategory, SolveMethod } from "@/types";
 import type { UsePersistentSessionResult } from "@/hooks/usePersistentSession";

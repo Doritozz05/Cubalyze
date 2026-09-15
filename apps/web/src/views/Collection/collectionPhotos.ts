@@ -18,7 +18,7 @@
  * consumer releases it (or when the photo is deleted).
  */
 
-import type { GearPhotoRef } from "@cubeforge/database";
+import type { GearPhotoRef } from "@cubalyze/database";
 import { processPhotoFile, type ProcessedPhoto } from "./imageUtils";
 
 const DB_NAME = "cubeforge-collection";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRotation, tokenize } from '@cubeforge/math-core';
+import { isRotation, tokenize } from '@cubalyze/math-core';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 
 /**

@@ -137,7 +137,7 @@ y configurar `i18next-parser.config.mjs` en `apps/web`.
 - **Idioma del documento** — `index.html` conserva `lang="en"` estático;
   el JS lo sincroniza tras el primer render (correcto para el primer paint).
 - **packages/ui** — los componentes compartidos (`calendar.tsx`, `chart.tsx`)
-  tienen texto hardcodeado. Como `@cubeforge/ui` se bundlea dentro de web,
+  tienen texto hardcodeado. Como `@cubalyze/ui` se bundlea dentro de web,
   sus componentes pueden importar `useTranslation` del singleton de web sin
   dependencia extra.
 

@@ -6,7 +6,7 @@ import {
   FaceletStringConverter,
   Cube2x2State,
   Cube2x2FaceletConverter,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 
 // csTimer classic speedcube colors — WCA standard scheme
 const CSTIMER_COLOR_MAP: Record<string, string> = {

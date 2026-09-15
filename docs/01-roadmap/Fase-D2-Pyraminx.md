@@ -119,7 +119,7 @@ Ese trade-off queda documentado para el RFC de scrambles (§8 del plan).
 
 Invariante oficial: `nº tokens == 11 + tips_sin_resolver`.
 
-### 2.4 Nuestra implementación (`@cubeforge/solver-engine`)
+### 2.4 Nuestra implementación (`@cubalyze/solver-engine`)
 
 Port fiel en TypeScript (`PyraminxSolver.ts`) con las mismas coordenadas
 (packing mixed-radix de TNoodle), tablas de movimiento y poda idénticas, y el

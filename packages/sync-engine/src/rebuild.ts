@@ -4,12 +4,12 @@
  *
  * Aggregates are never synced raw (two devices would fight on counters with
  * LWW); instead every device rebuilds them from the synced immutable log via
- * the deterministic replay in @cubeforge/training. Running the REAL
+ * the deterministic replay in @cubalyze/training. Running the REAL
  * ProgressTracker over an in-memory repo guarantees the rebuilt state is
  * identical to what the live tracker computed.
  */
 
-import { replayProgress } from "@cubeforge/training";
+import { replayProgress } from "@cubalyze/training";
 import type { SyncContext } from "./types";
 
 export async function rebuildAggregates(ctx: SyncContext): Promise<void> {

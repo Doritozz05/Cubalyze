@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/analysis-engine",
+  "name": "@cubalyze/analysis-engine",
   "version": "0.2.0",
   "private": true,
   "description": "Real-time analysis pipeline for CubeForge — timeline tracking, phase recognition, and metric computation",
@@ -21,14 +21,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/algorithm-db": "workspace:*",
-    "@cubeforge/math-core": "workspace:*",
-    "@cubeforge/solver-engine": "workspace:*",
-    "@cubeforge/statistics": "workspace:*",
-    "@cubeforge/types": "workspace:*"
+    "@cubalyze/algorithm-db": "workspace:*",
+    "@cubalyze/math-core": "workspace:*",
+    "@cubalyze/solver-engine": "workspace:*",
+    "@cubalyze/statistics": "workspace:*",
+    "@cubalyze/types": "workspace:*"
   },
   "devDependencies": {
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "tsup": "^8.0.1",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

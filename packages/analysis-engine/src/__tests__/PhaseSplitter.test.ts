@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
-import { CFOPDefinition, RouxDefinition, ZZDefinition, PetrusDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition, RouxDefinition, ZZDefinition, PetrusDefinition } from '@cubalyze/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { makeMoves } from './test-helpers';
 

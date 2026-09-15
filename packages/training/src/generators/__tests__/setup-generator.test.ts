@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateRandomSetup } from '../setup-generator.js';
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter } from '@cubalyze/math-core';
 
 describe('setupGenerator', () => {
   it('generates a non-empty setup scramble for T-perm', () => {

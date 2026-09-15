@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { persist } from 'zustand/middleware';
-import type { Algorithm, AlgorithmViewPreferences } from '@cubeforge/algorithm-db';
+import type { Algorithm, AlgorithmViewPreferences } from '@cubalyze/algorithm-db';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 

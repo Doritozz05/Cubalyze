@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';

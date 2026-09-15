@@ -1,4 +1,4 @@
-import type { CubeFace } from '@cubeforge/types';
+import type { CubeFace } from '@cubalyze/types';
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
 
 /**

@@ -19,7 +19,7 @@
  */
 
 import { create } from "zustand";
-import { AppMetaRepository, initDB } from "@cubeforge/database";
+import { AppMetaRepository, initDB } from "@cubalyze/database";
 
 /** `app_meta` prefix; the suffix is the event code. */
 export const ACTIVE_CUBE_KEY_PREFIX = "active_cube_";

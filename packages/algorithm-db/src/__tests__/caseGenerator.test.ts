@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CaseStateGenerator, invertMove, invertAlgorithm } from '../caseGenerator';
 import { getSeedData } from '../seed/index';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 
 describe('CaseStateGenerator', () => {
   // ── Utility function tests ──────────────────────────────────────────

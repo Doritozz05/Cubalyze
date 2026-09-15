@@ -31,7 +31,7 @@ import { Vector3, Quaternion } from 'three';
  * ## Move tables
  *
  * `PYRAMINX_TURNS` mirrors the move tables of the clean-room WCA scrambler
- * in `@cubeforge/solver-engine` (PyraminxSolver.FACE_TURNS). The cross-
+ * in `@cubalyze/solver-engine` (PyraminxSolver.FACE_TURNS). The cross-
  * validation tests in `__tests__/PyraminxModel.test.ts` prove the 3D model
  * produces the exact same PyraminxState as `applyPyraminxMove` for every
  * move, so the tables can never drift apart unnoticed.

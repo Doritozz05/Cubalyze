@@ -1,11 +1,11 @@
 /**
- * @cubeforge/database — Training Repository
+ * @cubalyze/database — Training Repository
  *
  * Persists training attempts, algorithm progress, and exercise progress.
  * Follows the same pattern as SolvesRepository and SessionsRepository.
  */
 
-import type { CubeMoveEvent } from "@cubeforge/types";
+import type { CubeMoveEvent } from "@cubalyze/types";
 import type {
   AlgorithmProgressRecord,
   ExerciseProgressRecord,
@@ -13,7 +13,7 @@ import type {
   PhaseStatsRecord,
   QueueCandidateRecord,
   TrainingSessionProgressRecord,
-} from "@cubeforge/training";
+} from "@cubalyze/training";
 import { withTransaction } from "./transaction.js";
 import { nextLocalStamps } from "./local-clock.js";
 import { purgeTombstoneEchoes, rowIsDoomed } from "./tombstone-echo.js";
@@ -94,7 +94,7 @@ export interface ExerciseProgressRow {
 }
 
 // ─── Domain Types (camelCase, for consumers) ──────────────────────────────
-// Single source of truth: the record shapes come from @cubeforge/training.
+// Single source of truth: the record shapes come from @cubalyze/training.
 // The DB layer only adds its internal row `id` where the domain omits it.
 // (TrainingAttempt keeps its DB-only optional fields — subsetId, expectedMoves,
 // executedMoves, inspectionMs — which the pure tracker does not model.)
@@ -264,7 +264,7 @@ export class TrainingRepository {
 
   /**
    * Seed `training_exercises` from the canonical catalog in
-   * @cubeforge/training (idempotent INSERT OR IGNORE, batched so the
+   * @cubalyze/training (idempotent INSERT OR IGNORE, batched so the
    * worker boundary is crossed a handful of times, mirroring
    * AlgorithmsRepository.seedAll).
    *
@@ -275,11 +275,11 @@ export class TrainingRepository {
    */
   async seedExercises(): Promise<number> {
     // DYNAMIC IMPORT: `buildExerciseCatalog` transitively pulls the whole
-    // @cubeforge/algorithm-db seed catalog (~3 MB of CFOP case tables) through
-    // @cubeforge/training's barrel. Seeding only happens when the training
+    // @cubalyze/algorithm-db seed catalog (~3 MB of CFOP case tables) through
+    // @cubalyze/training's barrel. Seeding only happens when the training
     // tracker boots (post-mount pre-warm or first training surface), so load
     // it on demand instead of bloating the initial bundle via this eager repo.
-    const { buildExerciseCatalog } = await import("@cubeforge/training");
+    const { buildExerciseCatalog } = await import("@cubalyze/training");
     const defs = buildExerciseCatalog();
     const now = Date.now();
     const BATCH = 40; // 6 cols × 40 rows = 240 bind vars, well under SQLite's 999

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Compass, RotateCcw, Shuffle, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCube3D } from "@/hooks/useCube3D";
-import type { Puzzle3DSpec } from "@cubeforge/cube-3d-engine";
+import type { Puzzle3DSpec } from "@cubalyze/cube-3d-engine";
 
 export interface Cube3DPanelProps {
   className?: string;

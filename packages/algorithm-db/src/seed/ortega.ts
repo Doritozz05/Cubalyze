@@ -1,4 +1,4 @@
-import { expandWideMoves } from '@cubeforge/math-core';
+import { expandWideMoves } from '@cubalyze/math-core';
 import { CaseStateGenerator, invertMoveArray } from '../caseGenerator';
 import type { AlgorithmCase, Algorithm } from '../schema';
 

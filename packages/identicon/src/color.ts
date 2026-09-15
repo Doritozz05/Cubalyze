@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — Color with a hard contrast guarantee
+ * @cubalyze/identicon — Color with a hard contrast guarantee
  *
  * The glyph hue is identity (never changed), but lightness is auto-tuned so
  * the glyph meets WCAG ≥ 3:1 against BOTH design-system surfaces (light

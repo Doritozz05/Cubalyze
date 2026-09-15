@@ -36,5 +36,5 @@ export function registerPyraminxPuzzle3D(): void {
 }
 
 // Self-register on import (same pattern as nxn-cube and scrambleProviders),
-// so importing @cubeforge/cube-3d-engine always has the pyraminx family.
+// so importing @cubalyze/cube-3d-engine always has the pyraminx family.
 registerPyraminxPuzzle3D();

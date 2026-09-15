@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState, Edge } from '@cubeforge/math-core';
+import { CubeState, Edge } from '@cubalyze/math-core';
 import { CrossSolverService } from './CrossSolverService';
 
 describe('CrossSolverService', () => {

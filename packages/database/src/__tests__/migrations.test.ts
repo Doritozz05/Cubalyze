@@ -164,7 +164,7 @@ describe('MIGRATIONS — schema migrations module', () => {
   it('migration 026 adds a puzzle_type CHECK generated from the event registry', () => {
     const m = MIGRATIONS.find((x) => x.id === '026_add_puzzle_type_check');
     expect(m).toBeDefined();
-    // The CHECK is built from @cubeforge/events DB_PUZZLE_TYPES (canonical + legacy).
+    // The CHECK is built from @cubalyze/events DB_PUZZLE_TYPES (canonical + legacy).
     expect(m!.sql).toContain("CHECK (puzzle_type IN ('2x2x2', '3x3x3'");
     expect(m!.sql).toMatch(/puzzle_type\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'3x3x3'\s+CHECK/i);
     // Data preservation on both tables: rename → recreate → copy back → drop.

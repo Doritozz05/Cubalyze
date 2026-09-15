@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
 import { HardwareTimerAdapter, HardwareTimerEvent } from '../interfaces/HardwareTimerAdapter';
-import { connectGanTimer, type GanTimerConnection, GanTimerState, type GanTimerEvent } from '@cubeforge/gan-protocol';
+import { connectGanTimer, type GanTimerConnection, GanTimerState, type GanTimerEvent } from '@cubalyze/gan-protocol';
 export class GanTimerAdapter implements HardwareTimerAdapter {
   public readonly name = 'GAN Smart Timer';
   

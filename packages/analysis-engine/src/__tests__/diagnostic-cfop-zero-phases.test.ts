@@ -7,7 +7,7 @@ import {
   CFOPDefinition,
   COLOR_NEUTRAL_CFOP_MASKS,
   FaceletStringConverter,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { makeSolveFromScramble } from './test-helpers';
 
 /* eslint-disable no-console */

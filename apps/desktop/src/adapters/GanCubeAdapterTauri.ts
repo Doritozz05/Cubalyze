@@ -6,7 +6,7 @@
  *   TypeScript ──invoke('send_cube_command')──▶ Rust ──GATT write──▶ Cube
  *
  * Reuses ALL existing protocol drivers, encrypters, and parsers from
- * @cubeforge/gan-protocol. The Rust backend handles ONLY BLE transport.
+ * @cubalyze/gan-protocol. The Rust backend handles ONLY BLE transport.
  *
  * FUNCTIONAL PARITY with web GanCubeAdapter:
  *   - ClockDriftReconciler for accurate move timestamps
@@ -16,29 +16,29 @@
  */
 
 import { Subject, ReplaySubject, BehaviorSubject } from 'rxjs';
-import { SmartCubeAdapter, ClockDriftReconciler, type CubeIdentity } from '@cubeforge/hardware-hal';
-import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
+import { SmartCubeAdapter, ClockDriftReconciler, type CubeIdentity } from '@cubalyze/hardware-hal';
+import type { CubeMoveEvent, GyroEvent, CubeFace, CubeMoveDirection } from '@cubalyze/types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 // Reuse the EXISTING GAN protocol stack — no duplication of crypto or parsing logic.
-import type { GanCubeEvent, GanProtocolDriver } from '@cubeforge/gan-protocol';
+import type { GanCubeEvent, GanProtocolDriver } from '@cubalyze/gan-protocol';
 import {
   GanGen2ProtocolDriver,
   GanGen3ProtocolDriver,
   GanGen4ProtocolDriver,
-} from '@cubeforge/gan-protocol';
+} from '@cubalyze/gan-protocol';
 import {
   GanGen2CubeEncrypter,
   GanGen3CubeEncrypter,
   GanGen4CubeEncrypter,
-} from '@cubeforge/gan-protocol';
+} from '@cubalyze/gan-protocol';
 import {
   GAN_GEN2_SERVICE,
   GAN_GEN3_SERVICE,
   GAN_GEN4_SERVICE,
   GAN_ENCRYPTION_KEYS,
-} from '@cubeforge/gan-protocol';
+} from '@cubalyze/gan-protocol';
 
 // ── Reconnection Constants (matched to web adapter) ───────────────────────
 

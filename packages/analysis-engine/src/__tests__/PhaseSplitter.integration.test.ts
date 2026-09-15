@@ -6,7 +6,7 @@ import {
   RouxFullDefinition,
   ZZDefinition,
   PetrusDefinition,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves, TEST_SCRAMBLES } from './test-helpers';
 
 describe('PhaseSplitter — Integration (with scramble)', () => {

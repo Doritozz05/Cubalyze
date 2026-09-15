@@ -2,7 +2,7 @@ import { it } from "vitest";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import min2phase from "min2phase.js";
-import { CubeState, FaceletStringConverter } from "@cubeforge/math-core";
+import { CubeState, FaceletStringConverter } from "@cubalyze/math-core";
 
 const OLL = resolve(__dirname, "../../../../pruebas/generated/scdb-oll.json");
 

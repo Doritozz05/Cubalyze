@@ -1,5 +1,5 @@
 /**
- * @cubeforge/analysis-engine — Derived Visualization Data
+ * @cubalyze/analysis-engine — Derived Visualization Data
  *
  * This module transforms raw solve data and analysis metrics into
  * chart-ready shapes for the Insights dashboard.

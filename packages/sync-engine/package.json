@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/sync-engine",
+  "name": "@cubalyze/sync-engine",
   "version": "0.1.0",
   "private": true,
   "description": "Offline-first cloud sync engine for CubeForge — Supabase row-sync with LWW, tombstones and aggregate replay",
@@ -14,17 +14,17 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "@sqlite.org/sqlite-wasm": "3.53.0-build1",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"
   },
   "dependencies": {
-    "@cubeforge/database": "workspace:*",
-    "@cubeforge/models": "workspace:*",
-    "@cubeforge/training": "workspace:*",
+    "@cubalyze/database": "workspace:*",
+    "@cubalyze/models": "workspace:*",
+    "@cubalyze/training": "workspace:*",
     "@supabase/supabase-js": "^2.0.0"
   }
 }

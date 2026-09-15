@@ -1,5 +1,5 @@
 /**
- * @cubeforge/statistics — Headless statistics engine.
+ * @cubalyze/statistics — Headless statistics engine.
  *
  * Pure calculation functions for speedcubing statistics:
  *   - Rolling averages (Ao5, Ao12, Ao100) — WCA-style for small windows,

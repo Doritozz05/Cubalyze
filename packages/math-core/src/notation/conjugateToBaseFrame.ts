@@ -30,7 +30,7 @@ import type {
   CubeMoveDirection,
   FacePermutation,
   OuterFace,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { OrientationTable, type OrientationEntry } from '../orientation/OrientationTable';
 import { MoveTransformer } from '../orientation/MoveTransformer';
 

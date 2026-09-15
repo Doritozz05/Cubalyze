@@ -11,7 +11,7 @@ import {
   PLLMask,
   Edge,
   COLOR_NEUTRAL_CFOP_MASKS,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { makeSolveFromScramble, inverseScramble } from './test-helpers';
 
 /* eslint-disable no-console */

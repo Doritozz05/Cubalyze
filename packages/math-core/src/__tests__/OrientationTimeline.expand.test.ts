@@ -5,7 +5,7 @@ import {
   getOrientationAtIndex,
 } from "../orientation/OrientationTimeline";
 import { OrientationTable } from "../orientation/OrientationTable";
-import type { CubeOrientation, OrientationTimeline } from "@cubeforge/types";
+import type { CubeOrientation, OrientationTimeline } from "@cubalyze/types";
 
 /** Build a CubeOrientation snapshot from a table index (mirrors how the app
  *  serializes a grip into a CubeOrientation). */

@@ -1,6 +1,6 @@
 import { Group, Mesh } from 'three';
 import { CubeMeshFactory } from './CubeMeshFactory';
-import { parseFaceletsToCubies } from '@cubeforge/math-core';
+import { parseFaceletsToCubies } from '@cubalyze/math-core';
 import { parseFaceletsToCubies2x2 } from './FaceletParser2x2';
 
 /**

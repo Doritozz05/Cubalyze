@@ -1,11 +1,11 @@
 "use client";
 
-import type { DetectedCase } from "@cubeforge/types";
+import type { DetectedCase } from "@cubalyze/types";
 import {
   getSubset,
   resolveVisualizationStyleForSubset,
   type AlgorithmCase,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { aufRotationDeg } from "./caseHelpers";
 

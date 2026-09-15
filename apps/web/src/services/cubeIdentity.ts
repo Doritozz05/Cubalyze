@@ -30,12 +30,12 @@
  * the only thing the UI reads. The service never touches the DOM.
  */
 
-import { normalizeSmartId } from "@cubeforge/database";
+import { normalizeSmartId } from "@cubalyze/database";
 import { NO_CUBE, cubeShortLabel, planHardwareLink, resolveHardwareLink } from "@/views/Collection/activeCube";
 import { describeCubeModel } from "@/views/Collection/cubeModelCatalog";
 import type { CollectionState } from "@/views/Collection/collectionModel";
 import type { StoreApi } from "zustand";
-import type { CubeIdentity } from "@cubeforge/hardware-hal";
+import type { CubeIdentity } from "@cubalyze/hardware-hal";
 import type { Observable } from "rxjs";
 import {
   hardwareLinkStore,

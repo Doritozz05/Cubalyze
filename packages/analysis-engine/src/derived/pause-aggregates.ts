@@ -10,7 +10,7 @@
  * Pure, headless, framework-agnostic.
  */
 
-import type { PauseDetail, PhaseMetrics, SolveMetrics } from "@cubeforge/types";
+import type { PauseDetail, PhaseMetrics, SolveMetrics } from "@cubalyze/types";
 import { derivePauseCause } from "./timeline";
 
 /** Minimal solve shape accepted by the aggregation. */

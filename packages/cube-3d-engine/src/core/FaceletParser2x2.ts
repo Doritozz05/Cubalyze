@@ -1,5 +1,5 @@
 /**
- * @cubeforge/cube-3d-engine — FaceletParser2x2
+ * @cubalyze/cube-3d-engine — FaceletParser2x2
  *
  * Parses a 24-character 2×2 facelet string into cubie logical states
  * (current grid position + initial grid position + orientation quaternion),

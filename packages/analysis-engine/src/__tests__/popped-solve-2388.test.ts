@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 
 const SOLVE_2388 = {

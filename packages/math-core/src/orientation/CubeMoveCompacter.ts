@@ -1,4 +1,4 @@
-import type { CubeMoveEvent, CubeMoveDirection, CubeOrientation } from '@cubeforge/types';
+import type { CubeMoveEvent, CubeMoveDirection, CubeOrientation } from '@cubalyze/types';
 
 /**
  * Merges consecutive same-face same-direction CubeMoveEvents into X2 moves.

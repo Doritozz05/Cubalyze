@@ -18,9 +18,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS } from "@cubeforge/algorithm-db";
+import { METHODS } from "@cubalyze/algorithm-db";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import type { SRSInsights } from "@cubeforge/training";
+import type { SRSInsights } from "@cubalyze/training";
 import type { ParseKeys } from "i18next";
 import { TrainingBreadcrumb } from "./components";
 import {

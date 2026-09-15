@@ -21,7 +21,7 @@ import {
   isPyraminxSolvedAnyOrientation,
   solvedPyraminx,
   type PyraminxState,
-} from "@cubeforge/solver-engine/pyraminx";
+} from "@cubalyze/solver-engine/pyraminx";
 
 /** Too many consecutive wrong scramble moves → the user must reset. */
 export const MAX_CONSECUTIVE_MISTAKES = 5;

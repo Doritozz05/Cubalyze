@@ -15,7 +15,7 @@ import type {
   PauseDetail,
   PhaseMetrics,
   SolveMetrics,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

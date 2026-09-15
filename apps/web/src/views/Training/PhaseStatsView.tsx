@@ -4,13 +4,13 @@ import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, SUBSETS, getSeedData } from "@cubeforge/algorithm-db";
-import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import { METHODS, SUBSETS, getSeedData } from "@cubalyze/algorithm-db";
+import type { AlgorithmCase } from "@cubalyze/algorithm-db";
 import { TrainingBreadcrumb } from "./components";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTrainingProgress } from "@/hooks/useTrainingProgress";
-import { findSubsetId, masteryLevel } from "@cubeforge/training";
-import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubeforge/training";
+import { findSubsetId, masteryLevel } from "@cubalyze/training";
+import type { AlgorithmProgressRecord, PhaseStatsRecord } from "@cubalyze/training";
 import {
   Target, Clock, Flame, RotateCcw, TrendingUp, TrendingDown,
   ChevronRight, Lightbulb, Gauge, AlertTriangle, Brain,
@@ -107,7 +107,7 @@ export function PhaseStatsView({
     return () => { cancelled = true; };
   }, [ready, methodId, phaseId, getPhaseStats, getTrainingSessions]);
 
-  // Find subset for this phase — canonical mapping from @cubeforge/training
+  // Find subset for this phase — canonical mapping from @cubalyze/training
   const subset = useMemo(() => {
     const subsetId = findSubsetId(methodId, phaseId);
     return subsetId ? SUBSETS.find((s) => s.id === subsetId) ?? null : null;

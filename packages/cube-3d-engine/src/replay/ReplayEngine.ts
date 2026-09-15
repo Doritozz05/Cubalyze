@@ -1,5 +1,5 @@
 /**
- * @cubeforge/cube-3d-engine — Replay Engine
+ * @cubalyze/cube-3d-engine — Replay Engine
  *
  * A framework-agnostic engine that replays a sequence of CubeMoveEvents
  * with configurable speed, play/pause, and seek controls.
@@ -28,8 +28,8 @@
  */
 
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
-import { OrientationTable } from '@cubeforge/math-core';
-import type { CubeFace, CubeMoveEvent, RotationAxis, OrientationTimeline } from '@cubeforge/types';
+import { OrientationTable } from '@cubalyze/math-core';
+import type { CubeFace, CubeMoveEvent, RotationAxis, OrientationTimeline } from '@cubalyze/types';
 import type { RotationParams, ReplayCallbacks, ReplayState } from './types';
 
 export type { RotationParams, ReplayCallbacks, ReplayState } from './types';

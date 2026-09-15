@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Download, Upload } from 'lucide-react';
-import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubeforge/state';
+import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubalyze/state';
 import { THEME_PRESETS, getSystemBaseTheme } from '@/theme/themePresets';
 import { MONO_FONTS, SANS_FONTS } from '@/theme/fonts';
 import { findPreset } from '@/theme/customThemes';

@@ -1,4 +1,4 @@
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { CaseStateGenerator } from '../../caseGenerator';
 import { pairSignature } from '../pairSignature';
 import { slotToFRRotation, resolveSlotPieces } from '../slotResolver';

@@ -2,7 +2,7 @@ import { createStore } from 'zustand/vanilla';
 
 /**
  * Sync status mirror for the UI. Kept deliberately free of a
- * @cubeforge/sync-engine dependency (the status union is duplicated here to
+ * @cubalyze/sync-engine dependency (the status union is duplicated here to
  * avoid a package dependency; the engine's `onStatus` callback writes into
  * this store from the web layer).
  */

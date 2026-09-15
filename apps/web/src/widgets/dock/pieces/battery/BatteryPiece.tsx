@@ -1,7 +1,7 @@
 "use client";
 
 import { useStore } from "zustand";
-import { connectionStore } from "@cubeforge/state";
+import { connectionStore } from "@cubalyze/state";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BatteryIcon } from "@/components/Hardware/BatteryIcon";

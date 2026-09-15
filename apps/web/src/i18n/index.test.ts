@@ -4,7 +4,7 @@ import i18n, {
   detectBrowserLanguage,
   resolveLanguage,
 } from "./index";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 

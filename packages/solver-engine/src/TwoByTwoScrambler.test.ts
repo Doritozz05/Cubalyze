@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Cube2x2State } from '@cubeforge/math-core';
+import { Cube2x2State } from '@cubalyze/math-core';
 import { TwoByTwoScrambler } from './TwoByTwoScrambler';
 import { TwoByTwoSolver } from './TwoByTwoSolver';
 

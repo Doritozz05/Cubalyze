@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { claimHandle, type HandleClaimFailure, type HandleClaimResult } from "../handle";
-import type { Profile } from "@cubeforge/models";
+import type { Profile } from "@cubalyze/models";
 import type { SyncContext } from "../types";
 
 /**

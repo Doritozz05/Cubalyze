@@ -1,6 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { preferencesStore, type AppLanguage } from "@cubeforge/state";
+import { preferencesStore, type AppLanguage } from "@cubalyze/state";
 import en from "./locales/en.json";
 // NOTE: `es` is intentionally NOT imported statically — it is loaded on demand
 // (see `ensureSpanish`) so the initial bundle only ships one language.

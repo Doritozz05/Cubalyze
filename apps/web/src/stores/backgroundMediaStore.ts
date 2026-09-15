@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 
 export type BackgroundMediaType = "image" | "video" | "gif";
 

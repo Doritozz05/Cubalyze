@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { OrientationTracker } from '../hardware/OrientationTracker';
-import { OrientationTable, MoveTransformer } from '@cubeforge/math-core';
+import { OrientationTable, MoveTransformer } from '@cubalyze/math-core';
 import type {
   GyroEvent,
   CubeOrientation,
@@ -9,7 +9,7 @@ import type {
   CubeMoveEvent,
   CubeMoveDirection,
   DisplayMove,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

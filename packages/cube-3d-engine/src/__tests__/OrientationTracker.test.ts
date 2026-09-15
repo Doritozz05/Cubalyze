@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OrientationTracker } from '../hardware/OrientationTracker';
-import { OrientationTable } from '@cubeforge/math-core';
-import type { GyroEvent, CubeOrientation, RotationEvent, FacePermutation } from '@cubeforge/types';
+import { OrientationTable } from '@cubalyze/math-core';
+import type { GyroEvent, CubeOrientation, RotationEvent, FacePermutation } from '@cubalyze/types';
 
 // Helpers
 

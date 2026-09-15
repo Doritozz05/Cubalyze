@@ -25,7 +25,7 @@ import {
   MAX_AVATAR_SOURCE_BYTES,
   processAvatarImage,
 } from "@/utils/processAvatarImage";
-import { METHODS } from "@cubeforge/algorithm-db";
+import { METHODS } from "@cubalyze/algorithm-db";
 import { countriesInLanguage, countryName } from "@/utils/countries";
 import {
   Select,

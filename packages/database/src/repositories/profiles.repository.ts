@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — Profiles Repository
+ * @cubalyze/database — Profiles Repository
  *
  * Persists the user's identity row (migration 019): display name, handle, bio,
  * avatar (identicon or photo), declared solving methods and main puzzle.
@@ -9,7 +9,7 @@
  * forward-compatible with future accounts and multi-device sync (D1).
  */
 
-import type { Profile } from '@cubeforge/models';
+import type { Profile } from '@cubalyze/models';
 import { nextLocalStamps } from './local-clock.js';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;

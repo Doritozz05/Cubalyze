@@ -1,5 +1,5 @@
 /**
- * @cubeforge/solver-engine — CrossSolverService
+ * @cubalyze/solver-engine — CrossSolverService
  *
  * Modular, reusable high-level service to solve the cross for any scramble.
  * Supports solving on any of the 6 faces in WCA standard orientation:
@@ -24,7 +24,7 @@
  * returned pre-rotation followed by the moves solves the cross on the bottom face.
  */
 
-import { CubeState, MoveTransformer, OrientationTable } from '@cubeforge/math-core';
+import { CubeState, MoveTransformer, OrientationTable } from '@cubalyze/math-core';
 import {
   PhaseSolver,
   bestCrossFace,

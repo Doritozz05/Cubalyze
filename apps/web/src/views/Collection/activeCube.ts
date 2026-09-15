@@ -22,8 +22,8 @@
  *      that event, then the most recently used one.
  */
 
-import type { CubeIdentity } from "@cubeforge/hardware-hal";
-import { normalizeSmartId, smartIdsMatch } from "@cubeforge/database";
+import type { CubeIdentity } from "@cubalyze/hardware-hal";
+import { normalizeSmartId, smartIdsMatch } from "@cubalyze/database";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { describeCubeModel, modelItemName } from "./cubeModelCatalog";
 import type { CollectionState, GearItem } from "./collectionModel";

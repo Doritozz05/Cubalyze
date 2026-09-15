@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CubeIdentity } from "@cubeforge/hardware-hal";
+import type { CubeIdentity } from "@cubalyze/hardware-hal";
 import {
   SEED_CATEGORY_IDS,
   seedCollectionState,

@@ -23,19 +23,19 @@
 
     "paths": {
       "@/*": ["./packages/ui/src/*"],
-      "@cubeforge/types": ["./packages/types/src/index.ts"],
-      "@cubeforge/math-core": ["./packages/math-core/src/index.ts"],
-      "@cubeforge/cube-3d-engine": ["./packages/cube-3d-engine/src/index.ts"],
-      "@cubeforge/analysis-engine": ["./packages/analysis-engine/src/index.ts"],
-      "@cubeforge/database": ["./packages/database/src/index.ts"],
-      "@cubeforge/hardware-hal": ["./packages/hardware-hal/src/index.ts"],
-      "@cubeforge/state": ["./packages/state/src/index.ts"],
-      "@cubeforge/timer-engine": ["./packages/timer-engine/src/index.ts"],
-      "@cubeforge/gan-protocol": ["./packages/gan-protocol/src/index.ts"],
-      "@cubeforge/models": ["./packages/models/src/index.ts"],
-      "@cubeforge/solver-engine": ["./packages/solver-engine/src/index.ts"],
-      "@cubeforge/statistics": ["./packages/statistics/src/index.ts"],
-      "@cubeforge/training": ["./packages/training/src/index.ts"]
+      "@cubalyze/types": ["./packages/types/src/index.ts"],
+      "@cubalyze/math-core": ["./packages/math-core/src/index.ts"],
+      "@cubalyze/cube-3d-engine": ["./packages/cube-3d-engine/src/index.ts"],
+      "@cubalyze/analysis-engine": ["./packages/analysis-engine/src/index.ts"],
+      "@cubalyze/database": ["./packages/database/src/index.ts"],
+      "@cubalyze/hardware-hal": ["./packages/hardware-hal/src/index.ts"],
+      "@cubalyze/state": ["./packages/state/src/index.ts"],
+      "@cubalyze/timer-engine": ["./packages/timer-engine/src/index.ts"],
+      "@cubalyze/gan-protocol": ["./packages/gan-protocol/src/index.ts"],
+      "@cubalyze/models": ["./packages/models/src/index.ts"],
+      "@cubalyze/solver-engine": ["./packages/solver-engine/src/index.ts"],
+      "@cubalyze/statistics": ["./packages/statistics/src/index.ts"],
+      "@cubalyze/training": ["./packages/training/src/index.ts"]
     }
   },
   "include": ["packages/*/src/**/*", "*.ts"],

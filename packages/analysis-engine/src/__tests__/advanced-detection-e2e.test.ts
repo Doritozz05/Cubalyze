@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
-import { Min2PhaseSolver } from '@cubeforge/solver-engine';
+import { CubeState } from '@cubalyze/math-core';
+import { Min2PhaseSolver } from '@cubalyze/solver-engine';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 
 /**

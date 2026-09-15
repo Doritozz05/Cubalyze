@@ -7,7 +7,7 @@ CubeForge es **local-first**: no hay base de datos de servidor (ADR-019 diferido
 El almacenamiento es:
 
 - **Web (PWA)**: SQLite WASM sobre **OPFS** vía worker Comlink
-  (`@cubeforge/database`), con 16+ migraciones versionadas y repositorios.
+  (`@cubalyze/database`), con 16+ migraciones versionadas y repositorios.
 - **Desktop (Tauri)**: SQLite nativa (`tauri-plugin-sql`) en AppData, **las
   mismas migraciones y repositorios** (override `database-override.ts`), con red
   de seguridad v1→v2 (`_backup_v1_*`).

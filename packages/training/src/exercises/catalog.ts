@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Exercise Catalog (single source of truth)
+ * @cubalyze/training — Exercise Catalog (single source of truth)
  *
  * The REAL exercise identity catalog. Replaces the hardcoded phase/subset
  * catalogs and exercise_id strings that used to live inside the views.
@@ -18,7 +18,7 @@
  *   full-solve-<methodId>       (full solve with phase targets)
  */
 
-import { METHODS, SUBSETS, getSubsetsForMethod, getChildSubsets, type AlgorithmMethod } from '@cubeforge/algorithm-db';
+import { METHODS, SUBSETS, getSubsetsForMethod, getChildSubsets, type AlgorithmMethod } from '@cubalyze/algorithm-db';
 
 // ─── Canonical exercise ID builders ───────────────────────────────────────
 //

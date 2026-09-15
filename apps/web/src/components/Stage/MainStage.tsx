@@ -7,7 +7,7 @@ import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { VirtualSolveComplete } from "@/components/Layout/appShell.types";
 

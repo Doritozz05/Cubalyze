@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — transaction helper
+ * @cubalyze/database — transaction helper
  *
  * SQLite transactions over the shared executor used by every repository.
  * The worker (web) and the Tauri plugin (desktop) keep ONE persistent

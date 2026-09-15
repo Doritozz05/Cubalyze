@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState, Edge, Move } from '@cubeforge/math-core';
-import { StateMatcher, CrossMask } from '@cubeforge/math-core';
+import { CubeState, Edge, Move } from '@cubalyze/math-core';
+import { StateMatcher, CrossMask } from '@cubalyze/math-core';
 import {
   PhaseSolver,
   solveCross,

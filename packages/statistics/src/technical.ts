@@ -10,7 +10,7 @@
  * (via `TechnicalSolveInput` below) so it can be tested headlessly and reused
  * by any consumer.
  */
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 
 // ─── Input contract ─────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ export type TechnicalSolveInput =
       analysis?: SolveMetrics | null;
       time?: number;
       timestamp?: number;
-      moves?: import("@cubeforge/types").CubeMoveEvent[];
+      moves?: import("@cubalyze/types").CubeMoveEvent[];
     }
   | SolveMetrics
   | null
@@ -429,7 +429,7 @@ export function deriveSessionTechnicalStats(
 
 // ─── Move-level metrics (fingerprint / face usage / pacing) ────────────────
 
-import type { CubeMoveEvent } from "@cubeforge/types";
+import type { CubeMoveEvent } from "@cubalyze/types";
 
 export interface MoveMetrics {
   count: number;

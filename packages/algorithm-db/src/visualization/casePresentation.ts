@@ -1,4 +1,4 @@
-import { Cube2x2FaceletConverter, Cube2x2State, CubeState } from '@cubeforge/math-core';
+import { Cube2x2FaceletConverter, Cube2x2State, CubeState } from '@cubalyze/math-core';
 import type {
   Algorithm,
   AlgorithmCase,

@@ -4,12 +4,12 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS } from "@cubeforge/algorithm-db";
-import { EXERCISE_IDS } from "@cubeforge/training";
-import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { METHODS } from "@cubalyze/algorithm-db";
+import { EXERCISE_IDS } from "@cubalyze/training";
+import { RandomStateGenerator } from "@cubalyze/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
@@ -67,7 +67,7 @@ interface SolveResult {
    Phase target definitions
    ───────────────────────────────────────────────────────────────────────
 
-   Phase identities come from the @cubeforge/training catalog
+   Phase identities come from the @cubalyze/training catalog
    (buildMethodPhases) so the splits always match the exercises the user
    actually trains. Target seconds below are per-phase DEFAULTS — they are
    replaced by the user's REAL per-phase average time (from

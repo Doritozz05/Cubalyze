@@ -1,11 +1,11 @@
-import { Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import { Cube3DEngine } from "@cubalyze/cube-3d-engine";
 import {
   buildCaseRenderPlan,
   type AlgorithmCase,
   type CaseStickerColors,
   type F2LSlotId,
   type OrbitCamera,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 const STORAGE_PREFIX = "cubeforge_snap_3d_v8_";
 const CANV_SIZE = 256;

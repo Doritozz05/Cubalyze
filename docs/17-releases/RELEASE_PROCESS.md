@@ -10,7 +10,7 @@ CubeForge tiene **dos canales de release** distintos:
 1. **La web/PWA** — se despliega sola: cada merge a `main` dispara el deploy de
    Vercel (ADR-023). No lleva tag ni changelog de paquete.
 2. **Los paquetes** (`packages/*`) — candidatos a publicarse en NPM como SDK
-   (ADR-006). Hoy **todos son `private: true` excepto `@cubeforge/cube-3d-engine`**,
+   (ADR-006). Hoy **todos son `private: true` excepto `@cubalyze/cube-3d-engine`**,
    así que el pipeline de NPM solo se activará cuando un paquete se abra al
    público.
 

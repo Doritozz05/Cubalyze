@@ -29,9 +29,9 @@
  * events is unaffected). Tuning this threshold is a follow-up.
  */
 
-import { OrientationTracker } from "@cubeforge/cube-3d-engine";
-import { orientationStore } from "@cubeforge/state";
-import type { GyroEvent } from "@cubeforge/types";
+import { OrientationTracker } from "@cubalyze/cube-3d-engine";
+import { orientationStore } from "@cubalyze/state";
+import type { GyroEvent } from "@cubalyze/types";
 import type { Observable, Subscription } from "rxjs";
 
 /** Minimal adapter surface this service needs (structural — GanCubeAdapter satisfies it). */

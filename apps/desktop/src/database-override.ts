@@ -17,7 +17,7 @@ import { RESTORE_SESSIONS_SQL, RESTORE_SOLVES_SQL, RESTORE_SESSIONS_V2_SNAPSHOT_
 
 // ── Re-export repositories (pure logic, unchanged) ────────────────────
 // NOTE: keep in sync with packages/database/src/repositories/index.js —
-// the desktop aliases @cubeforge/database to this file, so any repository
+// the desktop aliases @cubalyze/database to this file, so any repository
 // added upstream must be listed here too. `apps/../desktop` is NOT a
 // TypeScript project reference (tsconfig does not alias the package), so
 // `tsc` resolves the real module and never notices a name missing here —

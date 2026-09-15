@@ -31,7 +31,7 @@
 - **Configuración:** `typedoc.json` + `tsconfig.typedoc.json` + `typedoc-env.d.ts`
   en la raíz. Cubre los **15 paquetes con fuentes** y **todo `apps/web/src`**
   (estrategia `expand`: un módulo por archivo). ~2.000 páginas HTML.
-- **Resolución:** los `@cubeforge/*` apuntan a sus barrels de `src/` (sin
+- **Resolución:** los `@cubalyze/*` apuntan a sus barrels de `src/` (sin
   necesitar build de `dist/`); `@/` → web, `@/components/ui/*` → kit UI.
 - **Tipos residuales:** corre con `skipErrorChecking` — documenta pese a
   errores de tipos preexistentes del repo (no es un gate de typecheck).

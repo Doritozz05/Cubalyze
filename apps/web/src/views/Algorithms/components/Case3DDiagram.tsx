@@ -10,8 +10,8 @@ import {
   type Algorithm,
   type AlgorithmCase,
   type F2LSlotId,
-} from "@cubeforge/algorithm-db";
-import { Cube3DEngine } from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/algorithm-db";
+import { Cube3DEngine } from "@cubalyze/cube-3d-engine";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 import { applyCaseRenderPlan } from "@/services/Case3DRenderAdapter";
 

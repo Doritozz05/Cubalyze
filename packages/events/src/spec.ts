@@ -1,7 +1,7 @@
-import { type WcaRulesProfile } from "@cubeforge/timer-engine";
+import { type WcaRulesProfile } from "@cubalyze/timer-engine";
 // Re-export the WCA rules types (single source of truth lives in
-// @cubeforge/timer-engine since phase A5 — the timer consumes the profile).
-export type { WcaAttemptFormat, WcaScoring, WcaRulesProfile } from "@cubeforge/timer-engine";
+// @cubalyze/timer-engine since phase A5 — the timer consumes the profile).
+export type { WcaAttemptFormat, WcaScoring, WcaRulesProfile } from "@cubalyze/timer-engine";
 
 /**
  * WCA event codes — official list as of August 2026 (17 events), plus FTO

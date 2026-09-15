@@ -63,7 +63,7 @@ caché es local (`.turbo/`, ignorado en git).
   typecheck de CI; cada paquete/app tiene su propio `tsconfig` para build.
 - Opciones clave: target ES2023, `moduleResolution: Bundler`, `strict`,
   `noEmit`, `allowImportingTsExtensions`, JSX react-jsx.
-- **`paths`**: los 13 paquetes mapeados (`@cubeforge/*` → `src/index.ts`) —
+- **`paths`**: los 13 paquetes mapeados (`@cubalyze/*` → `src/index.ts`) —
   espejo de los aliases que usan Vite y Vitest.
 
 ## Vitest (`vitest.config.ts` raíz)
@@ -89,7 +89,7 @@ documentadas** (cada una explica el porqué):
   "kept for future gate" — hoy el hook es deliberadamente no bloqueante).
 - **`apps/desktop`**: ~50 dependencias "no usadas" por limitación de knip — los
   imports cross-app (`../../web/src/App`) y los aliases de Vite
-  (`@cubeforge/database` → override) no son trazables; son **compartidas, no
+  (`@cubalyze/database` → override) no son trazables; son **compartidas, no
   muertas**. Mismo caso para el CSS tooling de Tailwind v4.
 - **`apps/web`**: los Radix consumidos vía el alias `@/components/ui`
   (declarados en `packages/ui`).

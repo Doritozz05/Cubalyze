@@ -12,7 +12,7 @@
  * Also provides `recolorState` for normalizing sticker colors via the
  * solver's color scheme.
  */
-import { CubeState, FaceletStringConverter } from '@cubeforge/math-core';
+import { CubeState, FaceletStringConverter } from '@cubalyze/math-core';
 
 // ─── Cross-face rotations ───────────────────────────────────────────────────
 

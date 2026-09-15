@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { deriveSkillRadarProfile } from "../technical";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 
 describe("deriveSkillRadarProfile", () => {
   it("returns zeroed axes and empty profile when no solves or analysis are present", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { filterCornersOnlyMoves } from "@/hooks/useSolveSession";
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubalyze/types";
 
 function event(
   face: CubeFace,

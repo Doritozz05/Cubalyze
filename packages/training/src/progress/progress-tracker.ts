@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Progress Tracker
+ * @cubalyze/training — Progress Tracker
  *
  * Pure computation layer for training progress. Takes a repository
  * interface (so it works with the web DB or any storage backend).

@@ -4,12 +4,12 @@ import { of } from 'rxjs';
 // Mock the BLE transport so connect() runs without opening the browser
 // picker. Only the runtime values the adapter imports are needed; the
 // GanCubeConnection/GanCubeEvent types are erased at compile time.
-vi.mock('@cubeforge/gan-protocol', () => ({
+vi.mock('@cubalyze/gan-protocol', () => ({
   connectGanCube: vi.fn(),
   reconnectGanCube: vi.fn(),
 }));
 
-import { connectGanCube } from '@cubeforge/gan-protocol';
+import { connectGanCube } from '@cubalyze/gan-protocol';
 import { GanCubeAdapter } from '../src/bluetooth/GanCubeAdapter';
 
 describe('GanCubeAdapter connect flow', () => {

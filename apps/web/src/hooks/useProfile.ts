@@ -6,9 +6,9 @@ import {
   AppMetaRepository,
   ProfilesRepository,
   type Profile,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import { isDev } from "@/utils/env";
-import { syncStore } from "@cubeforge/state";
+import { syncStore } from "@cubalyze/state";
 
 /** Editable profile fields (identity keys are owned by the system). */
 export type ProfileUpdates = Partial<Omit<Profile, "userId" | "createdAt">>;

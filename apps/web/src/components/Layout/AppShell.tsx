@@ -30,7 +30,7 @@ import { contextMenuStore } from "@/components/ContextMenu/contextMenuStore";
 import { resolveContextMenuItems } from "@/components/ContextMenu/contextMenuResolver";
 import { TriangleAlert } from "lucide-react";
 import { useStorageStatusStore } from "@/stores/storageStatus";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { useIsTouch } from "@/hooks/use-mobile";
 import { WidgetExplorer } from "@/widgets/explorer";
 // Theme Studio lives in Settings → Appearance; AppShell renders the modal so

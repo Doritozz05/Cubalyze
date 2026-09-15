@@ -4,8 +4,8 @@ import {
   applyPyraminxSequence,
   isPyraminxSolved,
   solvedPyraminx,
-} from '@cubeforge/solver-engine/pyraminx';
-import type { CubeMoveEvent } from '@cubeforge/types';
+} from '@cubalyze/solver-engine/pyraminx';
+import type { CubeMoveEvent } from '@cubalyze/types';
 
 describe('Pyraminx Virtual Solve Capture & Replay Compatibility', () => {
   const SCRAMBLE = "U L' B R' u l'";

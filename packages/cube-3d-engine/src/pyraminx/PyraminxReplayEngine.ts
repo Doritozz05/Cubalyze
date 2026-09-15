@@ -1,5 +1,5 @@
 /**
- * @cubeforge/cube-3d-engine — Pyraminx Replay Engine
+ * @cubalyze/cube-3d-engine — Pyraminx Replay Engine
  *
  * Replays a sequence of WCA Pyraminx tokens (U, U', L, …, u, l', …) with the
  * same transport surface the cube's {@link ReplayEngine} exposes — play /

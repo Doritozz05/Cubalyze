@@ -21,23 +21,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Case3DCanvas } from "./Case3DDiagram";
 import { CaseDiagram } from "./CaseDiagram";
 import { Case2x2Diagram } from "./Case2x2Diagram";
-import type { Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import type { Cube3DEngine } from "@cubalyze/cube-3d-engine";
 import {
   expandWideMoves,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import {
   computeMoveMetricsFromString,
   resolveAlgorithmViewPreferences,
   resolveCaseVisualizationStyle,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 import type {
   Algorithm,
   AlgorithmCase,
   AlgorithmViewPreferences,
   OrbitCamera,
   VisualizationStyle,
-} from "@cubeforge/algorithm-db";
-import { algorithmStore } from "@cubeforge/state";
+} from "@cubalyze/algorithm-db";
+import { algorithmStore } from "@cubalyze/state";
 import { getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 
 // ─── Types ──────────────────────────────────────────────────────────────

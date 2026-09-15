@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { invertMove, invertAlgorithm, invertMoveArray } from '../caseGenerator';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 
 describe('invertMove — Edge Cases', () => {
   // ── Normal operation (already tested in caseGenerator.test.ts) ────

@@ -8,7 +8,7 @@ import {
   bestFrameRotationSequence,
   countCompletedF2LSlotsInFrame,
   IDENTITY_SCHEME,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import type {
   CubeFace,
   InitialStateSource,
@@ -17,8 +17,8 @@ import type {
   PhaseDetectionWarning,
   PhaseSegment,
   SolveTimeline,
-} from '@cubeforge/types';
-import type { CubeState } from '@cubeforge/math-core';
+} from '@cubalyze/types';
+import type { CubeState } from '@cubalyze/math-core';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { pickSlotFrame } from '../pipeline/slotFrame';
 

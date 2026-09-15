@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Bluetooth, BluetoothConnected, Info } from "lucide-react";
-import { GanCubeAdapter } from "@cubeforge/hardware-hal";
+import { GanCubeAdapter } from "@cubalyze/hardware-hal";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { TOUCH_FULL_BLEED } from "@/lib/touch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SIDEBAR_MOTION } from "@/components/Layout/sidebar.constants";
-import { orientationStore, connectionStore } from "@cubeforge/state";
+import { orientationStore, connectionStore } from "@cubalyze/state";
 import { startOrientationTracking } from "@/services/orientationTracking";
 import { startAppCubeIdentity } from "@/services/cubeIdentity";
 

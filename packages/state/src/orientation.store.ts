@@ -3,7 +3,7 @@ import type {
   CubeOrientation,
   OrientationCapabilities,
   FacePermutation,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 
 // ─── Identity defaults ───────────────────────────────────────────────────────
 

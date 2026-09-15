@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — Deterministic hashing & PRNG
+ * @cubalyze/identicon — Deterministic hashing & PRNG
  *
  * CubeMark is generated from a stable seed (the user's anonymous `user_id`).
  * The hash pipeline must be:

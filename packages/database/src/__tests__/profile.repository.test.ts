@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AppMetaRepository, generateUuid, ONBOARDING_KEY } from '../repositories/app-meta.repository.js';
 import { ProfilesRepository } from '../repositories/profiles.repository.js';
-import type { Profile } from '@cubeforge/models';
+import type { Profile } from '@cubalyze/models';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

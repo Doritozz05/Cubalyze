@@ -5,7 +5,7 @@ import {
   OrientationTable,
   SOLVED_FACELETS,
   conjugateTokenThroughGrip,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 
 /**
  * Regression contract for the virtual cube's error→undo flow.

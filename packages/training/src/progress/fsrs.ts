@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — FSRS-lite scheduler
+ * @cubalyze/training — FSRS-lite scheduler
  *
  * A faithful, dependency-free implementation of the FSRS-4 model
  * (Free Spaced Repetition Scheduler — the algorithm powering Anki 23.10+).

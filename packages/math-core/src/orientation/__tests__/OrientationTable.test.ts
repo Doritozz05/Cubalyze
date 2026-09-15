@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Quaternion, Vector3 } from 'three';
 import { OrientationTable } from '../OrientationTable';
-import type { CubeFace, FacePermutation } from '@cubeforge/types';
+import type { CubeFace, FacePermutation } from '@cubalyze/types';
 
 // Helper: create a quaternion for a rotation about an axis
 function rotQuat(axis: 'x' | 'y' | 'z', angleDeg: number): Quaternion {

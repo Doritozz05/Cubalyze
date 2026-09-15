@@ -1,5 +1,5 @@
 /**
- * @cubeforge/math-core — Cube2x2FaceletConverter
+ * @cubalyze/math-core — Cube2x2FaceletConverter
  *
  * Converts between {@link Cube2x2State} (cp + co) and a 24-character
  * facelet string for the 2×2×2 Pocket Cube.

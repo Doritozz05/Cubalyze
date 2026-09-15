@@ -25,12 +25,12 @@ de análisis.
 - Dataset **estático** (no de la base de datos): reconstrucciones de récords
   crawleadas (CubeRoot + reco.nz) compiladas a JSON en `public/reconstructions/`.
 - El panel de detección usa el mismo pipeline de análisis que las stats
-  (`analyzeSolveText` del paquete `@cubeforge/analysis-engine`) — ver
+  (`analyzeSolveText` del paquete `@cubalyze/analysis-engine`) — ver
   `docs/18-archive/plan_analysis_unification/` para el plan original.
 
 ## Dependencias de paquetes
 
-- `@cubeforge/analysis-engine` — API headless de análisis (`analyzeSolveText`).
+- `@cubalyze/analysis-engine` — API headless de análisis (`analyzeSolveText`).
 - ReplayEngine (componentes de la web) — consume setup/inspección/solución.
 
 ## ADRs relacionados

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { CFOPMetricsCalculator } from '../metrics/CFOPMetricsCalculator';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
-import { CFOPDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition } from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves } from './test-helpers';
 
 describe('CFOPMetricsCalculator — Integration', () => {

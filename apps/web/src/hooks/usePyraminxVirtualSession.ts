@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { TimerEngine, TimerState as EngineState } from "@cubalyze/timer-engine";
 import { PyraminxScrambleTracker } from "@/hooks/pyraminxSessionCore";
-import type { CubeMoveEvent } from "@cubeforge/types";
+import type { CubeMoveEvent } from "@cubalyze/types";
 import type { Penalty, TimerState } from "@/types";
 import { mapTimerState } from "@/utils/timerState";
 import { hapticStart, hapticStop } from "@/utils/haptics";

@@ -5,8 +5,8 @@
  * Framework-agnostic, zero UI dependencies.
  */
 
-import { effectiveTime } from "@cubeforge/statistics";
-import type { StatSolve } from "@cubeforge/statistics";
+import { effectiveTime } from "@cubalyze/statistics";
+import type { StatSolve } from "@cubalyze/statistics";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 

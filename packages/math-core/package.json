@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/math-core",
+  "name": "@cubalyze/math-core",
   "version": "0.2.0",
   "private": true,
   "description": "Mathematical core for Rubik's Cube parsing and permutation",
@@ -21,13 +21,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/types": "workspace:*",
+    "@cubalyze/types": "workspace:*",
     "min2phase.js": "^0.0.4"
   },
   "devDependencies": {
-    "@cubeforge/config-typescript": "workspace:*",
-    "@cubeforge/hardware-hal": "workspace:*",
-    "@cubeforge/timer-engine": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
+    "@cubalyze/hardware-hal": "workspace:*",
+    "@cubalyze/timer-engine": "workspace:*",
     "@types/three": "^0.185.1",
     "three": "^0.185.1",
     "tsup": "^8.0.1",

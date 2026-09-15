@@ -5,8 +5,8 @@
  * smart/virtual solve analysis render the exact same case table without
  * duplication. Pure functions + layout constants — no React.
  */
-import { orderPairFaces } from "@cubeforge/math-core";
-import { CASE_RENDER_GRAY } from "@cubeforge/algorithm-db";
+import { orderPairFaces } from "@cubalyze/math-core";
+import { CASE_RENDER_GRAY } from "@cubalyze/algorithm-db";
 import { FACE_HEX } from "@/components/Insights/atoms/faceColors";
 
 /** Leading U moves (AUF-style) at the start of a move list. */

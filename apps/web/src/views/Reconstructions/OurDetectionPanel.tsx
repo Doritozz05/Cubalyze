@@ -34,9 +34,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   analyzeSolveText,
   type SolveReconstruction,
-} from "@cubeforge/analysis-engine";
-import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
-import { isRotation, tokenize } from "@cubeforge/math-core";
+} from "@cubalyze/analysis-engine";
+import { getSeedData, type AlgorithmCase } from "@cubalyze/algorithm-db";
+import { isRotation, tokenize } from "@cubalyze/math-core";
 import type { ReconFullRecord } from "./reconData";
 import {
   CaseMiniCube,

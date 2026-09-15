@@ -16,13 +16,13 @@
  *   5. Analysis  — the CFOP analysis pipeline splits the solve into phases.
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubalyze/types";
 import "@/utils/scrambleProviders"; // self-registers the real 2×2/3×3 providers (same as the app entry)
-import { getEvent, generateScramble, validateScramble } from "@cubeforge/events";
-import { TimerEngine, TimerState, Penalty } from "@cubeforge/timer-engine";
-import { computeStats } from "@cubeforge/statistics";
-import { analyzeSolve } from "@cubeforge/analysis-engine";
-import { SolvesRepository, SessionsRepository, type Session, type Solve } from "@cubeforge/database";
+import { getEvent, generateScramble, validateScramble } from "@cubalyze/events";
+import { TimerEngine, TimerState, Penalty } from "@cubalyze/timer-engine";
+import { computeStats } from "@cubalyze/statistics";
+import { analyzeSolve } from "@cubalyze/analysis-engine";
+import { SolvesRepository, SessionsRepository, type Session, type Solve } from "@cubalyze/database";
 
 // ── Local helpers (same shape as the analysis-engine test helpers) ─────────
 

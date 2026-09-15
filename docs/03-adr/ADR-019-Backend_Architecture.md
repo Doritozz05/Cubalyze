@@ -57,7 +57,7 @@ vacío y diferir la implementación de este ADR:
     SQLite local. El backend solo aportaría *sync* en la nube, que no es
     prioridad actual (el paquete `sync-engine` está marcado como planeado).
 *   **Estado del scaffold:** `apps/api` contiene únicamente `package.json`
-    (`@cubeforge/api`). `vercel.json` despliega solo la web
+    (`@cubalyze/api`). `vercel.json` despliega solo la web
     (`turbo run build --filter=web`). 0 releases, 0 tags git.
 *   **Disparador:** cuando el sync en la nube sea una prioridad (multi-dispositivo
     o backup), el ciclo de gobernanza se activa de nuevo: RFC → ADR → TDD antes

@@ -45,8 +45,8 @@ import '../../web/src/index.css';
 // This is a desktop-only feature — Web Bluetooth requires user gesture.
 import { listen } from '@tauri-apps/api/event';
 import { globalCubeAdapter } from '../../web/src/components/Hardware/CubeConnector';
-import { preferencesStore } from '@cubeforge/state';
-import { smartIdsMatch } from '@cubeforge/database';
+import { preferencesStore } from '@cubalyze/state';
+import { smartIdsMatch } from '@cubalyze/database';
 import { useCollectionStore } from '../../web/src/views/Collection/collectionStore';
 import { loadCustomFonts } from '../../web/src/theme/customFonts';
 

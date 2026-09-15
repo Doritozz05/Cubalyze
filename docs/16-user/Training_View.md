@@ -1,8 +1,8 @@
 # Vista Training (Entrenamiento)
 
 > Documentada el 2026-08-12 a partir del código real (`apps/web/src/views/Training/`),
-> hooks (`apps/web/src/hooks/`) y paquetes `@cubeforge/training`, `@cubeforge/database`,
-> `@cubeforge/algorithm-db`. Verificable contra el código.
+> hooks (`apps/web/src/hooks/`) y paquetes `@cubalyze/training`, `@cubalyze/database`,
+> `@cubalyze/algorithm-db`. Verificable contra el código.
 
 ## Qué es
 
@@ -23,7 +23,7 @@ toolbar interna sin header de página):
 | **Review** | `review` | Cola SRS del día (badge con nº de pendientes) |
 
 **Selector de puzzle** (2x2, 3x3…) junto a las tabs: filtra los métodos del
-catálogo (`METHODS` de `@cubeforge/algorithm-db`) según `puzzleType`. Al cambiar
+catálogo (`METHODS` de `@cubalyze/algorithm-db`) según `puzzleType`. Al cambiar
 de puzzle se resetea el método activo al primero compatible.
 
 Las sub-vistas (drills, stats, review, insights) toman la pantalla completa con
@@ -74,7 +74,7 @@ scramble, métricas como moveCount/optimalMoves/tps) y actualizan el progreso.
 - Panel lateral: próximos 7 días con tareas + **plantillas de un clic**
   (F2L drill diario, PLL recognition entre semana, Cross blind, Full solve semanal).
 - Los colores usan las variables CSS de fase (`--phase-*`), una sola fuente de color.
-- **Persistencia**: SQLite (`CalendarRepository` de `@cubeforge/database`) como
+- **Persistencia**: SQLite (`CalendarRepository` de `@cubalyze/database`) como
   fuente de verdad + caché en localStorage con **migración única** (flag-guarded)
   para compatibilidad con la versión anterior.
 
@@ -117,7 +117,7 @@ scramble, métricas como moveCount/optimalMoves/tps) y actualizan el progreso.
 
 | Archivo | Qué es |
 | --- | --- |
-| `DashboardSections.tsx` | `TrainingPractice` (landing): rail de métodos, banner con anillo de maestría, filas de fase/set con chips de acción visibles; localización del catálogo (`METHOD_DESC_KEY`/`PHASE_DESC_KEY`/`SUBSET_DESC_KEY`); iconos y dots por fase (solo presentación — la identidad viene del catálogo de `@cubeforge/training`) |
+| `DashboardSections.tsx` | `TrainingPractice` (landing): rail de métodos, banner con anillo de maestría, filas de fase/set con chips de acción visibles; localización del catálogo (`METHOD_DESC_KEY`/`PHASE_DESC_KEY`/`SUBSET_DESC_KEY`); iconos y dots por fase (solo presentación — la identidad viene del catálogo de `@cubalyze/training`) |
 | `ReviewQueueSection.tsx` | Cola del día: badges de razón (Overdue/Due/Weak/New), filtro por método, stats, botón Start Review; reporta `onDueCountChange` al dashboard |
 | `ReviewSteps.tsx` | Pasos de la sesión SRS: `RecognitionStep`, `ExecutionStep`, `GradingStep`, `CompletionSummary`, constantes `GRADES` (Again/Hard/Good/Easy) y helpers (`formatTime`, `calculateTps`) |
 | `CrossTrainerPanels.tsx` | Paneles del Cross trainer: stats (`CrossStatsPanel`), tips (`CrossTipsPanel`), scramble actual (`CrossScrambleInfoPanel`), intentos recientes (`RecentAttemptsList`) |
@@ -131,7 +131,7 @@ scramble, métricas como moveCount/optimalMoves/tps) y actualizan el progreso.
 
 ## Datos y persistencia
 
-- **`useTrainingProgress`** envuelve el `ProgressTracker` de `@cubeforge/training`
+- **`useTrainingProgress`** envuelve el `ProgressTracker` de `@cubalyze/training`
   (algoritmo **FSRS-4** — estabilidad S, dificultad D, retrievabilidad R, estados
   new/learning/review/relearning, lapses; implementación pura sin dependencias en
   `packages/training/src/progress/fsrs.ts`). Operaciones: `recordAttempt`,
@@ -155,19 +155,19 @@ scramble, métricas como moveCount/optimalMoves/tps) y actualizan el progreso.
   primer clic.
 - **Tablas**: `algorithm_progress`, `training_attempts`, `exercise_progress`,
   `training_sessions` (repos `TrainingRepository`, `AlgorithmsRepository`,
-  `CalendarRepository` de `@cubeforge/database`). El catálogo de algoritmos se
+  `CalendarRepository` de `@cubalyze/database`). El catálogo de algoritmos se
   siembra con `seedIfEmpty` (idempotente, `INSERT OR IGNORE`).
 - Reset de desarrollo: `window.clearTrainingData()` en la consola borra todo el
   progreso de entrenamiento (no toca otras tablas).
 
 ## Dependencias de paquetes
 
-- `@cubeforge/algorithm-db` — catálogo de métodos/subsets/casos y seed.
-- `@cubeforge/training` — `ProgressTracker` (FSRS), `EXERCISE_IDS`, tipos
+- `@cubalyze/algorithm-db` — catálogo de métodos/subsets/casos y seed.
+- `@cubalyze/training` — `ProgressTracker` (FSRS), `EXERCISE_IDS`, tipos
   (`PhaseStatsRecord`, `QueueItem`, `SRSGrade`, `AttemptVerdict`…).
-- `@cubeforge/database` — SQLite WASM/OPFS, repos de entrenamiento/calendario.
-- `@cubeforge/state` — `preferencesStore` (Zustand) para preferencias de la app.
-- `@cubeforge/solver-engine` — generación de scrambles (vía caso/hint).
+- `@cubalyze/database` — SQLite WASM/OPFS, repos de entrenamiento/calendario.
+- `@cubalyze/state` — `preferencesStore` (Zustand) para preferencias de la app.
+- `@cubalyze/solver-engine` — generación de scrambles (vía caso/hint).
 - UI propia de la web (`@/components/ui/*`, Radix) + `framer-motion`,
   `date-fns` (calendario), `sonner` (toasts).
 

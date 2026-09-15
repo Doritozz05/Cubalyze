@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Algorithm } from "@cubeforge/algorithm-db";
+import type { Algorithm } from "@cubalyze/algorithm-db";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // SortableAlgorithmItem — reusable drag-and-drop algorithm card

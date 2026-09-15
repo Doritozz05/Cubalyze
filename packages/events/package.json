@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/events",
+  "name": "@cubalyze/events",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -21,11 +21,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/timer-engine": "workspace:*"
+    "@cubalyze/timer-engine": "workspace:*"
   },
   "devDependencies": {
-    "@cubeforge/config-eslint": "workspace:*",
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-eslint": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "eslint": "^10.7.0",
     "typescript": "~6.0.2",
     "tsup": "^8.0.0",

@@ -6,7 +6,7 @@ import {
 } from '../auf';
 import { CaseStateGenerator } from '../caseGenerator';
 import { getSeedData } from '../seed/index';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 
 describe('AUF — Canonical Orientation System', () => {
   const { cases, algorithms } = getSeedData();

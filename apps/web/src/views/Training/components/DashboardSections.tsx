@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next";
 import type { ParseKeys } from "i18next";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubeforge/algorithm-db";
-import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
-import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubeforge/training";
-import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubeforge/training";
+import { METHODS, getSubsetsForMethod, getChildSubsets, getSeedData } from "@cubalyze/algorithm-db";
+import type { AlgorithmMethod, AlgorithmSubset } from "@cubalyze/algorithm-db";
+import type { PhaseStatsRecord, PhaseDefinition, PhaseModeDefinition, PhasePracticeType } from "@cubalyze/training";
+import { buildMethodPhases, findSubsetId, getPhaseModes, getPhasePracticeType, masteryLevel } from "@cubalyze/training";
 import { SectionHeader } from "@/components/Insights/atoms/SectionHeader";
 import {
   Box,
@@ -115,7 +115,7 @@ const SUBSET_DESC_KEY: Partial<Record<string, ParseKeys<"training">>> = {
 /* ──────────────────────────────────────────────────────────────────────────
    Phase presentation
    Phase identities, practice modes, subset resolution and mastery labels
-   come from the @cubeforge/training catalog (single source of truth).
+   come from the @cubalyze/training catalog (single source of truth).
    This file only adds ICONS — pure presentation.
    ─────────────────────────────────────────────────────────────────────── */
 

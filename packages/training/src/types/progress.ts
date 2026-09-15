@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Progress tracking type definitions
+ * @cubalyze/training — Progress tracking type definitions
  *
  * Tracks user mastery across algorithms, exercises, and methods.
  * This data feeds the Spaced Repetition System, Skill Tree,

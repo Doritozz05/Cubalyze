@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import type { Penalty, Solve, SolveSource } from "@/types";
-import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubalyze/types";
 import { exportAllSolvesToJSON, downloadFile } from "@/utils/exportSolves";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 

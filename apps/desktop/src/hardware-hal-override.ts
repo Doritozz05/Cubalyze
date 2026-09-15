@@ -1,12 +1,12 @@
 /**
- * Desktop override for @cubeforge/hardware-hal.
+ * Desktop override for @cubalyze/hardware-hal.
  *
  * Re-exports EVERYTHING from the real hardware-hal package,
  * EXCEPT GanCubeAdapter — which is replaced by the Tauri-native
  * GanCubeAdapterTauri that communicates via Rust btleplug instead
  * of the Web Bluetooth API.
  *
- * The Vite config aliases '@cubeforge/hardware-hal' to this file,
+ * The Vite config aliases '@cubalyze/hardware-hal' to this file,
  * so ALL imports across the desktop app resolve transparently —
  * zero changes needed in apps/web/ or packages/.
  *

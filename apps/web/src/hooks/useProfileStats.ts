@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { initDB, SessionsRepository, SolvesRepository } from "@cubeforge/database";
-import { computeStats } from "@cubeforge/statistics";
-import type { SessionStats } from "@cubeforge/statistics";
+import { initDB, SessionsRepository, SolvesRepository } from "@cubalyze/database";
+import { computeStats } from "@cubalyze/statistics";
+import type { SessionStats } from "@cubalyze/statistics";
 import type { Solve as UISolve } from "@/types";
 import { effectiveTime } from "@/types";
 

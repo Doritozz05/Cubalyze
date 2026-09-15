@@ -5,7 +5,7 @@
  * Non-deterministic behavior = hidden bugs.
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState, Cube2x2State } from '@cubeforge/math-core';
+import { CubeState, Cube2x2State } from '@cubalyze/math-core';
 import { Min2PhaseSolver, TwoByTwoSolver, RandomStateGenerator } from '../index';
 
 // ═══════════════════════════════════════════════════════════════════════

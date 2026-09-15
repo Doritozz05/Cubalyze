@@ -3,7 +3,7 @@
 > Estado: **FASE COMPLETA el 2026-09-12** — nube ejecutada y verificada
 > (migraciones 11–14 aplicadas) **y** lado cliente implementado y probado
 > (migración local 037 + `038`, repositorio, motor, servicio de fotos, 316
-> tests nuevos o adaptados en `@cubeforge/database`, `@cubeforge/sync-engine` y
+> tests nuevos o adaptados en `@cubalyze/database`, `@cubalyze/sync-engine` y
 > la web). En la auditoría de esta ejecución aparecieron **cuatro bugs reales
 > más** (F15–F18), dos de ellos en el núcleo del sync y anteriores a esta fase:
 > todos corregidos y con test que los fija (§7, §10).
@@ -634,7 +634,7 @@ deliberado y no accidental.
 
 ## 8. Plan de ejecución por capas
 
-### 8.1 Migración local `037_gear_sync` (paquete `@cubeforge/database`)
+### 8.1 Migración local `037_gear_sync` (paquete `@cubalyze/database`)
 
 Añade, en `packages/database/src/migrations/migrations.ts`, tres bloques:
 

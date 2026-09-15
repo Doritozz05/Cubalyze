@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TimerEngine, TimerState as EngineState } from "@cubeforge/timer-engine";
+import { TimerEngine, TimerState as EngineState } from "@cubalyze/timer-engine";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import {
   useScrambleValidator,
   type ScrambleValidationResult,
 } from "@/hooks/useScrambleValidator";
-import { SOLVED_FACELETS } from "@cubeforge/math-core";
+import { SOLVED_FACELETS } from "@cubalyze/math-core";
 
 /* ──────────────────────────────────────────────────────────────────────────
    useDrillSmartCube

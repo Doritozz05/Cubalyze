@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { EVENT_REGISTRY } from "@cubeforge/events";
+import { EVENT_REGISTRY } from "@cubalyze/events";
 import { methodForEvent } from "../puzzleUtils";
 
 /**

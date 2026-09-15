@@ -19,7 +19,7 @@ import {
 } from "@/utils/insights";
 import { phaseColorHex, PAUSE_COLOR_BY_CATEGORY } from "@/utils/phaseColors";
 import type { Solve } from "@/types";
-import type { SolveMetrics, DetectedCase } from "@cubeforge/types";
+import type { SolveMetrics, DetectedCase } from "@cubalyze/types";
 
 const MAX_SOLVES_IN_PICKER = 3;
 

@@ -3,8 +3,8 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { METHODS } from "@cubeforge/algorithm-db";
-import { EXERCISE_IDS } from "@cubeforge/training";
+import { METHODS } from "@cubalyze/algorithm-db";
+import { EXERCISE_IDS } from "@cubalyze/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";

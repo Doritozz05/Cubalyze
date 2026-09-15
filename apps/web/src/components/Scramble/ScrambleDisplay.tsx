@@ -6,7 +6,7 @@ import { Check, Copy, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-import type { ScrambleLayoutMode } from "@cubeforge/state";
+import type { ScrambleLayoutMode } from "@cubalyze/state";
 
 export interface ScrambleDisplayProps {
   scramble: string;

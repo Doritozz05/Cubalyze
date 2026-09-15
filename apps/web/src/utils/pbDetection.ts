@@ -1,4 +1,4 @@
-import { averageOf, effectiveTime, type StatSolve, type Penalty } from "@cubeforge/statistics";
+import { averageOf, effectiveTime, type StatSolve, type Penalty } from "@cubalyze/statistics";
 
 export interface PbMilestoneResult {
   isSinglePB: boolean;

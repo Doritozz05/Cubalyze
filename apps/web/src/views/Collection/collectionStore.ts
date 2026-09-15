@@ -38,8 +38,8 @@ import {
   type GearCollectionSnapshot,
   type GearItem,
   type GearType,
-} from "@cubeforge/database";
-import { syncStore } from "@cubeforge/state";
+} from "@cubalyze/database";
+import { syncStore } from "@cubalyze/state";
 import { requestSync } from "@/services/sync";
 import { PUZZLE_SELECTOR, puzzleCategoryToType } from "@/utils/puzzleUtils";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";

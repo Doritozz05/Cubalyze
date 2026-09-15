@@ -19,7 +19,7 @@ El objetivo principal es evitar el *vendor lock-in*. El resto de la aplicación 
 
 ## 2. Core Interfaces (Fase 2.2)
 
-Todos los adaptadores vivirán dentro de un nuevo paquete `@cubeforge/hardware-hal`.
+Todos los adaptadores vivirán dentro de un nuevo paquete `@cubalyze/hardware-hal`.
 
 ### 2.1. Interfaces de Cubos
 
@@ -79,7 +79,7 @@ El cronómetro de GAN usa Bluetooth Low Energy (BLE).
 
 A diferencia de los Timers, los Smart Cubes **son impulsados por eventos (Event-Driven)**. Para ahorrar batería, no transmiten datos continuamente; solo emiten notificaciones BLE (paquetes AES de 20 bytes) cuando ocurre un giro físico (o a 20-50Hz si el giroscopio está activado explícitamente). En lugar de reescribir la ingeniería inversa desde cero, CubeForge integrará la librería `gan-web-bluetooth`.
 
-1.  **Fork de la Librería**: El código fuente de `gan-web-bluetooth` se copiará y adaptará dentro de nuestro monorepo como el paquete `@cubeforge/gan-protocol`.
+1.  **Fork de la Librería**: El código fuente de `gan-web-bluetooth` se copiará y adaptará dentro de nuestro monorepo como el paquete `@cubalyze/gan-protocol`.
 2.  **Adaptador GAN**: Se escribirá una clase `GanCubeAdapter` que implemente `SmartCubeAdapter`, enrutando las notificaciones GATT a la lógica de descifrado AES del fork, y finalmente emitiendo `CubeMoveEvent`.
 
 ## 5. Middleware de Clock Drift (Fase 2.5)

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/solver-engine — PhaseSolver
+ * @cubalyze/solver-engine — PhaseSolver
  *
  * Generic partial-goal solver that finds the SHORTEST move sequence(s) to
  * reach any target state described by a {@link PhaseMask}. Built on top of
@@ -24,9 +24,9 @@
  *   • Future xcross / xxcross / eocross trainers (same code, different mask).
  */
 
-import { CubeState, Move } from '@cubeforge/math-core';
-import { StateMatcher, type PhaseMask } from '@cubeforge/math-core';
-import { Edge } from '@cubeforge/math-core';
+import { CubeState, Move } from '@cubalyze/math-core';
+import { StateMatcher, type PhaseMask } from '@cubalyze/math-core';
+import { Edge } from '@cubalyze/math-core';
 
 // ── Move tables ────────────────────────────────────────────────────────────
 

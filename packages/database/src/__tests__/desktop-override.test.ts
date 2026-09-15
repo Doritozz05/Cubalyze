@@ -1,14 +1,14 @@
 /**
  * Desktop database override — the alias roster.
  *
- * `apps/desktop/vite.config.ts` aliases `@cubeforge/database` to
+ * `apps/desktop/vite.config.ts` aliases `@cubalyze/database` to
  * `apps/desktop/src/database-override.ts`, a hand-written stand-in that swaps
  * sqlite-wasm + OPFS for tauri-plugin-sql. The override must re-export
  * everything the web app imports from the package, from one file, explicitly.
  *
  * Nothing else in the repo checks that roster, and the gap is invisible in a
  * very specific way: the desktop tsconfig does NOT alias the package (only
- * `@cubeforge/hardware-hal` is aliased), so `tsc` resolves the REAL module and
+ * `@cubalyze/hardware-hal` is aliased), so `tsc` resolves the REAL module and
  * a missing re-export is not a type error. It only explodes at bundle time,
  * with `MISSING_EXPORT … is not exported by src/database-override.ts` — which
  * is exactly how the GearRepository/smart-cube-id additions broke

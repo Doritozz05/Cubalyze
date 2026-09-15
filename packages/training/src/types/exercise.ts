@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Exercise type definitions
+ * @cubalyze/training — Exercise type definitions
  *
  * The canonical exercise identity catalog lives in `exercises/catalog.ts`
  * (EXERCISE_IDS, buildExerciseCatalog, buildMethodPhases). This module only

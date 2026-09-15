@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { initDB, AppMetaRepository } from "@cubeforge/database";
+import { initDB, AppMetaRepository } from "@cubalyze/database";
 import { isDev } from "@/utils/env";
 import {
   ONBOARDING_TOTAL_STEPS,

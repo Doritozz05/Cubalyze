@@ -1,5 +1,5 @@
 {
-  "extends": "@cubeforge/config-typescript/tsconfig.base.json",
+  "extends": "@cubalyze/config-typescript/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist"
   },

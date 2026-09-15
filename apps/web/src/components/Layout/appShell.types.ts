@@ -3,10 +3,10 @@
 import type { ViewId } from "@/components/Layout/sidebar.constants";
 import type { Penalty, PuzzleCategory, Solve, SolveMethod, SolveSource } from "@/types";
 import type { TimerState } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
-import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
+import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubalyze/types";
 import type { PbMilestoneResult } from "@/utils/pbDetection";
-import type { Profile } from "@cubeforge/database";
+import type { Profile } from "@cubalyze/database";
 import type { SessionMeta } from "@/hooks/usePersistentSession";
 import type { useSolveSession } from "@/hooks/useSolveSession";
 import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";

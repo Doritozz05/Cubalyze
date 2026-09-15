@@ -8,10 +8,10 @@
  * excluded from real statistics; `window.clearDemoData()` wipes them.
  */
 
-import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import type { CubeFace, CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubalyze/types";
 import { v4 as uuidv4 } from "uuid";
-import type { SolvesRepository, SessionsRepository } from "@cubeforge/database";
-import { ANALYSIS_PIPELINE_VERSION } from "@cubeforge/analysis-engine";
+import type { SolvesRepository, SessionsRepository } from "@cubalyze/database";
+import { ANALYSIS_PIPELINE_VERSION } from "@cubalyze/analysis-engine";
 import { isDev } from "./env";
 
 // ─── Orientation Timeline Generator ───────────────────────────────────────

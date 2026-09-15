@@ -73,5 +73,5 @@ Permissions-Policy: camera=(), geolocation=(), payment=(), usb=()
 pnpm build                    # turbo: todos los paquetes + apps
 pnpm --filter web build       # solo la web
 pnpm --filter web analyze     # web + treemap del bundle (dist/report.html)
-pnpm --filter @cubeforge/desktop tauri:build   # instalador de escritorio
+pnpm --filter @cubalyze/desktop tauri:build   # instalador de escritorio
 ```

@@ -4,12 +4,12 @@
 // timer never "jumps" width while counting.
 //
 // Statistics functions (averageOf, computeStats, computeBpaWpa) are now in
-// the headless @cubeforge/statistics package; computeStats/computeBpaWpa are
+// the headless @cubalyze/statistics package; computeStats/computeBpaWpa are
 // re-exported here for backward compatibility.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Re-export statistics functions for backward compatibility.
-export { computeStats, computeBpaWpa, averageOf } from "@cubeforge/statistics";
+export { computeStats, computeBpaWpa, averageOf } from "@cubalyze/statistics";
 
 const INF = Number.POSITIVE_INFINITY;
 

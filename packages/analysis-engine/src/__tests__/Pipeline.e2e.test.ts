@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';
-import { CFOPDefinition, RouxFullDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition, RouxFullDefinition } from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves, inverseScramble } from './test-helpers';
 
 /**

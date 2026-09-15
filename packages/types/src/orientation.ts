@@ -95,7 +95,7 @@ export type { GyroEvent };
  *
  * This is ~500x more compact than storing raw gyro data.
  *
- * Use `compactOrientationTimeline()` from @cubeforge/math-core to build
+ * Use `compactOrientationTimeline()` from @cubalyze/math-core to build
  * this from per-move CubeOrientation snapshots.
  */
 export type OrientationTimeline = [number, number][];

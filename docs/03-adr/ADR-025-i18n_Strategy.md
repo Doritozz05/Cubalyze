@@ -72,7 +72,7 @@ tipados** (`apps/web/src/i18n/index.ts`).
   da el idioma efectivo. El selector vive en Settings → General.
 - **A11y**: el evento `languageChanged` mantiene `<html lang>` en sync (lectores
   de pantalla y herramientas de traducción).
-- **Datos del catálogo**: el catálogo de `@cubeforge/algorithm-db` permanece en
+- **Datos del catálogo**: el catálogo de `@cubalyze/algorithm-db` permanece en
   inglés como fuente canónica; la UI lo localiza en el punto de render (mapas
   `METHOD_DESC_KEY`/`PHASE_DESC_KEY`/`SUBSET_DESC_KEY` en DashboardSections).
 - **Migración por tandas**: el paso de strings hardcodeadas a keys tipados se

@@ -20,7 +20,7 @@ const ENABLED = process.env.RUN_DIVERGENCE_STUDY === '1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
-import { conjugatePhaseStream, tokenize } from '@cubeforge/math-core';
+import { conjugatePhaseStream, tokenize } from '@cubalyze/math-core';
 
 function mulberry32(seed: number): () => number {
   let a = seed;

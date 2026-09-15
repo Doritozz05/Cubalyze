@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, ChevronLeft, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Penalty, Solve } from "@/types";
-import type { SolveMetrics } from "@cubeforge/types";
+import type { SolveMetrics } from "@cubalyze/types";
 import { useStatsFilters } from "@/hooks/useStatsFilters";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { useIsTouch } from "@/hooks/use-mobile";

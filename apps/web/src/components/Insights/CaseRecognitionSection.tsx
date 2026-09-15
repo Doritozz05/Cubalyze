@@ -2,10 +2,10 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
+import { getSeedData, type AlgorithmCase } from "@cubalyze/algorithm-db";
 import { CaseMiniCube } from "@/components/Cases";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
-import { getSubset, resolveVisualizationStyleForSubset } from "@cubeforge/algorithm-db";
+import { getSubset, resolveVisualizationStyleForSubset } from "@cubalyze/algorithm-db";
 import { deriveCaseIntelligence, type CaseIntelligence } from "@/utils/insights";
 import { formatTime } from "@/utils/formatTime";
 import { SectionHeader } from "./atoms";

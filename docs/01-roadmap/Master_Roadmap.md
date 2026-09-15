@@ -676,7 +676,7 @@ This epic handles the final polish, cloud infrastructure, and public release pre
 - Setup CI/CD for public npm publishing.
 - *Excludes*: Third-party app development.
 **Deliverables**: Published, open-source SDKs for Smart Cube interaction.
-**Exit Criteria**: A developer can `npm install @cubeforge/smart-cube` and connect to a GAN cube in under 10 lines of code.
+**Exit Criteria**: A developer can `npm install @cubalyze/smart-cube` and connect to a GAN cube in under 10 lines of code.
 **Risks**: Breaking API changes alienating early adopters.
 **Future Preparation**: Completes the initial Product Vision.
 

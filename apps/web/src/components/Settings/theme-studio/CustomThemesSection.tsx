@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubeforge/state';
+import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubalyze/state';
 import { Check, Copy, Pencil, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { resolveThemeColors, getSystemBaseTheme } from '@/theme/themePresets';

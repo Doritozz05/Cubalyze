@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { useCollectionStore } from "./collectionStore";
 import { lockerCubeSnapshotService } from "./cubeSnapshotService";
 import { deletePhoto, estimateCollectionStorage } from "./collectionPhotos";

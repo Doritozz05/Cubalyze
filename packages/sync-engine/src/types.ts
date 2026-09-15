@@ -8,7 +8,7 @@ import type {
   SkillProgressRepository,
   SolvesRepository,
   TrainingRepository,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 
 /** Minimal DB executor signature — matches every repository's constructor. */
 export type DBExecutor = (

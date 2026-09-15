@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import type { Solve } from "@/types";
 import { SlotLayout } from "./SlotLayout";
 import {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { recolorState } from '../crossFaceAdapter';
 import { createCFOPDetector } from '../loaders/lastLayer';
 import { PLL_CASES } from '../../seed/cfop-pll';

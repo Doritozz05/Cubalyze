@@ -1,5 +1,5 @@
 /**
- * @cubeforge/solver-engine — TwoByTwoScrambler
+ * @cubalyze/solver-engine — TwoByTwoScrambler
  *
  * WCA-compliant random-state scrambler for the 2×2×2 (Pocket Cube).
  *
@@ -31,7 +31,7 @@
  *   • **No consecutive same-face moves** in the scramble (TNoodle parity).
  */
 
-import { Cube2x2State } from '@cubeforge/math-core';
+import { Cube2x2State } from '@cubalyze/math-core';
 import { TwoByTwoSolver, type TwoByTwoSolution } from './TwoByTwoSolver';
 
 // DBL corner (position 6) is always fixed

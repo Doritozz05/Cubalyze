@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TrainingSessionEngine } from "@cubeforge/training";
-import type { TrainingSessionState, ExercisePreset, AttemptVerdict, PlayMode, MetricKind } from "@cubeforge/training";
+import { TrainingSessionEngine } from "@cubalyze/training";
+import type { TrainingSessionState, ExercisePreset, AttemptVerdict, PlayMode, MetricKind } from "@cubalyze/training";
 import { useDrillTimer } from "./useDrillTimer";
 import { useTrainingProgress } from "./useTrainingProgress";
 import { useTrainingSession } from "./useTrainingSession";

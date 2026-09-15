@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { FloatingWidgetWrapper } from "@/widgets/components/FloatingWidgetWrapper";
 import { deriveHistogram } from "@/utils/insights";
 import { formatTime, computeStats } from "@/utils/formatTime";
-import { stdDeviation } from "@cubeforge/statistics";
+import { stdDeviation } from "@cubalyze/statistics";
 import type { Solve, PuzzleCategory } from "@/types";
 
 import { puzzleCategoryToType } from "@/utils/puzzleUtils";

@@ -549,8 +549,8 @@ Es exactamente lo que dice la intuición, con un matiz que importa:
   `apps/desktop/src/main.tsx:54-77`, con un comentario que ya lo dice — «This is
   a desktop-only feature — Web Bluetooth requires user gesture».
 - El escritorio **reutiliza la UI de la web** (alias `@` → `../web/src` en
-  `apps/desktop/vite.config.ts`, y solo se sustituyen `@cubeforge/hardware-hal`
-  y `@cubeforge/database`), así que todo lo de la Fase 5 vale en los dos sitios.
+  `apps/desktop/vite.config.ts`, y solo se sustituyen `@cubalyze/hardware-hal`
+  y `@cubalyze/database`), así que todo lo de la Fase 5 vale en los dos sitios.
 
 **El matiz:** conecta al **primero** que aparece (`cubes[0]`) y el MAC solo se
 recuerda **dentro de la sesión** (`AppState.last_cube_mac` es un `Mutex`

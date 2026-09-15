@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CrossSolverService, type CubeFace } from "@cubeforge/solver-engine";
+import { CrossSolverService, type CubeFace } from "@cubalyze/solver-engine";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CrossFace } from "../types";

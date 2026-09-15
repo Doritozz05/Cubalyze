@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — CubeMark
+ * @cubalyze/identicon — CubeMark
  *
  * Deterministic, symmetric, contrast-guaranteed identicons for the platform
  * identity system. Headless (no React), fully synchronous and testable.

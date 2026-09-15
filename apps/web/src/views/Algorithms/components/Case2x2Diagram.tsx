@@ -22,8 +22,8 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { CaseStateGenerator } from "@cubeforge/algorithm-db";
-import type { VisualizationStyle } from "@cubeforge/algorithm-db";
+import { CaseStateGenerator } from "@cubalyze/algorithm-db";
+import type { VisualizationStyle } from "@cubalyze/algorithm-db";
 
 // ─── WCA standard color map ────────────────────────────────────────────────
 

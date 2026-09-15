@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import type { ParseKeys } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { Keyboard } from 'lucide-react';
 
 interface ShortcutDef {

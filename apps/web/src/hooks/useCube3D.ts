@@ -11,12 +11,12 @@ import {
   scrambleMoveDurationMs,
   type Puzzle3DSpec,
   type PyraminxEngine as PyraminxEngineT,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 import type { Subscription } from "rxjs";
 
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import { calibrateOrientationTracking } from "@/services/orientationTracking";
-import { orientationStore, preferencesStore } from "@cubeforge/state";
+import { orientationStore, preferencesStore } from "@cubalyze/state";
 import {
   MoveTransformer,
   compactMoveNotation,
@@ -24,8 +24,8 @@ import {
   FaceletStringConverter,
   Cube2x2State,
   Cube2x2FaceletConverter,
-} from "@cubeforge/math-core";
-import type { CubeMoveEvent, RotationEvent } from "@cubeforge/types";
+} from "@cubalyze/math-core";
+import type { CubeMoveEvent, RotationEvent } from "@cubalyze/types";
 
 export interface UseCube3DOptions {
   /** Max number of recent moves to keep. Default 15. */

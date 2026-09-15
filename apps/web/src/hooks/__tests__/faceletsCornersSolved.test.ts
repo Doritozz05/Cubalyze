@@ -9,8 +9,8 @@ import {
   SOLVED_FACELETS,
   SOLVED_FACELETS_2X2,
   cornerFacelet,
-} from "@cubeforge/math-core";
-import { Cube2x2FaceletConverter, Cube2x2State } from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
+import { Cube2x2FaceletConverter, Cube2x2State } from "@cubalyze/math-core";
 
 const stateOf = (seq: string): CubeState => {
   const s = new CubeState();

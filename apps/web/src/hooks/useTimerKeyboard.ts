@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { keyboardState } from "@/lib/keyboardState";
 
 export interface UseTimerKeyboardOptions {

@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
-import type { CubeMoveEvent, GyroEvent } from '@cubeforge/types';
+import type { CubeMoveEvent, GyroEvent } from '@cubalyze/types';
 
-export type { CubeMoveEvent, GyroEvent } from '@cubeforge/types';
+export type { CubeMoveEvent, GyroEvent } from '@cubalyze/types';
 
 /**
  * Everything a smart cube says about ITSELF, as it arrives.
@@ -21,7 +21,7 @@ export interface CubeIdentity {
    * Bluetooth address, exactly as read — which the GAN protocol walks
    * BACKWARDS, so it is not necessarily in the printed order. Comparison is
    * the caller's job (`normalizeSmartId` / `smartIdsMatch` in
-   * `@cubeforge/database`); the adapter reports, it does not canonicalise.
+   * `@cubalyze/database`); the adapter reports, it does not canonicalise.
    */
   mac: string | null;
   hardwareVersion: string | null;

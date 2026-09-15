@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { initDB, CalendarRepository, type TrainingTask } from "@cubeforge/database";
+import { initDB, CalendarRepository, type TrainingTask } from "@cubalyze/database";
 import { requestSync } from "@/services/sync";
 import { useDataRevision } from "@/hooks/useDataRevision";
 

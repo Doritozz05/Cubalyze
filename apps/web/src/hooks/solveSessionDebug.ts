@@ -15,13 +15,13 @@ import type {
   CubeMoveEvent,
   SolveMetrics,
   SolveTimeline,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import type { SolveMethod } from "@/types";
-import { TimelineBuilder } from "@cubeforge/analysis-engine";
+import { TimelineBuilder } from "@cubalyze/analysis-engine";
 import {
   FaceletStringConverter,
   MoveTransformer,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import { isLocalhost } from "@/utils/env";
 
 // ── BLE Move Audit Log types ──────────────────────────────────────────

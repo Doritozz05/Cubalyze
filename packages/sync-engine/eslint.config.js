@@ -1,4 +1,4 @@
-import { baseConfig } from "@cubeforge/config-eslint";
+import { baseConfig } from "@cubalyze/config-eslint";
 
 export default [
   ...baseConfig,

@@ -15,7 +15,7 @@ document_type: "ADR"
 # ADR-024 — Sistema de Entrenamiento con Repetición Espaciada (FSRS)
 
 > **Nota de registro:** este ADR documenta una decisión que ya estaba implementada
-> (vista Training, `apps/web/src/views/Training/` + paquete `@cubeforge/training`).
+> (vista Training, `apps/web/src/views/Training/` + paquete `@cubalyze/training`).
 > Se creó retroactivamente en la auditoría de Fase 0 (2026-08-12) porque la decisión
 > nunca se había registrado.
 
@@ -33,7 +33,7 @@ la retención. Los requisitos no negociables:
   (identificar el caso) como *ejecución* (velocidad + eficiencia de movimientos).
   Un sistema de memoria solo con "correcto/incorrecto" pierde la mitad del valor.
 - **Basado en el catálogo real**: los métodos, fases y casos ya viven en
-  `@cubeforge/algorithm-db`; el entrenamiento debe consumirlos, no duplicarlos.
+  `@cubalyze/algorithm-db`; el entrenamiento debe consumirlos, no duplicarlos.
 - **Retención con base científica**: no basta un contador de rachas; se necesita
   un modelo de memoria con intervalos crecientes validado empíricamente.
 
@@ -44,7 +44,7 @@ la retención. Los requisitos no negociables:
   cualquier backend de almacenamiento, incluido el worker de SQLite).
 - **Doble métrica** reconocimiento vs. ejecución, y maestría calculable por caso,
   fase y método.
-- **Integración total con el catálogo** de `@cubeforge/algorithm-db` (métodos,
+- **Integración total con el catálogo** de `@cubalyze/algorithm-db` (métodos,
   subsets, casos, scrambles).
 - **Experiencia dirigida**: cola diaria priorizada (qué repasar hoy) sin que el
   usuario tenga que decidir.
@@ -65,7 +65,7 @@ la retención. Los requisitos no negociables:
 ## Decision Outcome
 
 Chosen option: **FSRS-4, implementación propia en TypeScript puro** dentro de
-`@cubeforge/training` (`src/progress/fsrs.ts`), sin dependencias, conectada al
+`@cubalyze/training` (`src/progress/fsrs.ts`), sin dependencias, conectada al
 almacenamiento vía la interfaz de repositorio (`ITrainingProgressRepo`). El
 `ProgressTracker` orquesta el ciclo: `recordAttempt` (métricas de
 reconocimiento/ejecución) → `recordReview` (calificación Again/Hard/Good/Easy que

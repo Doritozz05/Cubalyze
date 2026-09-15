@@ -9,7 +9,7 @@
  * normalize any frame onto the D-cross anchor).
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
 import { CaseStateGenerator } from '../../caseGenerator';
 import { OLL_CASES } from '../../seed/cfop-oll';
 import { PLL_CASES } from '../../seed/cfop-pll';

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import type { TimerState } from "@/types";
 
 export interface TimerFocusDeps {

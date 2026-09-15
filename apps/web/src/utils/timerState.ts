@@ -1,6 +1,6 @@
 "use client";
 
-import { TimerState as EngineState } from "@cubeforge/timer-engine";
+import { TimerState as EngineState } from "@cubalyze/timer-engine";
 import type { TimerState } from "@/types";
 
 /**

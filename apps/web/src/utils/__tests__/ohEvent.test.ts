@@ -9,8 +9,8 @@
  *   4. Stats: OH solves group separately from 3×3 — never mixed.
  */
 import { describe, expect, it } from "vitest";
-import { isDbPuzzleType } from "@cubeforge/events";
-import { validateScramble } from "@cubeforge/events";
+import { isDbPuzzleType } from "@cubalyze/events";
+import { validateScramble } from "@cubalyze/events";
 import {
   PUZZLE_SELECTOR,
   SELECTABLE_PUZZLE_CATEGORIES,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useBackgroundMediaStore } from "../backgroundMediaStore";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 
 describe("useBackgroundMediaStore", () => {
   beforeEach(() => {

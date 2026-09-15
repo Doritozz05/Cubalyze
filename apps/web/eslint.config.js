@@ -1,4 +1,4 @@
-import { reactConfig } from "@cubeforge/config-eslint";
+import { reactConfig } from "@cubalyze/config-eslint";
 
 export default [
   ...reactConfig,

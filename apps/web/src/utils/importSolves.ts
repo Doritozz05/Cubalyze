@@ -2,9 +2,9 @@
 
 import type { Penalty, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty } from "@/types";
-import { WCA_EVENT_CODES } from "@cubeforge/events";
+import { WCA_EVENT_CODES } from "@cubalyze/events";
 import { methodForEvent } from "@/utils/puzzleUtils";
-import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubalyze/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Import format identifiers

@@ -51,7 +51,7 @@ import {
   type FriendsResult,
   type ShowcasePage,
 } from "@/services/friends";
-import type { HandleClaimResult } from "@cubeforge/sync-engine";
+import type { HandleClaimResult } from "@cubalyze/sync-engine";
 
 /** How long a fetched directory is trusted before an implicit refresh. */
 const DIRECTORY_TTL_MS = 30_000;
@@ -451,7 +451,7 @@ export interface UseHandle {
  * Claim this account's public handle through the engine.
  *
  * The engine owns the write because the local row must carry the SERVER's
- * stamp (see `@cubeforge/sync-engine/handle.ts`) — a view that wrote the
+ * stamp (see `@cubalyze/sync-engine/handle.ts`) — a view that wrote the
  * profile row itself would produce an identity that only exists in the cloud.
  * After a successful claim the profile store is re-read so every avatar chip
  * in the app shows the new handle immediately, and a sync is scheduled so the

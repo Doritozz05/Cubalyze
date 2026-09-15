@@ -22,7 +22,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { initDB, SolvesRepository } from "@cubeforge/database";
+import { initDB, SolvesRepository } from "@cubalyze/database";
 import { useDataRevision } from "@/hooks/useDataRevision";
 import { cubeStatsFor, type CubeSolveRow, type CubeStats } from "./cubeStats";
 

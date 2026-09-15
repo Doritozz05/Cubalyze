@@ -1,11 +1,11 @@
 /**
  * Pure data-derivation utilities for the Insights dashboard.
  *
- * These functions have been moved to the headless @cubeforge/analysis-engine
+ * These functions have been moved to the headless @cubalyze/analysis-engine
  * package. This file re-exports them for backward compatibility with
  * existing UI code.
  *
- * New code should import directly from @cubeforge/analysis-engine.
+ * New code should import directly from @cubalyze/analysis-engine.
  */
 
 export {
@@ -21,16 +21,16 @@ export {
   flattenPauseCauses,
   deriveAvgTime,
   derivePairSegments,
-} from "@cubeforge/analysis-engine";
+} from "@cubalyze/analysis-engine";
 
 export type {
   TimelineSegment,
   TimelineData,
   PairSegment,
   PauseCauseSum,
-} from "@cubeforge/analysis-engine";
+} from "@cubalyze/analysis-engine";
 
-// Session TECHNICAL statistics (headless @cubeforge/statistics).
+// Session TECHNICAL statistics (headless @cubalyze/statistics).
 export {
   deriveSessionTechnicalStats,
   derivePhaseTimeStats,
@@ -42,7 +42,7 @@ export {
   deriveMoveMetrics,
   deriveCaseIntelligence,
   deriveSkillRadarProfile,
-} from "@cubeforge/statistics";
+} from "@cubalyze/statistics";
 export type {
   SessionTechnicalStats,
   PhaseTechnicalStats,
@@ -56,5 +56,5 @@ export type {
   SkillAxisId,
   SkillAxisData,
   SkillRadarProfile,
-} from "@cubeforge/statistics";
+} from "@cubalyze/statistics";
 

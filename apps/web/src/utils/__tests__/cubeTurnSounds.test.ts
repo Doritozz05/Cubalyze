@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { SoundManager } from "@/audio/soundManager";
 import { CubeTurnSounds } from "../cubeTurnSounds";
 import {

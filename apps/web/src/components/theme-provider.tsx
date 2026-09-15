@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 
 import {
   resolveThemeColors,
@@ -18,7 +18,7 @@ import {
   resolveDigitFontSrc,
 } from "@/theme/fonts";
 import { customFontFamily } from "@/theme/customFonts";
-import type { CustomFontMeta } from "@cubeforge/state";
+import type { CustomFontMeta } from "@cubalyze/state";
 import { findPreset } from "@/theme/customThemes";
 
 function updateCompositeStyle(digitSrc: string): void {

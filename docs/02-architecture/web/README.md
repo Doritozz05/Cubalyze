@@ -7,7 +7,7 @@ contra el código el 2026-08-12 (Fase 3 del plan de documentación).
 
 | Doc | Contenido |
 | --- | --- |
-| [State and Stores](./State_and_Stores.md) | Estado global (`@cubeforge/state`: preferencias, timer, sesión, conexión, orientación, algoritmos) + stores locales de la web |
+| [State and Stores](./State_and_Stores.md) | Estado global (`@cubalyze/state`: preferencias, timer, sesión, conexión, orientación, algoritmos) + stores locales de la web |
 | [Components](./Components.md) | Los 12 grupos de componentes (Layout, Timer, Stats, Settings, Insights, Stage, Scramble, Hardware, Identity, Onboarding, Cube3D, ContextMenu) con fichas |
 | [Hooks, Services y Lib](./Hooks_Services_and_Lib.md) | Los ~40 hooks (flujo del solve, drills, SRS, perfil), los 3 servicios (orientación 3D, snapshot, render adapter) y lib (announce, keybinds, touch) |
 
@@ -17,7 +17,7 @@ contra el código el 2026-08-12 (Fase 3 del plan de documentación).
 - **ADR-013/016** (SQLite + Workers) — persistencia de solves/sesiones.
 - **ADR-020** (A11y) — `lib/announce.ts` (live regions).
 - **ADR-025** (i18n) — `apps/web/src/i18n/` + namespaces.
-- **TDD core/0004** — diseño del timer engine (`@cubeforge/timer-engine`).
+- **TDD core/0004** — diseño del timer engine (`@cubalyze/timer-engine`).
 
 ## Vistas
 

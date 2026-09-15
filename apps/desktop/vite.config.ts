@@ -34,8 +34,8 @@ export default defineConfig({
     alias: [
       { find: '@/components/ui', replacement: path.resolve(__dirname, '../../packages/ui/src/components') },
       { find: '@', replacement: path.resolve(__dirname, '../web/src') },
-      { find: '@cubeforge/hardware-hal', replacement: path.resolve(__dirname, './src/hardware-hal-override.ts') },
-      { find: '@cubeforge/database', replacement: path.resolve(__dirname, './src/database-override.ts') },
+      { find: '@cubalyze/hardware-hal', replacement: path.resolve(__dirname, './src/hardware-hal-override.ts') },
+      { find: '@cubalyze/database', replacement: path.resolve(__dirname, './src/database-override.ts') },
     ],
   },
 

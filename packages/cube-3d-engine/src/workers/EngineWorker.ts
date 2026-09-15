@@ -2,7 +2,7 @@ import * as Comlink from 'comlink';
 import { Cube3DEngine } from '../core/Cube3DEngine';
 import type { CubeStyleOptions } from '../core/CubeMeshFactory';
 import type { RotationAxis } from '../animation/RotationEngine';
-import type { CubeOrientation, RotationEvent } from '@cubeforge/types';
+import type { CubeOrientation, RotationEvent } from '@cubalyze/types';
 
 export class EngineWorkerAPI {
   private engine: Cube3DEngine | null = null;

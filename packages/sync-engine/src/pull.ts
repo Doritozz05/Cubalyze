@@ -26,7 +26,7 @@ import {
 } from "./tombstones";
 import type { SyncContext, SyncTotals } from "./types";
 import { getWatermark, pullWatermarkKey, setWatermark } from "./watermarks";
-import type { Profile } from "@cubeforge/models";
+import type { Profile } from "@cubalyze/models";
 
 /**
  * True only when the profile carries real user content, as opposed to the

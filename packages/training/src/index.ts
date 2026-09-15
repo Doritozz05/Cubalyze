@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training
+ * @cubalyze/training
  *
  * Core training engine for CubeForge.
  *

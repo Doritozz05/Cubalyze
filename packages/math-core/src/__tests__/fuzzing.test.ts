@@ -5,8 +5,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { CubeState, Cube2x2State, FaceletStringConverter } from '../index';
-import { getInspectionPenalty, calculateFinalTime, Penalty } from '@cubeforge/timer-engine';
-import { ClockDriftReconciler } from '@cubeforge/hardware-hal';
+import { getInspectionPenalty, calculateFinalTime, Penalty } from '@cubalyze/timer-engine';
+import { ClockDriftReconciler } from '@cubalyze/hardware-hal';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  F1: FaceletStringConverter with random strings (length 0-1000, Unicode, null bytes)

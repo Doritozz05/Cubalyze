@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SolvesRepository } from '../repositories/solves.repository';
-import type { OrientationTimeline } from '@cubeforge/types';
+import type { OrientationTimeline } from '@cubalyze/types';
 
 // ────────────────────────────────────────────────────────────────────────
 //  Helper: mock DB executor

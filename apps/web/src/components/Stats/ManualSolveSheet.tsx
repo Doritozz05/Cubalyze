@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Penalty, SolveMethod, SolveMethod as _SM } from "@/types";
-import { RandomStateGenerator } from "@cubeforge/solver-engine";
+import { RandomStateGenerator } from "@cubalyze/solver-engine";
 import { getMin2PhaseSolver } from "@/utils/puzzleUtils";
 import {
   formatManualPreview,

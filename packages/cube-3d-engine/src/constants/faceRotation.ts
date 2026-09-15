@@ -1,4 +1,4 @@
-import type { CubeFace, FaceRotationMapping } from '@cubeforge/types';
+import type { CubeFace, FaceRotationMapping } from '@cubalyze/types';
 
 export const FACE_ROTATION_MAP: Record<CubeFace, FaceRotationMapping> = {
   U: { axis: 'y', layerValue:  1, angleSign: -1 },

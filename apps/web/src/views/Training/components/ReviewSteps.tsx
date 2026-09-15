@@ -3,7 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { resolveAlgorithmDiagramRotation } from "@cubeforge/algorithm-db";
+import { resolveAlgorithmDiagramRotation } from "@cubalyze/algorithm-db";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Algorithms/components/Case3DDiagram";
@@ -12,7 +12,7 @@ import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
 import type { useDrillTimer } from "@/hooks/useDrillTimer";
 import type { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
-import type { SRSGrade } from "@cubeforge/training";
+import type { SRSGrade } from "@cubalyze/training";
 import type { ParseKeys } from "i18next";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
 import { TrainingBreadcrumb, VerdictOverlay } from "./";
@@ -94,9 +94,9 @@ export function RecognitionStep({
   onRecognized,
   onNotRecognized,
 }: {
-  caseData: import("@cubeforge/algorithm-db").AlgorithmCase | null;
-  algorithm: import("@cubeforge/algorithm-db").Algorithm | null;
-  style: import("@cubeforge/algorithm-db").VisualizationStyle;
+  caseData: import("@cubalyze/algorithm-db").AlgorithmCase | null;
+  algorithm: import("@cubalyze/algorithm-db").Algorithm | null;
+  style: import("@cubalyze/algorithm-db").VisualizationStyle;
   onRecognized: () => void;
   onNotRecognized: () => void;
 }) {
@@ -263,8 +263,8 @@ export function GradingStep({
   onGrade,
   onSkip,
 }: {
-  current: import("@cubeforge/training").QueueItem;
-  defaultAlgorithm: import("@cubeforge/algorithm-db").Algorithm | null;
+  current: import("@cubalyze/training").QueueItem;
+  defaultAlgorithm: import("@cubalyze/algorithm-db").Algorithm | null;
   onGrade: (g: SRSGrade) => void;
   onSkip: () => void;
 }) {

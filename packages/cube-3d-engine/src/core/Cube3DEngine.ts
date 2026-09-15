@@ -6,9 +6,9 @@ import { RotationEngine, type RotationAxis } from '../animation/RotationEngine';
 import { parseScrambleMoves, scrambleMoveDurationMs } from '../animation/ScrambleAnimator';
 import { GyroFusion } from '../hardware/GyroFusion';
 import { OrientationTracker } from '../hardware/OrientationTracker';
-import { OrientationTable, type PhaseMask } from '@cubeforge/math-core';
+import { OrientationTable, type PhaseMask } from '@cubalyze/math-core';
 import { resolveLayerHit, rotateVectorByQuaternion, type CubeLayerPick } from './layerPick';
-import type { CubeOrientation, RotationEvent, CubeFace } from '@cubeforge/types';
+import type { CubeOrientation, RotationEvent, CubeFace } from '@cubalyze/types';
 import type { Subscription } from 'rxjs';
 
 export interface Cube3DEngineOptions {

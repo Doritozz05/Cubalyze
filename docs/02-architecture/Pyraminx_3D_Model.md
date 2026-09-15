@@ -2,7 +2,7 @@
 
 **Fecha**: 2026-08-31
 **Estado**: Spec de implementación — P1b de la arquitectura multi-puzzle 3D (`docs/02-architecture/Multi_Puzzle_3D_Architecture.md`)
-**Ámbito**: `packages/cube-3d-engine/src/pyraminx/` + builder registrado + estado desde `@cubeforge/solver-engine`
+**Ámbito**: `packages/cube-3d-engine/src/pyraminx/` + builder registrado + estado desde `@cubalyze/solver-engine`
 **Fuentes**: geometría del tetraedro regular (hechos públicos), tablas de movimiento del scrambler oficial WCA (port clean-room en `packages/solver-engine/src/PyraminxSolver.ts`), Ruwix y mzrg (anatomía del puzzle), reglamento WCA (Reg 4b3, notación).
 
 ---
@@ -132,7 +132,7 @@ Cada cara es un triángulo subdividido en una **rejilla triangular de lado 3** (
 
 ## 6. Estado lógico — puente con el 3D
 
-**Fuente de verdad**: `PyraminxState` de `@cubeforge/solver-engine` (coordenadas empaquetadas):
+**Fuente de verdad**: `PyraminxState` de `@cubalyze/solver-engine` (coordenadas empaquetadas):
 
 ```ts
 interface PyraminxState {

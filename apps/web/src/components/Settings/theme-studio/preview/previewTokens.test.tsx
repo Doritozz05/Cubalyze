@@ -4,7 +4,7 @@
  * full color resolution with overrides.
  */
 import { describe, expect, it } from 'vitest';
-import type { CustomTheme } from '@cubeforge/state';
+import type { CustomTheme } from '@cubalyze/state';
 import { DEFAULT_DARK_COLORS, resolveThemeColors } from '@/theme/themePresets';
 import {
   customThemeToPreset,

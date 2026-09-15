@@ -6,8 +6,8 @@ import {
   StringToMove,
   FaceletStringConverter,
   type FaceLetter,
-} from "@cubeforge/math-core";
-import type { CubeMoveEvent } from "@cubeforge/types";
+} from "@cubalyze/math-core";
+import type { CubeMoveEvent } from "@cubalyze/types";
 import { globalCubeAdapter } from "@/components/Hardware/CubeConnector";
 import {
   type InfiniteF2LOptions,
@@ -24,7 +24,7 @@ import {
   pairSideFaceColors,
   CROSS_COLOR_CONFIGS,
 } from "./infiniteF2lEngine";
-import type { Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import type { Cube3DEngine } from "@cubalyze/cube-3d-engine";
 
 export interface UseInfiniteF2LSessionProps {
   options: InfiniteF2LOptions;

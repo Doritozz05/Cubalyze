@@ -12,8 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { TouchPanel } from "@/components/TouchPanel";
-import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
-import type { AlgorithmSubset } from "@cubeforge/algorithm-db";
+import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubalyze/algorithm-db";
+import type { AlgorithmSubset } from "@cubalyze/algorithm-db";
 import { PUZZLE_LABELS, PUZZLE_ORDER, type PuzzleType } from "@/utils/puzzleTypes";
 
 // ── Tree model (generic — scales to any nesting depth) ─────────────────────

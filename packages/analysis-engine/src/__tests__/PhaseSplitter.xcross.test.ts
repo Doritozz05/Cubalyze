@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
-import { CFOPDefinition, conjugatePhaseStream, tokenize } from '@cubeforge/math-core';
+import { CFOPDefinition, conjugatePhaseStream, tokenize } from '@cubalyze/math-core';
 import { makeMoves } from './test-helpers';
 
 /**

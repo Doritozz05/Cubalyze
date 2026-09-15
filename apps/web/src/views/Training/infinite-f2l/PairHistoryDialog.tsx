@@ -5,7 +5,7 @@ import { Clock, Hash } from "lucide-react";
 import {
   getSeedData,
   type AlgorithmCase,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 import {
   Dialog,
   DialogContent,

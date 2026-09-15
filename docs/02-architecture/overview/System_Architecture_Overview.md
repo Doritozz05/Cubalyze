@@ -31,7 +31,7 @@ document_type: "Architecture Overview"
 ## 3. Almacenamiento local
 
 - **Web**: SQLite WASM sobre **OPFS** (persistente) vía worker Comlink
-  (`@cubeforge/database`). Requiere cabeceras COOP/COEP (`credentialless`)
+  (`@cubalyze/database`). Requiere cabeceras COOP/COEP (`credentialless`)
   tanto en dev como en Vercel.
 - **Desktop**: SQLite nativa (`tauri-plugin-sql`) en AppData, mismas migraciones
   y repositorios (ADR-013/027).

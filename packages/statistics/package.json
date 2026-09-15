@@ -1,5 +1,5 @@
 {
-  "name": "@cubeforge/statistics",
+  "name": "@cubalyze/statistics",
   "version": "0.2.0",
   "private": true,
   "description": "Headless statistics engine for CubeForge — WCA averages, session stats, and distribution analysis",
@@ -22,10 +22,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cubeforge/types": "workspace:*"
+    "@cubalyze/types": "workspace:*"
   },
   "devDependencies": {
-    "@cubeforge/config-typescript": "workspace:*",
+    "@cubalyze/config-typescript": "workspace:*",
     "tsup": "^8.3.6",
     "typescript": "~6.0.2",
     "vitest": "^3.0.5"

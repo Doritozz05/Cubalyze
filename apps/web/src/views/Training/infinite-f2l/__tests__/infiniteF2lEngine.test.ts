@@ -7,8 +7,8 @@ import {
   cornerFacelet,
   orderPairFaces,
   type FaceLetter,
-} from "@cubeforge/math-core";
-import { createBasicF2LDetector } from "@cubeforge/algorithm-db";
+} from "@cubalyze/math-core";
+import { createBasicF2LDetector } from "@cubalyze/algorithm-db";
 import {
   isF2LSlotSolved,
   buildInfiniteF2LMask,

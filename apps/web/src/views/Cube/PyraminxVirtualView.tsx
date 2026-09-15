@@ -15,12 +15,12 @@ import { pyraminxKeyToToken } from "@/lib/keybinds/pyraminxKeybinds";
 import type { PuzzleCategory } from "@/types";
 import { generateScrambleFor } from "@/utils/puzzleUtils";
 import { formatTime } from "@/utils/formatTime";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 import { usePyraminxVirtualSession } from "@/hooks/usePyraminxVirtualSession";
 import { CubeHelpOverlay } from "./CubeHelpOverlay";
 import type { SolveCompletionOverrides } from "@/hooks/useSolveCompletion";
-import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeOrientation, OrientationTimeline } from "@cubalyze/types";
 import type { Penalty } from "@/types";
 import {
   conjugatePyraminxToken,
@@ -28,8 +28,8 @@ import {
   remapPyraminxScrambleString,
   transitionPyraminxGrip,
   type PyraminxEngine as PyraminxEngineT,
-} from "@cubeforge/cube-3d-engine";
-import { isPyraminxSolvedAnyOrientation } from "@cubeforge/solver-engine/pyraminx";
+} from "@cubalyze/cube-3d-engine";
+import { isPyraminxSolvedAnyOrientation } from "@cubalyze/solver-engine/pyraminx";
 
 /** Base animation duration (ms) per turn speed. `instant` disables animation. */
 const TURN_SPEED_BASE_MS: Record<"slow" | "normal" | "fast" | "instant", number> = {

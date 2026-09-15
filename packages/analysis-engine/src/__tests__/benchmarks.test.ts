@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { PhaseSplitter } from '../phases/PhaseSplitter';
 import { MetricsAggregator } from '../metrics/MetricsAggregator';
-import { CFOPDefinition } from '@cubeforge/math-core';
+import { CFOPDefinition } from '@cubalyze/math-core';
 import { makeSolveFromScramble, makeMoves } from './test-helpers';
 
 // ── Platform-aware perf tolerance ──

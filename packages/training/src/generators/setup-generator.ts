@@ -1,5 +1,5 @@
 /**
- * @cubeforge/training — Setup scramble generator
+ * @cubalyze/training — Setup scramble generator
  *
  * Generates random setup scrambles for algorithm case drills.
  * Uses the Min2Phase solver to find an optimal setup from solved
@@ -12,8 +12,8 @@
  *   4. Invert the solution → setup scramble from solved to case
  */
 
-import { CaseStateGenerator } from '@cubeforge/algorithm-db';
-import { Min2PhaseSolver } from '@cubeforge/solver-engine';
+import { CaseStateGenerator } from '@cubalyze/algorithm-db';
+import { Min2PhaseSolver } from '@cubalyze/solver-engine';
 
 // ─── Z2 Move Map ────────────────────────────────────────────────────────
 

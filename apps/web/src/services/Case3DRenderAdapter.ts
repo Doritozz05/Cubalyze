@@ -1,8 +1,8 @@
-import { getSkinStyle, type Cube3DEngine } from "@cubeforge/cube-3d-engine";
+import { getSkinStyle, type Cube3DEngine } from "@cubalyze/cube-3d-engine";
 import {
   CASE_RENDER_GRAY,
   type CaseRenderPlan,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 
 /**
  * Apply a renderer-neutral case plan to the 3D engine.

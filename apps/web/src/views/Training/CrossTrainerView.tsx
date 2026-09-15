@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { METHODS } from "@cubeforge/algorithm-db";
-import { EXERCISE_IDS } from "@cubeforge/training";
-import type { PhaseStatsRecord } from "@cubeforge/training";
+import { METHODS } from "@cubalyze/algorithm-db";
+import { EXERCISE_IDS } from "@cubalyze/training";
+import type { PhaseStatsRecord } from "@cubalyze/training";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import type { HintContext } from "@/components/Timer/hintFor";
@@ -27,7 +27,7 @@ import {
 import {
   ReplayEngine,
   type ReplayState,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 import {
   Play,
   Pause,

@@ -19,12 +19,12 @@
  * grip-rotated solver frames would put the cross on a different face and miss
  * side-cross PLLs (the reconz-3008/4996/2463 B-cross misses).
  */
-import type { CubeState } from '@cubeforge/math-core';
+import type { CubeState } from '@cubalyze/math-core';
 import type {
   DetectedCase,
   PhaseDetectionReport,
   SolveTimeline,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 import { getCFOPDetector } from './caseDetectors';
 

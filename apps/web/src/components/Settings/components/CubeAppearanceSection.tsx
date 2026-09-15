@@ -3,11 +3,11 @@
 import type { ParseKeys } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useStore } from 'zustand';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 // Import from the side-effect-free "/skins" subpath: the engine's main entry
 // pulls in three.js (~545 kB), which would otherwise land in the initial
 // bundle just for this settings list.
-import { CUBE_SKINS } from '@cubeforge/cube-3d-engine/skins';
+import { CUBE_SKINS } from '@cubalyze/cube-3d-engine/skins';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
 import {

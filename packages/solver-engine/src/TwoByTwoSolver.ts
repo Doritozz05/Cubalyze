@@ -1,5 +1,5 @@
 /**
- * @cubeforge/solver-engine — TwoByTwoSolver
+ * @cubalyze/solver-engine — TwoByTwoSolver
  *
  * Optimal solver for the 2×2×2 (Pocket Cube) using a combined pruning
  * table and IDA* search with exact heuristic.
@@ -34,7 +34,7 @@ import {
   Cube2x2State,
   Move2x2,
   MOVE_2X2_NOTATION,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 
 // ── Constants ────────────────────────────────────────────────────────────
 // DBL corner (index 6) is fixed. 7 corners move among 7 positions.

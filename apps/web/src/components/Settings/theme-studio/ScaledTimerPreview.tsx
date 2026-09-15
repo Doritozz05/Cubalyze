@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
-import { preferencesStore } from '@cubeforge/state';
+import { preferencesStore } from '@cubalyze/state';
 import { useBackgroundMediaStore } from '@/stores/backgroundMediaStore';
 import { Smartphone, Tablet, Monitor, Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';

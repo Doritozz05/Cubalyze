@@ -1,5 +1,5 @@
 import { Group, Vector3 } from 'three';
-import type { PyraminxState } from '@cubeforge/solver-engine/pyraminx';
+import type { PyraminxState } from '@cubalyze/solver-engine/pyraminx';
 import { PyraminxMeshFactory } from './PyraminxMeshFactory';
 import {
   PYRAMINX_EDGE_SLOTS,

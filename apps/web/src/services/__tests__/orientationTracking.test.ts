@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { BehaviorSubject, Subject } from "rxjs";
-import { orientationStore } from "@cubeforge/state";
+import { orientationStore } from "@cubalyze/state";
 import {
   startOrientationTracking,
   disposeOrientationTracking,

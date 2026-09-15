@@ -14,7 +14,7 @@ resueltos en el bundler**.
 │                      apps/web (React PWA)                   │
 │  UI, hooks, stores, views, widgets, servicios — compartidos │
 └──────┬───────────────────────────────┬─────────────────────┘
-       │  Vite alias (@cubeforge/database)  │  Vite alias (@cubeforge/hardware-hal)
+       │  Vite alias (@cubalyze/database)  │  Vite alias (@cubalyze/hardware-hal)
        ▼                                   ▼
 ┌───────────────┐                  ┌──────────────────────┐
 │ database-     │                  │ hardware-hal-        │
@@ -36,8 +36,8 @@ resueltos en el bundler**.
 
 | Alias | Reemplazo | Por qué |
 |---|---|---|
-| `@cubeforge/database` | `src/database-override.ts` | SQLite nativa vía `tauri-plugin-sql` en vez de sqlite-wasm/OPFS |
-| `@cubeforge/hardware-hal` | `src/hardware-hal-override.ts` | BLE nativo vía Rust (`btleplug`) en vez de Web Bluetooth |
+| `@cubalyze/database` | `src/database-override.ts` | SQLite nativa vía `tauri-plugin-sql` en vez de sqlite-wasm/OPFS |
+| `@cubalyze/hardware-hal` | `src/hardware-hal-override.ts` | BLE nativo vía Rust (`btleplug`) en vez de Web Bluetooth |
 | `@/components/ui` | `packages/ui/src/components` | Kit UI compartido (mismo que la web) |
 | `@` | `apps/web/src` | Alias estándar de la web |
 
@@ -97,7 +97,7 @@ TS ──invoke('send_cube_command')──▶ Rust ──GATT write──▶ Cub
 
 - Rust gestiona **solo el transporte BLE**; todo el protocolo (drivers
   `GanGen2/3/4ProtocolDriver`, encrypters `GanGen*CubeEncrypter`, claves de
-  `GAN_ENCRYPTION_KEYS`) se **reutiliza de `@cubeforge/gan-protocol`** — cero
+  `GAN_ENCRYPTION_KEYS`) se **reutiliza de `@cubalyze/gan-protocol`** — cero
   duplicación de criptografía ni de parsing.
 - **Paridad funcional con el adaptador web**:
   - `ClockDriftReconciler` para timestamps precisos de movimientos.
@@ -171,7 +171,7 @@ bytes min/seg/msec LE) y devuelve el display + 3 tiempos previos.
 
 ## 5. La decisión de `apps/api` (vacío)
 
-`apps/api` contiene **solo `package.json`** (`@cubeforge/api`). No hay backend,
+`apps/api` contiene **solo `package.json`** (`@cubalyze/api`). No hay backend,
 no hay carpeta `supabase/`, no hay migraciones de servidor, y `vercel.json`
 despliega únicamente la web (`buildCommand: turbo run build --filter=web`).
 

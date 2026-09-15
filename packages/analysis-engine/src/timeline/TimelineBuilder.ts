@@ -3,7 +3,7 @@ import {
   FaceletStringConverter,
   MoveTransformer,
   SOLVED_FACELETS,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import type {
   CubeMoveEvent,
   CubeOrientation,
@@ -12,7 +12,7 @@ import type {
   PhaseSegment,
   SolveTimeline,
   TimelineEntry,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 
 /** Slice tokens (M/E/S) — the "other half" of a wide move in the expanded
  *  state stream (r → "R M'"), or a standalone slice. */

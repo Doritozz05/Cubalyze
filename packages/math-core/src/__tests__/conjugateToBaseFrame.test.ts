@@ -8,7 +8,7 @@ import {
 import { tokenize } from '../notation/moveNotation';
 import { OrientationTable } from '../orientation/OrientationTable';
 import { MoveTransformer } from '../orientation/MoveTransformer';
-import type { CubeFace } from '@cubeforge/types';
+import type { CubeFace } from '@cubalyze/types';
 
 // ─── Real validated data ────────────────────────────────────────────────────
 // CubeRoot solve 2510 — the exact data that was previously verified to end

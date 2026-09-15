@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Profile } from "@cubeforge/database";
+import type { Profile } from "@cubalyze/database";
 import { IdenticonAvatar } from "./IdenticonAvatar";
 import { CountryFlag } from "./CountryFlag";
 import { SubBadge, SubBadgeOverflow, badgeStyleFor } from "./SubBadge";

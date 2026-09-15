@@ -21,7 +21,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { CaseStateGenerator } from "../caseGenerator";
-import { FaceletStringConverter } from "@cubeforge/math-core";
+import { FaceletStringConverter } from "@cubalyze/math-core";
 import { getSeedData } from "../seed/index";
 
 // ─── Parse SpeedCubeDB jcube data from the HTML ────────────────────────────

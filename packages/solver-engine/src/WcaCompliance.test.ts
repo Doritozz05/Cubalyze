@@ -21,8 +21,8 @@
  * in docs/wca.md → "Official scramble program (Regulation 4b)".
  */
 import { describe, it, expect } from 'vitest';
-import { CubeState } from '@cubeforge/math-core';
-import { Cube2x2State } from '@cubeforge/math-core';
+import { CubeState } from '@cubalyze/math-core';
+import { Cube2x2State } from '@cubalyze/math-core';
 import { RandomStateGenerator } from './RandomStateGenerator';
 import { Min2PhaseSolver } from './Min2PhaseSolver';
 import { TwoByTwoScrambler } from './TwoByTwoScrambler';

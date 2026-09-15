@@ -45,7 +45,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ColorPicker } from "@/components/Settings/components/ColorPicker";
 import { useStore } from "zustand";
-import { formatSmartId } from "@cubeforge/database";
+import { formatSmartId } from "@cubalyze/database";
 import { hardwareLinkStore } from "@/stores/hardwareLinkStore";
 import { cn } from "@/lib/utils";
 import i18n from "@/i18n";

@@ -34,7 +34,7 @@ import { resolveRetryScramble } from "@/utils/retryScramble";
 // Side-effect: registers the 2×2/3×3 ScrambleProviders BEFORE the first
 // render, so useScrambleState's initial scramble generation finds them.
 import "@/utils/scrambleProviders";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { registerAllWidgets } from "@/widgets/registerAllWidgets";
 import { migrateWidgetPositions } from "@/widgets/migration";
 import { installWidgetDebug } from "@/widgets/debug";

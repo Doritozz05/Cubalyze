@@ -8,7 +8,7 @@
  * All functions are pure and framework-agnostic.
  */
 
-import type { CubeMoveEvent, PhaseMetrics, PauseDetail, SolveMetrics, TPSMetrics } from "@cubeforge/types";
+import type { CubeMoveEvent, PhaseMetrics, PauseDetail, SolveMetrics, TPSMetrics } from "@cubalyze/types";
 import type { PauseCategory } from "./phase-colors";
 
 // ─── Public Types ─────────────────────────────────────────────────────────

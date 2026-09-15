@@ -9,7 +9,7 @@
  * space — measured BEFORE the loader: ~20% of spawns were undefined.
  */
 import { describe, it, expect } from "vitest";
-import { CubeState } from "@cubeforge/math-core";
+import { CubeState } from "@cubalyze/math-core";
 import {
   detectPairCase,
   CROSS_COLOR_CONFIGS,

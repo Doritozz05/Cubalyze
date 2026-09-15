@@ -76,7 +76,7 @@ describe("virtual cube adapter — wide token + display pairing", () => {
 
   it("carries the display label on face moves (slices under a grip)", () => {
     const adapter = createVirtualCubeAdapter();
-    const moves: import("@cubeforge/types").CubeMoveEvent[] = [];
+    const moves: import("@cubalyze/types").CubeMoveEvent[] = [];
     adapter.moves$!.subscribe((m) => moves.push(m));
     // User performs M' but under a y grip the conjugated slice is S'.
     adapter.pushMove("S", -1, "M'");

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { reanalyzeSolve } from "@/hooks/useSolveSession";
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection, OrientationTimeline } from "@cubeforge/types";
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection, OrientationTimeline } from "@cubalyze/types";
 
 function event(face: CubeFace, direction: CubeMoveDirection, host = 0): CubeMoveEvent {
   return { face, direction, cubeTimestamp: host, hostTimestamp: host };

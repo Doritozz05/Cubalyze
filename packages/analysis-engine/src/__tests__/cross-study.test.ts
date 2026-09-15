@@ -33,7 +33,7 @@ import {
   conjugatePhaseStream,
   tokenize,
   type FaceLetter,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 
 const FACE_MOVE_RE = /^[URFDLB][2']?$/;
 

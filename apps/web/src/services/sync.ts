@@ -2,7 +2,7 @@
 
 /**
  * Web-side sync service — the single wiring point between the UI and
- * @cubeforge/sync-engine.
+ * @cubalyze/sync-engine.
  *
  * - `getSupabaseClient()` — lazy Supabase client from Vite env vars.
  * - `getSyncEngine()`     — lazy SyncEngine over the shared SQLite client
@@ -15,14 +15,14 @@
  *   forgets to call requestSync().
  */
 
-import { initDB } from "@cubeforge/database";
-import { syncStore } from "@cubeforge/state";
+import { initDB } from "@cubalyze/database";
+import { syncStore } from "@cubalyze/state";
 import {
   createSupabaseClient,
   readSupabaseEnv,
   SyncEngine,
   type SyncTotals,
-} from "@cubeforge/sync-engine";
+} from "@cubalyze/sync-engine";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { refreshProfile } from "@/hooks/useProfile";
 import { clearAllPhotos } from "@/views/Collection/collectionPhotos";

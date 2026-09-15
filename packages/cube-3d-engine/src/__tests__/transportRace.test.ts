@@ -3,9 +3,9 @@ import { ReplayEngine, type ReplayCallbacks } from '../replay/ReplayEngine';
 import { CubeModel } from '../core/CubeModel';
 import { CubeMeshFactory } from '../core/CubeMeshFactory';
 import { RotationEngine } from '../animation/RotationEngine';
-import { OrientationTable } from '@cubeforge/math-core';
+import { OrientationTable } from '@cubalyze/math-core';
 import { Quaternion } from 'three';
-import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
+import type { CubeMoveEvent, OrientationTimeline } from '@cubalyze/types';
 
 /**
  * TRANSPORT-RACE REGRESSION TESTS

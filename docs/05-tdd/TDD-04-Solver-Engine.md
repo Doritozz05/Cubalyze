@@ -110,5 +110,5 @@ export interface SolveMethod {
 
 ## Deployment Strategy
 
-- This is a headless logic module. It will be published as an internal monorepo package (e.g., `@cubeforge/solver-engine`).
+- This is a headless logic module. It will be published as an internal monorepo package (e.g., `@cubalyze/solver-engine`).
 - The Server Fallback will be deployed as a stateless edge function (e.g., AWS Lambda or Vercel Edge).

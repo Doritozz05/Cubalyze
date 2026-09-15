@@ -33,7 +33,7 @@ import {
   initDB,
   type GearPhotoRef,
   type GearPhotoSyncState,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import {
   deletePhoto,
   importPhotoRecord,

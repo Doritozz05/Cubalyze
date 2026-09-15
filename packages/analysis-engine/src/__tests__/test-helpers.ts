@@ -1,4 +1,4 @@
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubeforge/types';
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from '@cubalyze/types';
 
 /**
  * Create a sequence of moves from notation strings like "R", "U'", "L2".

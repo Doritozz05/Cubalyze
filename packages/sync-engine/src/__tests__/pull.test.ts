@@ -8,7 +8,7 @@ import {
   SkillProgressRepository,
   SolvesRepository,
   TrainingRepository,
-} from "@cubeforge/database";
+} from "@cubalyze/database";
 import { pullChanges } from "../pull";
 import type { DBExecutor, SyncContext } from "../types";
 

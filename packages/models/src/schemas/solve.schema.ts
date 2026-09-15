@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { isDbPuzzleType } from '@cubeforge/events';
-import type { CubeMoveEvent } from '@cubeforge/types';
+import { isDbPuzzleType } from '@cubalyze/events';
+import type { CubeMoveEvent } from '@cubalyze/types';
 
 export const CubeMoveEventSchema = z.object({
   // Slice faces (M/E/S) appear on virtual-cube solves: wide moves are
   // expanded into their face + slice halves (r → "R M'"), matching what
-  // per-layer smart-cube sensors report. See @cubeforge/types CubeFace.
+  // per-layer smart-cube sensors report. See @cubalyze/types CubeFace.
   face: z.enum(['U', 'D', 'R', 'L', 'F', 'B', 'M', 'E', 'S']),
   direction: z.union([z.literal(1), z.literal(-1), z.literal(2)]),
   cubeTimestamp: z.number(),

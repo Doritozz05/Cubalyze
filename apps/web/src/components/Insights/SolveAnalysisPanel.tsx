@@ -17,7 +17,7 @@ import type {
   SolveMetrics,
   RotationMetrics,
   EfficiencyMetrics,
-} from "@cubeforge/types";
+} from "@cubalyze/types";
 import {
   CaseMiniCube,
   LastLayerCaseCell,
@@ -30,7 +30,7 @@ import {
   ROW,
   ROW_LINE,
 } from "@/components/Cases";
-import { getSeedData, type AlgorithmCase } from "@cubeforge/algorithm-db";
+import { getSeedData, type AlgorithmCase } from "@cubalyze/algorithm-db";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {

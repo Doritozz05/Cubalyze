@@ -1,5 +1,5 @@
 import { Mesh, Object3D, Quaternion, Raycaster, Vector2, Vector3 } from 'three';
-import type { PyraminxState } from '@cubeforge/solver-engine/pyraminx';
+import type { PyraminxState } from '@cubalyze/solver-engine/pyraminx';
 import type { CubeStyleOptions } from '../core/CubeMeshFactory';
 import { SceneManager } from '../core/SceneManager';
 import {
@@ -141,7 +141,7 @@ export function createPyraminxRotationHooks(
  *   • {@link RotationDriver3D} animates the turns using pooled pivot groups
  *     and quaternions, with collision detection against in-flight moves.
  *
- * The move semantics match the WCA scrambler (`@cubeforge/solver-engine`)
+ * The move semantics match the WCA scrambler (`@cubalyze/solver-engine`)
  * byte for byte — the tests cross-validate `getState()` against
  * `applyPyraminxMove` / `applyPyraminxTip`.
  */

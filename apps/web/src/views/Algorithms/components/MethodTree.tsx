@@ -4,8 +4,8 @@ import { memo, useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubeforge/algorithm-db";
-import type { AlgorithmMethod, AlgorithmSubset } from "@cubeforge/algorithm-db";
+import { METHODS, getSubsetsForMethod, getChildSubsets } from "@cubalyze/algorithm-db";
+import type { AlgorithmMethod, AlgorithmSubset } from "@cubalyze/algorithm-db";
 import { PUZZLE_LABELS, PUZZLE_ORDER, type PuzzleType } from "@/utils/puzzleTypes";
 
 // ── Public API ─────────────────────────────────────────────────────────────

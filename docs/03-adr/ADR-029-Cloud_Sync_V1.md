@@ -41,7 +41,7 @@ sincronización, pero quedó diferido. Al implementar la primera entrega
    sincroniza; `algorithm_progress`/`exercise_progress` se reconstruyen en
    cada dispositivo mediante replay determinista del log (el mismo
    `ProgressTracker` en vivo sobre un repo en memoria —
-   `@cubeforge/training/src/progress/replay.ts`). Idempotente y sin drift.
+   `@cubalyze/training/src/progress/replay.ts`). Idempotente y sin drift.
 3. **La identidad anónima se preserva como semilla.** Al reclamar el
    dispositivo, `profiles.user_id` pasa a `auth.uid()`, `app_meta.USER_ID_KEY`
    se actualiza, y el id anónimo original queda aparcado en

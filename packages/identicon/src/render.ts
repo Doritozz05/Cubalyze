@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — SVG rendering
+ * @cubalyze/identicon — SVG rendering
  *
  * Renders a {@link CubeMarkSpec} as inline SVG. Cells use the design-system
  * radius language (rounded squares with a uniform gap); the anchor cell is

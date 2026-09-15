@@ -11,21 +11,21 @@ import {
   getChildSubsets,
   resolveVisualizationStyleForSubset,
   resolveAlgorithmDiagramRotation,
-} from "@cubeforge/algorithm-db";
-import type { AlgorithmCase, VisualizationStyle } from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
+import type { AlgorithmCase, VisualizationStyle } from "@cubalyze/algorithm-db";
 import { useCaseAlgorithms, getAlgorithmsForCase } from "@/hooks/useCaseAlgorithms";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { Case2x2Diagram } from "@/views/Algorithms/components/Case2x2Diagram";
 import { Case3DDiagram } from "@/views/Algorithms/components/Case3DDiagram";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { TimerContainer } from "@/components/Timer/TimerContainer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { HintContext } from "@/components/Timer/hintFor";
 import { useDrillSmartCube } from "@/hooks/useDrillSmartCube";
 import { useOrientation } from "@/hooks/useOrientation";
-import { generateRandomSetup, EXERCISE_IDS } from "@cubeforge/training";
+import { generateRandomSetup, EXERCISE_IDS } from "@cubalyze/training";
 import { MiniCube3DPanel } from "@/components/Cube3D/MiniCube3DPanel";
 import {
   TrainingBreadcrumb,
@@ -34,7 +34,7 @@ import {
   TouchAside,
 } from "./components";
 import { useTrainingEngine } from "@/hooks/useTrainingEngine";
-import type { AlgorithmProgressRecord } from "@cubeforge/training";
+import type { AlgorithmProgressRecord } from "@cubalyze/training";
 import {
   Eye,
   EyeOff,

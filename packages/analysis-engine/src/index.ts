@@ -1,5 +1,5 @@
 /**
- * @cubeforge/analysis-engine — Real-Time Analysis Pipeline
+ * @cubalyze/analysis-engine — Real-Time Analysis Pipeline
  *
  * This package implements the EPIC 5 analysis pipeline:
  *

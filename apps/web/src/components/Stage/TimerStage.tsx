@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { ScrambleDisplay } from "@/components/Scramble/ScrambleDisplay";
 import { Scramble2DNet } from "@/components/Scramble/Scramble2DNet";
 import { Scramble3DNet } from "@/components/Scramble/Scramble3DNet";

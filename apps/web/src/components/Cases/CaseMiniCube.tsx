@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AlgorithmCase } from "@cubeforge/algorithm-db";
+import type { AlgorithmCase } from "@cubalyze/algorithm-db";
 import { Global3DSnapshotService } from "@/services/Global3DSnapshotService";
 
 /** Tiny 3D snapshot of an F2L case (shared offscreen WebGL engine + cache). */

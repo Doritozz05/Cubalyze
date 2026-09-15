@@ -5,10 +5,10 @@ import {
   CrossScrambleGenerator,
   type CrossScrambleResult,
   type PhaseSolution,
-} from "@cubeforge/solver-engine";
-import { COLOR_NEUTRAL_CFOP_MASKS } from "@cubeforge/math-core";
-import type { PhaseMask } from "@cubeforge/math-core";
-import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubeforge/types";
+} from "@cubalyze/solver-engine";
+import { COLOR_NEUTRAL_CFOP_MASKS } from "@cubalyze/math-core";
+import type { PhaseMask } from "@cubalyze/math-core";
+import type { CubeMoveEvent, CubeFace, CubeMoveDirection } from "@cubalyze/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
    useCrossScramble

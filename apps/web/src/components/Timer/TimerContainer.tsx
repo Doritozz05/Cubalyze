@@ -13,7 +13,7 @@ import type { HintContext } from "./hintFor";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import type { Observable } from "rxjs";
 import { useIsCoarsePointer, useIsTouch } from "@/hooks/use-mobile";
 import { useEngineTime } from "@/hooks/useEngineTime";

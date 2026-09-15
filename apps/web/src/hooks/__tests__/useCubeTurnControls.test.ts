@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { Cube3DEngine, CubeLayerPick } from "@cubeforge/cube-3d-engine";
+import type { Cube3DEngine, CubeLayerPick } from "@cubalyze/cube-3d-engine";
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();

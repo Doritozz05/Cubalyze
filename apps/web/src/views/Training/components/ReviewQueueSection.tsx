@@ -15,8 +15,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSRSQueue } from "@/hooks/useSRSQueue";
-import { METHODS } from "@cubeforge/algorithm-db";
-import type { QueueReason } from "@cubeforge/training";
+import { METHODS } from "@cubalyze/algorithm-db";
+import type { QueueReason } from "@cubalyze/training";
 import type { ParseKeys } from "i18next";
 import { Spinner } from "@/components/ui/spinner";
 import {

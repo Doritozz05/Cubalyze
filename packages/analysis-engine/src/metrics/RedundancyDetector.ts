@@ -1,4 +1,4 @@
-import type { SolveTimeline, RedundancyResult, RedundancyPattern } from '@cubeforge/types';
+import type { SolveTimeline, RedundancyResult, RedundancyPattern } from '@cubalyze/types';
 
 /**
  * Detects redundant and inefficient move patterns in a solve timeline.

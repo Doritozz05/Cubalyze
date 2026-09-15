@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeSolve } from '../pipeline/analyzeSolve';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
-import { conjugatePhaseStream, tokenize } from '@cubeforge/math-core';
+import { conjugatePhaseStream, tokenize } from '@cubalyze/math-core';
 import { makeMoves } from './test-helpers';
 
 /**

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { deriveSparkline } from "@cubeforge/analysis-engine";
+import { deriveSparkline } from "@cubalyze/analysis-engine";
 import type { Solve } from "@/types";
 
 interface SlotSparklineProps {

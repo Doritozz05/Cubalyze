@@ -32,8 +32,8 @@ import { describe, it, expect } from 'vitest';
 const ENABLED = process.env.RUN_PLL_BATCH === '1';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { CubeState } from '@cubeforge/math-core';
-import { getSeedData } from '@cubeforge/algorithm-db';
+import { CubeState } from '@cubalyze/math-core';
+import { getSeedData } from '@cubalyze/algorithm-db';
 import { analyzeSolveText } from '../reconstruction/analyzeSolveText';
 import { TimelineBuilder } from '../timeline/TimelineBuilder';
 

@@ -1,5 +1,5 @@
 /**
- * @cubeforge/database — App Meta Repository
+ * @cubalyze/database — App Meta Repository
  *
  * Key/value metadata table (`app_meta`, migration 020). The single source of
  * truth for the anonymous local identity: on first launch the app generates a

@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from 'zustand';
-import { preferencesStore, type HeaderMode } from '@cubeforge/state';
+import { preferencesStore, type HeaderMode } from '@cubalyze/state';
 import { SettingToggle } from '@/components/Settings/components/SettingToggle';
 import { SettingRow } from '@/components/Settings/components/SettingRow';
 import { useState, useMemo } from 'react';

@@ -17,7 +17,7 @@
  * on. The catalog builder and the detector both consult the probe, so the
  * catalog and the lookups can never disagree on the signature format.
  */
-import type { CubeState } from '@cubeforge/math-core';
+import type { CubeState } from '@cubalyze/math-core';
 
 /** The signature families the detector can recognize. */
 export type ProbeKind =

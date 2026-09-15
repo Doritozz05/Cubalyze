@@ -1,8 +1,8 @@
-import { SPEED_RULES, BLD_RULES, FMC_RULES, MBLD_RULES } from "@cubeforge/timer-engine";
+import { SPEED_RULES, BLD_RULES, FMC_RULES, MBLD_RULES } from "@cubalyze/timer-engine";
 import { PUZZLE_TYPES, type EventSpec, type WcaEventCode } from "./spec";
 
 // ── Shared rules profiles ──────────────────────────────────────────────────
-// Canonical profiles live in @cubeforge/timer-engine (phase A5): the timer
+// Canonical profiles live in @cubalyze/timer-engine (phase A5): the timer
 // consumes them and the registry declares which profile each event uses.
 // The timer's default profile IS SPEED_RULES, so 3×3/2×2 behave identically.
 

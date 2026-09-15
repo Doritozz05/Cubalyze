@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SectionHeader } from "./atoms";
 import type { Solve } from "@/types";
-import { getEvent, type WcaEventCode } from "@cubeforge/events";
+import { getEvent, type WcaEventCode } from "@cubalyze/events";
 import {
   ReplayEngine,
   PyraminxEngine,
@@ -22,15 +22,15 @@ import {
   createPyraminxReplayDriver,
   type ReplayState,
   getSkinStyle,
-} from "@cubeforge/cube-3d-engine";
+} from "@cubalyze/cube-3d-engine";
 import {
   MoveTransformer,
   OrientationTable,
   getOrientationAtIndex,
-} from "@cubeforge/math-core";
+} from "@cubalyze/math-core";
 import { puzzleTypeLabel } from "@/utils/puzzleTypes";
 import { useStore } from "zustand";
-import { preferencesStore } from "@cubeforge/state";
+import { preferencesStore } from "@cubalyze/state";
 import { cubeTurnSounds } from "@/utils/cubeTurnSounds";
 import {
   Play,
@@ -570,7 +570,7 @@ function ReplaySection({
 
         // Dynamic import — Vite treats ?worker suffix as a Web Worker entry
         const mod = await import(
-          "@cubeforge/cube-3d-engine/worker?worker"
+          "@cubalyze/cube-3d-engine/worker?worker"
         );
         if (cancelled) return;
 

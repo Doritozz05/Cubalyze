@@ -1,5 +1,5 @@
 /**
- * @cubeforge/identicon — CubeMark constants
+ * @cubalyze/identicon — CubeMark constants
  *
  * The identity system of the platform: a deterministic, symmetric identicon
  * rendered as an SVG glyph. Design spec lives in docs/plan_profile (Fase 8).

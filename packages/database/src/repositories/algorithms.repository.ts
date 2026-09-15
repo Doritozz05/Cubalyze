@@ -1,4 +1,4 @@
-import type { AlgorithmCase, Algorithm as NewAlgorithm, AlgorithmMethod, AlgorithmSubset } from '@cubeforge/algorithm-db';
+import type { AlgorithmCase, Algorithm as NewAlgorithm, AlgorithmMethod, AlgorithmSubset } from '@cubalyze/algorithm-db';
 
 type DBExecutor = (sql: string, bind?: unknown[]) => Promise<Record<string, unknown>[]>;
 
@@ -37,7 +37,7 @@ export class AlgorithmsRepository {
   // ── New schema: Cases and Algorithm references ──────────────────────
 
   /**
-   * Insert an AlgorithmCase (from @cubeforge/algorithm-db schema).
+   * Insert an AlgorithmCase (from @cubalyze/algorithm-db schema).
    * This supports the new canonical schema used by seedIfEmpty().
    */
   async insertCase(c: AlgorithmCase): Promise<void> {
@@ -70,7 +70,7 @@ export class AlgorithmsRepository {
   }
 
   /**
-   * Insert an Algorithm (from @cubeforge/algorithm-db schema).
+   * Insert an Algorithm (from @cubalyze/algorithm-db schema).
    * Stores the full algorithm record with moveCount, triggers, etc.
    */
   async insertAlgorithm(a: NewAlgorithm): Promise<void> {

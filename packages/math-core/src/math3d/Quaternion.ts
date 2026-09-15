@@ -2,7 +2,7 @@ import type { Vector3 } from './Vector3';
 
 /**
  * Minimal quaternion math (mirrors the three.js `Quaternion` API surface used
- * by math-core). Kept dependency-free so `@cubeforge/math-core` does not drag
+ * by math-core). Kept dependency-free so `@cubalyze/math-core` does not drag
  * three.js into the web app's critical path.
  *
  * Convention matches three.js: (x, y, z, w) with w the scalar part, right-

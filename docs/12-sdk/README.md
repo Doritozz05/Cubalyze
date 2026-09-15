@@ -5,10 +5,10 @@
 
 ## Contexto
 
-- ADR-006 contempla exponer `@cubeforge/hardware-hal` y `@cubeforge/math-core`
+- ADR-006 contempla exponer `@cubalyze/hardware-hal` y `@cubalyze/math-core`
   como librerías públicas en NPM.
 - Hoy **todos los paquetes son `private: true` excepto
-  `@cubeforge/cube-3d-engine`**; nada se ha publicado (0 releases).
+  `@cubalyze/cube-3d-engine`**; nada se ha publicado (0 releases).
 - La **API pública de los paquetes ya está documentada**: [`../06-api/`](../06-api/)
   y la referencia generada con TypeDoc (`pnpm docs:api` → `docs/api/`).
 

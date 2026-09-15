@@ -1,5 +1,5 @@
 /**
- * @cubeforge/cube-3d-engine — Scramble Animation
+ * @cubalyze/cube-3d-engine — Scramble Animation
  *
  * Converts a WCA scramble string ("R U R' F2 ...") into the individual
  * layer rotations needed to play it back with animation on the 3D cube.
@@ -13,7 +13,7 @@
  */
 
 import { FACE_ROTATION_MAP } from '../constants/faceRotation';
-import type { CubeFace } from '@cubeforge/types';
+import type { CubeFace } from '@cubalyze/types';
 
 /** A single move of a scramble, ready to feed `Cube3DEngine.rotateLayers`. */
 export interface ScrambleRotation {

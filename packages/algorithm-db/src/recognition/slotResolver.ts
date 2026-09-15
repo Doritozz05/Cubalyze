@@ -14,8 +14,8 @@ import {
   cornerFacelet,
   edgeFacelet,
   FACE_LAYERS,
-} from '@cubeforge/math-core';
-import { f2lSlotNames } from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
+import { f2lSlotNames } from '@cubalyze/math-core';
 
 /**
  * Resolve the (cornerId, edgeId) pair for an F2L slot.

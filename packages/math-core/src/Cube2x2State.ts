@@ -1,5 +1,5 @@
 /**
- * @cubeforge/math-core — Cube2x2State
+ * @cubalyze/math-core — Cube2x2State
  *
  * State representation for the 2×2×2 (Pocket Cube).
  *

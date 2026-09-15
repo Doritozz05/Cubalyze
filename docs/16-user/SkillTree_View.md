@@ -39,7 +39,7 @@ siguientes. El progreso persiste localmente.
 
 ## Dependencias
 
-- `@cubeforge/database` (tabla `skill_progress`), i18n (`useTranslation`),
+- `@cubalyze/database` (tabla `skill_progress`), i18n (`useTranslation`),
   framer-motion (animaciones de canvas/zoom), lucide-react (iconos).
 - El XP de habilidades se consume también desde el perfil
   (vista Profile, tab "Skills").

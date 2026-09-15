@@ -13,7 +13,7 @@
  * polyfilled so the engine's own render loop advances the pivot machinery.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { applyPyraminxSequence, solvedPyraminx } from '@cubeforge/solver-engine/pyraminx';
+import { applyPyraminxSequence, solvedPyraminx } from '@cubalyze/solver-engine/pyraminx';
 import {
   Mesh,
   Vector3,

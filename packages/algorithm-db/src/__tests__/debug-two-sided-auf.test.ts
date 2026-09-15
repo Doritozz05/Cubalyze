@@ -1,6 +1,6 @@
 /** Advanced, complete-state diagnostic for WCA solve #2286. */
 import { describe, it, expect } from 'vitest';
-import { CubeState, conjugatePhaseStream } from '@cubeforge/math-core';
+import { CubeState, conjugatePhaseStream } from '@cubalyze/math-core';
 import { PLL_CASES } from '../seed/cfop-pll';
 import { CaseStateGenerator } from '../caseGenerator';
 import { lastLayerPermutationProbe } from '../recognition/probes/lastLayerProbes';

@@ -8,7 +8,7 @@ import {
   getSubset,
   resolveVisualizationStyleForSubset,
   type AlgorithmCase,
-} from "@cubeforge/algorithm-db";
+} from "@cubalyze/algorithm-db";
 import { CaseDiagram } from "@/views/Algorithms/components/CaseDiagram";
 import { CaseMiniCube } from "@/components/Cases";
 import { deriveCaseIntelligence, type CaseIntelligence } from "@/utils/insights";

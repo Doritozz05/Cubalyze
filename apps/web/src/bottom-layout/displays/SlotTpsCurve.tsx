@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { deriveTpsSeries } from "@cubeforge/analysis-engine";
+import { deriveTpsSeries } from "@cubalyze/analysis-engine";
 import type { Solve } from "@/types";
 
 interface SlotTpsCurveProps {

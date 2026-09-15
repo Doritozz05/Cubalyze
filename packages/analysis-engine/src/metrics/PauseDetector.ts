@@ -2,7 +2,7 @@ import type {
   SolveTimeline,
   PauseMetrics,
   PauseDetail,
-} from '@cubeforge/types';
+} from '@cubalyze/types';
 
 /**
  * Detects and classifies pauses in a solve timeline.

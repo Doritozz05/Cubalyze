@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TimerEngine } from "@cubeforge/timer-engine";
-import { createTrainingTimer } from "@cubeforge/training";
+import { TimerEngine } from "@cubalyze/timer-engine";
+import { createTrainingTimer } from "@cubalyze/training";
 import type { TimerState } from "@/types";
 import { mapTimerState } from "@/utils/timerState";
 import { useTimerKeyboard } from "@/hooks/useTimerKeyboard";

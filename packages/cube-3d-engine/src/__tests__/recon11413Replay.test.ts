@@ -9,9 +9,9 @@ import {
   CubeState,
   OrientationTable,
   tokenize,
-} from '@cubeforge/math-core';
+} from '@cubalyze/math-core';
 import { Quaternion } from 'three';
-import type { CubeMoveEvent, OrientationTimeline } from '@cubeforge/types';
+import type { CubeMoveEvent, OrientationTimeline } from '@cubalyze/types';
 
 /**
  * REPRODUCTION for "replay does not visually end solved after rotation
