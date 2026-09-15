@@ -104,8 +104,8 @@ Variantes: lowercase `cubeforge` → 1464 líneas · `CubeForge` → 341 líneas
 | `cube-forge-db` (IndexedDB snapshot) | 1 | Sí | **ALTO** — snapshot perdido |
 | `com.cubeforge.desktop` (Tauri identifier) | 4 | Sí | **CRÍTICO** — identidad de app de escritorio (§9) |
 | `cubeforge.db` (SQLite escritorio) + ruta AppData | 2 + 4 en docs | Sí | **ALTO** — BD huérfana |
-| `cubeforge_lib` (crate Rust) | 2 | Sí | Bajo |
-| `CubeForge Team` (autores Cargo) | 1 | Sí | Bajo |
+| `cubeforge_lib` (crate Rust) | 2 | Sí | Bajo — **✅ PR-5**, compilado con `cargo check --offline` |
+| `CubeForge Team` (autores Cargo) | 1 | Sí | Bajo — **✅ PR-5** |
 | `cubeforge-phi.vercel.app` | 10 | Sí | **ALTO** — OAuth + SEO |
 | `cubeforge-monorepo` (`package.json` raíz) | 1 | Sí | Nulo (privado) |
 | `cubeforge` en handles reservados (SQL) | 1 | **NO** (migración ya aplicada) | **ALTO** — seguridad de identidad (§4.8) |
@@ -1029,7 +1029,19 @@ valor nuevo al leer; escribir siempre el nuevo. Tests: `themeShare.test.ts:6` fi
 | --- | --- | --- |
 | **PERSISTIDO (congelar)** | `/cubeforge.sqlite3`, `cube-forge-db`, `cubeforge-collection`, `cubeforge-media`, `cubeforge-fonts`, `sqlite:cubeforge.db`, `com.cubeforge.desktop`, `cubeforge-prefs`, `cubeforge:widgets`, `cubeforge:activeSessionId`, `cubeforge:custom-algs`, `cubeforge:favorite-colors`, `cubeforge:infinite-f2l:options`, `cubeforge:reminders-fired`, `cubeforge:skills-migrated`, `cubeforge:calendar-migrated`, `cubeforge:widgetPosMigrated`, `cubeforge:log-buffer`, `cubeforge:chunk-reload-ts`, `cubeforge_snap_3d_v8_`, `cubeforge_puzzle`, `cubeforge_random_puzzle_pool`, `cubeforge_notes_storage`, `cubeforge_phase_stats_tab`, `cubeforge_phase_stats_sort`, `cubeforge_full_solve_mode`, `cubeforge_full_solve_inspection`, `cubeforge_completed_skills_v2`, `cubeforge_onboarding_completed`, `cubeforge-training-calendar`, `cubeforge-locker`, `cubeforge:cube2dPanelPos`, `cubeforge:cubeBtnPos`, `cubeforge:timesPanelPos`, `cubeforge:timeDistPanelPos`, `cubeforge:pbProgPanelPos`, `cubeforge:phaseTimelinePanelPos` | Congelar + prefijos duales en §14.5.2 |
 | **CONTRATO (aceptar el viejo al leer)** | `cubeforge-json`, `cubeforge-csv`, `cubeforge-locker` (id de formato) · `themeShare.app: 'cubeforge'` | Escribir el nuevo, leer ambos |
-| **LIBRE (renombrar sin consecuencias)** | `cubeforge-sync` (BroadcastChannel) · `cubeforge:open-logs`, `cubeforge:cfop-debug`, `cubeforge:moves-debug`, `cubeforge:debug-ui`, `cubeforge:orientation-debug` (banderas/eventos) · `__cubeforgeLogs`, `__cubeforgeDebugWidgets`, `__cubeforgeLastSolve__` · `cubeforge-composite-font` (id DOM) · `author: "cubeforge"` (11 widgets) · `cubeforge_lib` (crate) · los 7 nombres de descarga · textos visibles (`[cubeforge]`, `· CubeForge`, `LeftSidebar:356`) | Renombrar (revisar los globales: se documentan en la UI) |
+| **LIBRE (renombrar sin consecuencias)** | `cubeforge:open-logs`, `cubeforge:cfop-debug`, `cubeforge:moves-debug`, `cubeforge:debug-ui`, `cubeforge:orientation-debug` (banderas/eventos) · `__cubeforgeLogs`, `__cubeforgeDebugWidgets`, `__cubeforgeLastSolve__` · `CubeforgeCompositeDigits` (familia tipográfica) · `cubeforge-composite-font` (id DOM) · `author: "cubeforge"` (11 widgets) · `cubeforge_lib` (crate) · `cubeforge-json`/`cubeforge-csv` (ids de `detectFormat`) · los 7 nombres de descarga · comentarios de código | Renombrar — **✅ hecho en PR-5** (el escritor de `cubeforge-sync` NO: ver la corrección de abajo) |
+
+> **Corrección a esta tabla (PR-5).** `cubeforge-sync` estaba clasificado aquí como LIBRE y **no lo
+> es**: `apps/web/tests/contracts/storageContract.test.ts` lo fija como el 26.º namespace persistido
+> (BroadcastChannel entre pestañas). Renombrarlo rompería la sincronización entre una pestaña abierta
+> con la versión antigua y otra con la nueva durante el despliegue, y el contrato ya lo prohíbe. Se
+> queda con el nombre histórico: es una **contradicción del documento que la guarda detectó**, igual
+> que el crate de Cargo que el §15.8 daba por libre.
+>
+> Nota de forma: las banderas de depuración `cubeforge:*` **sí** se renombraron a `cubalyze:*`, y por
+> eso `AdvancedSection` —que enumera las claves por prefijo para «Borrar datos de la app» y el
+> inspector— pasó a aceptar **los dos prefijos** (§14.5.2). Con uno solo, esas dos funciones fallarían
+> en silencio: el inspector ocultaría las claves nuevas y el borrado las dejaría atrás.
 
 #### 14.5.5 Lo que un grep NUNCA verá: superficies fuera del repo
 
@@ -1687,3 +1699,64 @@ comentario que cita un literal congelado no se puede renombrar a ciegas, pero un
 | `pnpm build` | 13/13 + `verify-worker-build` OK (worker dedicado y tiers de OPFS presentes) |
 | Contratos | **29** almacén + **22** marca + **7** docs + **3** artefacto |
 | Bundle compilado | `` legacy:[`cubeforge`] `` · `` legacy:[`cubeforge-locker`] `` · `` legacy:[`CubeForge`] `` — y ningún `app`, `format` o `App` con el valor antiguo |
+
+#### PR-5 ejecutado — residuo interno (evidencia)
+
+Cierra el último grupo del plan: lo que solo se ve en DevTools, en el editor o en el nombre de un
+fichero descargado. Nada de esto viaja dentro de un dato persistido.
+
+**Cambio (41 ficheros · +230/−155)**
+
+| Bloque | Qué se renombró |
+|---|---|
+| A · Descargas | Los **7 nombres de fichero** que el navegador propone al guardar: `cubalyze-<sesión>.csv`, `-cstimer.csv`, `.xlsx`, `cubalyze-all-sessions.json`, `cubalyze-profile-<fecha>.json` y los dos del estudio de temas |
+| B · DevTools | Globales de consola (`__cubalyzeLogs`, `__cubalyzeDebugWidgets`, `__cubalyzeLastSolve__`), el evento de ventana (`cubalyze:open-logs`, **en los 3 sitios a la vez**), el id del `<style>` inyectado, la familia tipográfica `CubalyzeCompositeDigits`, los logs `%c[Cubalyze]` y las **banderas de depuración** (`cubalyze:cfop-debug`, `cubalyze:moves-debug`, `cubalyze:debug-ui`, `cubalyze:orientation-debug`) |
+| C · Código interno | Los ids que `detectFormat()` **devuelve** (`cubalyze-json`, `cubalyze-csv`), las **claves de i18n** `formatNameCubalyze{Csv,Json}` + sus 2 usos, los símbolos (`parseCubalyzeLine`, `CubalyzeSolveExport`, `CubalyzeAllSessionsExport`) y los comentarios que describían la UI |
+| D · Escritorio | El crate de Cargo: `name = "cubalyze"` + `cubalyze_lib` + `authors = ["Cubalyze Team"]` + `main.rs`, con **`Cargo.lock` regenerado** por cargo (nunca a mano) |
+| E · Higiene | Las **4 exenciones muertas** del test del artefacto (globales, familia tipográfica, id del `<style>` y crate) y sus **2 entradas PENDING**, que expiraron solas: la lista queda **vacía a propósito** y el mecanismo se conserva |
+
+**Lo que NO se tocó, y por qué**
+
+| Se queda como está | Razón |
+|---|---|
+| `Cargo.lock`, `gen/schemas/*` | Generados: se regeneran con cargo, no se editan. Un `sed` sobre el lock produce un árbol inconsistente con `--frozen-lockfile` |
+| SQL de migraciones ya aplicadas (incluido el comentario `@cubeforge/training` y `@cubeforge/statistics`) | **Inmutables**: su id vive en la tabla `_migrations` de cada dispositivo y en el proyecto de Supabase. Un comentario no cambia la semántica, pero el valor de tocarlas es 0 y el de no tocarlas es la política que ya declara esta auditoría (§14.5.4, contexto congelado del test del artefacto) |
+| `supabase/config.toml` → `project_id = "cubeforge"` | Es la identidad del stack **local** de `supabase start` (contenedores y volúmenes): renombrarlo abre un entorno local vacío. Va con el cutover de dominio. Solo se cambió el comentario de cabecera |
+| `site_url` / `additional_redirect_urls` / `robots.txt` / `sitemap.xml` / `llms.txt` (URLs) | Apuntan al dominio que **todavía existe**. Dependen de la Fase 1 externa |
+| Los `legacy: [...]` del bundle | No son residuo: son la compatibilidad de PR-4, viva a propósito |
+| El directorio local del clon (`…/Proyectos/Personales/Cubeforge`) | No está en git. Es del usuario y no afecta a nada del repositorio |
+
+**Pruebas en rojo (sin ellas, una guarda verde no demuestra nada)**
+
+1. Un **typo** en la clave de i18n del mapa de formatos (`formatNameCubalyzeJsonTYPO`) ⇒ falla el test
+   de claves dinámicas nombrándola, y **solo** ese test. Es el fallo que ni `tsc` ni la comparación de
+   idiomas detectan: la UI mostraría la clave cruda.
+2. Reintroduje `%c[CubeForge]` en `dataIntegrity.ts` **y** `window.__cubeforgeLogs` en
+   `logCapture.ts`, recompilé y el test del artefacto señaló **exactamente esos dos** y ningún otro:
+   prueba que las 4 exenciones borradas ya no tapan nada y que las que quedan siguen clasificando los
+   nombres congelados sin falsos positivos.
+3. El propio `i18n/index.test.ts` nuevo se ganó su sitio **en su primer intento**: primero acusó a
+   `data.formatNameCstimer` (mi test no aplicaba el namespace) y después a `data.solvesFound` (clave
+   plural de i18next: `_one`/`_other`). Las dos eran limitaciones de la regla, no claves ausentes, y
+   el test las distingue a propósito en vez de aceptar cualquier prefijo.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm -r exec vitest run --passWithNoTests` (comando del CI) | **exit 0** · **3 238 tests** en 15 paquetes (12 skipped) |
+| `pnpm -r exec tsc --noEmit` · `pnpm lint` | **0 errores** · 12/12 tareas (solo el warning preexistente) |
+| `pnpm --filter web build` | OK + `verify-worker-build` (worker dedicado y tiers de OPFS presentes) |
+| Contratos | 29 almacén + 22 marca + 12 docs + **3 artefacto** |
+| `cargo check --offline` (crate renombrado) | **OK** — `Compiling cubalyze v0.1.0` · `Cargo.lock` con 0 ocurrencias del nombre antiguo |
+| Residuo vivo (sin historia, sin archive, sin auditoría) | **241 líneas**, todas contratos o nombres congelados: **0 pendientes** |
+
+**Lo que sigue abierto (fuera del alcance de PR-5)**
+
+1. **El handle `cubalyze` no está reservado.** La lista vive en `20260912000016_handle_identity.sql`,
+   ya aplicada, e incluye `'cubeforge'`. La regla es no liberar nunca el viejo y añadir el nuevo
+   **con una migración NUEVA** (nunca editando la aplicada). Hasta entonces cualquiera puede
+   registrarse `cubalyze`.
+2. **Fase 1 externa** (Supabase, Google Cloud, Vercel, GitHub, DNS + 301s): sin código, la única que
+   necesita calendario. Con ella caen las URLs de `robots.txt`/`sitemap.xml`/`llms.txt`/
+   `config.toml` y la plantilla de URL del changelog, sin tocar los changelogs ya generados.
