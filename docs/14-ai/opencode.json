@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "project": "CubeForge",
+  "project": "Cubalyze",
   "documentation_root": "../",
   "indexes": {
     "prd": "../00-product/PRD.md",

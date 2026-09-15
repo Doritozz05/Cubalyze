@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "CubeForge API Reference",
+  "name": "Cubalyze API Reference",
   "entryPointStrategy": "expand",
   "entryPoints": ["packages/*/src", "apps/web/src"],
   "tsconfig": "./tsconfig.typedoc.json",

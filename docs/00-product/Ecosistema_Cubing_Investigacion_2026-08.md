@@ -2,7 +2,7 @@
 
 **Fecha:** Agosto 2026
 **Tipo:** Investigación de comunidad + análisis de competencia + auditoría real del código de la aplicación.
-**Aplicación auditada:** Cubalyze (monorepo `cubeforge-monorepo`, rama `main`).
+**Aplicación auditada:** Cubalyze (monorepo `cubalyze-monorepo`, rama `main`).
 **Idioma:** Español (las citas de usuarios se mantienen en su idioma original y se traducen).
 
 ---

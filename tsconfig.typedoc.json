@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Cubeforge — TypeDoc (API reference). No se usa para builds ni CI.",
+  "display": "Cubalyze — TypeDoc (API reference). No se usa para builds ni CI.",
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",

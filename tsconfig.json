@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Cubeforge root — cross-package scan (CLI + repo-root TS workspace)",
+  "display": "Cubalyze root — cross-package scan (CLI + repo-root TS workspace)",
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",
