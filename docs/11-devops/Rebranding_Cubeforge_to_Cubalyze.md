@@ -1760,3 +1760,28 @@ fichero descargado. Nada de esto viaja dentro de un dato persistido.
 2. **Fase 1 externa** (Supabase, Google Cloud, Vercel, GitHub, DNS + 301s): sin código, la única que
    necesita calendario. Con ella caen las URLs de `robots.txt`/`sitemap.xml`/`llms.txt`/
    `config.toml` y la plantilla de URL del changelog, sin tocar los changelogs ya generados.
+
+#### Deuda que salió a la luz: el CI no falla, falla *a veces*
+
+Tres veces bloqueó `main` un test **verde en local** que se pasó del presupuesto en el runner. No era
+el rebranding (ninguno tocaba esos ficheros): era la clase de test. Los tres, con su factor medido:
+
+| Test | Local | Runner | Presupuesto | Factor |
+|---|---|---|---|---|
+| `PyraminxSolver` · BFS de 933 120 estados | 312 ms | 6 128 / 3 023 ms | 5 s (default de vitest) | ~20× |
+| `CrossScrambleGenerator` · prefijo de rotación | **68 ms** | 5 454 ms | 5 s (default) | **80×** |
+| `CubeState.edgeCases` · 1000 `applySequence` | ~10 ms | **50.9 ms** | 50 ms | margen de 0.9 ms |
+
+Arreglos: `testTimeout` global en `vitest.config.ts` (la config de la raíz **sí** llega a los
+paquetes — comprobado bajándola a 1 ms y viendo caer un test) y, para las **aserciones de reloj**, un
+presupuesto 5× el peor valor observado en vez de uno pegado a la máquina. La cifra que hay que retener
+para la próxima: **en este runner un test de 60 ms puede tardar 5 segundos**, así que cualquier techo
+por debajo de ~10× está decidiendo con el estado de ánimo del runner. Siguen ahí, sin tocar (margen
+amplio medido): `analysis-engine/benchmarks` (p99 < 100 ms), `CubeState.clone` (100 ms para ~5 ms de
+trabajo), `identicon/render` (1 ms para ~0.01 ms) y `hardware-hal/memory-leak` (200 ms).
+
+> **Nota de CI, no del rebranding.** `pnpm test` (turbo) **no ejecuta las 968 pruebas de `apps/web`**
+> porque esa app no tiene script `test`: los contratos de marca, almacén, docs y artefacto solo corren
+> en el workflow *Quality Gates*, que sí usa `pnpm -r exec vitest run`. El job llamado `Test` del
+> workflow `CI` no es, por tanto, la suite completa — conviene saberlo al depurar en local, porque
+> `pnpm test` deja fuera todo el frontend.
