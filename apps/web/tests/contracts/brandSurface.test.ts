@@ -131,6 +131,22 @@ describe('brand surface — HTML shells', () => {
   });
 });
 
+describe('brand surface — escritorio (lo que ve el sistema operativo)', () => {
+  // Lo que aparece en el menú Inicio, en "Aplicaciones instaladas" y en la barra
+  // de tareas. Es tanta superficie de marca como el manifest de la PWA y se
+  // escapó de PR-1 porque vive en la configuración de Tauri, no en la web.
+  it('tauri.conf.json: productName y el título de la ventana son la marca nueva', () => {
+    const conf = read('apps/desktop/src-tauri/tauri.conf.json');
+    expect(conf).toMatch(/"productName":\s*"Cubalyze"/);
+    expect(conf).toMatch(/"title":\s*"Cubalyze"/);
+    expect(conf).not.toMatch(/"productName":\s*"CubeForge"/);
+    expect(conf).not.toMatch(/"title":\s*"CubeForge"/);
+    // El identificador NO es marca: es el contrato con el directorio de datos de
+    // cada dispositivo (lo vigilan los tests de storageContract).
+    expect(conf).toMatch(/"identifier":\s*"com\.cubeforge\.desktop"/);
+  });
+});
+
 describe('brand surface — PWA manifest', () => {
   it('vite.config.ts: name y short_name (lo que se ve bajo el icono instalado)', () => {
     const config = read('apps/web/vite.config.ts');
