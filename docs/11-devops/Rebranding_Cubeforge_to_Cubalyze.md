@@ -147,7 +147,7 @@ por `define` en Vite, de forma que el *siguiente* rebranding sea un fichero.
 | RLS / triggers dependientes de claims o dominios | No hay claims ni dominios con la marca | Ninguna |
 | Buckets | `locker-photos` (`20260912000013_locker_photos_bucket.sql:31`) — neutro. Políticas por `bucket_id`, sin marca | Ninguna |
 | URLs públicas hardcodeadas en BD | Ninguna | Ninguna |
-| **Handles reservados** | `20260912000016_handle_identity.sql:69` reserva `'cubeforge'` junto a `'admin'`, `'root'`… | **Añadir `'cubalyze'` con una migration NUEVA** y **mantener `'cubeforge'`** (nunca liberar el handle viejo) |
+| **Handles reservados** | `20260912000016_handle_identity.sql:69` reserva `'cubeforge'` junto a `'admin'`, `'root'`… | **✅ HECHO** — `20260915000000_reserve_cubalyze_handle.sql` (migración nueva, `'cubeforge'` intacto). Guarda: `packages/sync-engine/src/__tests__/handle-reservation.contract.test.ts` |
 | Edge Functions | `delete-account`, `friend-photo-urls` — 0 refs a la marca | Ninguna |
 | Drift local/prod | No verificable desde aquí sin `supabase link` (requiere credenciales) | `supabase db diff --linked` antes de tocar nada (§7.2) |
 | `supabase/config.toml` | `project_id = "cubeforge"` (afecta **solo al naming de contenedores locales**), `site_url` y `additional_redirect_urls` apuntan a `cubeforge-phi.vercel.app` y `localhost:5173` | `project_id` + URLs (§3.3) |
@@ -220,7 +220,7 @@ Plan B si la re-verificación bloquea: **crear un segundo OAuth client** (Cubaly
 | Variables de entorno | **Ningún nombre de variable contiene la marca** (solo `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) | Solo hay que revisar **valores** en el dashboard de Vercel (URLs de callback si existieran). No hay `.env.local`/`.env.production` versionados |
 | `package.json` raíz | `"name": "cubeforge-monorepo"` | Renombrar (sin efecto funcional) |
 | 20 paquetes | `@cubeforge/*`, todos `private: true`, deps `workspace:*` | Renombrar scope (§7.3). Sin impacto npm |
-| `apps/api` | Solo contiene `package.json` (`@cubeforge/api`) — **carpeta vestigial** | Decidir: renombrar o eliminar |
+| `apps/api` | Solo contiene `package.json` (`@cubeforge/api`) — **carpeta vestigial** | **✅ RESUELTO**: renombrado a `@cubalyze/api` (PR-3) y **se mantiene** — la decisión ya existía (§4.10) |
 | `pnpm-lock.yaml` | 91 refs (importers + versiones publicadas resueltas) | **Regenerar con `pnpm install`**, nunca editar a mano |
 | Config TS/ESLint/Knip/Typedoc | `tsconfig.json`, `tsconfig.typedoc.json`, `typedoc.json`, `knip.jsonc`, `vitest.config.ts`, `packages/*/tsconfig.json`, `apps/web/eslint.config.js`, `apps/desktop/vite.config.ts` | Alias `@cubeforge/*` → `@cubalyze/*` en **todos** |
 | CI/CD | `.github/workflows/quality-gates.yml` (8 refs: filtros `--filter @cubeforge/...`) | Renombrar filtros. GitHub Actions **no** usa URLs absolutas; el rename del repo no rompe CI |
@@ -335,9 +335,17 @@ datos.
 
 `pnpm-lock.yaml` (91), `Cargo.lock`, `gen/schemas/capabilities.json`, `dist/`, `version.json`. **Regenerar, no editar.** Un `sed` sobre el lockfile produce un árbol inconsistente con `--frozen-lockfile` en CI.
 
-### 4.10 `apps/api` vestigial
+### 4.10 `apps/api` vestigial — cerrado
 
-`apps/api` solo tiene `package.json` (`@cubeforge/api`). Decidir antes del rename: renombrar o borrar (evita arrastrar una entrada muerta y reduce ruido en el gate de residuales).
+`apps/api` solo tiene `package.json`. **La decisión ya estaba tomada y documentada** el 2026-08-12 en
+[`docs/02-architecture/Desktop_App.md` §5](../02-architecture/Desktop_App.md) (y en ADR-019): mantenerla
+como **scaffold vacío** y diferir el backend hasta que el sync en la nube sea prioridad. Esta auditoría
+pedía «decidir» sin saberlo, que es justo el fallo que hay que evitar: una pregunta abierta sobre algo
+ya resuelto.
+
+**Resolución:** renombrada a `@cubalyze/api` en PR-3 y **se mantiene**. Para que la pregunta no vuelva
+a abrirse, el motivo vive ahora también donde surge la duda — el `description` del propio
+`package.json`, que apunta al documento y a ADR-019.
 
 ---
 
@@ -1780,19 +1788,47 @@ Prueba en rojo en **las dos direcciones a la vez**: en un mismo fichero, un come
 cadenas es trabajo de las guardas que conocen cada contrato. La conclusión de forma se escribe también
 aquí, porque es la lección cara: **un grep de una grafía no es un barrido, es una apuesta**.
 
-**Lo que sigue abierto (fuera del alcance de PR-5)**
+#### PR-6 ejecutado — el handle del nombre nuevo (evidencia)
 
-1. **El handle `cubalyze` no está reservado.** `public.normalize_handle()` (en
-   `20260912000016_handle_identity.sql`, ya aplicada) lleva una lista de nombres que nadie puede
-   reclamar para hacerse pasar por la app: `admin`, `support`, `official`… y `cubeforge`. No incluye
-   `cubalyze`. La regla es no liberar nunca el viejo y añadir el nuevo **con una migración NUEVA**
-   (`create or replace function`, misma firma) y no editando la aplicada: el CLI registra las
-   migraciones por su id, así que reescribir una ya aplicada no se vuelve a ejecutar en el proyecto
-   hosteado pero sí en un entorno nuevo — divergencia silenciosa entre bases. Hasta entonces
-   cualquiera puede registrarse `cubalyze`; el nombre viejo seguirá protegido para siempre.
-2. **Fase 1 externa** (Supabase, Google Cloud, Vercel, GitHub, DNS + 301s): sin código, la única que
+Último pendiente de código: reservar `cubalyze`. No es una búsqueda ni un rename — es **impedir que lo
+reclame cualquiera**, y es la única parte del rebranding con efecto en la seguridad de identidad.
+
+| Fichero | Qué hace |
+|---|---|
+| `supabase/migrations/20260915000000_reserve_cubalyze_handle.sql` **(nuevo)** | `create or replace function public.normalize_handle()` con `'cubalyze'` añadido: **copia literal** del cuerpo de la 16 (misma firma, mismo `immutable`, mismo `search_path`, mismos `revoke`) |
+| `packages/sync-engine/src/__tests__/handle-reservation.contract.test.ts` **(nuevo)** | 6 contratos: la lista **efectiva**, la inmutabilidad de la migración aplicada y que la nueva no toca datos |
+| `apps/api/package.json` | El motivo de su existencia como scaffold, donde surge la duda (§4.10) |
+
+**Las tres decisiones que lo hacen seguro**
+
+1. **Fichero nuevo, no edición.** El CLI registra las migraciones por su id: reescribir la 16 no se
+   re-ejecuta en el proyecto hosteado, pero sí en una base nueva — mismo historial, contenido distinto.
+2. **La lista EFECTIVA, no un fichero.** La guarda lee la **última** definición entre todas las
+   migraciones ordenadas por nombre (el prefijo es la fecha). No está casada con este fichero: si otra
+   migración amplía la lista y se deja fuera cualquiera de los dos nombres, falla igual.
+3. **Si el nombre ya está en uso, se para.** Reservar no expulsa a un titular previo, así que la
+   migración comprueba `profiles` y **aborta con el `user_id`** en vez de aplicar la reserva y dejar la
+   marca en manos de una cuenta sin que nadie se entere. Una migración que falla no queda registrada:
+   se revisa ese perfil y se vuelve a empujar.
+
+**Pruebas en rojo (5 mutaciones, todas quirúrgicas: falla el test que debe y solo ese)**
+
+| Mutación | Resultado |
+|---|---|
+| Quitar `'cubalyze'` de la lista | falla «reserva el nombre nuevo» y lo nombra |
+| «Liberar» el nombre histórico | falla el mismo test, por `'cubeforge'` |
+| Un byte de más en la migración aplicada | falla el hash — un comentario al final basta para que salte |
+| Añadir un `update public.profiles` | falla «ningún cambio de datos» |
+| Una migración POSTERIOR sin el nombre nuevo | falla señalando **ese** fichero nuevo: prueba que lee la última definición, no una ruta fija |
+
+**Lo que sigue abierto**
+
+1. **Fase 1 externa** (Supabase, Google Cloud, Vercel, GitHub, DNS + 301s): sin código, la única que
    necesita calendario. Con ella caen las URLs de `robots.txt`/`sitemap.xml`/`llms.txt`/
-   `config.toml` y la plantilla de URL del changelog, sin tocar los changelogs ya generados.
+   `config.toml` y la plantilla de URL del changelog, sin tocar los changelogs ya generados. Orden
+   crítico: el dominio nuevo **antes** en las allowlists de Supabase y Google, y el DNS **después**.
+2. **Desplegar la migración del handle** (`supabase db push`), que es lo único que convierte PR-6 en
+   protección real: hasta que se aplique, el handle sigue siendo reclamable.
 
 #### Deuda que salió a la luz: el CI no falla, falla *a veces*
 
