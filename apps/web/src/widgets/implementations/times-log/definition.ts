@@ -8,7 +8,7 @@ export const timesLogDefinition: WidgetDefinition = {
     "Floating solve history with penalties, analysis, and quick actions. Minimizable to a compact pill.",
   icon: ListOrdered,
   category: "timer",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

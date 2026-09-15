@@ -399,7 +399,7 @@ export default function App() {
     enabled: !tourActive && activeView !== "cube" && !notFound,
   });
 
-  // ── Localized, per-view document title (e.g. "Timer — 4 solves · CubeForge").
+  // ── Localized, per-view document title (e.g. "Timer — 4 solves · Cubalyze").
   // Reconstructions owns its own richer title (record id + solver).
   const { t } = useTranslation("meta");
   const docTitle = useMemo(() => {

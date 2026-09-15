@@ -11,7 +11,7 @@ export const cubeButtonDefinition: WidgetDefinition = {
     "Floating button to toggle the interactive 3D cube view. Drag to reposition.",
   icon: Box,
   category: "visual",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   // Off by default: the floating 3D cube launcher is a power-user extra,

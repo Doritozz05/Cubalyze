@@ -8,7 +8,7 @@ export const solveTimelineDefinition: WidgetDefinition = {
     "Phase breakdown + pauses of the last solve. Shows the same detailed timeline from Insights right on the timer view without navigating away.",
   icon: GitCommitHorizontal,
   category: "analysis",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

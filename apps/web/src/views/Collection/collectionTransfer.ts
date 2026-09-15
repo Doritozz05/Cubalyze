@@ -291,7 +291,7 @@ export async function readLockerFile(text: string): Promise<LockerImportResult> 
   const raw: unknown = JSON.parse(text);
   const state = normalizeState(isLockerFile(raw) ? (raw as LockerFile).data : raw);
   if (!state) {
-    throw new Error("Not a CubeForge collection file");
+    throw new Error("Not a Cubalyze collection file");
   }
 
   if (isLockerFile(raw)) {

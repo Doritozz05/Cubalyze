@@ -859,7 +859,7 @@ export function ThemeStudioModal({ open, onOpenChange, initialTab = 'presets' }:
                       <div className="flex flex-col gap-1 mt-0.5">
                         <span className="text-[0.65rem] font-medium text-ink-3">{t('appearance.fontPreviewText')}</span>
                         <div className="rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-ink flex items-center justify-between">
-                          <span>AaBbCcDd · CubeForge</span>
+                          <span>AaBbCcDd · Cubalyze</span>
                           <span className="nums text-ink-2">Sesión 1</span>
                         </div>
                       </div>

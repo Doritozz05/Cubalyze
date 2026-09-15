@@ -348,12 +348,15 @@ export function LeftSidebar({
           <div className="grid size-8 shrink-0 place-items-center rounded-md bg-ink text-surface">
             <Grid3x3 className="size-4" />
           </div>
+          {/* Wordmark. A literal on purpose: a brand name is not translated, so it
+              must not live in the locale files where a translation could rewrite
+              it. Its spelling is guarded by tests/contracts/brandSurface.test.ts. */}
           <motion.span
             animate={{ opacity: labelVisible ? 1 : 0 }}
             transition={SIDEBAR_MOTION.brand}
             className="nums overflow-hidden text-sm font-semibold tracking-tight text-sidebar-foreground whitespace-nowrap"
           >
-            cubeforge
+            Cubalyze
           </motion.span>
         </div>
       </div>

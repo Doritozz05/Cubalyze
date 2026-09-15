@@ -8,7 +8,7 @@ export const pbProgressionDefinition: WidgetDefinition = {
     "Personal Best timeline showing every PB milestone. Track your improvement journey from first solve to current best.",
   icon: TrendingDown,
   category: "timer",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

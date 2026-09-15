@@ -8,7 +8,7 @@ export const metronomeDefinition: WidgetDefinition = {
     "High-precision audio metronome with TPS (Turns Per Second) conversion for fluidity & pacing practice.",
   icon: Activity,
   category: "timer",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

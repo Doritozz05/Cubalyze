@@ -8,7 +8,7 @@ export const algorithmDbDefinition: WidgetDefinition = {
     "Browse speedcubing algorithms by method and subset with 2D/3D visualizations, setup scrambles, and solution breakdown.",
   icon: BookOpen,
   category: "training",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

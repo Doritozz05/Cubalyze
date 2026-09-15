@@ -8,7 +8,7 @@ export const phaseBalanceDefinition: WidgetDefinition = {
     "Compare your real CFOP phase distribution with your own recent average, using only comparable solves from the hardened analysis pipeline.",
   icon: Scale,
   category: "analysis",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

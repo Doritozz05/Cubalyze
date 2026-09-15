@@ -8,7 +8,7 @@ export const scramble2DDefinition: WidgetDefinition = {
     "2D cube net showing the current scramble state. csTimer-style layout with WCA-standard colors.",
   icon: Shuffle,
   category: "visual",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

@@ -98,6 +98,12 @@ const FROZEN_CONTEXT = [
 /**
  * Legacy strings still in the artifact, each with the PR that removes it.
  * Self-expiring: if the entry is no longer found in the bundle, the test fails.
+ *
+ * PR-2 (la copy visible suelta) ya aterrizó, así que sus cinco entradas se
+ * borraron de aquí: el test falló por las cinco en el mismo instante en que
+ * dejaron de estar en el bundle, y eso es lo que forzó esta limpieza en vez de
+ * dejar la lista pudriéndose. Las que quedan son contratos con ficheros que el
+ * usuario ya tiene (PR-4) y diagnósticos de consola (PR-5).
  */
 const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [
   {
@@ -116,18 +122,6 @@ const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [
     why: 'logs de diagnóstico en consola (dataIntegrity + widgets debug)',
   },
   {
-    id: 'left-sidebar-copy',
-    pattern: /children:`cubeforge`/,
-    pr: 'PR-2',
-    why: 'texto visible de la barra lateral (escrito a mano, ignora i18n)',
-  },
-  {
-    id: 'widget-author-metadata',
-    pattern: /author:[`'"]cubeforge[`'"]/,
-    pr: 'PR-2',
-    why: 'autoría de los 11 widgets, visible en el dock/explorador',
-  },
-  {
     id: 'theme-share-discriminator',
     pattern: /app[!:=]+[`'"]cubeforge[`'"]/,
     pr: 'PR-4',
@@ -138,24 +132,6 @@ const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [
     pattern: /formatNameCubeforge(Csv|Json)/,
     pr: 'PR-5 (opcional)',
     why: 'CLAVES de i18n con la grafía antigua: renombrarlas exige tocar DataSection.tsx + tests',
-  },
-  {
-    id: 'theme-studio-label',
-    pattern: /AaBbCcDd · CubeForge/,
-    pr: 'PR-2',
-    why: 'texto visible en el estudio de temas',
-  },
-  {
-    id: 'collection-error',
-    pattern: /Not a CubeForge collection file/,
-    pr: 'PR-2',
-    why: 'mensaje de error visible al importar la colección',
-  },
-  {
-    id: 'import-error-hint',
-    pattern: /Supported: csTimer CSV[^"'`]*CubeForge/,
-    pr: 'PR-2',
-    why: 'mensaje de error visible al no reconocer un fichero',
   },
 ];
 

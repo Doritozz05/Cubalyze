@@ -8,7 +8,7 @@ export const layoutOrganizerDefinition: WidgetDefinition = {
     "Instantly arrange all your floating widgets into a professional layout. Generates dynamic presets based on your active widgets and screen size.",
   icon: LayoutGrid,
   category: "visual",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

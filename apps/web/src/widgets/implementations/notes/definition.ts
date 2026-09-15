@@ -8,7 +8,7 @@ export const notesDefinition: WidgetDefinition = {
     "Quick scratchpad, training goals checklist, and speedcubing notes manager for your practice sessions.",
   icon: Notebook,
   category: "training",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

@@ -8,7 +8,7 @@ export const timeDistributionDefinition: WidgetDefinition = {
     "Histogram showing the distribution of your solve times. csTimer-style bins with mean and standard deviation. See your consistency at a glance.",
   icon: BarChart3,
   category: "timer",
-  author: "cubeforge",
+  author: "Cubalyze",
   version: "1.0.0",
   source: "built-in",
   defaultActive: true,

@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
  * The title is derived from i18n — it follows the active language (the
  * caller re-renders on language change because this hook subscribes via
  * useTranslation, and `i18n.language` is an effect dependency) — and gets
- * the " · CubeForge" brand suffix appended.
+ * the " · Cubalyze" brand suffix appended.
  *
  * Only one stage view is mounted at a time, so mounting a new view simply
  * replaces the previous title; there are never conflicting writers.

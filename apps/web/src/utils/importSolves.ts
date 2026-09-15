@@ -1013,7 +1013,7 @@ export function parseImport(content: string): ImportResult {
       return parseGenericCSV(content);
 
     default:
-      return { solves: [], errors: [{ line: 0, message: "Could not detect file format. Supported: csTimer CSV, Twisty Timer CSV, CubeForge CSV/JSON, generic CSV/TSV." }], format };
+      return { solves: [], errors: [{ line: 0, message: "Could not detect file format. Supported: csTimer CSV, Twisty Timer CSV, Cubalyze CSV/JSON, generic CSV/TSV." }], format };
   }
 }
 

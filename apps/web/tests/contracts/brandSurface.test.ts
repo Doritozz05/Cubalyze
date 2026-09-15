@@ -23,7 +23,7 @@
  * See docs/11-devops/Rebranding_Cubeforge_to_Cubalyze.md (§15, PR-1).
  */
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 // Tests run from the repo root (`pnpm test`) or from `apps/web` when the package
@@ -189,16 +189,49 @@ describe('brand surface — una sola grafía visible (Cubalyze)', () => {
     ).toEqual([]);
   });
 
-  it('shells HTML y manifest: exactamente `Cubalyze`', () => {
+  it('shells, manifest y copy visible hardcodeada: exactamente `Cubalyze`', () => {
     const surfaces = [
       'apps/web/index.html',
       'apps/desktop/index.html',
       'apps/web/vite.config.ts',
+      // Copy visible que NO pasa por i18n: el wordmark del sidebar, la vista
+      // previa del estudio de temas y los dos mensajes de error de importación.
+      'apps/web/src/components/Layout/LeftSidebar.tsx',
+      'apps/web/src/components/Settings/theme-studio/ThemeStudioModal.tsx',
+      'apps/web/src/views/Collection/collectionTransfer.ts',
+      'apps/web/src/utils/importSolves.ts',
     ] as const;
     const offenders = surfaces.flatMap((file) =>
       nonCanonicalMentions(read(file)).map((form) => `${file} → «${form}»`),
     );
     expect(offenders).toEqual([]);
+  });
+
+  it('autoría de los widgets: ni la marca antigua ni una variante de la nueva', () => {
+    // Data-driven a propósito: un widget nuevo queda cubierto sin tocar el test.
+    const dir = join(REPO_ROOT, 'apps/web/src/widgets/implementations');
+    const files = readdirSync(dir)
+      .map((name) => join(dir, name, 'definition.ts'))
+      .filter((file) => existsSync(file));
+    expect(files.length, 'no se encontraron definiciones de widgets').toBeGreaterThanOrEqual(11);
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, 'utf8');
+      const author = /author:\s*["'`]([^"'`]*)["'`]/.exec(source)?.[1];
+      // Un widget puede no declarar autoría; si la declara, es marca visible en
+      // el explorador y se escribe igual que el resto.
+      if (author === undefined) continue;
+      // Ruta relativa y con `/` (el test corre igual en Windows que en CI).
+      const where = file.slice(REPO_ROOT.length).replace(/^[\\/]/, '').replace(/\\/g, '/');
+      if (LEGACY.test(author)) offenders.push(`${where} → autoría con la marca antigua: «${author}»`);
+      for (const form of nonCanonicalMentions(author)) offenders.push(`${where} → «${form}»`);
+    }
+    expect(
+      offenders,
+      'La autoría de los widgets se ve en el explorador del dock: tiene que usar la marca nueva, ' +
+        'con la única grafía canónica.',
+    ).toEqual([]);
   });
 });
 
