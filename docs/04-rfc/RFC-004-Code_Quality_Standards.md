@@ -16,7 +16,7 @@ document_type: "RFC"
 Este RFC propone la estandarización del stack de calidad de código utilizando **ESLint (con Flat Config)** y **Prettier** para asegurar la consistencia y reducir errores de formato.
 
 ## Motivation
-Con el crecimiento de CubeForge a un monorepo complejo (Turborepo), mantener un estándar unificado de código a lo largo de todos los paquetes (UI, core, configs) es crucial. Dejar esto a la libre configuración de los contribuidores generará "guerras de formato" y commits innecesarios solo con cambios de espacios.
+Con el crecimiento de Cubalyze a un monorepo complejo (Turborepo), mantener un estándar unificado de código a lo largo de todos los paquetes (UI, core, configs) es crucial. Dejar esto a la libre configuración de los contribuidores generará "guerras de formato" y commits innecesarios solo con cambios de espacios.
 
 ## Proposed Solution
 *   **ESLint:** Usar la nueva sintaxis *Flat Config* (`eslint.config.js`) para manejar TypeScript, React, y Vanilla JS en diferentes paquetes del monorepo desde una configuración base compartida.

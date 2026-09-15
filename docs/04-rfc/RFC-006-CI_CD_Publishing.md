@@ -16,7 +16,7 @@ document_type: "RFC"
 Este RFC propone **GitHub Actions** como la plataforma única de CI y publicación NPM, configurando pipelines de validación (PRs), integración continua mediante **Turborepo Remote Caching**, y publicación automatizada con **Changesets**. (Nota: El CD del Frontend/Backend se trata separadamente en el RFC-007).
 
 ## Motivation
-Automatizar el proceso de lint, build y test en cada PR asegura la estabilidad del repositorio. Al ser CubeForge un proyecto hospedado en GitHub, aprovechar las integraciones nativas reduce el rozamiento operativo y evita mantener infraestructura de CI propia.
+Automatizar el proceso de lint, build y test en cada PR asegura la estabilidad del repositorio. Al ser Cubalyze un proyecto hospedado en GitHub, aprovechar las integraciones nativas reduce el rozamiento operativo y evita mantener infraestructura de CI propia.
 
 ## Proposed Solution
 *   **GitHub Actions:** Única herramienta para workflows de CI. 

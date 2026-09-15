@@ -3,7 +3,7 @@
 > Estado real (2026-08-12): la BD existe y está **bien documentada en otros
 > sitios**; esta carpeta es el punto de entrada.
 
-CubeForge es **local-first**: no hay base de datos de servidor (ADR-019 diferido).
+Cubalyze es **local-first**: no hay base de datos de servidor (ADR-019 diferido).
 El almacenamiento es:
 
 - **Web (PWA)**: SQLite WASM sobre **OPFS** vía worker Comlink

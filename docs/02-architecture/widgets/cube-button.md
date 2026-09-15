@@ -1,6 +1,6 @@
 # Widget: cube-button (3D cube)
 
-- **id**: `cube-button` · **categoría**: visual · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `cube-button` · **categoría**: visual · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingCubeButton`, `CubeButtonGate`, `Cube3DPreview`
 - **Definición**: `implementations/cube-button/definition.ts`
 

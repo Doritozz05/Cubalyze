@@ -4,7 +4,7 @@
 **Lifecycle**: Living Document
 
 ## Purpose
-To define the foundational philosophy and standards for human-AI collaboration in the CubeForge repository. This document sets the high-level expectations, while the explicit operational rules and constraints for AI agents are located in the authoritative `docs/14-ai/AGENTS.md` manual.
+To define the foundational philosophy and standards for human-AI collaboration in the Cubalyze repository. This document sets the high-level expectations, while the explicit operational rules and constraints for AI agents are located in the authoritative `docs/14-ai/AGENTS.md` manual.
 
 ## Philosophy
 1. **AI as an Executor, Not an Architect**: AI agents are highly capable executors. They must never invent global architecture, circumvent roadmaps, or make undocumented tooling choices. All architectural logic must be explicitly defined by human (or AI-assisted) architects in ADRs and TDDs *before* implementation begins.

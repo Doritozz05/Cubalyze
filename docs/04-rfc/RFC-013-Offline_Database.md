@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-013-Offline_Database
 
 ## Summary
-Este RFC propone el uso de **SQLite compilado a WebAssembly (WASM)** apoyado sobre **OPFS (Origin Private File System)** como motor principal de base de datos offline en la PWA de CubeForge, descartando soluciones puras basadas en IndexedDB debido a sus limitaciones de rendimiento sincrónico y concurrencia.
+Este RFC propone el uso de **SQLite compilado a WebAssembly (WASM)** apoyado sobre **OPFS (Origin Private File System)** como motor principal de base de datos offline en la PWA de Cubalyze, descartando soluciones puras basadas en IndexedDB debido a sus limitaciones de rendimiento sincrónico y concurrencia.
 
 ## Motivation
-CubeForge se diseña con un enfoque *offline-first*. Manejar miles de *solves* (tiempos de resolución), estadísticas en tiempo real y configuraciones requiere un motor de base de datos transaccional, rápido y robusto. IndexedDB nativo es asíncrono, difícil de manejar y propenso a inconsistencias bajo concurrencia. SQLite sobre OPFS brinda rendimiento casi nativo, consultas SQL estructuradas y robustez ACID probada.
+Cubalyze se diseña con un enfoque *offline-first*. Manejar miles de *solves* (tiempos de resolución), estadísticas en tiempo real y configuraciones requiere un motor de base de datos transaccional, rápido y robusto. IndexedDB nativo es asíncrono, difícil de manejar y propenso a inconsistencias bajo concurrencia. SQLite sobre OPFS brinda rendimiento casi nativo, consultas SQL estructuradas y robustez ACID probada.
 
 ## Proposed Solution
 *   **Motor:** Official SQLite3 WASM port.

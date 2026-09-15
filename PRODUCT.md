@@ -14,7 +14,7 @@ web
 
 ## Product Purpose
 
-CubeForge unifies what has always been fragmented across five separate tool classes — timing, smart-cube analytics, algorithm training, algorithm databases, and solver/engine infrastructure — into one cohesive, offline-first, AI-oriented application for speedcubers. Success means a cuber can time a solve on one device, have it analyzed for phase weaknesses, be fed a targeted algorithm-training drill, and see it all tracked in one place — without an internet connection and without exporting data between apps.
+Cubalyze unifies what has always been fragmented across five separate tool classes — timing, smart-cube analytics, algorithm training, algorithm databases, and solver/engine infrastructure — into one cohesive, offline-first, AI-oriented application for speedcubers. Success means a cuber can time a solve on one device, have it analyzed for phase weaknesses, be fed a targeted algorithm-training drill, and see it all tracked in one place — without an internet connection and without exporting data between apps.
 
 ## Positioning
 
@@ -47,7 +47,7 @@ Constraints and explicit gaps (do not fabricate as built):
 
 ## Brand Commitments
 
-- **Name:** CubeForge.
+- **Name:** Cubalyze.
 - **Positioning claim:** open-source, AI-first, offline-first speedcubing platform that unifies the five ecosystem layers.
 - **Open source:** the project is intentionally open-source; open-source posture is binding.
 - **Engineering governance:** strict pipeline PRD → Roadmap → ADR → RFC → TDD → Code; AI coding assistants must read the project's AGENTS.md governance before contributing. Binding.

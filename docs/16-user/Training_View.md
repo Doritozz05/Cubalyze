@@ -6,7 +6,7 @@
 
 ## Qué es
 
-La tab **Training** es el centro de entrenamiento de CubeForge: práctica de
+La tab **Training** es el centro de entrenamiento de Cubalyze: práctica de
 algoritmos por método/fase, planificación de sesiones con calendario y repaso
 diario con **SRS** (spaced repetition, FSRS). Toda la lógica vive en el cliente
 (SQLite local) — es offline-first, sin backend.

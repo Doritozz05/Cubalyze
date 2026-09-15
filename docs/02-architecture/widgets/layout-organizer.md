@@ -1,6 +1,6 @@
 # Widget: layout-organizer (Layouts)
 
-- **id**: `layout-organizer` · **categoría**: visual · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `layout-organizer` · **categoría**: visual · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingLayoutOrganizer`, `LayoutOrganizerPreview`
 - **Definición**: `implementations/layout-organizer/definition.ts`
 

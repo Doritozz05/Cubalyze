@@ -9,7 +9,7 @@
 - **Confidence Level**: High
 
 ## 2. Contexto del Problema
-CubeForge requiere una arquitectura **Offline-First**, almacenando hasta 10,000 tiempos de resolución y métricas complejas en la base de datos local del usuario usando OPFS (Origin Private File System) o IndexedDB.
+Cubalyze requiere una arquitectura **Offline-First**, almacenando hasta 10,000 tiempos de resolución y métricas complejas en la base de datos local del usuario usando OPFS (Origin Private File System) o IndexedDB.
 El mayor riesgo técnico para una PWA local-first es que los navegadores móviles (especialmente Safari en iOS) implementan políticas de limpieza de almacenamiento muy agresivas para liberar espacio.
 
 ## 3. Políticas de Evicción de Safari (WebKit)
@@ -25,7 +25,7 @@ Aun estando instalada, la cuota de almacenamiento de una PWA no es infinita. En 
 
 ## 4. Estrategia de Mitigación Recomendada
 
-No existe una garantía de **0% de pérdida de datos** puramente en el navegador en iOS. Para evitar que un usuario pierda miles de *solves*, CubeForge debe implementar la siguiente arquitectura de almacenamiento:
+No existe una garantía de **0% de pérdida de datos** puramente en el navegador en iOS. Para evitar que un usuario pierda miles de *solves*, Cubalyze debe implementar la siguiente arquitectura de almacenamiento:
 
 ### Nivel 1: OPFS (Primary Database)
 *   Usar OPFS (SQLite WASM) para la base de datos principal por su rendimiento masivo.

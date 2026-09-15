@@ -1,14 +1,14 @@
-# CubeForge Documentation Bootstrap Guide
+# Cubalyze Documentation Bootstrap Guide
 
 **Version**: 1.0
 **Role**: Principal Software Architect & Documentation Architect
-**Purpose**: This document is the definitive, authoritative guide for the entire CubeForge repository. It dictates how the project is organized, how architectural decisions are made, how AI agents must operate, and the strict lifecycle of every document. 
+**Purpose**: This document is the definitive, authoritative guide for the entire Cubalyze repository. It dictates how the project is organized, how architectural decisions are made, how AI agents must operate, and the strict lifecycle of every document. 
 
 ---
 
 ## 1. Single Source of Truth Philosophy
 
-CubeForge operates under a strict **Single Source of Truth (SSoT)** philosophy:
+Cubalyze operates under a strict **Single Source of Truth (SSoT)** philosophy:
 - **No Duplication**: Information must exist in exactly one place. If a document needs to reference information from another, it must link to it, never copy it.
 - **Clear Ownership**: Every document or directory has a designated owner (e.g., Product Owner, Principal Architect, Developer).
 - **Immutable History**: Once a phase is complete or an architecture decision is approved, it is immutable unless formally superseded.
@@ -79,7 +79,7 @@ Every feature follows this strict, mandatory workflow. Skipping steps is forbidd
 
 ## 6. AI Development Ecosystem
 
-CubeForge is an AI-first repository. AI agents must operate deterministically:
+Cubalyze is an AI-first repository. AI agents must operate deterministically:
 - **CodeGraph Mandate**: Agents must explore the repository using CodeGraph before writing code to verify existing structures.
 - **Read-Before-Write**: Agents must read the PRD, the specific TDD, and relevant ADRs before modifying the codebase.
 - **No Hallucination**: Agents must never bypass the documentation pipeline or implement features without an approved TDD.

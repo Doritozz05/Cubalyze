@@ -1,6 +1,6 @@
-# CubeForge Architecture Workspace
+# Cubalyze Architecture Workspace
 
-Welcome to the CubeForge Architecture Workspace. This directory is the authoritative source for all technical decisions, exploration, and system design.
+Welcome to the Cubalyze Architecture Workspace. This directory is the authoritative source for all technical decisions, exploration, and system design.
 
 ## Structure and Responsibilities
 

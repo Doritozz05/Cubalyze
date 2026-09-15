@@ -1,7 +1,7 @@
 # TDD 0003: Core Data Model Implementation
 
 ## 1. Overview
-This document outlines the schemas and interfaces for the foundational data models in CubeForge (Epic 1.3).
+This document outlines the schemas and interfaces for the foundational data models in Cubalyze (Epic 1.3).
 
 ## 2. Architecture Decisions
 - **Validation Library**: `Zod` (selected for TypeScript-first validation and schema inference).

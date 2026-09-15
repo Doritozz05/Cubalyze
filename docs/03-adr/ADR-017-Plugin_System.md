@@ -13,10 +13,10 @@ document_type: "ADR"
 # ADR-017-Plugin_System
 
 ## Summary
-Este RFC define el diseÃ±o del sistema de plugins de CubeForge. Para permitir la adiciÃ³n dinÃ¡mica de nuevas categorÃ­as de rompecabezas, mÃ©todos de entrenamiento y temas visuales sin sobrecargar el *bundle* principal, se adoptarÃ¡ un enfoque basado en **ESM (ECMAScript Modules) nativos e importaciones dinÃ¡micas** (`import()`) integrado estrechamente con Vite y React.
+Este RFC define el diseÃ±o del sistema de plugins de Cubalyze. Para permitir la adiciÃ³n dinÃ¡mica de nuevas categorÃ­as de rompecabezas, mÃ©todos de entrenamiento y temas visuales sin sobrecargar el *bundle* principal, se adoptarÃ¡ un enfoque basado en **ESM (ECMAScript Modules) nativos e importaciones dinÃ¡micas** (`import()`) integrado estrechamente con Vite y React.
 
 ## Motivation
-CubeForge crecerÃ¡ orgÃ¡nicamente. Si incluimos la lÃ³gica de Megaminx, Pyraminx, Square-1 y decenas de algoritmos de entrenamiento en el build inicial, la PWA inicial pesarÃ¡ demasiados megabytes. Una arquitectura orientada a plugins mediante code-splitting garantiza que el nÃºcleo sea ligero y solo se descargue lo que el usuario decida instalar o utilizar.
+Cubalyze crecerÃ¡ orgÃ¡nicamente. Si incluimos la lÃ³gica de Megaminx, Pyraminx, Square-1 y decenas de algoritmos de entrenamiento en el build inicial, la PWA inicial pesarÃ¡ demasiados megabytes. Una arquitectura orientada a plugins mediante code-splitting garantiza que el nÃºcleo sea ligero y solo se descargue lo que el usuario decida instalar o utilizar.
 
 ## Proposed Solution
 *   **Contrato de Plugin:** Se definirÃ¡ una interfaz TypeScript estÃ¡ndar (ej. `ICubePlugin`) que cada plugin debe exportar por defecto.

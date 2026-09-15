@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-La documentación arquitectónica y de producto (PRD, ADRs, RFCs) debe residir junto al código para evitar que quede desactualizada (des-sincronización). Las wikis externas (Notion, Confluence) requieren cambio de contexto, frecuentemente se abandonan y carecen de control de versiones unificado con el código. Además, un formato fácilmente legible e indexable por IA es esencial para asistir en el desarrollo y mantenimiento del monorepo CubeForge.
+La documentación arquitectónica y de producto (PRD, ADRs, RFCs) debe residir junto al código para evitar que quede desactualizada (des-sincronización). Las wikis externas (Notion, Confluence) requieren cambio de contexto, frecuentemente se abandonan y carecen de control de versiones unificado con el código. Además, un formato fácilmente legible e indexable por IA es esencial para asistir en el desarrollo y mantenimiento del monorepo Cubalyze.
 
 ## Decision Drivers
 

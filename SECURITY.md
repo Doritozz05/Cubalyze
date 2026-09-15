@@ -2,13 +2,13 @@
 
 ## Supported Versions
 
-Currently, CubeForge is in pre-release/alpha. We do not offer long-term support for specific versions yet.
+Currently, Cubalyze is in pre-release/alpha. We do not offer long-term support for specific versions yet.
 
 ## Reporting a Vulnerability
 
-Security is a top priority for CubeForge, especially given our offline-first architecture and local Bluetooth connectivity. 
+Security is a top priority for Cubalyze, especially given our offline-first architecture and local Bluetooth connectivity. 
 
-If you discover a security vulnerability within CubeForge, please do not disclose it publicly. Instead, submit a report privately via GitHub Security Advisories or by emailing the core maintainers (email to be provided upon public release).
+If you discover a security vulnerability within Cubalyze, please do not disclose it publicly. Instead, submit a report privately via GitHub Security Advisories or by emailing the core maintainers (email to be provided upon public release).
 
 Please include:
 - A description of the vulnerability.

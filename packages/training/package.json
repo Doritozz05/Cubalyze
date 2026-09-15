@@ -2,7 +2,7 @@
   "name": "@cubalyze/training",
   "version": "0.2.0",
   "private": true,
-  "description": "Core training engine for CubeForge — exercise definitions, session engine, progress tracking",
+  "description": "Core training engine for Cubalyze — exercise definitions, session engine, progress tracking",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

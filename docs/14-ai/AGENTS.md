@@ -8,7 +8,7 @@ document_type: "AGENTS"
 # AGENTS.md — Operating Manual for AI Assistants
 
 > This is the **authoritative operating manual** for AI agents working in the
-> CubeForge repository. It complements (and is referenced by)
+> Cubalyze repository. It complements (and is referenced by)
 > [`../08-standards/AI_Development_Standards.md`](../08-standards/AI_Development_Standards.md).
 > **Read this file first, then the reading order below, before touching anything.**
 

@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-022-Open_Source_Readiness
 
 ## Summary
-Este RFC propone la formalización inmediata de las prácticas estándar de código abierto (OSS) en el repositorio de CubeForge. Esto incluye la adición de guías de contribución explícitas, un código de conducta, plantillas de Issues/Pull Requests, y el uso estricto de Conventional Commits para asegurar que el proyecto esté listo para atraer talento de la comunidad desde su inicio.
+Este RFC propone la formalización inmediata de las prácticas estándar de código abierto (OSS) en el repositorio de Cubalyze. Esto incluye la adición de guías de contribución explícitas, un código de conducta, plantillas de Issues/Pull Requests, y el uso estricto de Conventional Commits para asegurar que el proyecto esté listo para atraer talento de la comunidad desde su inicio.
 
 ## Motivation
-CubeForge será liberado bajo GPLv3. Un repositorio Open Source sin guías claras genera fricción: los contribuyentes no saben cómo reportar errores correctamente, cómo configurar su entorno local ni cuáles son las expectativas de estilo de código. Sentar estas bases en la "Día 1" incrementa radicalmente la posibilidad de recibir contribuciones útiles (Pull Requests) y mitiga la carga de mantenimiento del equipo núcleo.
+Cubalyze será liberado bajo GPLv3. Un repositorio Open Source sin guías claras genera fricción: los contribuyentes no saben cómo reportar errores correctamente, cómo configurar su entorno local ni cuáles son las expectativas de estilo de código. Sentar estas bases en la "Día 1" incrementa radicalmente la posibilidad de recibir contribuciones útiles (Pull Requests) y mitiga la carga de mantenimiento del equipo núcleo.
 
 ## Proposed Solution
 *   **CONTRIBUTING.md:** Un documento detallado sobre cómo clonar, instalar dependencias (usando `pnpm`), levantar la PWA y ejecutar los tests.

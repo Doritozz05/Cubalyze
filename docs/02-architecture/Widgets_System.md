@@ -5,7 +5,7 @@
 
 ## Qué es
 
-CubeForge tiene un **sistema de widgets**: paneles flotantes portaleados que el
+Cubalyze tiene un **sistema de widgets**: paneles flotantes portaleados que el
 usuario puede activar desde el Explorer, fijar en el dock del header o dejar
 flotando sobre la vista. El sistema es un mini-SDK inspirado en el patrón de
 activación de extensiones de VS Code y la API de widgets de Figma: los widgets

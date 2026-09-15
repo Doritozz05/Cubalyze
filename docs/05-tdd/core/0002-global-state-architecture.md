@@ -1,7 +1,7 @@
 # TDD 0002: Global State Architecture
 
 ## 1. Overview
-This document outlines the architecture for the global state management within the CubeForge application (Epic 1.2).
+This document outlines the architecture for the global state management within the Cubalyze application (Epic 1.2).
 
 ## 2. Architecture Decisions
 - **Library**: `Zustand` (selected for minimal boilerplate, headless nature, and ease of decoupling from UI).

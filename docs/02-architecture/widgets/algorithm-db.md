@@ -1,6 +1,6 @@
 # Widget: algorithm-db (Algorithms)
 
-- **id**: `algorithm-db` · **categoría**: training · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `algorithm-db` · **categoría**: training · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingAlgorithmDbPanel`, `AlgorithmDbPreview`, `AlgorithmViewerCard`
 - **Definición**: `implementations/algorithm-db/definition.ts`
 

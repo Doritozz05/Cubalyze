@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-010-Licensing_Compatibility
 
 ## Summary
-Este RFC evaluará la selección y aplicación de la licencia de código abierto para CubeForge, asegurando la viabilidad legal del proyecto a largo plazo y la compatibilidad con las dependencias elegidas.
+Este RFC evaluará la selección y aplicación de la licencia de código abierto para Cubalyze, asegurando la viabilidad legal del proyecto a largo plazo y la compatibilidad con las dependencias elegidas.
 
 ## Motivation
-CubeForge será un proyecto de código abierto. Elegir la licencia correcta desde el principio (DEC-01 en el registro de decisiones) es fundamental para evitar problemas legales a futuro, especialmente si se planea monetizar características premium o si se utilizan componentes open source restrictivos (como solvers matemáticos).
+Cubalyze será un proyecto de código abierto. Elegir la licencia correcta desde el principio (DEC-01 en el registro de decisiones) es fundamental para evitar problemas legales a futuro, especialmente si se planea monetizar características premium o si se utilizan componentes open source restrictivos (como solvers matemáticos).
 
 ## Proposed Solution
 (Pendiente de investigación y redacción formal). Se propone investigar el uso de **GPLv3** o **MIT** evaluando el riesgo comercial frente a la libertad de modificación, y el impacto de dependencias clave como el solver `min2phase` o librerías 3D.

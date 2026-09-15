@@ -1,6 +1,6 @@
 # Widget: times-log (Times)
 
-- **id**: `times-log` · **categoría**: timer · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `times-log` · **categoría**: timer · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingTimesPanel`, `TimesLogPreview`
 - **Definición**: `implementations/times-log/definition.ts`
 

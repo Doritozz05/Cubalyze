@@ -1,6 +1,6 @@
 # Widget: solve-timeline (Solve timeline)
 
-- **id**: `solve-timeline` · **categoría**: analysis · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `solve-timeline` · **categoría**: analysis · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingPhaseTimeline`, `SolveTimelinePreview`
 - **Definición**: `implementations/solve-timeline/definition.ts`
 

@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-011-PWA_Storage_Eviction_Policies
 
 ## Summary
-Este RFC define la estrategia de almacenamiento local persistente para la PWA de CubeForge (DEC-02) y cómo evitar que el navegador elimine los datos en situaciones de poco espacio en disco (Eviction Policies).
+Este RFC define la estrategia de almacenamiento local persistente para la PWA de Cubalyze (DEC-02) y cómo evitar que el navegador elimine los datos en situaciones de poco espacio en disco (Eviction Policies).
 
 ## Motivation
-CubeForge está diseñado como una aplicación Offline-First. Todo el estado (sesiones, miles de tiempos, preferencias) vivirá primordialmente en el navegador. Navegadores como Safari/Chrome pueden borrar IndexedDB de forma silenciosa si el dispositivo se queda sin espacio, lo cual es inaceptable para una herramienta donde el usuario confía sus datos. Necesitamos una solución arquitectónica que garantice la permanencia de los datos locales y un plan de mitigación en caso de borrado.
+Cubalyze está diseñado como una aplicación Offline-First. Todo el estado (sesiones, miles de tiempos, preferencias) vivirá primordialmente en el navegador. Navegadores como Safari/Chrome pueden borrar IndexedDB de forma silenciosa si el dispositivo se queda sin espacio, lo cual es inaceptable para una herramienta donde el usuario confía sus datos. Necesitamos una solución arquitectónica que garantice la permanencia de los datos locales y un plan de mitigación en caso de borrado.
 
 ## Proposed Solution
 (Pendiente de redacción detallada). La hipótesis de diseño principal incluye solicitar el permiso de `Persistent Storage` explícitamente y usar un sistema de SQLite compilado a WASM ejecutándose sobre OPFS (Origin Private File System) o IndexedDB, junto a un mecanismo de sincronización en la nube (Supabase Backup) como plan B de recuperación.

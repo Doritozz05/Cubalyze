@@ -1,4 +1,4 @@
-# CubeForge — Auditoría Exhaustiva del Producto
+# Cubalyze — Auditoría Exhaustiva del Producto
 
 **Fecha:** Agosto 2026
 **Alcance:** Estado real de desarrollo, cobertura funcional, coherencia, valor, comparación con el ecosistema speedcubing y roadmap de finalización.
@@ -8,7 +8,7 @@
 
 ## 1. Resumen Ejecutivo
 
-CubeForge **no es una plataforma "a medio hacer"**: es una plataforma con un **núcleo técnico excepcionalmente sólido y completo** (motor 3D, solver matemático, análisis de solves, HAL de smart cubes, motor de entrenamiento con FSRS real) sobre el que **faltan las capas de "plataforma"**: cuenta/usuario, sincronización, backend, IA y onboarding.
+Cubalyze **no es una plataforma "a medio hacer"**: es una plataforma con un **núcleo técnico excepcionalmente sólido y completo** (motor 3D, solver matemático, análisis de solves, HAL de smart cubes, motor de entrenamiento con FSRS real) sobre el que **faltan las capas de "plataforma"**: cuenta/usuario, sincronización, backend, IA y onboarding.
 
 **Diagnóstico en una frase:** el 80% del valor técnico está implementado y testeado (352+ tests pasan, typecheck 30/30 limpio); lo que falta es lo que convierte una *app local* en una *plataforma profesional*: identidad de usuario, sync multi-dispositivo, AI Coach, eventos WCA más allá de 3×3/2×2, y un onboarding que guíe al usuario.
 
@@ -52,7 +52,7 @@ CubeForge **no es una plataforma "a medio hacer"**: es una plataforma con un **n
 | **CubeSkills** | Contenido educativo (cursos de Feliks Zemdegs) | No es software: sin timer, sin stats, sin Bluetooth |
 | **CubingApp** | Kinch Ranks / Sum of Ranks (ranking global WCA) | No es timer ni entrenador |
 
-**Oportunidad de mercado confirmada:** ninguna herramienta unifica las 5 capas (timer, smart cube, análisis, entrenamiento, base de algoritmos) en una arquitectura moderna y extensible. El PRD de CubeForge ya identificó esto; **el código lo confirma**: la mayoría de las capas existen, falta la envoltura de plataforma.
+**Oportunidad de mercado confirmada:** ninguna herramienta unifica las 5 capas (timer, smart cube, análisis, entrenamiento, base de algoritmos) en una arquitectura moderna y extensible. El PRD de Cubalyze ya identificó esto; **el código lo confirma**: la mayoría de las capas existen, falta la envoltura de plataforma.
 
 ### 3.2 Necesidades y frustraciones más repetidas de la comunidad (con fuentes)
 
@@ -166,7 +166,7 @@ General, Appearance, Smart Cube, Timer, Scramble, Analysis, Training, Notificati
 
 ## 5. Auditoría de Cobertura del Entrenamiento
 
-### ¿Puede un speedcuber entrenar todas las áreas importantes solo con CubeForge?
+### ¿Puede un speedcuber entrenar todas las áreas importantes solo con Cubalyze?
 
 **Para 3×3 CFOP y 2×2: SÍ, cubre casi todo lo esencial.** **Para el resto del ecosistema: NO.**
 
@@ -209,7 +209,7 @@ General, Appearance, Smart Cube, Timer, Scramble, Analysis, Training, Notificati
 
 ## 6. Comparación con las Necesidades de la Comunidad
 
-| Necesidad (fuente) | ¿CubeForge la resuelve? | Módulo |
+| Necesidad (fuente) | ¿Cubalyze la resuelve? | Módulo |
 |---|---|---|
 | Paridad móvil/escritorio | ✅ Sí (95%) | Bottom tab bar + sheets + touch targets |
 | Migración de datos sin fricción | ✅ Sí | Import/Export CSV/csTimer/JSON con preview |
@@ -326,7 +326,7 @@ Construido exclusivamente con la evidencia de esta auditoría. No asume que solo
 
 ## 11. Conclusión
 
-CubeForge es **técnicamente superior a la mayoría de competidores en su núcleo** (motor 3D propio, análisis real de solves, FSRS-4, HAL multi-vendor, sistema de widgets) — algo que ninguna herramienta del mercado unifica. El problema no es el motor: es que **no hay plataforma alrededor del motor**. Las 3 inversiones con mayor ROI inmediato son: (1) identidad+sync, (2) onboarding, (3) cobertura de eventos WCA. La IA, aunque es el diferenciador de marketing más potente, debe construirse sobre esas bases para ser verdaderamente útil y explicable.
+Cubalyze es **técnicamente superior a la mayoría de competidores en su núcleo** (motor 3D propio, análisis real de solves, FSRS-4, HAL multi-vendor, sistema de widgets) — algo que ninguna herramienta del mercado unifica. El problema no es el motor: es que **no hay plataforma alrededor del motor**. Las 3 inversiones con mayor ROI inmediato son: (1) identidad+sync, (2) onboarding, (3) cobertura de eventos WCA. La IA, aunque es el diferenciador de marketing más potente, debe construirse sobre esas bases para ser verdaderamente útil y explicable.
 
 ---
 

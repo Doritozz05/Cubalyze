@@ -1,6 +1,6 @@
 # Data Sources & Attribution
 
-This document records where CubeForge's data comes from, what we use, and how it
+This document records where Cubalyze's data comes from, what we use, and how it
 is regenerated. It exists so that every source is attributed and reproducible.
 
 ---
@@ -142,4 +142,4 @@ pnpm --filter @cubalyze/math-core test
 - The **WCA** and CubeRoot/reco.nz data we ship is public, aggregated, and
   attributed per record. If you plan a commercial use, contact the source
   admins first.
-- CubeForge itself is **MIT** licensed (see `LICENSE`).
+- Cubalyze itself is **MIT** licensed (see `LICENSE`).

@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-Para escalar el desarrollo de CubeForge como monorepo y asegurar la calidad continua del código, se requiere automatizar los procesos de validación (lint, build, tests) ante cada Pull Request. Además, la estrategia técnica contempla exponer el "Hardware Abstraction Layer" y el "Math Core" como librerías públicas (SDK) en NPM. Se necesita una plataforma unificada para orquestar la integración continua, aprovechar la estructura monorepo eficientemente, y versionar/publicar paquetes de manera automatizada.
+Para escalar el desarrollo de Cubalyze como monorepo y asegurar la calidad continua del código, se requiere automatizar los procesos de validación (lint, build, tests) ante cada Pull Request. Además, la estrategia técnica contempla exponer el "Hardware Abstraction Layer" y el "Math Core" como librerías públicas (SDK) en NPM. Se necesita una plataforma unificada para orquestar la integración continua, aprovechar la estructura monorepo eficientemente, y versionar/publicar paquetes de manera automatizada.
 
 *(Nota: La estrategia de Alojamiento y Despliegue Continuo (CD) del Frontend/Backend está deliberadamente fuera del alcance de este ADR y se evaluará en un futuro RFC-007).*
 

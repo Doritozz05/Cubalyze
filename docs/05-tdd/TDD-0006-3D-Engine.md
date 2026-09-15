@@ -1,7 +1,7 @@
 # TDD-0006: 3D Engine Architecture (Phase 3)
 
 ## 1. Overview
-This Technical Design Document outlines the architecture, data flow, and implementation strategy for **Epic 3: Core 3D Engine** of the CubeForge platform. It focuses on delivering an ultra-responsive, modular, and performant 3D visualizer using Pure `three.js`.
+This Technical Design Document outlines the architecture, data flow, and implementation strategy for **Epic 3: Core 3D Engine** of the Cubalyze platform. It focuses on delivering an ultra-responsive, modular, and performant 3D visualizer using Pure `three.js`.
 
 **Goals:**
 - Render a 3x3 Rubik's Cube at 60 FPS on low-end devices.

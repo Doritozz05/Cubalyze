@@ -154,7 +154,7 @@ bytes min/seg/msec LE) y devuelve el display + 3 tiempos previos.
 
 ## 4. Detalles de configuración
 
-- **`tauri.conf.json`**: productName `CubeForge`, identifier `com.cubeforge.desktop`,
+- **`tauri.conf.json`**: productName `Cubalyze`, identifier `com.cubeforge.desktop`,
   versión `0.1.0`. Ventana 1280×800 (min 900×600), CSP estricta (misma filosofía
   que `vercel.json`). Dev en `http://localhost:1420`; bundle NSIS (`currentUser`)
   con iconos multi-plataforma.

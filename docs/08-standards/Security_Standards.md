@@ -7,7 +7,7 @@
 To establish security guardrails for local-first data, cloud sync, and dependencies.
 
 ## Data Privacy & Offline-First
-- CubeForge operates primarily offline. User solves, timing data, and algorithm progress are stored locally and synced only upon explicit consent.
+- Cubalyze operates primarily offline. User solves, timing data, and algorithm progress are stored locally and synced only upon explicit consent.
 - Bluetooth device identifiers should be treated as ephemeral and securely handled.
 
 ## Cryptography & Hashing

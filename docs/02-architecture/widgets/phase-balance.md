@@ -1,6 +1,6 @@
 # Widget: phase-balance (Phase balance)
 
-- **id**: `phase-balance` · **categoría**: analysis · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `phase-balance` · **categoría**: analysis · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingPhaseBalance`, `PhaseBalancePreview`
 - **Definición**: `implementations/phase-balance/definition.ts`
 - **Lógica pura**: `phaseBalance.ts` + `benchmarks.ts` + `phaseBalance.test.ts`

@@ -13,7 +13,7 @@ document_type: "ADR"
 # ADR-016-Performance_Strategies
 
 ## Summary
-Este RFC establece la estrategia central de rendimiento de CubeForge: delegar todas las tareas pesadas (Motor de Base de Datos SQLite WASM y Generador de Scrambles/Solver WASM) a **Web Workers** orquestados a travÃ©s de **Comlink**, y usar `SharedArrayBuffer` / `ArrayBuffer` para la transferencia de estados cuando sea necesario.
+Este RFC establece la estrategia central de rendimiento de Cubalyze: delegar todas las tareas pesadas (Motor de Base de Datos SQLite WASM y Generador de Scrambles/Solver WASM) a **Web Workers** orquestados a travÃ©s de **Comlink**, y usar `SharedArrayBuffer` / `ArrayBuffer` para la transferencia de estados cuando sea necesario.
 
 ## Motivation
 Las aplicaciones Single Page Application (SPA) en React sufren jank (caÃ­da de fotogramas) si el "Main Thread" se bloquea con tareas sincrÃ³nicas mayores a 16ms. Operaciones como guardar 50 registros en SQLite, o calcular la inicializaciÃ³n de Kociemba pueden tardar de 50ms a varios segundos. Debemos garantizar 60fps inquebrantables para el renderizado 3D y el cronÃ³metro de resoluciÃ³n.

@@ -13,10 +13,10 @@ document_type: "ADR"
 # ADR-022-Open_Source_Readiness
 
 ## Summary
-Este RFC propone la formalizaciÃ³n inmediata de las prÃ¡cticas estÃ¡ndar de cÃ³digo abierto (OSS) en el repositorio de CubeForge. Esto incluye la adiciÃ³n de guÃ­as de contribuciÃ³n explÃ­citas, un cÃ³digo de conducta, plantillas de Issues/Pull Requests, y el uso estricto de Conventional Commits para asegurar que el proyecto estÃ© listo para atraer talento de la comunidad desde su inicio.
+Este RFC propone la formalizaciÃ³n inmediata de las prÃ¡cticas estÃ¡ndar de cÃ³digo abierto (OSS) en el repositorio de Cubalyze. Esto incluye la adiciÃ³n de guÃ­as de contribuciÃ³n explÃ­citas, un cÃ³digo de conducta, plantillas de Issues/Pull Requests, y el uso estricto de Conventional Commits para asegurar que el proyecto estÃ© listo para atraer talento de la comunidad desde su inicio.
 
 ## Motivation
-CubeForge se libera bajo licencia **MIT** (ver ADR-010; la menciÃ³n original a GPLv3 en este ADR era un error factual). Un repositorio Open Source sin guÃ­as claras genera fricciÃ³n: los contribuyentes no saben cÃ³mo reportar errores correctamente, cÃ³mo configurar su entorno local ni cuÃ¡les son las expectativas de estilo de cÃ³digo. Sentar estas bases en la "DÃ­a 1" incrementa radicalmente la posibilidad de recibir contribuciones Ãºtiles (Pull Requests) y mitiga la carga de mantenimiento del equipo nÃºcleo.
+Cubalyze se libera bajo licencia **MIT** (ver ADR-010; la menciÃ³n original a GPLv3 en este ADR era un error factual). Un repositorio Open Source sin guÃ­as claras genera fricciÃ³n: los contribuyentes no saben cÃ³mo reportar errores correctamente, cÃ³mo configurar su entorno local ni cuÃ¡les son las expectativas de estilo de cÃ³digo. Sentar estas bases en la "DÃ­a 1" incrementa radicalmente la posibilidad de recibir contribuciones Ãºtiles (Pull Requests) y mitiga la carga de mantenimiento del equipo nÃºcleo.
 
 ## Proposed Solution
 *   **CONTRIBUTING.md:** Un documento detallado sobre cÃ³mo clonar, instalar dependencias (usando `pnpm`), levantar la PWA y ejecutar los tests.

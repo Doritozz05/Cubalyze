@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-001-Monorepo_Strategy
 
 ## Summary
-Este RFC propone la adopción de **Turborepo** como la herramienta de orquestación y construcción del monorepo de CubeForge, permitiendo escalabilidad masiva y una barrera de entrada baja para contribuidores Open Source.
+Este RFC propone la adopción de **Turborepo** como la herramienta de orquestación y construcción del monorepo de Cubalyze, permitiendo escalabilidad masiva y una barrera de entrada baja para contribuidores Open Source.
 
 ## Motivation
-CubeForge crecerá desde una simple aplicación web hasta incluir un SDK público, servidores en la nube, wrappers de aplicaciones nativas (Capacitor/Tauri) y múltiples paquetes de lógica interna (ej. un solver de cubo, un renderizador 3D, lógica de estado). Gestionar esto en múltiples repositorios dificultaría el desarrollo local y el testing cruzado. Un monorepo resuelve esto, pero requiere orquestación. 
+Cubalyze crecerá desde una simple aplicación web hasta incluir un SDK público, servidores en la nube, wrappers de aplicaciones nativas (Capacitor/Tauri) y múltiples paquetes de lógica interna (ej. un solver de cubo, un renderizador 3D, lógica de estado). Gestionar esto en múltiples repositorios dificultaría el desarrollo local y el testing cruzado. Un monorepo resuelve esto, pero requiere orquestación. 
 
 ## Proposed Solution
 Utilizar **Turborepo**.

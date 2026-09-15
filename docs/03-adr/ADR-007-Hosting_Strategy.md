@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-Para materializar el proyecto CubeForge sin incurrir en costes iniciales, se requiere definir una infraestructura de alojamiento y servicios de backend que ofrezca un "tier gratuito" (Free Tier) lo suficientemente generoso como para soportar el ciclo de vida de desarrollo y a los primeros usuarios en producción. 
+Para materializar el proyecto Cubalyze sin incurrir en costes iniciales, se requiere definir una infraestructura de alojamiento y servicios de backend que ofrezca un "tier gratuito" (Free Tier) lo suficientemente generoso como para soportar el ciclo de vida de desarrollo y a los primeros usuarios en producción. 
 Dado que el ecosistema se ha diseñado (según ADR-008) como una SPA PWA puramente estática con lógica pesada de cálculo (WASM) y renderizado 3D delegada al cliente, el backend no necesita poder de cómputo intensivo, sino más bien almacenamiento de datos estructurados, sincronización y autenticación.
 
 ## Decision Drivers
@@ -36,10 +36,10 @@ Chosen option: **Opción 1: Vercel (Frontend) + Supabase (Backend/Auth/DB)**.
 
 Se elige esta combinación porque se ajusta de forma perfecta a la naturaleza de la aplicación y garantiza un coste inicial de 0€ con altísima escalabilidad:
 
-1.  **Vercel:** Al ser una SPA (React+Vite), el frontend consiste únicamente en archivos estáticos. El plan "Hobby" de Vercel es sobresaliente en la distribución de sitios estáticos mediante CDN global, con CI/CD automatizado instantáneo y sin las limitaciones de tiempo de cómputo (Serverless Functions) dado que CubeForge no usa SSR.
+1.  **Vercel:** Al ser una SPA (React+Vite), el frontend consiste únicamente en archivos estáticos. El plan "Hobby" de Vercel es sobresaliente en la distribución de sitios estáticos mediante CDN global, con CI/CD automatizado instantáneo y sin las limitaciones de tiempo de cómputo (Serverless Functions) dado que Cubalyze no usa SSR.
 2.  **Supabase:** Funciona como un backend completo sobre PostgreSQL. Su capa gratuita permite 50,000 MAUs (usuarios activos), 500MB de base de datos (suficiente para registrar cientos de miles de tiempos de resolución que son solo datos tabulares), y provee de forma nativa Autenticación y APIs REST/Realtime automáticas (PostgREST). 
 
-Como CubeForge delega el esfuerzo computacional al navegador (motor 3D y WASM) y usa estado offline, las llamadas al servidor (Supabase) son esporádicas (solo para sincronizar sesiones). Esta arquitectura minimiza el consumo de ancho de banda y conexiones concurrentes de servidor, maximizando la utilidad de los niveles gratuitos.
+Como Cubalyze delega el esfuerzo computacional al navegador (motor 3D y WASM) y usa estado offline, las llamadas al servidor (Supabase) son esporádicas (solo para sincronizar sesiones). Esta arquitectura minimiza el consumo de ancho de banda y conexiones concurrentes de servidor, maximizando la utilidad de los niveles gratuitos.
 
 ### Positive Consequences
 
@@ -61,7 +61,7 @@ Como CubeForge delega el esfuerzo computacional al navegador (motor 3D y WASM) y
 ### Opción 1: Vercel + Supabase
 * **Good, because:** Vercel es el estándar de oro para DX en despliegues estáticos con Vite.
 * **Good, because:** Supabase ofrece una verdadera base de datos relacional Postgres con control de acceso por filas (RLS).
-* **Good, because:** Encaja matemáticamente con el hecho de que el cómputo pesado en CubeForge ocurre en el cliente (WASM).
+* **Good, because:** Encaja matemáticamente con el hecho de que el cómputo pesado en Cubalyze ocurre en el cliente (WASM).
 
 ### Opción 2: Cloudflare Pages + Firebase
 * **Good, because:** Cloudflare Pages tiene ancho de banda virtualmente ilimitado.

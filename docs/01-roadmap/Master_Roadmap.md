@@ -1,4 +1,4 @@
-# CubeForge Master Implementation Roadmap
+# Cubalyze Master Implementation Roadmap
 
 > **This is the single source of truth for development planning.**
 > It is an execution plan describing the order in which the entire product will be built, completely aligned with the Product Requirements Document (PRD).
@@ -42,7 +42,7 @@ Dependencies are modeled as a Directed Acyclic Graph (DAG). No phase may commenc
 
 ## 4. Incremental Delivery Strategy
 
-CubeForge embraces iterative value delivery. Each phase results in a tangible artifact—whether it is a testable library, an internal API, a CLI tool, or a user-facing interface. We do not build massive 'ghost' systems that go untested for months. Every deliverable must be verifiable in isolation before being integrated into the whole.
+Cubalyze embraces iterative value delivery. Each phase results in a tangible artifact—whether it is a testable library, an internal API, a CLI tool, or a user-facing interface. We do not build massive 'ghost' systems that go untested for months. Every deliverable must be verifiable in isolation before being integrated into the whole.
 
 ---
 
@@ -152,7 +152,7 @@ A feature is ready for the end-user only when its UI, underlying core logic, tel
 
 ## 18. Release Strategy
 
-CubeForge will employ ring-based deployments:
+Cubalyze will employ ring-based deployments:
 - **Ring 0 (Dev)**: Headless testing and local environments.
 - **Ring 1 (Alpha)**: Internal testing of isolated phases.
 - **Ring 2 (Beta)**: Opt-in power users testing integrated Milestones.
@@ -591,7 +591,7 @@ This epic handles the aggregation and visualization of data.
 ---
 
 ## EPIC 8: AI INTEGRATION
-This epic introduces the intelligent layer of CubeForge.
+This epic introduces the intelligent layer of Cubalyze.
 
 ### Phase 8.1: AI Infrastructure & Pipeline
 **Goal**: Establish the connection to the LLM backend (e.g., OpenAI/Anthropic/Local).
@@ -668,7 +668,7 @@ This epic handles the final polish, cloud infrastructure, and public release pre
 
 ### Phase 9.3: Public SDK & External Integrations
 **Goal**: Expose the Hardware Abstraction Layer and Math Core as public npm packages.
-**Motivation**: Establish CubeForge as an ecosystem platform, not just an app.
+**Motivation**: Establish Cubalyze as an ecosystem platform, not just an app.
 **Dependencies**: Phase 2.2, Phase 4.1.
 **References**: [PRD Part 5.4.](../00-product/PRD.md)
 **Scope**:

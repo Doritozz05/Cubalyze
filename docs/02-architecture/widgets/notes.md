@@ -1,6 +1,6 @@
 # Widget: notes (Notes)
 
-- **id**: `notes` · **categoría**: training · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `notes` · **categoría**: training · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingNotesPanel`, `NotesPreview`
 - **Definición**: `implementations/notes/definition.ts`
 - **Estado propio**: `notesStore.ts`

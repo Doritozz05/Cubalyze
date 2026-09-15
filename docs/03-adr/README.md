@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This directory contains the finalized, immutable architectural decisions for the CubeForge project. 
+This directory contains the finalized, immutable architectural decisions for the Cubalyze project. 
 
 ## Workflow
 - ADRs are **NOT** generated speculatively.

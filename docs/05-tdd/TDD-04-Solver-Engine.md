@@ -15,7 +15,7 @@ document_type: "TDD"
 
 ## Introduction
 
-This Technical Design Document (TDD) specifies the implementation architecture for Epic 4 of the CubeForge roadmap: the **Solver Engine & Mathematics Core**. 
+This Technical Design Document (TDD) specifies the implementation architecture for Epic 4 of the Cubalyze roadmap: the **Solver Engine & Mathematics Core**. 
 This epic implements the mathematical brain of the platform, enabling ultra-fast headless state tracking, WCA-compliant scramble generation, optimal solution search via Herbert Kociemba's two-phase algorithm (`min2phase`), and a modular method-recognition system for human solves (CFOP, Roux, etc.).
 
 ## Architecture

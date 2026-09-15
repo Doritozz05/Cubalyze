@@ -117,5 +117,5 @@ documentadas** (cada una explica el porqué):
   vive en `src/main.tsx` vía `virtual:pwa-register`), workbox
   `maximumFileSizeToCacheInBytes: 4MB`, navegación **NetworkFirst** (timeout
   4s, sin fallback al precache para que la carga inicial sea siempre la última
-  versión con conexión), manifest CubeForge (ver
+  versión con conexión), manifest Cubalyze (ver
   [Deploy_and_Hosting.md](./Deploy_and_Hosting.md)).

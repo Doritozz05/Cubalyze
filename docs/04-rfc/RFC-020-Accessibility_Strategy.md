@@ -36,7 +36,7 @@ La gran mayoría de aplicaciones visuales y juegos 3D (especialmente simuladores
 *   **Interrupción de Audio:** En ciertos navegadores móviles, mezclar audio del sistema (si añadimos pitidos de inicio de cronómetro) con sintetizadores de voz puede generar bugs molestos.
 
 ## Alternatives
-*   **Ignorar A11y:** No es ético, pero reduciría la fricción de desarrollo en un 5-10%. Se rechaza porque CubeForge busca sentar un estándar comunitario de alta calidad.
+*   **Ignorar A11y:** No es ético, pero reduciría la fricción de desarrollo en un 5-10%. Se rechaza porque Cubalyze busca sentar un estándar comunitario de alta calidad.
 *   **Audio pregrabado (.mp3) solo:** No es dinámico para leer tiempos exactos a menos que se concatenen muchos archivos de audio cortos. Los screen readers son la mejor vía semántica.
 
 ## Unresolved Questions

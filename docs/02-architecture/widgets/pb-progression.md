@@ -1,6 +1,6 @@
 # Widget: pb-progression (PB progression)
 
-- **id**: `pb-progression` · **categoría**: timer · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `pb-progression` · **categoría**: timer · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingPbProgression`, `PbProgressionPreview`
 - **Definición**: `implementations/pb-progression/definition.ts`
 

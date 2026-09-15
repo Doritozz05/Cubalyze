@@ -1,6 +1,6 @@
 # Architecture Decision Register
 
-**Propósito**: Este documento es el control central del proceso de decisiones arquitectónicas de CubeForge. No sustituye a los RFC (Request for Comments) ni a los ADR (Architecture Decision Records), sino que rastrea el ciclo de vida completo de cada decisión técnica, asegurando la trazabilidad desde la investigación hasta la actualización del *Architecture Overview*.
+**Propósito**: Este documento es el control central del proceso de decisiones arquitectónicas de Cubalyze. No sustituye a los RFC (Request for Comments) ni a los ADR (Architecture Decision Records), sino que rastrea el ciclo de vida completo de cada decisión técnica, asegurando la trazabilidad desde la investigación hasta la actualización del *Architecture Overview*.
 
 ---
 

@@ -13,10 +13,10 @@ document_type: "ADR"
 # ADR-019-Backend_Architecture
 
 ## Summary
-Este RFC establece el diseÃ±o de sincronizaciÃ³n con la nube para CubeForge utilizando **Supabase (PostgreSQL)** como Backend as a Service (BaaS) mediante un modelo basado en **Append-only Event Sourcing** para resolver conflictos generados por el uso offline prolongado.
+Este RFC establece el diseÃ±o de sincronizaciÃ³n con la nube para Cubalyze utilizando **Supabase (PostgreSQL)** como Backend as a Service (BaaS) mediante un modelo basado en **Append-only Event Sourcing** para resolver conflictos generados por el uso offline prolongado.
 
 ## Motivation
-CubeForge funcionarÃ¡ offline. Un usuario puede hacer 500 *solves* en un aviÃ³n y luego sincronizarlos. Si usamos modelos REST tradicionales de sobreescritura (UPDATEs en filas completas), es fÃ¡cil causar pÃ©rdida de datos o condiciones de carrera si usÃ³ mÃºltiples dispositivos. Necesitamos consistencia eventual robusta.
+Cubalyze funcionarÃ¡ offline. Un usuario puede hacer 500 *solves* en un aviÃ³n y luego sincronizarlos. Si usamos modelos REST tradicionales de sobreescritura (UPDATEs en filas completas), es fÃ¡cil causar pÃ©rdida de datos o condiciones de carrera si usÃ³ mÃºltiples dispositivos. Necesitamos consistencia eventual robusta.
 
 ## Proposed Solution
 *   **Plataforma:** Supabase (proporciona Auth, API GraphQL/REST instantÃ¡nea y DB Postgres).

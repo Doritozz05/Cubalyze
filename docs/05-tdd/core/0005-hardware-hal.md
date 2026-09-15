@@ -8,7 +8,7 @@ epic: 2
 
 # TDD 0005: Hardware Abstraction Layer (HAL)
 
-Este documento define la arquitectura técnica para conectar dispositivos de hardware externos (Cronómetros y Smart Cubes) a la plataforma CubeForge. 
+Este documento define la arquitectura técnica para conectar dispositivos de hardware externos (Cronómetros y Smart Cubes) a la plataforma Cubalyze. 
 
 ## 1. Visión Arquitectónica
 
@@ -77,7 +77,7 @@ El cronómetro de GAN usa Bluetooth Low Energy (BLE).
 
 ## 4. Integración de Smart Cubes: GAN (Fase 2.4)
 
-A diferencia de los Timers, los Smart Cubes **son impulsados por eventos (Event-Driven)**. Para ahorrar batería, no transmiten datos continuamente; solo emiten notificaciones BLE (paquetes AES de 20 bytes) cuando ocurre un giro físico (o a 20-50Hz si el giroscopio está activado explícitamente). En lugar de reescribir la ingeniería inversa desde cero, CubeForge integrará la librería `gan-web-bluetooth`.
+A diferencia de los Timers, los Smart Cubes **son impulsados por eventos (Event-Driven)**. Para ahorrar batería, no transmiten datos continuamente; solo emiten notificaciones BLE (paquetes AES de 20 bytes) cuando ocurre un giro físico (o a 20-50Hz si el giroscopio está activado explícitamente). En lugar de reescribir la ingeniería inversa desde cero, Cubalyze integrará la librería `gan-web-bluetooth`.
 
 1.  **Fork de la Librería**: El código fuente de `gan-web-bluetooth` se copiará y adaptará dentro de nuestro monorepo como el paquete `@cubalyze/gan-protocol`.
 2.  **Adaptador GAN**: Se escribirá una clase `GanCubeAdapter` que implemente `SmartCubeAdapter`, enrutando las notificaciones GATT a la lógica de descifrado AES del fork, y finalmente emitiendo `CubeMoveEvent`.

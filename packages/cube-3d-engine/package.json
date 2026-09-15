@@ -1,7 +1,7 @@
 {
   "name": "@cubalyze/cube-3d-engine",
   "version": "0.2.0",
-  "description": "Core 3D Engine for CubeForge using Three.js and Web Workers",
+  "description": "Core 3D Engine for Cubalyze using Three.js and Web Workers",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

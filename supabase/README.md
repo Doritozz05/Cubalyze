@@ -1,6 +1,6 @@
 # Supabase — cuentas y sincronización
 
-La infraestructura de nube de CubeForge. El esquema vive en
+La infraestructura de nube de Cubalyze. El esquema vive en
 `supabase/migrations/`; la única función serverless es `delete-account`.
 
 ## Puesta en marcha (una vez por proyecto)

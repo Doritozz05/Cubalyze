@@ -7,7 +7,7 @@
 To define how the platform manages versions, dependencies, and external libraries.
 
 ## Versioning Policy
-CubeForge follows strict **Semantic Versioning (SemVer)** for all internal and public APIs:
+Cubalyze follows strict **Semantic Versioning (SemVer)** for all internal and public APIs:
 - `MAJOR` version when making incompatible API changes.
 - `MINOR` version when adding functionality in a backwards-compatible manner.
 - `PATCH` version when making backwards-compatible bug fixes.

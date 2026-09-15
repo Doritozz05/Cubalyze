@@ -1,8 +1,8 @@
-# Investigación profunda del ecosistema del cubing y auditoría de necesidades de CubeForge
+# Investigación profunda del ecosistema del cubing y auditoría de necesidades de Cubalyze
 
 **Fecha:** Agosto 2026
 **Tipo:** Investigación de comunidad + análisis de competencia + auditoría real del código de la aplicación.
-**Aplicación auditada:** CubeForge (monorepo `cubeforge-monorepo`, rama `main`).
+**Aplicación auditada:** Cubalyze (monorepo `cubeforge-monorepo`, rama `main`).
 **Idioma:** Español (las citas de usuarios se mantienen en su idioma original y se traducen).
 
 ---
@@ -20,7 +20,7 @@
 9. Señal vs. ruido (priorización de la evidencia)
 10. Necesidades históricas y recientes (evolución del ecosistema)
 11. Necesidades nicho documentadas
-12. Auditoría real de CubeForge (verificación por código)
+12. Auditoría real de Cubalyze (verificación por código)
 13. Contraste necesidad ↔ aplicación (matriz completa)
 14. Bugs, riesgos y falsas apariencias detectados
 15. Revisión final y conclusiones
@@ -34,7 +34,7 @@
 
 **Qué resuelve hoy el mercado.** El cronómetro y las estadísticas básicas están *commoditizados* (csTimer, Twisty Timer, CubeDesk, CubeTime…). El análisis de smart cube por fases está resuelto por Cubeast y los ecosistemas de fabricante (GAN Cube Station). El entrenamiento por algoritmos con SRS está resuelto (Cubeast Academy, trainer de csTimer, SpeedCubeDB, Anki, trainers independientes). La reconstrucción/competición social está resuelta por CubeDB. **Lo que nadie resuelve bien:** unificar todo con datos coherentes, análisis explicable a nivel de movimiento, detección automática del eslabón débil, y la capa de plataforma (cuenta + sync + comunidad) sin vendor lock-in.
 
-**Qué es CubeForge hoy (verificado por código).** Un núcleo técnico notablemente completo y bien testeado **para 3×3 y 2×2 con CFOP/Roux (y estructura para ZZ/Petrus/Ortega/CLL/EG)**: timer WCA, smart cube GAN por BLE + StackMat por audio con corrección de deriva de reloj, motor 3D, análisis de fases con detección de color-neutral/xcross/skips, entrenamiento con FSRS-4 real, base de algoritmos (~500+ casos sembrados), estadísticas, sistema de widgets, perfil local, onboarding guiado (6 pasos), import/export (csTimer, Twisty Timer, CSV, JSON, XLSX) e i18n EN/ES.
+**Qué es Cubalyze hoy (verificado por código).** Un núcleo técnico notablemente completo y bien testeado **para 3×3 y 2×2 con CFOP/Roux (y estructura para ZZ/Petrus/Ortega/CLL/EG)**: timer WCA, smart cube GAN por BLE + StackMat por audio con corrección de deriva de reloj, motor 3D, análisis de fases con detección de color-neutral/xcross/skips, entrenamiento con FSRS-4 real, base de algoritmos (~500+ casos sembrados), estadísticas, sistema de widgets, perfil local, onboarding guiado (6 pasos), import/export (csTimer, Twisty Timer, CSV, JSON, XLSX) e i18n EN/ES.
 
 **Qué le falta (verificado).** (1) Plataforma: cuenta/identidad de servidor, sincronización multi-dispositivo, backend y AI Coach — los paquetes `ai-core`, `sync-engine` y `apps/api` son **solo `package.json` vacíos**. (2) Cobertura WCA real: **4×4–7×7, Megaminx, Pyraminx, Skewb, Clock, Square-1, 3BLD/MBLD, OH (diferenciado), FMC** — hoy los selectores de 4×4–7×7/Megaminx/Pyraminx/Skewb existen en la UI pero **generan un scramble de 3×3 y guardan el solve como 3×3×3** (falsa apariencia, bug real). (3) Reconocimiento de casos y estadísticas por caso desde solves reales (el diferenciador que Cubeast/csTimer ya venden). (4) Comunidad/compartir reconstrucciones (el Replay 3D ya existe, falta el "compartir"). (5) Video integrado del último solve. (6) Beeps/configuración BLD y modos OH/BLD/FMC.
 
@@ -126,7 +126,7 @@ El ecosistema se organiza en capas que **rara vez conviven en un solo producto**
 ### 4.1 Cronómetros: qué valoran y qué odian
 
 - **csTimer es el estándar de facto por su motor, no por su UI.** Citas: "the functionality of csTimer is awesome but aesthetically it's mediocre" (2016); "CSTimer asks to save some things in persistent storage…" y la queja recurrente de settings "cluttered when you're trying to find specific settings"; "When drilling sets you can't select…" (2026).
-- **La apariencia repele a nuevos usuarios:** "CS Timer looks terrible imo so I was wondering if anyone knew any good ones" (2023). Este es el hueco que llenan CubeDesk y CubeForge.
+- **La apariencia repele a nuevos usuarios:** "CS Timer looks terrible imo so I was wondering if anyone knew any good ones" (2023). Este es el hueco que llenan CubeDesk y Cubalyze.
 - **csTimer en móvil es pobre:** "CS kinda sucks on mobile" (2024). El PWA ayuda pero la densidad de la UI no se adapta.
 - **Falta sincronización/backup:** "Really the only thing I feel is missing is automatic live sync/backup of your solves and config" (2022). El backup de csTimer es manual (Google Drive / cuenta WCA) y hay historial de pérdidas masivas: "FML, I wiped all my history and cache stuff" (2019, hilo "What happened to csTimer??!"); "Did anyone else lose their solves/sessions on cstimer" (2017).
 - **Miedo a perder datos es la razón nº 1 para no cambiar de app:** "do these stats just stay on the browser?" (2025).
@@ -187,9 +187,9 @@ Peticiones directas de usuarios a un desarrollador que construía un timer:
 
 ### 5.2 SpeedSolving — "Cubeast" (leído completo; conversación desarrollador↔usuarios)
 
-Problemas reales de la analítica de smart cubes, todos relevantes para CubeForge:
-- **Falsos +2 por lag BLE:** "I have been getting a ton of +2s when I didn't actually get one… the cube on the screen is like .1 seconds behind". El desarrollador reconoce que el lag BLE cambia en el tiempo y que el reloj interno del GAN mitiga (→ corrección de deriva, ya implementada en CubeForge).
-- **Detección de fase errónea con color neutrality:** el sistema creyó "red face down" porque el usuario completó la cruz roja antes que la amarilla; el desarrollador propone marcar solves "out of order / non-CFOP" y excluirlos de stats. (CubeForge implementa detección color-neutral de la cruz — ventaja directa.)
+Problemas reales de la analítica de smart cubes, todos relevantes para Cubalyze:
+- **Falsos +2 por lag BLE:** "I have been getting a ton of +2s when I didn't actually get one… the cube on the screen is like .1 seconds behind". El desarrollador reconoce que el lag BLE cambia en el tiempo y que el reloj interno del GAN mitiga (→ corrección de deriva, ya implementada en Cubalyze).
+- **Detección de fase errónea con color neutrality:** el sistema creyó "red face down" porque el usuario completó la cruz roja antes que la amarilla; el desarrollador propone marcar solves "out of order / non-CFOP" y excluirlos de stats. (Cubalyze implementa detección color-neutral de la cruz — ventaja directa.)
 - **Auto-stop exacto:** "The timer should auto-stop on completion of the solve" — pedido explícito; Cubeast lo añadió después.
 - **Incomparabilidad de fuentes de timing:** pickup/putdown ~0.75s hace que cubo vs teclado/StackMat no sean comparables (implicación: etiquetar la fuente del solve).
 
@@ -228,7 +228,7 @@ El changelog de csTimer (2017→2025) es la mejor fuente de **necesidades ya val
 
 ### 6.4 Last Cube X — Google Play 4.7★ (1.504 reseñas)
 
-- Posicionado explícitamente como "New Rubik's Cube timer like Twisty Timer" con Material You, soporte NxNxN/Pyraminx/Megaminx/Square-1/Skewb/Clock e imagen de scramble. **La competencia móvil ya cubre multi-evento**; CubeForge aún no.
+- Posicionado explícitamente como "New Rubik's Cube timer like Twisty Timer" con Material You, soporte NxNxN/Pyraminx/Megaminx/Square-1/Skewb/Clock e imagen de scramble. **La competencia móvil ya cubre multi-evento**; Cubalyze aún no.
 
 ### 6.5 OLL Genius — App Store 4.3★
 
@@ -258,7 +258,7 @@ El changelog de csTimer (2017→2025) es la mejor fuente de **necesidades ya val
 ### 7.2 Cubeast (web) — la referencia en analítica de smart cubes
 
 - **Qué ofrece:** soporta *todos* los smart cubes 3×3; grabación/almacenamiento/análisis de todos los solves; splits con reconocimiento/ejecución por fase, inspección, pickup/putdown; estadísticas (TPS por modelo de cubo, % de XCross, tiempo medio de reconocimiento de PLL); timers externos (StackMat); compartir solves por link; Academy (aprender algs, reconocimiento, XCross).
-- **Qué hace bien:** el diagnóstico "reconocimiento vs ejecución" que el PRD de CubeForge cita como validado; foco y UX clara.
+- **Qué hace bien:** el diagnóstico "reconocimiento vs ejecución" que el PRD de Cubalyze cita como validado; foco y UX clara.
 - **Qué hace mal / no hace:** menos customizable, dependiente de Web Bluetooth (sin app nativa iOS), capa de entrenamiento estructurado limitada frente a csTimer, sin multi-evento real (foco 3×3), cuenta/sync limitados.
 - **Críticas:** falsos +2 por lag (mitigado con reloj interno), detección de fase errónea en solves no-CFOP.
 
@@ -309,7 +309,7 @@ El changelog de csTimer (2017→2025) es la mejor fuente de **necesidades ya val
 
 ## 8. Inventario exhaustivo de necesidades de la comunidad
 
-Cada necesidad lleva [fuente] y (tipo: E=explícita, I=implícita). La matriz de contraste (§13) cruza cada una con CubeForge.
+Cada necesidad lleva [fuente] y (tipo: E=explícita, I=implícita). La matriz de contraste (§13) cruza cada una con Cubalyze.
 
 ### 8.1 Timing y precisión
 
@@ -488,8 +488,8 @@ Cada necesidad lleva [fuente] y (tipo: E=explícita, I=implícita). La matriz de
 
 ### 9.5 Funcionalidad de una sola app (no es estándar, puede ser diferencial)
 
-- **Sistema de widgets flotantes con dock y persistencia** (CubeForge, único).
-- **Skill tree con XP/prerequisitos** (CubeForge; parcialmente gamificado en CubeStation).
+- **Sistema de widgets flotantes con dock y persistencia** (Cubalyze, único).
+- **Skill tree con XP/prerequisitos** (Cubalyze; parcialmente gamificado en CubeStation).
 - **SRS alimentada por datos del cronómetro** (no existe en ningún competidor; csTimer/Cubeast la rozan con "métricas por caso").
 - **Análisis explicable a nivel de movimiento** (acubemy lo promete; Cubeast lo roza).
 
@@ -527,25 +527,25 @@ Reconstruida principalmente del changelog de csTimer (2017→2025) y de hilos an
 
 ## 11. Necesidades nicho documentadas
 
-Cada una responde: cuál es, quién la tiene, qué resuelve, evidencia, soporte del mercado y soporte de CubeForge.
+Cada una responde: cuál es, quién la tiene, qué resuelve, evidencia, soporte del mercado y soporte de Cubalyze.
 
-1. **BLD memo vs ejecución con beeps configurables.** Quién: blinders (3BLD/4BLD/5BLD/MBLD). Resuelve: medir y mejorar memo y ejecución por separado. Evidencia: r/Cubers "PlusTimer but with BLD mode" (2015); csTimer BLD helper. Mercado: csTimer (parcial), casi nadie en móvil. CubeForge: **no** (solo "Blind Cross" drill y un metrónomo genérico).
-2. **Documentar el color del cross por solve y entrenar color neutrality.** Quién: intermedios/avanzados dual-CN. Evidencia: 4+ hilos Reddit (2020-2026). Mercado: csTimer (color-neutral mode en scrambles de entrenamiento); nadie lo registra por solve de forma visible. CubeForge: **parcial** (Cross Trainer CN existe; la detección color-neutral de la cruz existe en el análisis; falta persistir/mostrar el color por solve en stats).
-3. **Entrenamiento 2-sided de PLL/OLL (reconocimiento desde 2 caras).** Quién: avanzados que compiten. Evidencia: r/Cubers (2021). Mercado: CubingApp, SpeedCubeDB, csTimer (Anti-PLL). CubeForge: **parcial** (el subset Anti-PLL está sembrado como "2-sided recognition practice", pero no hay un modo específico 2-sided).
-4. **FMC con intento de 1h, NISS/HTR y verificación.** Quién: especialistas de FMC. Evidencia: r/Cubers "Is there a FMC app?" (2017) → uso de stopwatch genérico; VFMC (2025). Mercado: VFMC, herramientas de HTR; ningún timer general. CubeForge: **no**.
-5. **Puzzles no-WCA (FTO, redi, kilominx, curvycopter, gear…).** Quién: coleccionistas y comunidad twisty. Evidencia: csTimer changelog (soporte masivo). Mercado: csTimer (único serio). CubeForge: **no** (solo 2×2/3×3 reales).
-6. **SQL/programabilidad de los datos propios.** Quién: cuber-dev / data nerds. Evidencia: VizCube expone SQLite. Mercado: VizCube (nicho). CubeForge: **parcial implícito** (SQLite WASM local; no hay consola SQL expuesta).
-7. **Métricas de ergonomía/RSI en sesiones largas.** Quién: usuarios con dolor de muñeca. Evidencia: auditoría previa (gap citado), comunidades de ergonomía. Mercado: nadie. CubeForge: **no**.
-8. **Simulación de presión competitiva WCA** (formato de ronda, Ao5 con corte, inspección estricta). Quién: competidores pre-competición. Evidencia: auditoría previa; StackMat como proxy. Mercado: csTimer (formatos parciales), nadie simula "rondas". CubeForge: **parcial** (reglas WCA de inspección/penalidades; sin modo "ronda"/"corte").
-9. **Entrenamiento por errores: registrar el error (pop, alg equivocado, fallo de reconocimiento) con clasificación semi-automática.** Quién: avanzados. Evidencia: PRD 11.2; Cubeast parcial. Mercado: nadie lo hace bien. CubeForge: **parcial** (el análisis detecta pausas/rotaciones; no hay clasificación de errores ni feedback que alimente el entrenamiento).
-10. **Perfil de entrenador con diagnóstico por alumno.** Quién: coaches (pocos, reales). Evidencia: implícita (no hay herramienta). Mercado: nadie. CubeForge: **no**.
-11. **Relays (2-5 cubos seguidos) y scrambles de relay.** Quién: práctica de resistencia. Evidencia: csTimer (scramble image for relays). Mercado: csTimer. CubeForge: **no**.
-12. **Generador de patrones (pattern solver).** Quién: FMC/teoría de grupos. Evidencia: csTimer (2024), Twizzle Pattern Searcher. Mercado: Twizzle, csTimer. CubeForge: **no**.
-13. **Import/export de sets de algoritmos propios** (compartir variantes). Quién: avanzados. Evidencia: PRD 10.2. Mercado: AlgDB/SpeedCubeDB export. CubeForge: **parcial** (editor de algoritmos propios; sin export/import de sets).
+1. **BLD memo vs ejecución con beeps configurables.** Quién: blinders (3BLD/4BLD/5BLD/MBLD). Resuelve: medir y mejorar memo y ejecución por separado. Evidencia: r/Cubers "PlusTimer but with BLD mode" (2015); csTimer BLD helper. Mercado: csTimer (parcial), casi nadie en móvil. Cubalyze: **no** (solo "Blind Cross" drill y un metrónomo genérico).
+2. **Documentar el color del cross por solve y entrenar color neutrality.** Quién: intermedios/avanzados dual-CN. Evidencia: 4+ hilos Reddit (2020-2026). Mercado: csTimer (color-neutral mode en scrambles de entrenamiento); nadie lo registra por solve de forma visible. Cubalyze: **parcial** (Cross Trainer CN existe; la detección color-neutral de la cruz existe en el análisis; falta persistir/mostrar el color por solve en stats).
+3. **Entrenamiento 2-sided de PLL/OLL (reconocimiento desde 2 caras).** Quién: avanzados que compiten. Evidencia: r/Cubers (2021). Mercado: CubingApp, SpeedCubeDB, csTimer (Anti-PLL). Cubalyze: **parcial** (el subset Anti-PLL está sembrado como "2-sided recognition practice", pero no hay un modo específico 2-sided).
+4. **FMC con intento de 1h, NISS/HTR y verificación.** Quién: especialistas de FMC. Evidencia: r/Cubers "Is there a FMC app?" (2017) → uso de stopwatch genérico; VFMC (2025). Mercado: VFMC, herramientas de HTR; ningún timer general. Cubalyze: **no**.
+5. **Puzzles no-WCA (FTO, redi, kilominx, curvycopter, gear…).** Quién: coleccionistas y comunidad twisty. Evidencia: csTimer changelog (soporte masivo). Mercado: csTimer (único serio). Cubalyze: **no** (solo 2×2/3×3 reales).
+6. **SQL/programabilidad de los datos propios.** Quién: cuber-dev / data nerds. Evidencia: VizCube expone SQLite. Mercado: VizCube (nicho). Cubalyze: **parcial implícito** (SQLite WASM local; no hay consola SQL expuesta).
+7. **Métricas de ergonomía/RSI en sesiones largas.** Quién: usuarios con dolor de muñeca. Evidencia: auditoría previa (gap citado), comunidades de ergonomía. Mercado: nadie. Cubalyze: **no**.
+8. **Simulación de presión competitiva WCA** (formato de ronda, Ao5 con corte, inspección estricta). Quién: competidores pre-competición. Evidencia: auditoría previa; StackMat como proxy. Mercado: csTimer (formatos parciales), nadie simula "rondas". Cubalyze: **parcial** (reglas WCA de inspección/penalidades; sin modo "ronda"/"corte").
+9. **Entrenamiento por errores: registrar el error (pop, alg equivocado, fallo de reconocimiento) con clasificación semi-automática.** Quién: avanzados. Evidencia: PRD 11.2; Cubeast parcial. Mercado: nadie lo hace bien. Cubalyze: **parcial** (el análisis detecta pausas/rotaciones; no hay clasificación de errores ni feedback que alimente el entrenamiento).
+10. **Perfil de entrenador con diagnóstico por alumno.** Quién: coaches (pocos, reales). Evidencia: implícita (no hay herramienta). Mercado: nadie. Cubalyze: **no**.
+11. **Relays (2-5 cubos seguidos) y scrambles de relay.** Quién: práctica de resistencia. Evidencia: csTimer (scramble image for relays). Mercado: csTimer. Cubalyze: **no**.
+12. **Generador de patrones (pattern solver).** Quién: FMC/teoría de grupos. Evidencia: csTimer (2024), Twizzle Pattern Searcher. Mercado: Twizzle, csTimer. Cubalyze: **no**.
+13. **Import/export de sets de algoritmos propios** (compartir variantes). Quién: avanzados. Evidencia: PRD 10.2. Mercado: AlgDB/SpeedCubeDB export. Cubalyze: **parcial** (editor de algoritmos propios; sin export/import de sets).
 
 ---
 
-## 12. Auditoría real de CubeForge (verificación por código)
+## 12. Auditoría real de Cubalyze (verificación por código)
 
 > Método: lectura directa de `apps/web/src`, `packages/*`, `apps/desktop`, `apps/api`. Estados: ✅ tiene / 🟡 parcial / ❌ no tiene / ⚠️ necesita verificación. Se corrige explícitamente la auditoría previa donde ya no coincide con el código actual.
 
@@ -574,7 +574,7 @@ Cada una responde: cuál es, quién la tiene, qué resuelve, evidencia, soporte 
 | Perfil local (avatar/identicon, nombre, preferencias, stats) | ✅ | `views/Profile`, `useProfile`, `useProfileStats`, `ProfileSection` — **local-only, sin cuenta** |
 | Skill tree (grafo, XP, prerequisitos, categorías incl. BLD/FMC/hardware/psicología/teoría) | ✅ | `views/SkillTree` |
 | Entrenamiento (Drill, Recognize, Cross Trainer ≤8/CN, Blind, LSE sub-fases, EO detect/eff, SRS FSRS-4, Full Solve, Phase Stats, Calendar) | ✅ | `views/Training/*` + `packages/training` |
-| Import/Export | ✅ | `importSolves.ts` (csTimer CSV/header-CSV/JSON, Twisty Timer, CubeForge CSV/JSON, CSV/TSV genérico); `exportSolves.ts` (CubeForge CSV, csTimer CSV, JSON, XLSX) |
+| Import/Export | ✅ | `importSolves.ts` (csTimer CSV/header-CSV/JSON, Twisty Timer, Cubalyze CSV/JSON, CSV/TSV genérico); `exportSolves.ts` (Cubalyze CSV, csTimer CSV, JSON, XLSX) |
 | Widgets (dock, drag&drop, persistencia) | ✅ | 11 implementaciones: times-log, time-distribution, pb-progression, phase-balance, solve-timeline, scramble-2d, cube-button(3D), metronome, notes, algorithm-db, layout-organizer |
 | Settings | ✅ | 14 secciones (General, Appearance, Smart Cube, Timer, Scramble, Analysis, Training, Notifications, Shortcuts, Data, Advanced, Profile, Audio, Credits) |
 | i18n EN/ES | ✅ | `i18n/locales/en.json`, `es.json` |
@@ -623,13 +623,13 @@ Esto es exactamente el caso que el encargo pide detectar: **"existe el nombre en
 
 ---
 
-## 13. Contraste necesidad ↔ CubeForge (matriz completa)
+## 13. Contraste necesidad ↔ Cubalyze (matriz completa)
 
 Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI, verificar) · ❌ no tiene. Los números remiten a §8.
 
 ### 13.1 Timing y precisión
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 1 | Timer un toque | ✅ | timer centrado, atajos, hold-to-start |
 | 2 | Precisión ms, parada al soltar | ✅ | TimerEngine con performance.now() |
@@ -644,7 +644,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.2 Organización y datos
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 11 | Sesiones ilimitadas, renombrar | ✅ | `usePersistentSession` (crear/renombrar/borrar/cambiar) |
 | 12 | Merge/split y mover solves | 🟡 | sesiones existen; **mover solves individuales no está expuesto** |
@@ -657,7 +657,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.3 Estadísticas
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 19 | Ao5/12/100 y AoN | 🟡 | Ao5/12/100 ✅; `averageOf(n)` genérico en el paquete pero la UI expone el set estándar |
 | 20 | WPA/BPA | ✅ | `computeBpaWpa` |
@@ -674,7 +674,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.4 Análisis de solves
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 31 | Splits CFOP/Roux | ✅ | `PhaseSplitter` + métricas CFOP/Roux |
 | 32 | Reconocimiento vs ejecución | ✅ | reconocimiento estimado por fase: `ollRecognitionMs`/`pllRecognitionMs` (CFOP) y `cmllRecognitionMs` (Roux) = gap entre el último move de la fase anterior y el primero de la fase, mostrados en el panel (`OLL Recog`/`PLL Recog`/`CMLL Recog`); por par F2L vía `pauseBeforeMs`. El `recognitionMs: 0` del `PhaseSegment` genérico de `PhaseSplitter` es un campo distinto, por diseño — ver `Fase0_Normalizacion_SliceWide_2026-08.md` §7 |
@@ -694,7 +694,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.5 Entrenamiento
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 46 | Drill por caso | ✅ | `AlgorithmDrillView` + subsets |
 | 47 | Reconocimiento por caso | ✅ | `AlgorithmRecognizeView` |
@@ -714,7 +714,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.6 Puzzles y eventos
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 61 | Todos los eventos WCA | ❌ | solo 2×2/3×3 reales (ver §12.3) |
 | 62 | Scrambles WCA por evento | 🟡 | 2×2/3×3 random-state ✅; resto ❌ |
@@ -724,7 +724,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.7 Algoritmos y métodos
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 66 | Catálogo OLL/PLL/F2L completo | ✅ | sembrado y verificado contra SpeedCubeDB |
 | 67 | Sets avanzados | 🟡 | COLL/WV/SV/CLS/ELL/Anti-PLL ✅; ZBLL/CMLL/CLL/EG/OCLL/ZZLL ❌ (vacíos) |
@@ -737,7 +737,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.8 Comunidad y motivación
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 74 | Compartir reconstrucción | ❌ | sin link/perfil público |
 | 75 | Comparación con comunidad | ❌ | — |
@@ -748,7 +748,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 13.9 UX/UI y plataforma
 
-| # | Necesidad | CubeForge | Detalle |
+| # | Necesidad | Cubalyze | Detalle |
 |---|---|---|---|
 | 80 | UI moderna | ✅ | design system propio (bone-white/carbon) |
 | 81 | Paridad móvil/escritorio | ✅ | bottom tab bar, sheets, safe-areas; PWA + Tauri |
@@ -790,7 +790,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 5. **Llevarse y traer sus datos** sin fricción.
 6. **Comunidad**: compartir el solve/replay y, en segundo plano, comparación/battles.
 
-### 15.2 Qué tiene CubeForge (real, verificado)
+### 15.2 Qué tiene Cubalyze (real, verificado)
 
 - Núcleo técnico **superior a la media** en 3×3/2×2: timer WCA, smart cube GAN + StackMat con corrección de deriva, análisis de fases color-neutral con XCross/skips, FSRS-4, catálogo de algoritmos verificado, motor 3D, widgets, perfil local, onboarding, import/export amplio, i18n, PWA+Tauri, 177 archivos de test.
 
@@ -810,7 +810,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 | P0 | **Cuenta/sync/backend mínimo** | desbloquea multi-dispositivo, AI y comunidad; es la necesidad nº 1 del ecosistema |
 | P0 | **Cobertura WCA real** (empezando por desactivar los puzzles fantasma) | hoy 4×4–7×7/Megaminx/Pyraminx/Skewb mienten al usuario; OH no se distingue |
 | P0 | **BLD (memo/ejecución + beeps) y OH** | los más demandados tras 3×3/2×2 |
-| P1 | **Reconocimiento vs ejecución + métricas por caso + comparación con óptimo** | el diferenciador que ya valida el mercado (Cubeast) y que CubeForge aún no entrega |
+| P1 | **Reconocimiento vs ejecución + métricas por caso + comparación con óptimo** | el diferenciador que ya valida el mercado (Cubeast) y que Cubalyze aún no entrega |
 | P1 | **AI Coach explicable** sobre el analysis-engine ya existente | diferenciador de marketing; debe ser trazable al dato |
 | P1 | **Compartir solve/replay por link** | estándar del ecosistema (CubeDB/Cubeast/csTimer) |
 | P2 | **Sembrar subsets vacíos** (CMLL/CLL/EG/ZBLL/OCLL/ZZLL) | coherencia entre catálogo y contenido |
@@ -820,7 +820,7 @@ Leyenda: ✅ tiene · 🟡 parcial/insuficiente · ⚠️ aparente (nombre en UI
 
 ### 15.5 Veredicto en una frase
 
-CubeForge tiene **el motor que el mercado no unifica** y una ejecución técnica de alto nivel para 3×3/2×2 CFOP/Roux; lo que le falta no es otro motor, sino **no prometer lo que aún no hace (puzzles fantasma, subsets vacíos, reconocimiento vs ejecución)** y construir la capa de plataforma (cuenta+sync), la cobertura WCA real y el diagnóstico explicable que conviertan el motor en un producto.
+Cubalyze tiene **el motor que el mercado no unifica** y una ejecución técnica de alto nivel para 3×3/2×2 CFOP/Roux; lo que le falta no es otro motor, sino **no prometer lo que aún no hace (puzzles fantasma, subsets vacíos, reconocimiento vs ejecución)** y construir la capa de plataforma (cuenta+sync), la cobertura WCA real y el diagnóstico explicable que conviertan el motor en un producto.
 
 ---
 
@@ -887,4 +887,4 @@ CubeForge tiene **el motor que el mercado no unifica** y una ejecución técnica
 
 ---
 
-*Fin del documento. Generado el 13 de agosto de 2026 mediante investigación web (Reddit, SpeedSolving, stores, wikis y sitios oficiales) y auditoría por lectura directa del código de CubeForge.*
+*Fin del documento. Generado el 13 de agosto de 2026 mediante investigación web (Reddit, SpeedSolving, stores, wikis y sitios oficiales) y auditoría por lectura directa del código de Cubalyze.*

@@ -21,7 +21,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-CubeForge necesita un sistema de entrenamiento integrado que vaya más allá de
+Cubalyze necesita un sistema de entrenamiento integrado que vaya más allá de
 "hacer solves": práctica deliberada por método (CFOP, Roux, ZZ, Petrus, 2x2…) y
 fase (Cross, F2L, OLL, PLL, LSE, EO…), con seguimiento de progreso por caso de
 algoritmo y un mecanismo que **programe cuándo repasar cada caso** para maximizar

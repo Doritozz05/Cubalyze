@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-CubeForge es, en esencia, un cronómetro de alto rendimiento y una herramienta de análisis 3D. El PRD exige un funcionamiento **100% Offline-First** y capacidades de PWA para instalación nativa. Se necesita decidir la arquitectura y framework base para el cliente (frontend) que garantice compatibilidad total con Service Workers y ejecución offline sin dependencias de servidor.
+Cubalyze es, en esencia, un cronómetro de alto rendimiento y una herramienta de análisis 3D. El PRD exige un funcionamiento **100% Offline-First** y capacidades de PWA para instalación nativa. Se necesita decidir la arquitectura y framework base para el cliente (frontend) que garantice compatibilidad total con Service Workers y ejecución offline sin dependencias de servidor.
 
 ## Decision Drivers
 

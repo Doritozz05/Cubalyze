@@ -2,7 +2,7 @@
   "name": "@cubalyze/statistics",
   "version": "0.2.0",
   "private": true,
-  "description": "Headless statistics engine for CubeForge — WCA averages, session stats, and distribution analysis",
+  "description": "Headless statistics engine for Cubalyze — WCA averages, session stats, and distribution analysis",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

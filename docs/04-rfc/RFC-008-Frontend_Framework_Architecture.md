@@ -16,7 +16,7 @@ document_type: "RFC"
 Este RFC propone la arquitectura central del cliente: una **Single Page Application (SPA) pura basada en React y Vite**, descartando enfoques de Server-Side Rendering (SSR) como Next.js o Remix, para asegurar compatibilidad total con la estrategia Offline-First y PWA.
 
 ## Motivation
-CubeForge es, en esencia, un cronómetro de alto rendimiento y una herramienta de análisis 3D. El PRD exige un funcionamiento **100% Offline-First** y capacidades de PWA para instalación nativa. Frameworks modernos como Next.js introducen una capa de servidor que dificulta severamente la creación de Service Workers robustos para funcionar sin red, y el renderizado en servidor (SSR) no aporta valor a una aplicación donde el contenido principal (un motor 3D y tiempos por Bluetooth) depende exclusivamente de las APIs del navegador cliente.
+Cubalyze es, en esencia, un cronómetro de alto rendimiento y una herramienta de análisis 3D. El PRD exige un funcionamiento **100% Offline-First** y capacidades de PWA para instalación nativa. Frameworks modernos como Next.js introducen una capa de servidor que dificulta severamente la creación de Service Workers robustos para funcionar sin red, y el renderizado en servidor (SSR) no aporta valor a una aplicación donde el contenido principal (un motor 3D y tiempos por Bluetooth) depende exclusivamente de las APIs del navegador cliente.
 
 ## Proposed Solution
 *   **React 18+:** Como librería principal de UI, aprovechando su ecosistema para la capa 3D (`react-three-fiber` si fuera necesario, aunque el render puede ser puro).
@@ -30,7 +30,7 @@ CubeForge es, en esencia, un cronómetro de alto rendimiento y una herramienta d
 *   El Service Worker interceptará todas las peticiones de red y servirá el "App Shell" desde la caché en caso de no haber conexión.
 
 ## Drawbacks
-*   **SEO:** El SEO puro para las páginas dinámicas es pobre en SPAs. Sin embargo, dado que CubeForge es una herramienta de productividad logada y no un blog de contenido indexable, el SEO es irrelevante para las rutas internas.
+*   **SEO:** El SEO puro para las páginas dinámicas es pobre en SPAs. Sin embargo, dado que Cubalyze es una herramienta de productividad logada y no un blog de contenido indexable, el SEO es irrelevante para las rutas internas.
 
 ## Alternatives
 *   **Next.js (SSG/Export):** Se puede usar la exportación estática de Next.js, pero la herramienta está cada vez más acoplada a Vercel y Server Actions, añadiendo peso y complejidad innecesaria para una PWA local.

@@ -1,6 +1,6 @@
 # Diagrams — Diagramas de Arquitectura
 
-Diagramas de la arquitectura de CubeForge, generados a partir del **código real**
+Diagramas de la arquitectura de Cubalyze, generados a partir del **código real**
 (Fase 9, 2026-08-12). Formato Mermaid (renderiza nativo en GitHub).
 
 ## Índice

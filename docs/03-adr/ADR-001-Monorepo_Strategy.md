@@ -16,7 +16,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-CubeForge es un ecosistema que incluirá un SDK público, aplicaciones nativas, PWA y servicios en la nube. Gestionar estos componentes en múltiples repositorios dificultaría enormemente la experiencia de desarrollo local y el testing cruzado. Se requiere una herramienta que orqueste las construcciones (builds) y centralice el ecosistema sin introducir una curva de aprendizaje abismal para contribuidores Open Source.
+Cubalyze es un ecosistema que incluirá un SDK público, aplicaciones nativas, PWA y servicios en la nube. Gestionar estos componentes en múltiples repositorios dificultaría enormemente la experiencia de desarrollo local y el testing cruzado. Se requiere una herramienta que orqueste las construcciones (builds) y centralice el ecosistema sin introducir una curva de aprendizaje abismal para contribuidores Open Source.
 
 ## Decision Drivers
 

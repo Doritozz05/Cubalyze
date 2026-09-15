@@ -1,7 +1,7 @@
 # 15 Contributing
 
 ## Purpose
-This directory serves as the authoritative location for 15 Contributing documentation within the CubeForge ecosystem.
+This directory serves as the authoritative location for 15 Contributing documentation within the Cubalyze ecosystem.
 
 ## Contents
 This folder contains all artifacts related to 15 Contributing.

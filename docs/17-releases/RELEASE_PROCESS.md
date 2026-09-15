@@ -5,7 +5,7 @@
 
 ## 0. Panorama
 
-CubeForge tiene **dos canales de release** distintos:
+Cubalyze tiene **dos canales de release** distintos:
 
 1. **La web/PWA** — se despliega sola: cada merge a `main` dispara el deploy de
    Vercel (ADR-023). No lleva tag ni changelog de paquete.
@@ -71,7 +71,7 @@ Detalles:
 Al cerrar un release:
 
 ```bash
-git tag -a v0.1.0 -m "CubeForge v0.1.0 — <resumen>"
+git tag -a v0.1.0 -m "Cubalyze v0.1.0 — <resumen>"
 git push origin v0.1.0
 ```
 

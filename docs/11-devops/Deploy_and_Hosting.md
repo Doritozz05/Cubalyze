@@ -53,7 +53,7 @@ Permissions-Policy: camera=(), geolocation=(), payment=(), usb=()
 - Navegación **NetworkFirst** (timeout 4s): al abrir la app con conexión se
   sirve siempre el `index.html` más reciente del deploy (sin pasar por el
   precache viejo); sin wifi se sirve la última página cacheada.
-- Manifest: CubeForge, `display: standalone`, theme/background `#0f172a`,
+- Manifest: Cubalyze, `display: standalone`, theme/background `#0f172a`,
   iconos 192/512.
 - Workbox: `maximumFileSizeToCacheInBytes: 4 MB` (el worker de sqlite-wasm o
   chunks grandes no se cachean si superan el límite).

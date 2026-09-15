@@ -13,7 +13,7 @@ document_type: "RFC"
 # RFC-002-Package_Manager
 
 ## Summary
-Este RFC propone la adopción de **pnpm** como el gestor de paquetes exclusivo para el ecosistema de CubeForge, reemplazando la opción tradicional de `npm` o `yarn`.
+Este RFC propone la adopción de **pnpm** como el gestor de paquetes exclusivo para el ecosistema de Cubalyze, reemplazando la opción tradicional de `npm` o `yarn`.
 
 ## Motivation
 En un monorepo administrado con Turborepo, la resolución de dependencias entre paquetes locales (`apps/` y `packages/`) debe ser determinista, extremadamente rápida, y eficiente en disco. Además, necesitamos prevenir el problema de las dependencias "fantasma" (*ghost dependencies*), donde un paquete utiliza una librería que no declaró explícitamente porque otro paquete la trajo accidentalmente al nodo raíz.

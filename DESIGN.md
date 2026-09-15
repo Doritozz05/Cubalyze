@@ -1,5 +1,5 @@
 ---
-name: CubeForge
+name: Cubalyze
 description: A precision speedcubing platform — bone-white canvas, carbon ink, muted semantic timer states.
 colors:
   primary: "#212529"
@@ -94,13 +94,13 @@ components:
     padding: "2px 8px"
 ---
 
-# Design System: CubeForge
+# Design System: Cubalyze
 
 ## Overview
 
 **Creative North Star: "The Speedroom"**
 
-CubeForge is a room built for one thing: the solve. Everything in the interface exists to get a speedcuber to the timer, capture a clean result, and reveal what to fix next — with the minimum possible friction and decoration. The visual world is the coache's clipboard, not a video game: a pale bone-white canvas, carbon ink, tabular mono figures, and a short discipline of muted semantic accents that only ever speak to the current state of the cube (ready-green on your marks, warm-hold when applying reset pressure, dry yellow during inspection).
+Cubalyze is a room built for one thing: the solve. Everything in the interface exists to get a speedcuber to the timer, capture a clean result, and reveal what to fix next — with the minimum possible friction and decoration. The visual world is the coache's clipboard, not a video game: a pale bone-white canvas, carbon ink, tabular mono figures, and a short discipline of muted semantic accents that only ever speak to the current state of the cube (ready-green on your marks, warm-hold when applying reset pressure, dry yellow during inspection).
 
 Two palettes share one architecture. The canvas is one step darker than the cards in dark mode so the stage reads as recessed while panels float on top; in light mode the canvas is the bone white and cards are white. Rarity is the discipline — accent washes appear only on state, never as decoration. The bigger the number, the more it earns the screen: the timer face is the legal maximum of the whole system.
 

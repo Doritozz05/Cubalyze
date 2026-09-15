@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-El stack tradicional de pruebas (Jest para unitario y Cypress para End-to-End) presenta fricciones con el ecosistema moderno de Vite (ESModules). Configurar Jest para entender y transpirar correctamente TypeScript y dependencias en ESM es complejo e inestable. Además, Cypress tiene limitaciones arquitectónicas para realizar pruebas multiplataforma en WebKit (motor de iOS/Safari) y para gestionar múltiples contextos/pestañas de forma nativa, lo cual es vital para probar el "Sync Engine" (sincronización offline-first) de CubeForge.
+El stack tradicional de pruebas (Jest para unitario y Cypress para End-to-End) presenta fricciones con el ecosistema moderno de Vite (ESModules). Configurar Jest para entender y transpirar correctamente TypeScript y dependencias en ESM es complejo e inestable. Además, Cypress tiene limitaciones arquitectónicas para realizar pruebas multiplataforma en WebKit (motor de iOS/Safari) y para gestionar múltiples contextos/pestañas de forma nativa, lo cual es vital para probar el "Sync Engine" (sincronización offline-first) de Cubalyze.
 
 ## Decision Drivers
 

@@ -1,7 +1,7 @@
 # 08 Standards
 
 ## Purpose
-This directory serves as the authoritative location for 08 Standards documentation within the CubeForge ecosystem.
+This directory serves as the authoritative location for 08 Standards documentation within the Cubalyze ecosystem.
 
 ## Contents
 This folder contains all artifacts related to 08 Standards.

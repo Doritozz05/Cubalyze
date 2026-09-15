@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-017-Plugin_System
 
 ## Summary
-Este RFC define el diseño del sistema de plugins de CubeForge. Para permitir la adición dinámica de nuevas categorías de rompecabezas, métodos de entrenamiento y temas visuales sin sobrecargar el *bundle* principal, se adoptará un enfoque basado en **ESM (ECMAScript Modules) nativos e importaciones dinámicas** (`import()`) integrado estrechamente con Vite y React.
+Este RFC define el diseño del sistema de plugins de Cubalyze. Para permitir la adición dinámica de nuevas categorías de rompecabezas, métodos de entrenamiento y temas visuales sin sobrecargar el *bundle* principal, se adoptará un enfoque basado en **ESM (ECMAScript Modules) nativos e importaciones dinámicas** (`import()`) integrado estrechamente con Vite y React.
 
 ## Motivation
-CubeForge crecerá orgánicamente. Si incluimos la lógica de Megaminx, Pyraminx, Square-1 y decenas de algoritmos de entrenamiento en el build inicial, la PWA inicial pesará demasiados megabytes. Una arquitectura orientada a plugins mediante code-splitting garantiza que el núcleo sea ligero y solo se descargue lo que el usuario decida instalar o utilizar.
+Cubalyze crecerá orgánicamente. Si incluimos la lógica de Megaminx, Pyraminx, Square-1 y decenas de algoritmos de entrenamiento en el build inicial, la PWA inicial pesará demasiados megabytes. Una arquitectura orientada a plugins mediante code-splitting garantiza que el núcleo sea ligero y solo se descargue lo que el usuario decida instalar o utilizar.
 
 ## Proposed Solution
 *   **Contrato de Plugin:** Se definirá una interfaz TypeScript estándar (ej. `ICubePlugin`) que cada plugin debe exportar por defecto.

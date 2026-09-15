@@ -13,7 +13,7 @@ document_type: "RFC"
 # RFC-007-Hosting_Strategy
 
 ## Summary
-Este RFC evaluará las estrategias de alojamiento y despliegue (Continuous Deployment) para la aplicación PWA y los microservicios de backend de CubeForge.
+Este RFC evaluará las estrategias de alojamiento y despliegue (Continuous Deployment) para la aplicación PWA y los microservicios de backend de Cubalyze.
 
 ## Motivation
 Separar la estrategia de alojamiento del pipeline básico de CI (abordado en RFC-006) evita el acoplamiento prematuro. Se requiere un entorno "Full Gratuito" que soporte el desarrollo, MVP y primeros compases de producción sin requerir administración de servidores, encajando a la perfección con la arquitectura estática de la PWA.

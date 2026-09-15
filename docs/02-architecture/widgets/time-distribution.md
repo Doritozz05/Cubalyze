@@ -1,6 +1,6 @@
 # Widget: time-distribution (Time distribution)
 
-- **id**: `time-distribution` · **categoría**: timer · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `time-distribution` · **categoría**: timer · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingTimeDistribution`, `TimeDistributionPreview`
 - **Definición**: `implementations/time-distribution/definition.ts`
 

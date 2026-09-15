@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-En CubeForge coexisten dos tipos de estado muy distintos:
+En Cubalyze coexisten dos tipos de estado muy distintos:
 1.  **Estado de Baja Frecuencia:** Preferencias del usuario, sesión, listas de tiempos históricos.
 2.  **Estado de Alta Frecuencia:** El temporizador activo (actualizándose a 60fps), el estado de los sensores del cubo Bluetooth, y las rotaciones 3D.
 Usar el *Context API* nativo de React para el estado de alta frecuencia causaría re-renderizados masivos en todo el árbol de componentes, colapsando el rendimiento. Se requiere una solución para separar ambos estados y permitir actualizaciones transitorias (Transient Updates) directamente en los componentes interesados (o fuera del ciclo de renderizado de React).

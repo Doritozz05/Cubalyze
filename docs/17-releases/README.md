@@ -1,6 +1,6 @@
 # 17 — Releases y Changelog
 
-Cómo se versiona y se publica CubeForge. Documentado el 2026-08-12 (Fase 8 del
+Cómo se versiona y se publica Cubalyze. Documentado el 2026-08-12 (Fase 8 del
 plan de documentación). Estado real en el momento de escribir esto: **0 releases,
 0 tags git, todo en `0.x`**.
 

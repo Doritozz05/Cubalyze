@@ -1,4 +1,4 @@
-# Plan de Documentación Completa — CubeForge
+# Plan de Documentación Completa — Cubalyze
 
 > Documento de trabajo que guía la documentación integral del proyecto.
 > Se ejecuta por fases; cada fase termina con un resumen y un checkpoint con el usuario.

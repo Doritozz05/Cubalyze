@@ -1,7 +1,7 @@
 # TDD 0001: Core Monorepo Setup & CI/CD
 
 ## 1. Overview
-This document outlines the architecture for the foundational monorepo and CI/CD pipelines of the CubeForge project (Epic 1.1).
+This document outlines the architecture for the foundational monorepo and CI/CD pipelines of the Cubalyze project (Epic 1.1).
 
 ## 2. Architecture Decisions
 - **Package Manager**: `pnpm` (selected for fast, strict, and efficient workspace management).

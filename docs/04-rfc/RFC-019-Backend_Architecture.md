@@ -13,10 +13,10 @@ document_type: "RFC"
 # RFC-019-Backend_Architecture
 
 ## Summary
-Este RFC establece el diseño de sincronización con la nube para CubeForge utilizando **Supabase (PostgreSQL)** como Backend as a Service (BaaS) mediante un modelo basado en **Append-only Event Sourcing** para resolver conflictos generados por el uso offline prolongado.
+Este RFC establece el diseño de sincronización con la nube para Cubalyze utilizando **Supabase (PostgreSQL)** como Backend as a Service (BaaS) mediante un modelo basado en **Append-only Event Sourcing** para resolver conflictos generados por el uso offline prolongado.
 
 ## Motivation
-CubeForge funcionará offline. Un usuario puede hacer 500 *solves* en un avión y luego sincronizarlos. Si usamos modelos REST tradicionales de sobreescritura (UPDATEs en filas completas), es fácil causar pérdida de datos o condiciones de carrera si usó múltiples dispositivos. Necesitamos consistencia eventual robusta.
+Cubalyze funcionará offline. Un usuario puede hacer 500 *solves* en un avión y luego sincronizarlos. Si usamos modelos REST tradicionales de sobreescritura (UPDATEs en filas completas), es fácil causar pérdida de datos o condiciones de carrera si usó múltiples dispositivos. Necesitamos consistencia eventual robusta.
 
 ## Proposed Solution
 *   **Plataforma:** Supabase (proporciona Auth, API GraphQL/REST instantánea y DB Postgres).

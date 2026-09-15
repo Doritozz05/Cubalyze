@@ -1,6 +1,6 @@
 # Widget: scramble-2d (Scramble)
 
-- **id**: `scramble-2d` · **categoría**: visual · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `scramble-2d` · **categoría**: visual · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingCube2DPanel`, `Scramble2DPreview`
 - **Definición**: `implementations/scramble-2d/definition.ts`
 

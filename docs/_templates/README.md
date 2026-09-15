@@ -1,6 +1,6 @@
 # Documentation Templates
 
-This directory contains the standard templates for the CubeForge documentation ecosystem. 
+This directory contains the standard templates for the Cubalyze documentation ecosystem. 
 No document should ever be created from scratch. Every new document must follow its corresponding template.
 
 ## Available Templates

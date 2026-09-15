@@ -13,7 +13,7 @@ document_type: "ADR"
 # ADR-010-Licensing_Compatibility
 
 ## Context and Problem Statement
-CubeForge será un proyecto de código abierto. Elegir la licencia correcta es fundamental para definir el modelo de uso, distribución y compatibilidad con tiendas de aplicaciones móviles en el futuro, así como la compatibilidad con las dependencias utilizadas en el desarrollo.
+Cubalyze será un proyecto de código abierto. Elegir la licencia correcta es fundamental para definir el modelo de uso, distribución y compatibilidad con tiendas de aplicaciones móviles en el futuro, así como la compatibilidad con las dependencias utilizadas en el desarrollo.
 
 ## Decision Drivers
 *   **Permisividad:** Facilitar la adopción, contribución y *forks* del código por parte de la comunidad.

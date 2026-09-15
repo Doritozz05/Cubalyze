@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-Con el crecimiento de CubeForge en un ecosistema de monorepo gestionado por Turborepo, es imperativo mantener un estándar de código unificado en todos los paquetes (UI, core, configs). Permitir configuraciones libres por desarrollador generará inconsistencias, "guerras de formato" en las revisiones de código y dificultará la mantenibilidad a largo plazo. Se requiere una solución estandarizada para formateo y linting.
+Con el crecimiento de Cubalyze en un ecosistema de monorepo gestionado por Turborepo, es imperativo mantener un estándar de código unificado en todos los paquetes (UI, core, configs). Permitir configuraciones libres por desarrollador generará inconsistencias, "guerras de formato" en las revisiones de código y dificultará la mantenibilidad a largo plazo. Se requiere una solución estandarizada para formateo y linting.
 
 ## Decision Drivers
 

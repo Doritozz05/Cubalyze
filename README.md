@@ -1,8 +1,8 @@
-# CubeForge
+# Cubalyze
 
 **Professional Speedcubing Platform**
 
-CubeForge is an open-source, AI-first platform for speedcubers. It aims to unify timing, smart cube integration, real-time analytics, spaced-repetition training, and algorithm databases into a single, cohesive, offline-first application.
+Cubalyze is an open-source, AI-first platform for speedcubers. It aims to unify timing, smart cube integration, real-time analytics, spaced-repetition training, and algorithm databases into a single, cohesive, offline-first application.
 
 ## Documentation
 The source of truth for all project architecture, roadmap, and engineering governance is the `docs/` directory.
@@ -14,7 +14,7 @@ The source of truth for all project architecture, roadmap, and engineering gover
 - **[Engineering Standards](docs/08-standards/)**: Mandatory coding, testing, and workflow rules.
 
 ## Contributing
-CubeForge operates under strict engineering governance. We welcome contributions, but all features must follow our implementation pipeline (Idea -> PRD -> Roadmap -> ADR -> RFC -> TDD -> Code).
+Cubalyze operates under strict engineering governance. We welcome contributions, but all features must follow our implementation pipeline (Idea -> PRD -> Roadmap -> ADR -> RFC -> TDD -> Code).
 
 Please read our **[Contributing Guide](docs/15-contributing/CONTRIBUTING.md)** before opening a PR.
 

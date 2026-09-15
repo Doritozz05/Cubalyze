@@ -14,7 +14,7 @@ document_type: "ADR"
 
 ## Context and Problem Statement
 
-CubeForge se diseña con un enfoque *offline-first*. Manejar miles de *solves* (tiempos de resolución), estadísticas en tiempo real y configuraciones requiere un motor de base de datos transaccional, rápido y robusto. IndexedDB nativo es asíncrono, difícil de manejar y propenso a inconsistencias bajo concurrencia. Se requiere una base de datos local robusta que pueda operar eficazmente y escalar con la complejidad relacional de la aplicación.
+Cubalyze se diseña con un enfoque *offline-first*. Manejar miles de *solves* (tiempos de resolución), estadísticas en tiempo real y configuraciones requiere un motor de base de datos transaccional, rápido y robusto. IndexedDB nativo es asíncrono, difícil de manejar y propenso a inconsistencias bajo concurrencia. Se requiere una base de datos local robusta que pueda operar eficazmente y escalar con la complejidad relacional de la aplicación.
 
 ## Decision Drivers
 

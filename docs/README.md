@@ -1,6 +1,6 @@
-# CubeForge Documentation Ecosystem
+# Cubalyze Documentation Ecosystem
 
-Welcome to the CubeForge Documentation repository. This `docs/` folder is the **Single Source of Truth** for the entire project.
+Welcome to the Cubalyze Documentation repository. This `docs/` folder is the **Single Source of Truth** for the entire project.
 
 ## Directory Structure & Index
 

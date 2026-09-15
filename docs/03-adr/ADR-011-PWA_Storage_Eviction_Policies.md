@@ -13,7 +13,7 @@ document_type: "ADR"
 # ADR-011-PWA_Storage_Eviction_Policies
 
 ## Context and Problem Statement
-CubeForge es Offline-First. Las sesiones, resoluciones y estadísticas se almacenan localmente. Sin embargo, los navegadores borran silenciosamente los datos de almacenamiento (IndexedDB/Cache API) si detectan poco espacio en disco (Eviction). Se requiere una arquitectura robusta para persistir y proteger la base de datos de tiempos del usuario.
+Cubalyze es Offline-First. Las sesiones, resoluciones y estadísticas se almacenan localmente. Sin embargo, los navegadores borran silenciosamente los datos de almacenamiento (IndexedDB/Cache API) si detectan poco espacio en disco (Eviction). Se requiere una arquitectura robusta para persistir y proteger la base de datos de tiempos del usuario.
 
 ## Decision Drivers
 *   **Rendimiento:** Soporte de cálculos y agregaciones SQL rápidas para estadísticas de cubos.

@@ -1,7 +1,7 @@
 # 00 Product
 
 ## Purpose
-This directory serves as the authoritative location for 00 Product documentation within the CubeForge ecosystem.
+This directory serves as the authoritative location for 00 Product documentation within the Cubalyze ecosystem.
 
 ## Contents
 This folder contains all artifacts related to 00 Product.

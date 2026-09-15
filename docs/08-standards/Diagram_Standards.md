@@ -6,7 +6,7 @@
 
 ## Purpose
 
-To establish a consistent, maintainable approach to visual documentation within CubeForge.
+To establish a consistent, maintainable approach to visual documentation within Cubalyze.
 
 ## Allowed Diagram Types and Tools
 
@@ -19,7 +19,7 @@ Visual documentation must be stored as plain text whenever possible to allow ver
 
 ### 1. Architecture / System Context
 *   **Tool**: C4 Model (Context & Container diagrams).
-*   **Use Case**: Documenting how CubeForge interacts with external systems (WCA API, Bluetooth cubes) or how its high-level internal containers interact.
+*   **Use Case**: Documenting how Cubalyze interacts with external systems (WCA API, Bluetooth cubes) or how its high-level internal containers interact.
 
 ### 2. Sequence Diagrams
 *   **Tool**: Mermaid Sequence Diagram.

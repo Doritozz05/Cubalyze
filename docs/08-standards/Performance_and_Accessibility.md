@@ -4,7 +4,7 @@
 **Lifecycle**: Living Document
 
 ## Purpose
-To define the hard boundaries for acceptable performance and accessibility in CubeForge.
+To define the hard boundaries for acceptable performance and accessibility in Cubalyze.
 
 ## Performance Budgets
 1. **3D Rendering**: The `Cube3D` engine must maintain **60 FPS** minimum on average mobile hardware.

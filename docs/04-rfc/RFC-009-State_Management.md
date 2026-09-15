@@ -16,7 +16,7 @@ document_type: "RFC"
 Este RFC propone el uso de **Zustand** para el manejo de estado global del cliente, específicamente diseñado para lidiar con el estado de alta frecuencia (el cronómetro corriendo a sub-milisegundos) sin provocar re-renders completos del árbol de React.
 
 ## Motivation
-En CubeForge coexisten dos tipos de estado muy distintos:
+En Cubalyze coexisten dos tipos de estado muy distintos:
 1.  **Estado de Baja Frecuencia:** Preferencias del usuario, sesión, listas de tiempos históricos.
 2.  **Estado de Alta Frecuencia:** El temporizador activo (actualizándose a 60fps), el estado de los sensores del cubo Bluetooth, y las rotaciones 3D.
 

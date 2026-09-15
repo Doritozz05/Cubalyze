@@ -3,13 +3,13 @@
 ## 1. Metadata
 - **ID**: A.2 (DEC-03)
 - **Title**: Bluetooth Connectivity & iOS Fallbacks
-- **Purpose**: Determinar cómo conectarán los usuarios móviles de iOS (iPhone/iPad) sus Smart Cubes a CubeForge, dado que Apple no soporta Web Bluetooth en Safari.
+- **Purpose**: Determinar cómo conectarán los usuarios móviles de iOS (iPhone/iPad) sus Smart Cubes a Cubalyze, dado que Apple no soporta Web Bluetooth en Safari.
 - **Status**: Complete
 - **Date**: 2026-07-12
 - **Confidence Level**: High
 
 ## 2. Contexto del Problema
-CubeForge depende del uso de Smart Cubes (vía Bluetooth LE) para registrar movimientos y tiempos en tiempo real.
+Cubalyze depende del uso de Smart Cubes (vía Bluetooth LE) para registrar movimientos y tiempos en tiempo real.
 La API `Web Bluetooth` (que permite conectar el cubo directamente desde el navegador sin instalar apps) es soportada oficialmente por Chrome/Edge en Windows, macOS, Android y Linux.
 **Bloqueo**: Apple se ha negado explícitamente a implementar Web Bluetooth en WebKit (Safari iOS) alegando preocupaciones de privacidad y seguridad. Ningún navegador en iOS (ni siquiera Chrome para iOS) soporta Web Bluetooth porque todos usan el motor WebKit por debajo.
 
@@ -32,7 +32,7 @@ Lanzar la PWA oficial, permitiendo Bluetooth en Android/Desktop, pero mostrando 
 *   **Cons**: Frustración inicial para usuarios de iPhone que tengan un Smart Cube.
 
 ## 4. Recomendación Arquitectónica
-Dado el enfoque iterativo de CubeForge, la estrategia a seguir será una mezcla estructurada:
+Dado el enfoque iterativo de Cubalyze, la estrategia a seguir será una mezcla estructurada:
 
 ### Hito 1 (MVP Web): Opción 3 + Opción 1
 1.  Construir y validar toda la arquitectura del cubo Bluetooth usando la API nativa `Web Bluetooth` estándar.

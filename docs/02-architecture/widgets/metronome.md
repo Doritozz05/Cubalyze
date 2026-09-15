@@ -1,6 +1,6 @@
 # Widget: metronome (TPS metronome)
 
-- **id**: `metronome` · **categoría**: timer · **autor**: cubeforge · **v1.0.0** · built-in
+- **id**: `metronome` · **categoría**: timer · **autor**: Cubalyze · **v1.0.0** · built-in
 - **Componentes**: `FloatingMetronomePanel`, `MetronomePreview`, `BeatIndicator`
 - **Definición**: `implementations/metronome/definition.ts`
 

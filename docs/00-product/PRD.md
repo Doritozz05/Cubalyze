@@ -1,4 +1,4 @@
-# CubeForge — Professional Speedcubing Platform
+# Cubalyze — Professional Speedcubing Platform
 
 ### Master Product, Architecture, and Design Document
 
@@ -145,7 +145,7 @@ The current official scrambles program is TNoodle-WCA, which generates high-qual
 | **AlgDB / SpeedCubeDB**         | Comprehensive queryable algorithm databases                                       | No timer, no tracking, no integration with real solves                          | No                             | No                       | Passive query            | Medium                    |
 | **CubeSkills / JPerm**          | Extremely high-quality educational content (video, theory)                        | Not a software platform; no automatic tracking                                  | No                             | No                       | Content, not interactive | N/A                       |
 
-### What CubeForge would do better than all of them
+### What Cubalyze would do better than all of them
 
 1. **Real unification of the five layers** (timer, smart cube, analysis, training, algorithm database) in a single coherent data architecture, instead of isolated tools that the user has to combine manually.
 2. **Manufacturer independence** through a plugin-based hardware HAL (no current competitor offers this openly and extensibly).
@@ -170,7 +170,7 @@ The current official scrambles program is TNoodle-WCA, which generates high-qual
 
 # PART 3 — PRODUCT VISION AND PILLARS
 
-CubeForge is intended as the reference software layer for serious speedcubing: the place where a speedcuber connects their smart cube, trains, analyzes each solve move by move, manages their own algorithm database, tracks their long-term progress, and receives AI-generated training recommendations based on their own data — all without being tied to a single hardware manufacturer or a single solving method.
+Cubalyze is intended as the reference software layer for serious speedcubing: the place where a speedcuber connects their smart cube, trains, analyzes each solve move by move, manages their own algorithm database, tracks their long-term progress, and receives AI-generated training recommendations based on their own data — all without being tied to a single hardware manufacturer or a single solving method.
 
 **Product Pillars:**
 
@@ -671,7 +671,7 @@ Please, refer to [Master_Roadmap.md](../01-roadmap/Master_Roadmap.md) to access:
 - Exit criteria and deliverables
 - Risk and technical debt management
 
-The `Master_Roadmap.md` document is the single source of truth for planning and execution order of the CubeForge project.
+The `Master_Roadmap.md` document is the single source of truth for planning and execution order of the Cubalyze project.
 
 # PART 17 — REFERENCES, REPOSITORIES, AND BIBLIOGRAPHY
 

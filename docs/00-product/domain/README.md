@@ -1,4 +1,4 @@
-# CubeForge Domain Knowledge
+# Cubalyze Domain Knowledge
 
 ## Purpose
 

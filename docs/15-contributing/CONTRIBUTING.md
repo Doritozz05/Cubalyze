@@ -1,10 +1,10 @@
-# Contributing to CubeForge
+# Contributing to Cubalyze
 
-Thank you for your interest in contributing to CubeForge! To ensure a scalable and maintainable codebase, we follow a strict implementation pipeline.
+Thank you for your interest in contributing to Cubalyze! To ensure a scalable and maintainable codebase, we follow a strict implementation pipeline.
 
 ## The Implementation Pipeline
 
-CubeForge does not accept arbitrary pull requests for new features without prior architectural approval. All changes must flow through this pipeline:
+Cubalyze does not accept arbitrary pull requests for new features without prior architectural approval. All changes must flow through this pipeline:
 
 1. **Idea**: Discussed in GitHub Discussions or Issues.
 2. **Architecture**: If the idea requires new technology, an **RFC (Request for Comments)** must be opened in `docs/04-rfc/`. Once resolved, it becomes an **ADR (Architecture Decision Record)** in `docs/03-adr/`.
