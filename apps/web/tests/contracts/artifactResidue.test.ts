@@ -93,6 +93,15 @@ const FROZEN_CONTEXT = [
       'TODOS los usuarios existentes. Nota: «forgemark» es un token derivado que NO contiene ' +
       'la palabra cubeforge, así que ningún grep del nombre puede encontrarlo nunca.',
   },
+  {
+    pattern: /legacy[a-zA-Z]*\s*:\s*\[[^\]]*cube[ _.-]?forge[^\]]*\]/i,
+    why:
+      'Etiquetas heredadas que el LECTOR acepta (doble lectura, PR-4): temas, backups de ' +
+      'colección y exports de solves. El escritor graba siempre el tag nuevo, pero el lector ' +
+      'debe reconocer el antiguo o los ficheros que el usuario ya descargó dejan de abrirse. ' +
+      'NO se pueden borrar nunca: el fichero que las lleva está en el disco de alguien. ' +
+      'Guardado también en la auditoría (§14.6.4) y probado en src/lib/exportTag.test.ts.',
+  },
 ];
 
 /**
@@ -102,30 +111,20 @@ const FROZEN_CONTEXT = [
  * PR-2 (la copy visible suelta) ya aterrizó, así que sus cinco entradas se
  * borraron de aquí: el test falló por las cinco en el mismo instante en que
  * dejaron de estar en el bundle, y eso es lo que forzó esta limpieza en vez de
- * dejar la lista pudriéndose. Las que quedan son contratos con ficheros que el
- * usuario ya tiene (PR-4) y diagnósticos de consola (PR-5).
+ * dejar la lista pudriéndose.
+ *
+ * PR-4 (los contratos con ficheros que el usuario ya tiene) también aterrizó: sus
+ * dos entradas se borraron de aquí, porque la lectura doble deja las etiquetas
+ * antiguas en el bundle PARA SIEMPRE. Esas ya no son residuo pendiente sino
+ * contexto congelado (arriba), que es la clasificación honesta: no caducan, se
+ * quedan a propósito. Las que quedan son solo nombres internos (PR-5).
  */
 const PENDING: { id: string; pattern: RegExp; pr: string; why: string }[] = [
-  {
-    id: 'export-import-discriminator',
-    // Los tres sitios donde el valor viaja/valida DENTRO de un fichero del usuario:
-    //   exportSolves.ts  → `app: "CubeForge"` (JSON)  y  `App: "CubeForge"` (.xlsx)
-    //   importSolves.ts  → `data.app === "CubeForge"` (detección + ruta full-fidelity)
-    pattern: /["'`]CubeForge["'`]/,
-    pr: 'PR-4',
-    why: 'discriminador dentro del fichero exportado y validador de importación → doble lectura',
-  },
   {
     id: 'console-diagnostics',
     pattern: /%c\[cube[ _.-]?forge\]/i,
     pr: 'PR-5',
     why: 'logs de diagnóstico en consola (dataIntegrity + widgets debug)',
-  },
-  {
-    id: 'theme-share-discriminator',
-    pattern: /app[!:=]+[`'"]cubeforge[`'"]/,
-    pr: 'PR-4',
-    why: 'discriminador DENTRO del fichero de tema compartido (doble lectura antes de cambiarlo)',
   },
   {
     id: 'i18n-format-keys',

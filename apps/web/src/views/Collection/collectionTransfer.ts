@@ -35,9 +35,21 @@ import {
 } from "./collectionModel";
 import { importPhotoRecord, newPhotoId, photoKey, readPhoto } from "./collectionPhotos";
 import { blobToDataUrl, dataUrlToBlob, processPhotoDataUrl } from "./imageUtils";
+import { isKnownExportTag, type ExportTagContract } from "@/lib/exportTag";
 
 /** Marker so a file can be recognised as ours (and versioned) later. */
-export const LOCKER_FILE_FORMAT = "cubeforge-locker";
+export const LOCKER_FILE_FORMAT = "cubalyze-locker";
+
+/**
+ * Markers the reader accepts: the one written today plus the one earlier
+ * releases wrote, so a backup saved before the rename still restores. Note this
+ * is NOT the `localStorage` key of the same name in `collectionStore.ts` — that
+ * one is frozen for life (see `@/lib/exportTag`).
+ */
+export const LOCKER_FILE_TAGS: ExportTagContract = {
+  current: LOCKER_FILE_FORMAT,
+  legacy: ["cubeforge-locker"],
+};
 export const LOCKER_FILE_VERSION = 1;
 
 export interface LockerPhotoRecord {
@@ -128,7 +140,7 @@ export interface LockerImportResult {
 export function isLockerFile(raw: unknown): boolean {
   if (!raw || typeof raw !== "object") return false;
   const candidate = raw as { format?: unknown; data?: unknown };
-  return candidate.format === LOCKER_FILE_FORMAT && typeof candidate.data === "object";
+  return isKnownExportTag(candidate.format, LOCKER_FILE_TAGS) && typeof candidate.data === "object";
 }
 
 function photoParts(key: string): { itemId: string; photoId: string } | null {

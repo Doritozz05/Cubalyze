@@ -3,6 +3,18 @@
 import type { Solve } from "@/types";
 import { effectiveTime, normalizePenalty } from "@/types";
 import { formatTime } from "@/utils/formatTime";
+import type { ExportTagContract } from "@/lib/exportTag";
+
+/**
+ * `app` discriminator written into the exported JSON and into the `.xlsx`
+ * ``Info`` sheet. `importSolves` accepts the tags earlier releases wrote as
+ * well, so a backup downloaded before the rename still imports
+ * (see `@/lib/exportTag`).
+ */
+export const SOLVE_EXPORT_TAGS: ExportTagContract = {
+  current: "Cubalyze",
+  legacy: ["CubeForge"],
+};
 
 /**
  * Neutralize spreadsheet formula injection (OWASP): when a cell is opened in
@@ -18,7 +30,7 @@ function sanitizeFormula(value: string): string {
 }
 
 /**
- * Export solves to CubeForge CSV format.
+ * Export solves to the Cubalyze CSV format.
  */
 export function exportSolvesToCSV(solves: Solve[], _sessionName?: string): string {
   const header = "No.,Time,Penalty,Scramble,Date,Method,Note";
@@ -105,7 +117,7 @@ export function exportSolvesToJSON(
 ): string {
   const data = {
     exportedAt: new Date().toISOString(),
-    app: "CubeForge",
+    app: SOLVE_EXPORT_TAGS.current,
     sessionName: sessionName ?? "Unknown",
     solveCount: solves.length,
     solves: solves.map((solve) => ({
@@ -130,14 +142,14 @@ export function exportSolvesToJSON(
  *
  * Structure: `{ app, exportedAt, sessions: [{ sessionName, solveCount, solves }] }`.
  * Each solve keeps its full metadata (including per-solve `puzzleType`), so
- * the "Import CubeForge JSON (no data loss)" flow restores it exactly.
+ * the "Import Cubalyze JSON (no data loss)" flow restores it exactly.
  */
 export function exportAllSolvesToJSON(
   sessions: Array<{ sessionName: string; solves: Solve[] }>,
 ): string {
   const data = {
     exportedAt: new Date().toISOString(),
-    app: "CubeForge",
+    app: SOLVE_EXPORT_TAGS.current,
     sessionCount: sessions.length,
     sessions: sessions.map(({ sessionName, solves }) => ({
       sessionName: sessionName ?? "Unknown",
@@ -223,7 +235,7 @@ export async function exportSolvesToXLSX(
     wb,
     XLSX.utils.json_to_sheet([
       {
-        App: "CubeForge",
+        App: SOLVE_EXPORT_TAGS.current,
         Session: sanitizeFormula(sessionName),
         ExportedAt: new Date().toISOString(),
         SolveCount: solves.length,

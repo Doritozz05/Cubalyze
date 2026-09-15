@@ -4,6 +4,8 @@ import type { Penalty, SolveMethod, SolveSource } from "@/types";
 import { normalizePenalty } from "@/types";
 import { WCA_EVENT_CODES } from "@cubalyze/events";
 import { methodForEvent } from "@/utils/puzzleUtils";
+import { isKnownExportTag } from "@/lib/exportTag";
+import { SOLVE_EXPORT_TAGS } from "@/utils/exportSolves";
 import type { CubeMoveEvent, OrientationTimeline, SolveMetrics } from "@cubalyze/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -106,8 +108,9 @@ export function detectFormat(content: string): ImportFormat {
           // Most keys are sessionN (+ optional "properties")
           return "cstimer-json";
         }
-        // CubeForge JSON: has "app", "solves", etc.
-        if (parsed.app === "CubeForge" && Array.isArray(parsed.solves)) {
+        // Our JSON: has "app", "solves", etc. `app` is accepted with the old
+        // spelling too, so a file exported before the rename still imports.
+        if (isKnownExportTag(parsed.app, SOLVE_EXPORT_TAGS) && Array.isArray(parsed.solves)) {
           return "cubeforge-json";
         }
         return "cubeforge-json";
@@ -905,8 +908,8 @@ function parseJsonImport(content: string): ImportResult {
   try {
     const data = JSON.parse(content);
 
-    // Detect CubeForge JSON
-    if (data.app === "CubeForge") {
+    // Detect our JSON (both the current `app` tag and the pre-rename one).
+    if (isKnownExportTag(data.app, SOLVE_EXPORT_TAGS)) {
       // Single-session export: { app, sessionName, solves }
       if (Array.isArray(data.solves)) {
         const export_ = data as CubeForgeExport;

@@ -6,7 +6,22 @@
  * overrides, chosen fonts and liquid-glass options. Background media and
  * uploaded font blobs are deliberately excluded — they don't travel.
  */
+import { isKnownExportTag, type ExportTagContract } from '@/lib/exportTag';
+
 export const THEME_SHARE_VERSION = 1;
+
+/**
+ * `app` tag written into every share file. Readers also accept the tag earlier
+ * releases wrote, so a theme exported before the rename still imports. Both
+ * halves live in `@/lib/exportTag`.
+ */
+export const THEME_SHARE_APP = 'cubalyze' as const;
+
+/** Tag written today + every tag an older build wrote. Never drop a legacy one. */
+export const THEME_SHARE_TAGS: ExportTagContract = {
+  current: THEME_SHARE_APP,
+  legacy: ['cubeforge'],
+};
 
 export interface SharedThemeOptions {
   fontSans: string;
@@ -23,7 +38,7 @@ export type SharedThemePreset =
 
 export interface SharedThemeFile {
   version: 1;
-  app: 'cubeforge';
+  app: typeof THEME_SHARE_APP;
   exportedAt: number;
   preset: SharedThemePreset;
   overrides: Record<string, string> | null;
@@ -60,7 +75,7 @@ function isOptions(value: unknown): value is SharedThemeOptions {
 export function parseSharedTheme(raw: unknown): SharedThemeFile | null {
   if (!raw || typeof raw !== 'object') return null;
   const f = raw as Record<string, unknown>;
-  if (f.version !== THEME_SHARE_VERSION || f.app !== 'cubeforge') return null;
+  if (f.version !== THEME_SHARE_VERSION || !isKnownExportTag(f.app, THEME_SHARE_TAGS)) return null;
   if (typeof f.exportedAt !== 'number') return null;
 
   const p = f.preset;
@@ -94,7 +109,7 @@ export function parseSharedTheme(raw: unknown): SharedThemeFile | null {
 
   return {
     version: 1,
-    app: 'cubeforge',
+    app: THEME_SHARE_APP,
     exportedAt: f.exportedAt,
     preset: normalized,
     overrides: (f.overrides as Record<string, string> | null) ?? null,

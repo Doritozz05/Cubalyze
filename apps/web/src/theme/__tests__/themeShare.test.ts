@@ -3,7 +3,7 @@ import { parseSharedTheme, themeFileSlug } from "../themeShare";
 
 const validBuiltin = {
   version: 1,
-  app: "cubeforge",
+  app: "cubalyze",
   exportedAt: 123,
   preset: { kind: "builtin", id: "nord" },
   overrides: { "--ready": "#ff0000" },
@@ -22,6 +22,16 @@ describe("parseSharedTheme", () => {
     const parsed = parseSharedTheme(validBuiltin);
     expect(parsed?.preset).toEqual({ kind: "builtin", id: "nord" });
     expect(parsed?.overrides).toEqual({ "--ready": "#ff0000" });
+  });
+
+  it("still accepts a share file written before the rename (app: 'cubeforge')", () => {
+    // Dual read: a theme exported by an older build lives on someone's disk and
+    // cannot be rewritten by us, so the legacy tag stays readable forever.
+    const parsed = parseSharedTheme({ ...validBuiltin, app: "cubeforge" });
+    expect(parsed).not.toBeNull();
+    expect(parsed?.preset).toEqual({ kind: "builtin", id: "nord" });
+    // The parser normalises to the tag we write today.
+    expect(parsed?.app).toBe("cubalyze");
   });
 
   it("accepts a valid custom share file and trims the name", () => {
@@ -46,6 +56,9 @@ describe("parseSharedTheme", () => {
   it("rejects wrong version, app, or malformed preset", () => {
     expect(parseSharedTheme({ ...validBuiltin, version: 2 })).toBeNull();
     expect(parseSharedTheme({ ...validBuiltin, app: "other" })).toBeNull();
+    // Exact comparison: a re-cased or padded tag is a different format, not ours.
+    expect(parseSharedTheme({ ...validBuiltin, app: "Cubalyze" })).toBeNull();
+    expect(parseSharedTheme({ ...validBuiltin, app: " cubalyze " })).toBeNull();
     expect(parseSharedTheme({ ...validBuiltin, preset: { kind: "builtin", id: "" } })).toBeNull();
     expect(parseSharedTheme({ ...validBuiltin, preset: { kind: "custom" } })).toBeNull();
     expect(parseSharedTheme(null)).toBeNull();

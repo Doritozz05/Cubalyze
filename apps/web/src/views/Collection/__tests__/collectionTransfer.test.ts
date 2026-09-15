@@ -85,7 +85,7 @@ describe("locker backup file", () => {
 
     expect(photoCount).toBe(1);
     expect(missingPhotos).toBe(0);
-    expect(file.format).toBe("cubeforge-locker");
+    expect(file.format).toBe("cubalyze-locker");
     expect(isLockerFile(file)).toBe(true);
 
     const record = file.photos[photoKey(ITEM_ID, PHOTO_ID)]!;
@@ -120,6 +120,27 @@ describe("locker backup file", () => {
     expect(photoCount).toBe(0);
     expect(missingPhotos).toBe(1);
     expect(file.data.items[0]!.photos).toEqual([]);
+  });
+
+  it("restores a backup written before the rename (format: 'cubeforge-locker')", async () => {
+    // Dual read: the marker changed with the rebranding, but a backup downloaded
+    // by an older build must still restore. The `localStorage` key that shares
+    // this spelling is a different thing and is frozen for life.
+    await storePhoto("LEGACY-FULL", "LEGACY-THUMB");
+    const { file } = await buildLockerFile(stateWith([PHOTO_REF]));
+    const legacyText = JSON.stringify({ ...file, format: "cubeforge-locker" });
+
+    expect(isLockerFile(JSON.parse(legacyText))).toBe(true);
+
+    // A device that never held the bytes: the restore must write them back.
+    await deleteItemPhotos(ITEM_ID);
+    expect(await readPhoto(ITEM_ID, PHOTO_ID)).toBeNull();
+
+    const restored = await readLockerFile(legacyText);
+    expect(restored.importedPhotos).toBe(1);
+    expect(restored.state.items[0]!.photos).toEqual([PHOTO_REF]);
+    const stored = await readPhoto(ITEM_ID, PHOTO_ID);
+    expect(await stored?.full.text()).toBe("LEGACY-FULL");
   });
 
   it("drops references the file cannot restore", async () => {

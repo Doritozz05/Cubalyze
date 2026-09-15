@@ -104,7 +104,7 @@ describe("formula injection guard (OWASP CSV/XLSX)", () => {
     },
   ];
 
-  it("CubeForge CSV neutralizes cells starting with = + - @ or tab", () => {
+  it("Cubalyze CSV neutralizes cells starting with = + - @ or tab", () => {
     const csv = exportSolvesToCSV(dangerous);
     expect(csv).toContain("'=HYPERLINK");
     expect(csv).toContain("'=cmd|");
@@ -129,7 +129,7 @@ describe("formula injection guard (OWASP CSV/XLSX)", () => {
   });
 });
 
-describe("CubeForge JSON full-fidelity round trip", () => {
+describe("Cubalyze JSON full-fidelity round trip", () => {
   const sample: Solve[] = [
     {
       id: "a",
@@ -156,6 +156,9 @@ describe("CubeForge JSON full-fidelity round trip", () => {
 
   it("single-session JSON export → import preserves per-solve puzzleType and all metadata", () => {
     const json = exportSolvesToJSON(sample, "Test session");
+    // The WRITER stamps the current tag; the READER accepts older ones too.
+    expect(JSON.parse(json).app).toBe("Cubalyze");
+
     const result = parseImport(json);
     expect(result.format).toBe("cubeforge-json");
     expect(result.errors).toHaveLength(0);
@@ -182,7 +185,7 @@ describe("CubeForge JSON full-fidelity round trip", () => {
     ]);
 
     const data = JSON.parse(json);
-    expect(data.app).toBe("CubeForge");
+    expect(data.app).toBe("Cubalyze");
     expect(data.sessionCount).toBe(2);
     expect(data.sessions[0].solveCount).toBe(2);
     expect(data.sessions[1].solveCount).toBe(1);
@@ -194,6 +197,26 @@ describe("CubeForge JSON full-fidelity round trip", () => {
     // Puzzle types survive the round trip per solve.
     const types = result.solves.map((s) => s.puzzleType);
     expect(types).toEqual(["333", "222", "222"]);
+  });
+
+  it("imports a JSON exported before the rename (app: 'CubeForge')", () => {
+    // The exact file an older build wrote: same shape, old discriminator. It must
+    // keep importing, because we cannot rewrite what is already on user disks.
+    const legacy = JSON.stringify({
+      app: "CubeForge",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      sessionName: "Old session",
+      solveCount: 1,
+      solves: [
+        { timeMs: 10000, penalty: "none", scramble: "R U R' U'", timestamp: 1, puzzleType: "333" },
+      ],
+    });
+
+    const result = parseImport(legacy);
+    expect(result.format).toBe("cubeforge-json");
+    expect(result.errors).toHaveLength(0);
+    expect(result.solves).toHaveLength(1);
+    expect(result.solves[0]!.time).toBe(10000);
   });
 
   it("toSolveInput keeps the exported puzzleType", () => {

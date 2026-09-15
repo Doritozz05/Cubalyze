@@ -8,7 +8,7 @@ import { MAX_CUSTOM_THEMES, preferencesStore } from '@cubalyze/state';
 import { THEME_PRESETS, getSystemBaseTheme } from '@/theme/themePresets';
 import { MONO_FONTS, SANS_FONTS } from '@/theme/fonts';
 import { findPreset } from '@/theme/customThemes';
-import { parseSharedTheme, themeFileSlug } from '@/theme/themeShare';
+import { THEME_SHARE_APP, parseSharedTheme, themeFileSlug } from '@/theme/themeShare';
 
 /**
  * Export / import of the current look, below the custom themes.
@@ -37,7 +37,7 @@ export function ThemeShareSection() {
     const label = custom?.name ?? preset?.id ?? base;
     const file = {
       version: 1 as const,
-      app: 'cubeforge' as const,
+      app: THEME_SHARE_APP,
       exportedAt: Date.now(),
       preset:
         custom != null
