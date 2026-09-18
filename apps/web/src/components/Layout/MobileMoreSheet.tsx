@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Settings, Bluetooth, Palette, User, Network, Box, LayoutGrid, Package, Scale, Users } from "lucide-react";
 import { FaListOl } from "react-icons/fa";
 import {
   Drawer,
@@ -45,6 +46,8 @@ export function MobileMoreSheet({
   const { t } = useTranslation("shell");
   const { t: tNav } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
+  const { t: tLegal } = useTranslation("legal");
+  const navigate = useNavigate();
 
   const handleAction = (action: () => void) => {
     hapticTap();
@@ -136,6 +139,15 @@ export function MobileMoreSheet({
       title: tCommon("theme"),
       subtitle: t("more.themeSubtitle"),
       onClick: () => handleAction(() => setThemeStudioOpen(true)),
+    },
+    {
+      // Public legal hub (privacy + terms + storage tabs): visible from the
+      // home surface so reviewers and users always find it in one tap.
+      key: "privacy",
+      icon: Scale,
+      title: tLegal("navPrivacy"),
+      subtitle: t("more.privacySubtitle"),
+      onClick: () => handleAction(() => navigate("/privacy")),
     },
   ];
 

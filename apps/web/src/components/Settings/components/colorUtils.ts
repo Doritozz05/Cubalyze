@@ -110,3 +110,39 @@ export function hsvToHex(h: number, s: number, v: number): string {
   const { r, g, b } = hsvToRgb(h, s, v);
   return rgbToHex(r, g, b);
 }
+
+/**
+ * WCAG 2.x relative luminance of an sRGB color (0 = black, 1 = white).
+ * @see https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
+ */
+export function relativeLuminance(r: number, g: number, b: number): number {
+  const linear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+/**
+ * WCAG contrast ratio between two hex colors (1 = identical, 21 = black/white).
+ * Returns null when either input is not a valid hex color.
+ */
+export function contrastRatio(a: string, b: string): number | null {
+  if (!isValidHex(a) || !isValidHex(b)) return null;
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  const l1 = relativeLuminance(ca.r, ca.g, ca.b);
+  const l2 = relativeLuminance(cb.r, cb.g, cb.b);
+  const [hi, lo] = l1 >= l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** WCAG AA for normal text (4.5:1). Custom user themes are never blocked — a
+ * low ratio only raises a warning in the editor, because the theme is the
+ * user's own choice. */
+export const AA_NORMAL_TEXT_RATIO = 4.5;
+
+export function meetsAaNormalText(a: string, b: string): boolean {
+  const ratio = contrastRatio(a, b);
+  return ratio !== null && ratio >= AA_NORMAL_TEXT_RATIO;
+}

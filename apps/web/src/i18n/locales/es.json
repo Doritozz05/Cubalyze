@@ -41,7 +41,10 @@
     "reconstruction": "Reconstrucción {{id}} — {{solver}}",
     "collection": "Colección",
     "cube": "Cubo virtual",
-    "notFound": "Página no encontrada"
+    "notFound": "Página no encontrada",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos del Servicio",
+    "storage": "Almacenamiento y Cookies"
   },
   "nav": {
     "title": "Navegación",
@@ -116,7 +119,14 @@
       "noHandle": "sin handle",
       "actions": "Acciones para {{name}}",
       "remove": "Eliminar amigo",
-      "block": "Bloquear"
+      "block": "Bloquear",
+      "report": "Denunciar"
+    },
+    "report": {
+      "subjectProfile": "Denuncia de contenido: {{handle}}",
+      "subjectPhoto": "Denuncia de contenido: foto de {{handle}}",
+      "bodyProfile": "Usuario denunciado: {{handle}} (id {{userId}})\nFecha: {{date}}\n\nLo que vi:\n[describe aquí]\n\n—\nEnviado desde Cubalyze. Las denuncias se revisan personalmente, normalmente en 48 horas.",
+      "bodyPhoto": "Usuario denunciado: {{handle}} (id {{userId}})\nObjeto: {{itemId}} / foto {{photoId}}\nFecha: {{date}}\n\nLo que vi:\n[describe aquí]\n\n—\nEnviado desde Cubalyze. Las denuncias se revisan personalmente, normalmente en 48 horas."
     },
     "requests": {
       "incoming": "Recibidas",
@@ -513,6 +523,7 @@
         "title": "Personalización de colores",
         "subtitle": "Ajusta cada color individual del sistema",
         "reset": "Restablecer colores",
+        "lowContrastWarning": "Tus colores de fondo y texto tienen un contraste de {{ratio}}:1, por debajo del 4.5:1 recomendado para legibilidad. El texto puede costar de leer — esto es solo un aviso, tu tema sigue aplicándose.",
         "resetColor": "Restablecer al color original del tema",
         "groupSurfaces": "Lienzo y superficies",
         "groupTypography": "Textos y tipografía",
@@ -733,6 +744,14 @@
       "excelTitle": "Exportación Excel",
       "excelHint": "Libro .xlsx real con columnas pre-dimensionadas para analizar en Excel / Google Sheets. Incluye una hoja de resumen.",
       "exportExcel": "Exportar Excel",
+      "eraseTitle": "Borrar este dispositivo",
+      "eraseHint": "Elimina cada solución, sesión, registro de entrenamiento, objeto de colección, foto, perfil y ajuste guardados en este dispositivo. Tu cuenta en la nube, si existe, no se toca — inicia sesión de nuevo para recuperarla.",
+      "eraseButton": "Borrar datos del dispositivo",
+      "erasing": "Borrando…",
+      "eraseDialogTitle": "¿Borrar todo en este dispositivo?",
+      "eraseDialogBody": "No se puede deshacer. Exporta antes si quieres una copia — usa las exportaciones de Ajustes → Datos de arriba.",
+      "eraseConfirm": "Borrar todo",
+      "eraseFailed": "No se pudieron borrar los datos del dispositivo",
       "footer": "Las exportaciones incluyen tiempo, penalización, scramble, método, fecha y notas. Usa el formato csTimer para máxima compatibilidad — funciona con csTimer, Twisty Timer, CubeDesk y la mayoría de apps de cubing.",
       "previewImport": "Vista previa de importación",
       "importing": "Importando...",
@@ -969,7 +988,11 @@
           "i3": "Las contribuciones individuales se acreditan por resolución y por algoritmo en toda la app."
         }
       },
-      "provenance": "La procedencia completa de los datos y las notas de regeneración están documentadas en {{file}} en la raíz del repositorio. Cubalyze se publica bajo la licencia MIT."
+      "provenance": "La procedencia completa de los datos y las notas de regeneración están documentadas en {{file}} en la raíz del repositorio. Cubalyze se publica bajo la licencia MIT.",
+      "operatorTitle": "Responsable",
+      "operatorBody": "Cubalyze es un proyecto personal sin ánimo comercial de Javier Vivo (España).",
+      "legalTitle": "Privacidad y términos",
+      "legalBody": "Cómo se tratan tus datos, las reglas del servicio y lo que guarda tu navegador."
     },
     "placeholder": {
       "ready": "Esta sección está lista para configurarse. Vuelve pronto para ver nuevas opciones."
@@ -1092,6 +1115,9 @@
     "imageUrl": "URL de la imagen",
     "imageUrlPlaceholder": "https://... o sube una imagen",
     "uploadImage": "Subir imagen",
+    "imageAlt": "Descripción de la imagen (texto alt)",
+    "imageAltPlaceholder": "Describe la imagen para lectores de pantalla",
+    "imageAltFallback": "Imagen personalizada del panel",
     "subXTarget": "Objetivo Sub-X (segundos)",
     "subXHint": "Ingresa un número de dos dígitos (ej. 20 para Sub-20)",
     "slotLabelLeft": "Izquierda",
@@ -1332,7 +1358,8 @@
       "virtualSubtitle": "Simulador de cubo 3D",
       "smartCubeSubtitle": "Conecta un cubo bluetooth",
       "themeSubtitle": "Personaliza temas y colores",
-      "widgetsSubtitle": "Paneles y herramientas flotantes"
+      "widgetsSubtitle": "Paneles y herramientas flotantes",
+      "privacySubtitle": "Privacidad, términos y datos"
     }
   },
   "onboarding": {
@@ -2185,7 +2212,7 @@
       "reveal": "Revelar",
       "yourMoveCount": "Tu número de movimientos",
       "moveCountInstruction": "Cronometra tu cruz con la barra espaciadora y luego indica cuántos movimientos usaste. El entrenador lo compara con el óptimo {{optimal}} (dentro de {{tolerance}} movimientos cuenta como correcto).",
-      "submit": "Enviar",
+      "submit": "Comprobar movimientos",
       "optimal": "¡Óptimo! 🎯",
       "underOptimal": "{{count}} por debajo del óptimo 🎯",
       "overOptimalOk": "{{count}} por encima del óptimo (ok)",
@@ -4755,6 +4782,10 @@
     "continueWithGoogle": "Continuar con Google",
     "privacyNote": "Solo se usa Google para iniciar sesión. Tus datos viven en tu dispositivo y se sincronizan con tu cuenta cuando quieras.",
     "backToTimer": "Volver al temporizador",
+    "consentPrefix": "Al continuar aceptas la",
+    "consentAnd": "y los",
+    "privacyLink": "Política de Privacidad",
+    "termsLink": "Términos del Servicio",
     "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
     "errorNotConfigured": "La sincronización de cuenta no está configurada en esta versión.",
     "alreadySignedIn": "Ya has iniciado sesión — te llevamos a tu perfil…",
@@ -4804,6 +4835,81 @@
       "inProgress": "Vinculando tus datos…",
       "later": "Más tarde",
       "error": "No se pudieron vincular tus datos. Inténtalo de nuevo."
+    }
+  }
+,
+  "legal":   {
+    "backToApp": "Volver a la app",
+    "contactEmail": "cubalyze@gmail.com",
+    "navPrivacy": "Privacidad",
+    "navStorage": "Almacenamiento",
+    "navTerms": "Términos",
+    "privacy": {
+      "intro": "Esta política explica qué guarda Cubalyze, dónde vive y cómo borrarlo. En corto: todo funciona sin cuenta y se queda en tu dispositivo; solo al iniciar sesión se sincroniza una copia a tu cuenta privada en la nube.",
+      "p1b": "Cubalyze es un proyecto personal sin ánimo comercial mantenido por Javier Vivo, con base en España. Para cualquier duda o solicitud de privacidad, escribe a {{contactEmail}}.",
+      "p1t": "Quién es responsable",
+      "p2b": "Sin cuenta, todos tus datos (soluciones, sesiones, progreso de entrenamiento, colección, ajustes) viven solo en el almacenamiento de tu navegador o dispositivo. Nada se envía a ningún sitio. Conectar una cuenta de Google solo añade sincronización y copia de seguridad; nunca cambia lo que la app registra en local.",
+      "p2t": "Local primero",
+      "p3b": "Al iniciar sesión y vincular un dispositivo, la app sincroniza: tu perfil (nombre visible, handle, bio, país, avatar, preferencias), tus soluciones y sesiones (tiempos, fechas, mezclas, movimientos, notas, penalizaciones, análisis), tu actividad y progreso de entrenamiento, tu colección (incluidos los detalles que introduzcas como números de serie, identificadores de cubos inteligentes, precios, notas, enlaces y fotos) y tus datos sociales (amistades, solicitudes, bloqueos y opciones de visibilidad). Tu correo de Google se conoce a través del inicio de sesión.",
+      "p3t": "Qué se sincroniza al iniciar sesión",
+      "p4b": "El inicio de sesión lo provee Google; el alojamiento y la sincronización corren sobre infraestructura de Supabase y Vercel. Procesan datos solo para operar el servicio. Como los proveedores pueden operar fuera de la UE, aplican sus salvaguardas correspondientes; no se vende ningún dato y no hay publicidad ni rastreo entre sitios.",
+      "p4t": "Encargados",
+      "p5b": "Por defecto tu identidad es visible para amigos aceptados, mientras que estadísticas y colección permanecen privadas. Cada interruptor de la configuración vive en el servidor y solo cambia cuando tú lo cambias. Reclamar un handle público (@nombre) hace ese nombre visible para otros usuarios; el uso compartido de fotos, donde esté activo, usa enlaces privados de corta duración, nunca URLs públicas.",
+      "p5t": "Amigos y visibilidad",
+      "p6b": "Las fotos de la colección se guardan en un espacio privado, una carpeta por cuenta, y solo tú puedes abrirlas salvo que las compartas explícitamente con amigos. Las fotos pueden llevar metadatos (como ubicación) incrustados por tu cámara: piensa qué muestra una imagen antes de subirla.",
+      "p6t": "Fotos",
+      "p7b": "Tus datos se conservan mientras exista tu cuenta. Borrar tu cuenta (Ajustes → Cuenta → Eliminar cuenta) elimina permanentemente tu copia en la nube, incluidas las fotos, y limpia este dispositivo. Las copias de seguridad de la plataforma desaparecen con su rotación normal. Puedes exportar todo cuando quieras desde Ajustes → Datos.",
+      "p7t": "Conservación y borrado",
+      "p8b": "Puedes acceder, corregir, exportar y borrar tus datos cuando quieras: exporta desde Ajustes → Datos, corrige en la app y elimina toda la cuenta desde Ajustes → Cuenta. Para cualquier otra solicitud, escribe a {{contactEmail}} y se atenderá personalmente.",
+      "p8t": "Tus derechos",
+      "p9b": "El cubo lo practican niños y adultos. No hay control de edad; los usuarios jóvenes deberían usar la app con su padre, madre o tutor. Los valores por defecto son conservadores (estadísticas y colección privadas salvo que las abras) y las solicitudes de amistad pueden cerrarse desde los ajustes de privacidad.",
+      "p9t": "Menores",
+      "p10b": "Esta política puede cambiar a medida que evoluciona la app; la versión vigente vive siempre en esta dirección con su fecha de actualización debajo.",
+      "p10t": "Cambios",
+      "p11t": "Denunciar contenido",
+      "p11b": "Si otro usuario publica algo ilícito o abusivo (su avatar, bio, handle, mensajes o fotos compartidas de la colección), denúncialo desde su perfil con el botón Denunciar o escribe a {{contactEmail}} con el handle denunciado, qué viste y cuándo. Las denuncias se revisan personalmente, normalmente en 48 horas, y el contenido confirmado se retira con la cuenta suspendida o eliminada. Bloquear a la persona corta su contacto contigo de inmediato mientras se revisa la denuncia.",
+      "title": "Política de Privacidad",
+      "updated": "Última actualización: septiembre de 2026"
+    },
+    "storage": {
+      "intro": "Cubalyze no usa cookies de rastreo, ni analítica, ni publicidad. Lo que tu navegador guarda es almacenamiento funcional que permite que la app funcione sin conexión.",
+      "s1b": "No hay nada que consentir: ningún rastreador de terceros se carga jamás. La app no necesita banner de cookies, y ponerlo sería teatro. Esta página existe para que veas exactamente qué se guarda y cómo limpiarlo.",
+      "s1t": "Sin rastreo",
+      "s2b": "Preferencias y ajustes (localStorage); tus soluciones, sesiones, entrenamiento y colección (base de datos local en tu navegador); fotos de la colección, fuentes y fondos personalizados (almacenamiento del dispositivo); y archivos de la app para uso sin conexión (caché y worker de actualización). Borrar los datos del sitio en tu navegador lo elimina todo.",
+      "s2t": "Qué se guarda en tu dispositivo",
+      "s3b": "Iniciar sesión con Google usa una sesión temporal gestionada por Google y el backend de alojamiento. Cubalyze no guarda identificadores publicitarios ni crea cookies de terceros propias.",
+      "s3t": "Inicio de sesión",
+      "s4b": "Tus cuatro interruptores (perfil, estadísticas, colección, solicitudes) se guardan en el servidor para que ningún dispositivo pueda cambiar tu consentimiento en silencio. Solo cambian cuando tú los cambias en Ajustes.",
+      "s4t": "Opciones de uso compartido",
+      "s5b": "Usa Ajustes → Datos para exportar o importar, Ajustes → Cuenta para cerrar sesión o eliminar la cuenta (lo que también limpia este dispositivo), o borra los datos del sitio en tu navegador para eliminar la copia local sin tocar la cuenta en la nube.",
+      "s5t": "Cómo limpiarlo",
+      "s6b": "Dudas sobre almacenamiento: escribe a {{contactEmail}}.",
+      "s6t": "Contacto",
+      "title": "Almacenamiento y Cookies",
+      "updated": "Última actualización: septiembre de 2026"
+    },
+    "terms": {
+      "intro": "Estos términos describen un proyecto aficionado y gratuito, no un servicio comercial. Al usar Cubalyze los aceptas; si no estás de acuerdo, no uses la app ni la sincronización.",
+      "t1b": "Cubalyze es un proyecto personal sin ánimo comercial de Javier Vivo, con base en España. Contacto: {{contactEmail}}. La app se ofrece tal cual, sin garantías de ningún tipo.",
+      "t1t": "El servicio",
+      "t2b": "Las cuentas solo existen para sincronizar y respaldar tus propios datos entre dispositivos, mediante inicio de sesión con Google. Eres responsable de mantener segura tu cuenta de Google y de lo que ocurra con ella. Una persona, una cuenta; el uso automatizado o abusivo puede bloquearse.",
+      "t2t": "Cuentas",
+      "t3b": "Compórtate: nada de extraer datos de otros usuarios, ni probar handles a escala, ni subir contenido ilícito, ni atacar el servicio. Los handles que suplantan al proyecto o a otras personas (como nombres de soporte u oficiales) están reservados y no se pueden reclamar.",
+      "t3t": "Uso aceptable",
+      "t4b": "Sigues siendo dueño de todo lo que introduces (perfil, soluciones, notas, fotos, colección). Al usar las funciones para compartir permites a Cubalyze mostrar ese contenido a las personas que elijas, solo para operar la función. No subas contenido que no tengas derecho a compartir.",
+      "t4t": "Tu contenido",
+      "t5b": "La app es de código abierto; la licencia del código viaja con el repositorio. Los datos de referencia (algoritmos, reconstrucciones, fuentes de la comunidad) pertenecen a sus autores y se acreditan en Ajustes → Créditos y en cada registro.",
+      "t5t": "Propiedad intelectual",
+      "t6b": "Esto es una afición mantenida en tiempo libre: no hay promesa de disponibilidad ni de soporte garantizado, y la responsabilidad se limita al máximo permitido por la ley. Nada de esto limita derechos irrenunciables como consumidor.",
+      "t6t": "Sin garantía, responsabilidad limitada",
+      "t7b": "Puedes dejar de usar el servicio cuando quieras. Eliminar tu cuenta (Ajustes → Cuenta → Eliminar cuenta) borra tus datos en la nube y limpia el dispositivo, como describe la Política de Privacidad. El mantenedor puede suspender cuentas que abusen del servicio.",
+      "t7t": "Salida y terminación",
+      "t8b": "Estos términos siguen la ley española. Dudas: {{contactEmail}}.",
+      "t8t": "Ley y contacto",
+      "t9t": "Contenido prohibido",
+      "t9b": "No publiques contenido ilícito, odioso, sexualmente explícito, violento o abusivo — tampoco en avatares, bios, handles, mensajes de solicitud ni fotos compartidas de la colección, y nunca con menores. El servicio no vigila el contenido de forma preventiva; actúa ante denuncias a {{contactEmail}} (hay botón Denunciar en cada perfil). Las infracciones confirmadas se retiran y la cuenta se suspende o elimina, normalmente en 48 horas. El contenido que pueda ser delito se comunica a las autoridades.",
+      "title": "Términos del Servicio",
+      "updated": "Última actualización: septiembre de 2026"
     }
   }
 }

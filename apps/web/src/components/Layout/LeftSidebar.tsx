@@ -2,8 +2,9 @@
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { motion, LayoutGroup, useReducedMotion } from "framer-motion";
-import { Settings, UserRound } from "lucide-react";
+import { Scale, Settings, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@cubalyze/database";
 import { IdenticonAvatar } from "@/components/Identity/IdenticonAvatar";
@@ -97,6 +98,8 @@ export function LeftSidebar({
   const isTouch = useIsTouch();
   const { t } = useTranslation("nav");
   const { t: tCommon } = useTranslation();
+  const { t: tLegal } = useTranslation("legal");
+  const navigate = useNavigate();
   // Fase 8 — the incoming-request count behind the Amigos badge. It reads the
   // SAME directory store the Friends screen renders (`friend_list` already
   // carries the count, so the badge costs no request of its own) and stays off
@@ -438,6 +441,39 @@ export function LeftSidebar({
             labelVisible={labelVisible}
             onClick={() => setSettingsOpen(true)}
           />
+          {/* Public legal links — visible from the home surface (OAuth
+              homepage requirement): text links when expanded, one icon
+              button to the legal hub when collapsed. */}
+          {labelVisible ? (
+            <div className="flex items-center gap-1.5 px-2.5 pb-1 pt-0.5 text-[0.65rem] text-ink-3">
+              <button
+                type="button"
+                onClick={() => navigate("/privacy")}
+                className="cursor-pointer rounded-sm transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+              >
+                {tLegal("navPrivacy")}
+              </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={() => navigate("/terms")}
+                className="cursor-pointer rounded-sm transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+              >
+                {tLegal("navTerms")}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("/privacy")}
+              aria-label={tLegal("navPrivacy")}
+              className="flex w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-sm text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            >
+              <div className="flex size-5 shrink-0 items-center justify-center">
+                <Scale className="size-3.5" />
+              </div>
+            </button>
+          )}
         </div>
       </LayoutGroup>
     </>

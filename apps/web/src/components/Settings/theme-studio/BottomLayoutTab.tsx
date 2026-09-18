@@ -353,6 +353,27 @@ function SlotContentPicker({
               </div>
 
               <div className="flex items-center gap-2 pt-1 text-xs text-ink-3">
+                <span>{tTimer('imageAlt')}:</span>
+                <input
+                  type="text"
+                  maxLength={140}
+                  placeholder={tTimer('imageAltPlaceholder')}
+                  value={value.imageConfig?.alt ?? ''}
+                  onChange={(e) =>
+                    onChange({
+                      ...value,
+                      imageConfig: {
+                        ...value.imageConfig,
+                        url: value.imageConfig?.url ?? '',
+                        alt: e.target.value,
+                      },
+                    })
+                  }
+                  className="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 text-xs text-ink-3">
                 <span>{tTimer('imageFit', { defaultValue: 'Fit' })}:</span>
                 {(['cover', 'contain', 'fill'] as const).map((fitMode) => {
                   const fitKey =

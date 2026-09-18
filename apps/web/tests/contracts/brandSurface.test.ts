@@ -193,6 +193,9 @@ function isTechnicalIdentifier(text: string, at: number, form: string): boolean 
   const after = text.slice(at + form.length, at + form.length + 12);
   // Precedido por `@` o por otro carácter de palabra: parte de un identificador.
   if (before === '@' || /\w/.test(before)) return true;
+  // Seguido de `@`: parte local de un email (`cubalyze@gmail.com`). Los emails
+  // van en minúsculas por convención (el contacto legal vive en los locales).
+  if (after.startsWith('@')) return true;
   // Seguido de `/`, `_`, `-` u otro carácter de palabra (…-config, …/database) →
   // identificador técnico.
   if (/^[\w/-]/.test(after)) return true;
@@ -229,6 +232,7 @@ describe('brand surface — la regla de grafía, probada en sí misma', () => {
       '@cubalyze/database',
       'pnpm --filter @cubalyze/training test',
       'cubalyze.app',
+      'cubalyze@gmail.com',
       'cubalyze-config',
       'cubalyze_db',
       'packages/cubalyze-docs',

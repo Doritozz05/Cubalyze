@@ -2,8 +2,9 @@
 
 import { useTranslation } from 'react-i18next';
 import { ColorPicker } from '@/components/Settings/components/ColorPicker';
+import { contrastRatio, AA_NORMAL_TEXT_RATIO } from '@/components/Settings/components/colorUtils';
 import { type ThemeColors, type ThemeTokenKey } from '@/theme/themePresets';
-import { RotateCcw } from 'lucide-react';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
 
 interface ThemeColorSectionProps {
   currentColors: ThemeColors;
@@ -51,6 +52,15 @@ export function ThemeColorSection({
 }: ThemeColorSectionProps) {
   const { t } = useTranslation('settings');
 
+  // Guardrail, never a block: custom themes are the user's own choice, so a
+  // low canvas/ink ratio only warns (WCAG AA normal text = 4.5:1). Built-in
+  // presets all pass; only custom overrides can trip this.
+  const textRatio =
+    hasCustomOverrides
+      ? contrastRatio(currentColors['--canvas'] ?? '', currentColors['--ink'] ?? '')
+      : null;
+  const lowContrast = textRatio !== null && textRatio < AA_NORMAL_TEXT_RATIO;
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header and Reset Action */}
@@ -76,6 +86,15 @@ export function ThemeColorSection({
       </div>
 
       {/* 1. Surfaces */}
+      {lowContrast && (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-xl border border-caution/30 bg-caution/10 p-3 text-[0.72rem] leading-relaxed text-ink-2"
+        >
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-caution" aria-hidden="true" />
+          {t('appearance.colors.lowContrastWarning', { ratio: textRatio!.toFixed(1) })}
+        </p>
+      )}
       <div className="rounded-xl border border-line bg-surface p-4">
         <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-2">
           {t('appearance.colors.groupSurfaces')}

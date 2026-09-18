@@ -41,7 +41,10 @@
     "reconstruction": "Reconstruction {{id}} — {{solver}}",
     "collection": "Collection",
     "cube": "Virtual cube",
-    "notFound": "Page not found"
+    "notFound": "Page not found",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "storage": "Storage & Cookies"
   },
   "nav": {
     "title": "Navigation",
@@ -116,7 +119,14 @@
       "noHandle": "no handle",
       "actions": "Actions for {{name}}",
       "remove": "Remove friend",
-      "block": "Block"
+      "block": "Block",
+      "report": "Report"
+    },
+    "report": {
+      "subjectProfile": "Content report: {{handle}}",
+      "subjectPhoto": "Content report: photo by {{handle}}",
+      "bodyProfile": "Reported user: {{handle}} (id {{userId}})\nDate: {{date}}\n\nWhat I saw:\n[describe here]\n\n—\nSent from Cubalyze. Reports are reviewed personally, usually within 48 hours.",
+      "bodyPhoto": "Reported user: {{handle}} (id {{userId}})\nItem: {{itemId}} / photo {{photoId}}\nDate: {{date}}\n\nWhat I saw:\n[describe here]\n\n—\nSent from Cubalyze. Reports are reviewed personally, usually within 48 hours."
     },
     "requests": {
       "incoming": "Received",
@@ -514,6 +524,7 @@
         "subtitle": "Adjust individual system tokens",
         "reset": "Reset colors",
         "resetColor": "Reset to default theme color",
+        "lowContrastWarning": "Your canvas and text colors have a contrast ratio of {{ratio}}:1, below the 4.5:1 readability guideline. Text may be hard to read — this is only a warning, your theme still applies.",
         "groupSurfaces": "Canvas and surfaces",
         "groupTypography": "Typography and texts",
         "groupAccents": "Timer accents and states",
@@ -733,6 +744,14 @@
       "excelTitle": "Excel export",
       "excelHint": "Real .xlsx workbook with columns pre-sized for analysis in Excel / Google Sheets. Includes a summary sheet.",
       "exportExcel": "Export Excel",
+      "eraseTitle": "Erase this device",
+      "eraseHint": "Removes every solve, session, training record, collection item, photo, profile and setting stored on this device. Your cloud account, if any, is untouched — sign in again to bring it back.",
+      "eraseButton": "Erase device data",
+      "erasing": "Erasing…",
+      "eraseDialogTitle": "Erase everything on this device?",
+      "eraseDialogBody": "This cannot be undone. Export first if you want a backup — Settings → Data exports above.",
+      "eraseConfirm": "Erase everything",
+      "eraseFailed": "Couldn't erase the device data",
       "footer": "Exports include time, penalty, scramble, method, date, and notes. Use csTimer format for maximum compatibility — it works with csTimer, Twisty Timer, CubeDesk, and most cubing apps.",
       "previewImport": "Preview import",
       "importing": "Importing...",
@@ -969,7 +988,11 @@
           "i3": "Individual contributions are credited per solve and per algorithm throughout the app."
         }
       },
-      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. Cubalyze itself is released under the MIT license."
+      "provenance": "Full data provenance and regeneration notes are documented in {{file}} at the repository root. Cubalyze itself is released under the MIT license.",
+      "operatorTitle": "Maintainer",
+      "operatorBody": "Cubalyze is a personal, non-commercial project by Javier Vivo (Spain).",
+      "legalTitle": "Privacy and terms",
+      "legalBody": "How your data is handled, the rules of the service, and what your browser stores."
     },
     "placeholder": {
       "ready": "This section is ready for configuration. Check back soon for new options."
@@ -1092,6 +1115,9 @@
     "imageUrl": "Image URL",
     "imageUrlPlaceholder": "https://... or upload an image",
     "uploadImage": "Upload image",
+    "imageAlt": "Image description (alt text)",
+    "imageAltPlaceholder": "Describe the image for screen readers",
+    "imageAltFallback": "Custom slot image",
     "subXTarget": "Sub-X target (seconds)",
     "subXHint": "Enter a two-digit number (e.g. 20 for Sub-20)",
     "slotLabelLeft": "Left",
@@ -1332,7 +1358,8 @@
       "virtualSubtitle": "3D cube simulator",
       "smartCubeSubtitle": "Connect bluetooth cube",
       "themeSubtitle": "Customize themes and colors",
-      "widgetsSubtitle": "Floating widgets & panels"
+      "widgetsSubtitle": "Floating widgets & panels",
+      "privacySubtitle": "Privacy, terms & data"
     }
   },
   "onboarding": {
@@ -2185,7 +2212,7 @@
       "reveal": "Reveal",
       "yourMoveCount": "Your move count",
       "moveCountInstruction": "Time your cross with the spacebar, then enter how many moves you used. The trainer compares against the optimal {{optimal}} (within {{tolerance}} moves counts as correct).",
-      "submit": "Submit",
+      "submit": "Check moves",
       "optimal": "Optimal! 🎯",
       "underOptimal": "{{count}} under optimal 🎯",
       "overOptimalOk": "{{count}} over optimal (ok)",
@@ -4755,6 +4782,10 @@
     "continueWithGoogle": "Continue with Google",
     "privacyNote": "Only Google is used to sign in. Your data lives on your device and syncs to your account whenever you want.",
     "backToTimer": "Back to the timer",
+    "consentPrefix": "By continuing you agree to the",
+    "consentAnd": "and",
+    "privacyLink": "Privacy Policy",
+    "termsLink": "Terms of Service",
     "errorGeneric": "Something went wrong. Please try again.",
     "errorNotConfigured": "Account sync is not configured on this build.",
     "alreadySignedIn": "You're signed in — taking you to your profile…",
@@ -4804,6 +4835,81 @@
       "inProgress": "Linking your data…",
       "later": "Later",
       "error": "Couldn't link your data. Please try again."
+    }
+  }
+,
+  "legal":   {
+    "backToApp": "Back to the app",
+    "contactEmail": "cubalyze@gmail.com",
+    "navPrivacy": "Privacy",
+    "navStorage": "Storage",
+    "navTerms": "Terms",
+    "privacy": {
+      "intro": "This policy explains what Cubalyze stores, where it lives, and how to delete it. The short version: everything works without an account and stays on your device; only when you sign in does a copy sync to your private cloud account.",
+      "p1b": "Cubalyze is a personal, non-commercial project maintained by Javier Vivo, based in Spain. For any privacy question or request, write to {{contactEmail}}.",
+      "p1t": "Who is responsible",
+      "p2b": "Without an account, all your data (solves, sessions, training progress, collection, settings) lives only in your browser or device storage. Nothing is sent anywhere. Connecting a Google account only adds sync and backup; it never changes what the app records locally.",
+      "p2t": "Local first",
+      "p3b": "When you sign in and link a device, the app syncs: your profile (display name, handle, bio, country, avatar, preferences), your solves and sessions (times, dates, scrambles, moves, notes, penalties, analysis), your training activity and progress, your collection (including item details you enter such as serial numbers, smart-cube identifiers, prices, notes, links and photos), and your social data (friendships, requests, blocks and visibility choices). Your Google email address is known through sign-in.",
+      "p3t": "What syncs when you sign in",
+      "p4b": "Sign-in is provided by Google; hosting and sync run on Supabase and Vercel infrastructure. They process data only to operate the service. Because providers may operate outside the EU, appropriate safeguards of those platforms apply; no data is sold and there is no advertising or cross-site tracking.",
+      "p4t": "Processors",
+      "p5b": "By default your identity is visible to accepted friends, while statistics and collection stay private. Every sharing switch in Settings lives on the server and only changes when you flip it. Claiming a public handle (@name) makes that name visible to other users; photo sharing, where enabled, uses short-lived private links, never public URLs.",
+      "p5t": "Friends and visibility",
+      "p6b": "Collection photos are stored in a private bucket, one folder per account, and only you can open them unless you explicitly share them with friends. Photos can carry metadata (such as location) embedded by your camera: consider what a picture shows before uploading it.",
+      "p6t": "Photos",
+      "p7b": "Your data is kept while your account exists. Deleting your account (Settings → Account → Delete account) permanently removes your cloud copy, including photos, and wipes this device. Backup copies held by the hosting platform disappear with its normal rotation. You can export everything at any time from Settings → Data.",
+      "p7t": "Retention and deletion",
+      "p8b": "You can access, correct, export and delete your data at any time: export from Settings → Data, correct it in the app, and delete the whole account from Settings → Account. For any other request, write to {{contactEmail}} and it will be handled personally.",
+      "p8t": "Your rights",
+      "p9b": "Cubing is practiced by children and adults. There is no age gate; young users should use the app with a parent or guardian. Sharing defaults are conservative (statistics and collection are private unless you open them), and friend requests can be closed from the privacy settings.",
+      "p9t": "Minors",
+      "p10b": "This policy may change as the app evolves; the current version always lives at this address with its update date below.",
+      "p10t": "Changes",
+      "p11t": "Reporting content",
+      "p11b": "If another user publishes something unlawful or abusive (their avatar, bio, handle, messages or shared collection photos), report it from their profile with the Report button or write to {{contactEmail}} with the reported handle, what you saw and when. Reports are reviewed personally, usually within 48 hours, and confirmed content is removed with the account suspended or deleted. Blocking the person stops them reaching you immediately while the report is reviewed.",
+      "title": "Privacy Policy",
+      "updated": "Last updated: September 2026"
+    },
+    "storage": {
+      "intro": "Cubalyze uses no tracking cookies, no analytics and no advertising. What your browser stores is functional storage that makes the app work offline.",
+      "s1b": "There is nothing to consent to: no third-party tracker ever loads. The app does not need a cookie banner, and adding one would be theater. This page exists so you can see exactly what is stored and clear it.",
+      "s1t": "No tracking",
+      "s2b": "Preferences and settings (localStorage); your solves, sessions, training and collection (local database in your browser); collection photos, custom fonts and backgrounds (device storage); and app files for offline use (cache storage and the update worker). Clearing site data in your browser removes all of it.",
+      "s2t": "What is stored on your device",
+      "s3b": "Signing in with Google uses a temporary session handled by Google and the hosting backend. Cubalyze keeps no advertising identifier and sets no third-party cookie of its own.",
+      "s3t": "Sign-in",
+      "s4b": "Your four sharing switches (profile, statistics, collection, requests) are stored on the server so no device can silently change your consent. They only change when you flip them in Settings.",
+      "s4t": "Sharing choices",
+      "s5b": "Use Settings → Data to export or re-import, Settings → Account to sign out or delete the account (which also wipes this device), or clear site data in your browser to remove the local copy without touching the cloud account.",
+      "s5t": "How to clear it",
+      "s6b": "Questions about storage: write to {{contactEmail}}.",
+      "s6t": "Contact",
+      "title": "Storage & Cookies",
+      "updated": "Last updated: September 2026"
+    },
+    "terms": {
+      "intro": "These terms describe a free hobby project, not a commercial service. By using Cubalyze you accept them; if you do not, please do not use the app or the account sync.",
+      "t1b": "Cubalyze is a personal, non-commercial project by Javier Vivo, based in Spain. Contact: {{contactEmail}}. The app is provided as-is, without warranties of any kind.",
+      "t1t": "The service",
+      "t2b": "Accounts exist only to sync and back up your own data between devices, via Google sign-in. You are responsible for keeping your Google account secure and for what happens under it. One person, one account; automated or abusive use may be blocked.",
+      "t2t": "Accounts",
+      "t3b": "Behave: no scraping other users, no guessing handles at scale, no uploading unlawful content, no attacking the service. Handles that impersonate the project or other people (such as support or official names) are reserved and cannot be claimed.",
+      "t3t": "Acceptable use",
+      "t4b": "You keep ownership of everything you enter (profile, solves, notes, photos, collection). By using sharing features you allow Cubalyze to display that content to the people you chose, only for operating the feature. Do not upload content you have no right to share.",
+      "t4t": "Your content",
+      "t5b": "The app is open source; the code license travels with the repository. Reference data (algorithms, reconstructions, community sources) belongs to its authors and is credited in Settings → Credits and per record.",
+      "t5t": "Intellectual property",
+      "t6b": "This is a hobby maintained in spare time: there is no uptime promise, no guaranteed support, and liability is limited to the maximum extent permitted by law. Nothing here limits rights you cannot waive as a consumer.",
+      "t6t": "No warranty, limited liability",
+      "t7b": "You can stop using the service at any time. Deleting your account (Settings → Account → Delete account) removes your cloud data and wipes the device, as described in the Privacy Policy. The maintainer may suspend accounts that abuse the service.",
+      "t7t": "Leaving and termination",
+      "t9t": "Prohibited content",
+      "t9b": "Do not publish unlawful, hateful, sexually explicit, violent or otherwise abusive content — including in avatars, bios, handles, request messages and shared collection photos, and never involving minors. The service does not monitor content proactively; it acts on reports sent to {{contactEmail}} (there is a Report button on every profile). Confirmed violations are removed and the account is suspended or deleted, usually within 48 hours. Content that may constitute a crime is reported to law enforcement.",
+      "t8b": "These terms follow Spanish law. Questions: {{contactEmail}}.",
+      "t8t": "Law and contact",
+      "title": "Terms of Service",
+      "updated": "Last updated: September 2026"
     }
   }
 }

@@ -31,7 +31,8 @@ export function NotFoundView() {
   }, []);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-canvas px-6 py-16 text-center">
+    <div className="flex h-dvh touch-pan-y flex-col overflow-y-auto bg-canvas px-6 py-16 text-center">
+      <div className="m-auto flex flex-col items-center gap-5">
       <div className="grid size-16 place-items-center rounded-xl border border-line bg-surface text-ink-3 shadow-2xs">
         <Compass className="size-8" />
       </div>
@@ -55,6 +56,7 @@ export function NotFoundView() {
       >
         {t("notFoundGoHome")}
       </Button>
+      </div>
     </div>
   );
 }

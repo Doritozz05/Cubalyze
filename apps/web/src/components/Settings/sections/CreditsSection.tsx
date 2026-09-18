@@ -2,7 +2,10 @@
 
 import type { LucideIcon } from "lucide-react";
 import type { ParseKeys } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LegalDialog } from "@/views/Legal/LegalDialog";
+import type { LegalDoc } from "@/views/Legal/LegalView";
 import {
   ArrowUpRight,
   Bluetooth,
@@ -13,6 +16,7 @@ import {
   Layers,
   Package,
   ScanSearch,
+  Scale,
   Tag,
   Users,
 } from "lucide-react";
@@ -196,6 +200,10 @@ const BUILT_WITH: { name: string; detailKey: ParseKeys<"settings"> }[] = [
 
 export function CreditsSection() {
   const { t } = useTranslation("settings");
+  const { t: tLegal } = useTranslation("legal");
+  // Legal docs open in-dialog (no navigation away from Settings); the
+  // /privacy, /terms, /storage routes stay for deep links and search.
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
 
   const linkedCount = CATEGORIES.reduce(
     (acc, cat) => acc + cat.items.filter((i) => i.link).length,
@@ -328,6 +336,57 @@ export function CreditsSection() {
         <FileText className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
         <p className="text-[0.65rem] leading-relaxed text-ink-3">
           {t("credits.provenance", { file: "DATA_SOURCES.md" })}
+        </p>
+      </div>
+
+      {/* ── Legal (privacy, terms, storage) ────────────────────────────── */}
+      <section className="rounded-xl border border-line bg-surface p-4 transition-shadow duration-200 hover:shadow-sm">
+        <header className="mb-1 flex items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-ink-2">
+            <Scale className="size-3.5" />
+          </span>
+          <h4 className="text-[0.8rem] font-semibold leading-5 text-ink">
+            {t("credits.legalTitle")}
+          </h4>
+        </header>
+        <p className="mb-3 text-[0.7rem] leading-relaxed text-ink-3">
+          {t("credits.legalBody")}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { doc: "privacy", label: tLegal("navPrivacy") },
+              { doc: "terms", label: tLegal("navTerms") },
+              { doc: "storage", label: tLegal("navStorage") },
+            ] as const
+          ).map((link) => (
+            <button
+              key={link.doc}
+              type="button"
+              onClick={() => setLegalDoc(link.doc)}
+              className="cursor-pointer rounded-lg border border-line bg-surface-2/40 px-3 py-1.5 text-[0.7rem] font-medium text-ink-2 transition-colors duration-150 hover:border-line-2 hover:bg-surface-2 hover:text-ink"
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
+      </section>
+      {legalDoc && (
+        <LegalDialog
+          doc={legalDoc}
+          open={legalDoc !== null}
+          onOpenChange={(open) => {
+            if (!open) setLegalDoc(null);
+          }}
+        />
+      )}
+
+      {/* ── Maintainer (operator identity — last block, never the front page) */}
+      <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
+        <Users className="mt-0.5 size-3.5 shrink-0 text-ink-3" />
+        <p className="text-[0.65rem] leading-relaxed text-ink-3">
+          {t("credits.operatorTitle")}: {t("credits.operatorBody")}{" "}
+          {tLegal("contactEmail")}
         </p>
       </div>
     </div>

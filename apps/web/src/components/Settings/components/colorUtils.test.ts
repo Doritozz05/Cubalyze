@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contrastRatio,
   hexToHsv,
   hexToRgb,
   hsvToHex,
   hsvToRgb,
   isValidHex,
+  meetsAaNormalText,
   normalizeHex,
+  relativeLuminance,
   rgbToHex,
   rgbToHsv,
 } from './colorUtils';
@@ -94,5 +97,35 @@ describe('hsv conversions', () => {
       expect(Math.abs(back.g - g)).toBeLessThanOrEqual(1);
       expect(Math.abs(back.b - b)).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('contrast (WCAG)', () => {
+  it('black on white is 21, identical colors are 1', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 1);
+    expect(contrastRatio('#1abe57', '#1abe57')).toBeCloseTo(1, 5);
+  });
+
+  it('is symmetric and accepts shorthand', () => {
+    const a = contrastRatio('#14171b', '#f8f9fa');
+    const b = contrastRatio('#f8f9fa', '#14171b');
+    expect(a).toBeCloseTo(b!, 10);
+    expect(contrastRatio('#fff', '#000')).toBeCloseTo(21, 1);
+  });
+
+  it('returns null for invalid input', () => {
+    expect(contrastRatio('red', '#ffffff')).toBeNull();
+    expect(contrastRatio('#ffffff', '')).toBeNull();
+  });
+
+  it('relativeLuminance bounds black and white', () => {
+    expect(relativeLuminance(0, 0, 0)).toBe(0);
+    expect(relativeLuminance(255, 255, 255)).toBe(1);
+  });
+
+  it('meetsAaNormalText enforces 4.5:1', () => {
+    expect(meetsAaNormalText('#000000', '#ffffff')).toBe(true);
+    expect(meetsAaNormalText('#777777', '#ffffff')).toBe(false);
+    expect(meetsAaNormalText('nope', '#ffffff')).toBe(false);
   });
 });

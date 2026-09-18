@@ -16,8 +16,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Heart, Star } from "lucide-react";
+import { Flag, Heart, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { buildReportMailto } from "@/utils/reportContent";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ItemMedia } from "@/views/Collection/components/ItemMedia";
@@ -29,6 +30,8 @@ import type { PuzzleCategory } from "@/types";
 
 export interface ShowcaseItemDetailProps {
   owner: string;
+  /** Raw handle (without @) for pre-filling content reports. */
+  ownerHandle?: string | null;
   item: ShowcaseItem | null;
   category: ShowcaseCategory | undefined;
   type: ShowcaseType | undefined;
@@ -45,6 +48,7 @@ const STATUS_KEY = {
 
 export function ShowcaseItemDetail({
   owner,
+  ownerHandle,
   item,
   category,
   type,
@@ -52,6 +56,7 @@ export function ShowcaseItemDetail({
   onClose,
 }: ShowcaseItemDetailProps) {
   const { t, i18n } = useTranslation("friends");
+  const { t: tLegal } = useTranslation("legal");
   const [fullUrls, setFullUrls] = useState<Record<string, string>>({});
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -173,6 +178,27 @@ export function ShowcaseItemDetail({
             <p className="mt-auto text-[0.65rem] leading-4 text-ink-3">
               {t("showcase.readOnlyNote")}
             </p>
+            {activePhotoId && (
+              <a
+                href={buildReportMailto({
+                  to: tLegal("contactEmail"),
+                  subject: t("report.subjectPhoto", {
+                    handle: ownerHandle ? `@${ownerHandle}` : owner.slice(0, 8),
+                  }),
+                  body: t("report.bodyPhoto", {
+                    handle: ownerHandle ? `@${ownerHandle}` : owner,
+                    userId: owner,
+                    itemId: item.id,
+                    photoId: activePhotoId,
+                    date: new Date().toISOString().slice(0, 10),
+                  }),
+                })}
+                className="inline-flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-[0.68rem] text-ink-3 transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40"
+              >
+                <Flag className="size-3" aria-hidden="true" />
+                {t("card.report")}
+              </a>
+            )}
           </div>
         </div>
       </DialogContent>

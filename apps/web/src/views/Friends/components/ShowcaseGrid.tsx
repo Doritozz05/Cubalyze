@@ -46,6 +46,8 @@ const REFRESH_MARGIN_MS = 15_000;
 
 export interface ShowcaseGridProps {
   owner: string;
+  /** Raw handle (without @) for pre-filling content reports; null when hidden. */
+  ownerHandle?: string | null;
   page: ShowcasePage | null;
   error?: FriendsFailure;
   loading: boolean;
@@ -57,6 +59,7 @@ export interface ShowcaseGridProps {
 
 export function ShowcaseGrid({
   owner,
+  ownerHandle,
   page,
   error,
   loading,
@@ -259,6 +262,7 @@ export function ShowcaseGrid({
 
       <ShowcaseItemDetail
         owner={owner}
+        ownerHandle={ownerHandle}
         item={selected}
         category={selected ? categoriesById.get(selected.categoryId) : undefined}
         type={selected?.typeId ? typesById.get(selected.typeId) : undefined}

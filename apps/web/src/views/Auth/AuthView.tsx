@@ -10,13 +10,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Box } from "lucide-react";
+import { ArrowLeft, Grid3x3 } from "lucide-react";
 import { useAccount } from "@/hooks/useAccount";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { markAppReady } from "@/boot/appReady";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { GoogleIcon } from "@/components/Account/GoogleIcon";
+import { LegalDialog } from "@/views/Legal/LegalDialog";
+import type { LegalDoc } from "@/views/Legal/LegalView";
 
 export function AuthView() {
   const { t } = useTranslation("auth");
@@ -24,6 +26,8 @@ export function AuthView() {
   const { user, loading, configured, signInWithGoogle } = useAccount();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Legal docs open in-dialog so sign-in context is never lost.
+  const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
 
   useDocumentTitle(t("title"));
 
@@ -78,12 +82,12 @@ export function AuthView() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-canvas px-6 py-16">
-      <div className="w-full max-w-sm">
+    <div className="flex h-dvh touch-pan-y flex-col overflow-y-auto bg-canvas px-6 py-10">
+      <div className="m-auto w-full max-w-sm">
         <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-          {/* Brand tile — the carbon square holding the mark */}
+          {/* Brand tile — same mark as the sidebar logo (ink tile + Grid3x3). */}
           <div className="mb-6 grid size-12 place-items-center rounded-lg bg-ink text-surface">
-            <Box className="size-6" aria-hidden="true" />
+            <Grid3x3 className="size-6" aria-hidden="true" />
           </div>
 
           <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-ink-3">
@@ -120,6 +124,24 @@ export function AuthView() {
           <p className="mt-6 text-center text-[0.62rem] leading-relaxed text-ink-3">
             {t("privacyNote")}
           </p>
+          <p className="mt-2 text-center text-[0.62rem] leading-relaxed text-ink-3">
+            {t("consentPrefix")}{" "}
+            <button
+              type="button"
+              onClick={() => setLegalDoc("privacy")}
+              className="cursor-pointer underline underline-offset-2 transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 rounded-sm"
+            >
+              {t("privacyLink")}
+            </button>{" "}
+            {t("consentAnd")}{" "}
+            <button
+              type="button"
+              onClick={() => setLegalDoc("terms")}
+              className="cursor-pointer underline underline-offset-2 transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 rounded-sm"
+            >
+              {t("termsLink")}
+            </button>
+          </p>
         </div>
 
         <button
@@ -131,6 +153,15 @@ export function AuthView() {
           {t("backToTimer")}
         </button>
       </div>
+      {legalDoc && (
+        <LegalDialog
+          doc={legalDoc}
+          open={legalDoc !== null}
+          onOpenChange={(open) => {
+            if (!open) setLegalDoc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

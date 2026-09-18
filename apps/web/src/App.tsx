@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/Layout/AppShell";
 import { NotFoundView } from "@/components/Stage/NotFoundView";
 import { AuthView } from "@/views/Auth/AuthView";
+import { LegalView } from "@/views/Legal/LegalView";
 import { useAccount } from "@/hooks/useAccount";
 import { refreshProfile } from "@/hooks/useProfile";
 import { startSyncService } from "@/services/sync";
@@ -528,6 +529,19 @@ export default function App() {
   // rendered OUTSIDE the shell like the 404.
   if (location.pathname === "/auth") {
     return <AuthView />;
+  }
+
+  // Standalone legal pages (/privacy, /terms, /storage) — outside the shell
+  // like /auth. They are not views of the shell, so they never enter
+  // `routedView`/`notFound`: unknown paths below still fall through to the 404.
+  if (location.pathname === "/privacy") {
+    return <LegalView doc="privacy" />;
+  }
+  if (location.pathname === "/terms") {
+    return <LegalView doc="terms" />;
+  }
+  if (location.pathname === "/storage") {
+    return <LegalView doc="storage" />;
   }
 
   // Unknown paths (e.g. /settings, /foo): full standalone page — no shell,

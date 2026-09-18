@@ -15,8 +15,9 @@
  */
 
 import { useState } from "react";
-import { ArrowLeft, Ban, UserMinus } from "lucide-react";
+import { ArrowLeft, Ban, Flag, UserMinus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { buildReportMailto } from "@/utils/reportContent";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FriendAvatar } from "./components/FriendAvatar";
@@ -46,12 +47,28 @@ export function FriendDetailView({
   busy = false,
 }: FriendDetailViewProps) {
   const { t, i18n } = useTranslation("friends");
+  const { t: tLegal } = useTranslation("legal");
   const { profile, stats, showcase, errors, loading, loadingMore, hasMore, refresh, loadMore } =
     useFriendDetail(userId);
   const [tab, setTab] = useState("stats");
 
   const person = profile?.profile ?? null;
   const name = person ? displayNameOf(person) : (fallbackName ?? "");
+  const handleLabel = person?.handle ? `@${person.handle}` : name || userId;
+
+  // Email-based report (no moderation team): pre-filled mailto to the
+  // maintainer. Blocking (next to it) is the instant self-defense.
+  const reportHref = person
+    ? buildReportMailto({
+        to: tLegal("contactEmail"),
+        subject: t("report.subjectProfile", { handle: handleLabel }),
+        body: t("report.bodyProfile", {
+          handle: handleLabel,
+          userId,
+          date: new Date().toISOString().slice(0, 10),
+        }),
+      })
+    : null;
 
   const memberSince =
     person && person.createdAt > 0
@@ -118,10 +135,21 @@ export function FriendDetailView({
               disabled={busy}
               onClick={() => onBlock(userId)}
               aria-label={t("card.block")}
+              title={t("card.block")}
               className="grid size-8 cursor-pointer place-items-center rounded-lg border border-line text-dnf transition-colors hover:bg-surface-2 disabled:opacity-50"
             >
               <Ban className="size-3.5" aria-hidden="true" />
             </button>
+            {reportHref && (
+              <a
+                href={reportHref}
+                aria-label={t("card.report")}
+                title={t("card.report")}
+                className="grid size-8 place-items-center rounded-lg border border-line text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <Flag className="size-3.5" aria-hidden="true" />
+              </a>
+            )}
           </div>
         </div>
 
@@ -161,6 +189,7 @@ export function FriendDetailView({
         <TabsContent value="showcase" className="mt-4">
           <ShowcaseGrid
             owner={userId}
+            ownerHandle={person?.handle ?? null}
             page={showcase}
             error={errors.showcase}
             loading={loading}

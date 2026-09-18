@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Brain, FileText, Grid3x3, ArrowLeft } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, Upload, FileUp, AlertTriangle, Check, X, Brain, FileText, Grid3x3, ArrowLeft, Trash2 } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import i18n from '@/i18n';
@@ -13,6 +13,8 @@ import { previewImport, parseImport, readFileAsText, toSolveInput, type ImportPr
 import { SELECTABLE_PUZZLE_CATEGORIES, puzzleCategoryToType } from '@/utils/puzzleUtils';
 import type { Solve, PuzzleCategory } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { wipeAccountLocalData } from '@/services/accountCleanup';
 import { cn } from '@/lib/utils';
 import { TOUCH_FULL_BLEED } from '@/lib/touch';
 
@@ -63,6 +65,8 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
   const [exportingAll, setExportingAll] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [eraseOpen, setEraseOpen] = useState(false);
+  const [erasing, setErasing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Store the original file content so handleConfirmImport can parse the
   // full data (rawLines is truncated for preview).
@@ -214,6 +218,23 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       .catch(() => toast.error(i18n.t('toast:exportSessionsFailed')))
       .finally(() => setExportingAll(false));
   }, [onExportAllJSON, exportingAll]);
+
+  const handleEraseDevice = useCallback(async () => {
+    // Local-only wipe for users WITHOUT an account (or who keep it): same
+    // pristine-state wipe the account deletion uses, minus the server call.
+    // Reload afterwards so every in-memory store rehydrates from empty.
+    if (erasing) return;
+    setErasing(true);
+    try {
+      await wipeAccountLocalData();
+    } catch {
+      toast.error(i18n.t('settings:data.eraseFailed'));
+    } finally {
+      setEraseOpen(false);
+      setErasing(false);
+    }
+    window.location.reload();
+  }, [erasing]);
 
   const handleExportExcel = () => {
     if (solves.length === 0 || exportingExcel) return;
@@ -377,6 +398,26 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
           </button>
         </div>
 
+        {/* ── Erase this device (local-only, no account needed) ─────── */}
+        <div className="group flex items-center justify-between gap-6 rounded-xl border border-dnf/30 bg-dnf/5 p-5 transition-shadow duration-200 hover:shadow-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Trash2 className="size-4 text-dnf" />
+              <h4 className="text-[0.85rem] font-medium text-ink">{t('data.eraseTitle')}</h4>
+            </div>
+            <p className="mt-1.5 text-[0.72rem] text-ink-3">
+              {t('data.eraseHint')}
+            </p>
+          </div>
+          <button
+            onClick={() => setEraseOpen(true)}
+            disabled={erasing}
+            className="shrink-0 rounded-lg border border-dnf/30 bg-surface max-lg:min-h-11 px-4 py-2 text-[0.75rem] font-medium text-dnf transition-all hover:bg-dnf/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {erasing ? t('data.erasing') : t('data.eraseButton')}
+          </button>
+        </div>
+
         <div className="flex items-start gap-2 rounded-lg border border-line/30 bg-surface-2/30 p-3">
           <span className="text-[0.65rem] text-ink-2 leading-relaxed">
             {t('data.footer')}
@@ -385,6 +426,14 @@ export const DataSection = memo(function DataSection({ solves, sessionName, onIm
       </div>
 
       {/* ── Import Dialog ──────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={eraseOpen}
+        onOpenChange={setEraseOpen}
+        title={t('data.eraseDialogTitle')}
+        description={t('data.eraseDialogBody')}
+        confirmLabel={t('data.eraseConfirm')}
+        onConfirm={() => void handleEraseDevice()}
+      />
       <Dialog open={importOpen} onOpenChange={(open) => { if (!open) { setImportOpen(false); if (importState === 'done') window.location.reload(); } }}>
         <DialogContent className={`sm:max-w-lg overflow-hidden p-0 gap-0 ${TOUCH_FULL_BLEED} max-lg:pb-safe`} showCloseButton={false}>
           <DialogHeader className="sr-only">

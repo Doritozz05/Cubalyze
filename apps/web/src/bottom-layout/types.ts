@@ -56,6 +56,8 @@ export interface SlotImageConfig {
   url: string;
   fit?: "cover" | "contain" | "fill";
   opacity?: number;
+  /** Screen-reader description of the image (empty = decorative fallback). */
+  alt?: string;
 }
 
 /** Cube faces available for cross solving. */

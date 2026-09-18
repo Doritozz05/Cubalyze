@@ -12,6 +12,9 @@ export function SlotImageViewer({ config, className }: SlotImageViewerProps) {
   const url = config?.url;
   const fit = config?.fit ?? "cover";
   const opacity = config?.opacity ?? 1;
+  // User-authored description when set; otherwise a neutral fallback naming
+  // the slot content (never an empty alt on a content image).
+  const alt = config?.alt?.trim() || t("imageAltFallback");
 
   if (!url) {
     return (
@@ -26,7 +29,7 @@ export function SlotImageViewer({ config, className }: SlotImageViewerProps) {
     <div className={`relative size-full min-h-22 min-w-0 overflow-hidden ${className ?? ""}`}>
       <img
         src={url}
-        alt="Slot media"
+        alt={alt}
         loading="lazy"
         decoding="async"
         className="absolute inset-0 size-full block transition-opacity"
