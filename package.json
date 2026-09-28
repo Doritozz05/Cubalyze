@@ -2,6 +2,16 @@
   "name": "cubalyze-monorepo",
   "version": "0.0.0",
   "private": true,
+  "description": "Offline-first speedcubing platform: hardware timer, solve analytics, algorithm training and a 5,200-case database.",
+  "homepage": "https://cubeforge-phi.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Doritozz05/Cubalyze.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Doritozz05/Cubalyze/issues"
+  },
+  "license": "MIT",
   "packageManager": "pnpm@10.5.2",
   "workspaces": [
     "apps/*",

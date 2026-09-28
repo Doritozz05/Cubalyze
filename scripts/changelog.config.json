@@ -1,6 +1,6 @@
 {
   "currentVersion": "0.9.1",
-  "commitUrlTemplate": "https://github.com/Doritozz05/Cubeforge/commit/{sha}",
+  "commitUrlTemplate": "https://github.com/Doritozz05/Cubalyze/commit/{sha}",
   "versions": [
     {
       "version": "0.1.0",

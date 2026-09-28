@@ -2,6 +2,14 @@
   "name": "web",
   "private": true,
   "version": "0.9.2",
+  "description": "Cubalyze web app — offline-first speedcubing PWA.",
+  "homepage": "https://cubeforge-phi.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Doritozz05/Cubalyze.git",
+    "directory": "apps/web"
+  },
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +19,8 @@
     "typecheck": "tsc -b --pretty",
     "typecheck:watch": "tsc -b --watch",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@cubalyze/algorithm-db": "workspace:*",

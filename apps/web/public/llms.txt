@@ -11,4 +11,4 @@
 - [Profile](https://cubeforge-phi.vercel.app/): Local anonymous profile with CubeMark identicon.
 
 ## Optional
-- [Cubalyze GitHub Repository](https://github.com/Doritozz05/Cubeforge): Open-source source code, documentation, and contribution guidelines.
+- [Cubalyze GitHub Repository](https://github.com/Doritozz05/Cubalyze): Open-source source code, documentation, and contribution guidelines.
